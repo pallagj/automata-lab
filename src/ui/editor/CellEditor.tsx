@@ -1,4 +1,5 @@
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import CodeMirror from "@uiw/react-codemirror";
 import { yaml } from "@codemirror/lang-yaml";
 import { Cell, useAppStore } from "../../state/store";
@@ -6,7 +7,8 @@ import { CellResult } from "../../core/workspace";
 import { DiagnosticsList } from "../detail/DiagnosticsList";
 import { ArrowDown, ArrowUp, FileCode2, FunctionSquare, Trash2 } from "lucide-react";
 import { serializeDefinition } from "../../core/parse/serialize";
-import { OpInfo, OPS } from "./ops";
+import { classify } from "../../core/grammar/grammar";
+import { opApplicability, OpInfo, OPS } from "./ops";
 
 interface Props {
   cell: Cell;
@@ -31,6 +33,27 @@ export const CellEditor: React.FC<Props> = ({ cell, index, result }) => {
   const moveCell = useAppStore((s) => s.moveCell);
   const addCell = useAppStore((s) => s.addCell);
   const [opsOpen, setOpsOpen] = useState(false);
+  const [menuPos, setMenuPos] = useState<{ top: number; left: number }>({ top: 0, left: 0 });
+  const opsBtnRef = useRef<HTMLButtonElement>(null);
+
+  const cellKind = result?.value?.kind ?? null;
+  const grammarIsRightLinear = useMemo(() => {
+    if (result?.value?.kind !== "grammar") return false;
+    const c = classify(result.value);
+    return c.type === 3 && c.direction === "right";
+  }, [result]);
+
+  const openOpsMenu = () => {
+    const rect = opsBtnRef.current?.getBoundingClientRect();
+    if (rect) {
+      const width = Math.min(380, window.innerWidth - 16);
+      setMenuPos({
+        top: Math.min(rect.bottom + 6, window.innerHeight - 60),
+        left: Math.max(8, Math.min(rect.left, window.innerWidth - width - 8))
+      });
+    }
+    setOpsOpen(true);
+  };
 
   const isActive = cell.id === activeCellId;
   const hasError = (result?.diagnostics ?? []).some((d) => d.level === "error");
@@ -76,11 +99,12 @@ export const CellEditor: React.FC<Props> = ({ cell, index, result }) => {
         {result?.value && <span className="cell-kind">{KIND_LABEL[result.value.kind]}</span>}
         <span className="spacer" />
         <button
+          ref={opsBtnRef}
           className="cell-tool"
           title="Műveletek — a kiválasztott művelettel körbeveszi a cellát"
           onClick={(e) => {
             e.stopPropagation();
-            setOpsOpen((o) => !o);
+            opsOpen ? setOpsOpen(false) : openOpsMenu();
           }}
         >
           <FunctionSquare size={15} />
@@ -129,24 +153,34 @@ export const CellEditor: React.FC<Props> = ({ cell, index, result }) => {
         </button>
       </div>
 
-      {opsOpen && (
-        <div className="ops-menu-wrap">
-          <div className="menu" onMouseLeave={() => setOpsOpen(false)}>
-            <div className="menu-group">Műveletek — kattints, és körbeveszi a cellát</div>
-            {OPS.map((op) => (
-              <button
-                key={op.name}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  applyOp(op);
-                }}
-              >
-                <code className="op-name">{op.name}(…)</code> {op.desc}
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
+      {opsOpen &&
+        createPortal(
+          <>
+            <div className="popover-back" onClick={() => setOpsOpen(false)} />
+            <div className="menu popover" style={{ top: menuPos.top, left: menuPos.left }}>
+              <div className="menu-group">Műveletek — kattints, és körbeveszi a cellát</div>
+              {OPS.map((op) => {
+                const app = opApplicability(op, cellKind, grammarIsRightLinear);
+                return (
+                  <button
+                    key={op.name}
+                    className={app.ok ? "" : "not-applicable"}
+                    disabled={!app.ok}
+                    title={app.ok ? op.desc : `Erre a cellára nem alkalmazható: ${app.reason}`}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (app.ok) applyOp(op);
+                    }}
+                  >
+                    <code className="op-name">{op.name}(…)</code> {op.desc}
+                    {!app.ok && <span className="op-reason">{app.reason}</span>}
+                  </button>
+                );
+              })}
+            </div>
+          </>,
+          document.body
+        )}
 
       <div className="cell-editor">
         <CodeMirror

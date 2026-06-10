@@ -950,9 +950,21 @@ table.t td.state-cell.accept {
   padding: 6px;
 }
 
-.ops-menu-wrap {
-  position: relative;
-  margin: 0 8px;
+/* cellán kívül, portálban megjelenő műveletmenü — sosem vágódik le */
+.popover-back {
+  position: fixed;
+  inset: 0;
+  z-index: 199;
+}
+
+.menu.popover {
+  position: fixed;
+  top: auto;
+  left: auto;
+  right: auto;
+  width: min(380px, calc(100vw - 16px));
+  max-height: min(420px, 70vh);
+  z-index: 200;
 }
 
 .menu .op-name {
@@ -960,6 +972,28 @@ table.t td.state-cell.accept {
   color: var(--accent-2);
   margin-right: 7px;
   font-size: 12.5px;
+}
+
+.menu button.not-applicable {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.menu button.not-applicable .op-name {
+  color: var(--danger);
+  text-decoration: line-through;
+}
+
+.menu button.not-applicable:hover {
+  background: var(--danger-soft);
+  color: var(--text-soft);
+}
+
+.menu .op-reason {
+  display: block;
+  font-size: 11.5px;
+  color: var(--danger);
+  margin-top: 1px;
 }
 
 .menu .menu-group {
