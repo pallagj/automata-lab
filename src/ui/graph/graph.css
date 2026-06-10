@@ -1,0 +1,140 @@
+.graph-wrap {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  min-height: 260px;
+  overflow: hidden;
+  border-radius: var(--radius);
+  background:
+    radial-gradient(circle at 1px 1px, var(--graph-dot) 1px, transparent 0) 0 0 / 22px 22px,
+    var(--graph-bg);
+}
+
+.graph-svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+  cursor: grab;
+  touch-action: none;
+}
+
+.graph-svg:active {
+  cursor: grabbing;
+}
+
+.graph-node-circle {
+  fill: var(--node-fill);
+  stroke: var(--node-stroke);
+  stroke-width: 1.8;
+  transition: stroke 0.2s, fill 0.2s;
+}
+
+.graph-node-accept {
+  fill: none;
+  stroke: var(--node-stroke);
+  stroke-width: 1.4;
+  transition: stroke 0.2s;
+}
+
+.graph-node.active .graph-node-circle,
+.graph-node.active .graph-node-accept {
+  stroke: var(--accent);
+  stroke-width: 2.2;
+}
+
+.graph-node-halo {
+  fill: var(--accent);
+  opacity: 0.14;
+  animation: halo-pulse 1.6s ease-in-out infinite;
+}
+
+@keyframes halo-pulse {
+  0%, 100% { opacity: 0.1; }
+  50% { opacity: 0.26; }
+}
+
+.graph-node-label {
+  fill: var(--text);
+  font-size: 14px;
+  font-weight: 600;
+  font-family: var(--font-mono);
+  user-select: none;
+  pointer-events: none;
+}
+
+.graph-start-line {
+  stroke: var(--muted);
+  stroke-width: 1.8;
+}
+
+.graph-edge-line {
+  stroke: var(--edge);
+  stroke-width: 1.7;
+  transition: stroke 0.2s, stroke-width 0.2s;
+}
+
+.graph-edge-hit {
+  stroke: transparent;
+  stroke-width: 16;
+}
+
+.graph-edge.clickable {
+  cursor: pointer;
+}
+
+.graph-edge.clickable:hover .graph-edge-line {
+  stroke: var(--accent-2);
+  stroke-width: 2.4;
+}
+
+.graph-edge.active .graph-edge-line {
+  stroke: var(--accent);
+  stroke-width: 2.4;
+}
+
+.graph-edge-label {
+  fill: var(--text-soft);
+  font-size: 12.5px;
+  font-family: var(--font-mono);
+  paint-order: stroke;
+  stroke: var(--graph-bg);
+  stroke-width: 4px;
+  stroke-linejoin: round;
+  user-select: none;
+}
+
+.graph-edge.active .graph-edge-label {
+  fill: var(--accent);
+  font-weight: 700;
+}
+
+.graph-edge.clickable:hover .graph-edge-label {
+  fill: var(--accent-2);
+}
+
+.graph-arrow {
+  fill: var(--edge);
+}
+
+.graph-arrow.active {
+  fill: var(--accent);
+}
+
+.graph-fit {
+  position: absolute;
+  right: 10px;
+  bottom: 10px;
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--panel);
+  color: var(--text-soft);
+  font-size: 16px;
+  cursor: pointer;
+}
+
+.graph-fit:hover {
+  color: var(--text);
+  border-color: var(--accent);
+}
