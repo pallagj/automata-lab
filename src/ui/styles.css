@@ -950,6 +950,18 @@ table.t td.state-cell.accept {
   padding: 6px;
 }
 
+.ops-menu-wrap {
+  position: relative;
+  margin: 0 8px;
+}
+
+.menu .op-name {
+  font-family: var(--font-mono);
+  color: var(--accent-2);
+  margin-right: 7px;
+  font-size: 12.5px;
+}
+
 .menu .menu-group {
   font-size: 11px;
   font-weight: 700;
