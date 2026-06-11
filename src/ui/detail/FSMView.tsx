@@ -13,6 +13,7 @@ import { GraphEdge, GraphSpec, GraphView } from "../graph/GraphView";
 import { useGraphEditing } from "../graph/editing";
 import { Stage, StagePanel } from "./Stage";
 import { StepsContent } from "./StepsPanel";
+import { TapeInput } from "./TapeInput";
 import { StepGroup } from "../../core/expr/expression";
 import {
   Check,
@@ -262,15 +263,14 @@ export const FSMView: React.FC<{ fsm: FSM; stepGroups?: StepGroup[] }> = ({ fsm,
   const bottom = (
     <>
       <div className="sim-row">
-        <input
-          className="sim-input"
+        <TapeInput
           value={input}
-          placeholder="bemeneti szó, pl. abab"
-          onChange={(e) => {
-            setInput(e.target.value);
+          onChange={(v) => {
+            setInput(v);
             setHistory([initialStates(fsm)]);
           }}
-          spellCheck={false}
+          pos={input.length > 0 ? pos : undefined}
+          placeholder="bemeneti szó — kattints és gépelj"
         />
         <button className="sim-btn" onClick={reset} title="Újraindítás">
           <RotateCcw size={16} />
@@ -298,16 +298,6 @@ export const FSMView: React.FC<{ fsm: FSM; stepGroups?: StepGroup[] }> = ({ fsm,
           {status === "working" && <>fut…</>}
         </span>
       </div>
-
-      {input.length > 0 && (
-        <div className="tape">
-          {[...input].map((c, i) => (
-            <span key={i} className={`tape-cell ${i === pos ? "head" : ""} ${i < pos ? "done" : ""}`}>
-              {c}
-            </span>
-          ))}
-        </div>
-      )}
 
       <div className="timeline">
         {history.map((set, i) => (

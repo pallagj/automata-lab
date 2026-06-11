@@ -23,6 +23,7 @@ import { GraphEdge, GraphSpec, GraphView } from "../graph/GraphView";
 import { useGraphEditing } from "../graph/editing";
 import { Stage, StagePanel } from "./Stage";
 import { StepsContent } from "./StepsPanel";
+import { TapeInput } from "./TapeInput";
 import { StepGroup } from "../../core/expr/expression";
 import { Check, Layers, ListTree, Play, RotateCcw, StepForward, Table2, Undo2, X } from "lucide-react";
 
@@ -271,15 +272,14 @@ export const MachineView: React.FC<{ machine: Machine; stepGroups?: StepGroup[] 
         <span className="sim-dock-icon">
           <Layers size={15} />
         </span>
-        <input
-          className="sim-input"
+        <TapeInput
           value={input}
-          placeholder={head ? "bemeneti szó, pl. aabb" : "a szalag kezdeti tartalma"}
-          onChange={(e) => {
-            setInput(e.target.value);
-            resetWith(e.target.value);
+          onChange={(v) => {
+            setInput(v);
+            resetWith(v);
           }}
-          spellCheck={false}
+          pos={head && input.length > 0 ? featuredPos : undefined}
+          placeholder={head ? "bemeneti szó — kattints és gépelj" : "a szalag kezdete — kattints és gépelj"}
         />
         <button className="sim-btn" onClick={() => resetWith(input)} title="Újraindítás">
           <RotateCcw size={16} />
@@ -309,16 +309,6 @@ export const MachineView: React.FC<{ machine: Machine; stepGroups?: StepGroup[] 
           {overall.verdict === "limit" && <>korlátba ütközött</>}
         </span>
       </div>
-
-      {head && input.length > 0 && featured && (
-        <div className="tape">
-          {[...input].map((c, i) => (
-            <span key={i} className={`tape-cell ${i === featuredPos ? "head" : ""} ${i < featuredPos ? "done" : ""}`}>
-              {c}
-            </span>
-          ))}
-        </div>
-      )}
 
       {featured && m.storages.length > 0 && (
         <div className="storages">
