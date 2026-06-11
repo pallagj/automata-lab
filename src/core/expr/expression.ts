@@ -277,9 +277,9 @@ class Evaluator {
         return f;
       }
       throw new Error(
-        `${ctx}: véges automatát vár, de a(z) ${v.name} gépnek tárolója van (${v.storages
+        `${ctx}: véges automatát vár, de a(z) ${v.name} ${machineCaps(v).label.toLowerCase()} (tárolói: ${v.storages
           .map((s) => `${s.id}: ${s.type}`)
-          .join(", ")}) — az automata-műveletek csak tárolómentes gépekre alkalmazhatók`
+          .join(", ")}). A tárolós gép által felismert nyelv általában nem reguláris, ezért nincs automatikus átalakítás — az automata-műveletek csak tárolómentes gépekre alkalmazhatók.`
       );
     }
     throw new Error(`${ctx}: véges automatát vár, de ${describeKind(v)} érkezett`);
@@ -379,8 +379,17 @@ class Evaluator {
         expectArgs(1);
         const v = this.evaluate(e.args[0]);
         if (v.kind === "regex") return this.take(label("toFsm"), regexToNFA(v.pattern, v.name));
+        if (v.kind === "machine") {
+          const f = machineToFSM(v);
+          if (f) return f;
+          throw new Error(
+            `A(z) ${v.name} gép nem alakítható véges automatává, mert tárolója van (${v.storages
+              .map((s) => s.type)
+              .join(", ")}) — csak a tárolómentes gép ekvivalens automatával`
+          );
+        }
         if (v.kind !== "grammar")
-          throw new Error("A toFsm() nyelvtant vagy reguláris kifejezést vár");
+          throw new Error("A toFsm() nyelvtant, reguláris kifejezést vagy tárolómentes gépet vár");
         return this.take(label("toFsm"), grammarToFSM(v));
       }
       case "toPda": {

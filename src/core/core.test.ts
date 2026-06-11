@@ -590,6 +590,62 @@ describe("munkalap-kiértékelés", () => {
     expect(rs[2].value?.kind).toBe("fsm");
   });
 
+  it("képesség-kapu: tárolós gépre nem megy automata-művelet", () => {
+    const cells = [
+      `PushdownMachine:
+  name: P
+  charset: a
+  states: q0
+  init: q0
+  initStack: Z
+  transitions:
+    - q0 a Z/Z q0`,
+      "D = det(P)"
+    ];
+    const rs = evaluateCells(cells);
+    expect(rs[1].value).toBeNull();
+    expect(rs[1].diagnostics.some((d) => d.level === "error" && /tárol/i.test(d.detail ?? d.title))).toBe(true);
+  });
+
+  it("képesség-kapu: tárolómentes Machine automataként használható", () => {
+    const cells = [
+      `Machine:
+  name: M
+  charset: a, b
+  states: S, A
+  init: S
+  accept: A
+  transitions:
+    - S a A
+    - A b A`,
+      "D = min(complete(det(M)))",
+      "F = toFsm(M)"
+    ];
+    const rs = evaluateCells(cells);
+    expect(rs[1].value?.kind).toBe("fsm");
+    expect(rs[2].value?.kind).toBe("fsm");
+    expect(acceptsFSM(rs[2].value as never, "abb")).toBe(true);
+    expect(acceptsFSM(rs[2].value as never, "b")).toBe(false);
+  });
+
+  it("toPda eredménye veremautomata-gép, és szimulálható", () => {
+    const cells = [
+      `Grammar:
+  name: G2
+  charset: a, b
+  variables: S
+  init: S
+  rules:
+    - S -> aSb | $`,
+      "P = toPda(G2)"
+    ];
+    const rs = evaluateCells(cells);
+    expect(rs[1].value?.kind).toBe("machine");
+    expect(machineCaps(rs[1].value as never).isPDALike).toBe(true);
+    expect(runMachine(rs[1].value as never, "aabb").verdict).toBe("accepted");
+    expect(runMachine(rs[1].value as never, "aba").verdict).toBe("rejected");
+  });
+
   it("szerializálás round-trip", () => {
     const rs = evaluateCells(["R0 = regex(ab+a)", "R = det(epsfree(toFsm(R0)))"]);
     const ser = serializeDefinition(rs[1].value as never);

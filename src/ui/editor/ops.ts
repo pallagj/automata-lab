@@ -22,6 +22,7 @@ import {
 } from "../../core/fsm/ops";
 import { regexToNFA } from "../../core/fsm/regex";
 import { fsmToGrammar, grammarToFSM, grammarToPDA } from "../../core/grammar/grammar";
+import { machineCaps, machineToFSM } from "../../core/machine/machine";
 import { OpResult } from "../../core/types";
 import { ExprValue } from "../../core/expr/expression";
 
@@ -59,12 +60,15 @@ export const OPS: OpInfo[] = [
 
 const KIND_HU: Record<string, string> = {
   fsm: "véges automata",
-  pda: "veremautomata",
-  tm: "Turing-gép",
   grammar: "nyelvtan",
   regex: "reguláris kifejezés",
   verdict: "összehasonlítás eredménye"
 };
+
+function describeValue(value: ExprValue): string {
+  if (value.kind === "machine") return machineCaps(value).label.toLowerCase();
+  return KIND_HU[value.kind] ?? value.kind;
+}
 
 export interface Applicability {
   ok: boolean;
@@ -147,7 +151,7 @@ export function opApplicability(op: OpInfo, value: ExprValue | Definition | null
 
   if (op.input === "grammar") {
     if (kind !== "grammar")
-      return { ok: false, reason: `nyelvtant vár — ez a cella: ${KIND_HU[kind]}` };
+      return { ok: false, reason: `nyelvtant vár — ez a cella: ${describeValue(value)}` };
     return fromDryRun(op.name === "toPda" ? grammarToPDA(value) : grammarToFSM(value));
   }
 
@@ -161,8 +165,17 @@ export function opApplicability(op: OpInfo, value: ExprValue | Definition | null
     if (!conv.ok)
       return { ok: false, reason: "véges automatát vár — ez a nyelvtan nem jobblineáris" };
     fsm = conv.value!;
+  } else if (kind === "machine") {
+    // képesség-kapu: csak a tárolómentes gép viselkedik automataként
+    const conv = machineToFSM(value);
+    if (!conv)
+      return {
+        ok: false,
+        reason: `a gépnek tárolója van (${value.storages.map((s) => s.type).join(", ")}) — az általa felismert nyelv általában nem reguláris, ezért automata-művelet nem alkalmazható rá`
+      };
+    fsm = conv;
   } else {
-    return { ok: false, reason: `véges automatát vár — ez a cella: ${KIND_HU[kind]}` };
+    return { ok: false, reason: `véges automatát vár — ez a cella: ${describeValue(value)}` };
   }
   return dryRunFsmOp(op.name, fsm);
 }
