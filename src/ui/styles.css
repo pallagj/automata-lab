@@ -796,7 +796,9 @@ details.card[open] > summary .chev {
 .ef-grid input,
 .ef-grid select,
 .ef-row input,
-.ef-row select {
+.ef-row select,
+.ef-storage-row input,
+.ef-storage-row select {
   background: var(--bg-soft);
   border: 1px solid var(--border);
   border-radius: 7px;
@@ -811,7 +813,9 @@ details.card[open] > summary .chev {
 .ef-grid input:focus,
 .ef-grid select:focus,
 .ef-row input:focus,
-.ef-row select:focus {
+.ef-row select:focus,
+.ef-storage-row input:focus,
+.ef-storage-row select:focus {
   outline: none;
   border-color: var(--accent);
 }
@@ -1451,7 +1455,7 @@ details.card[open] > summary .chev {
 
 .ef-storage-row {
   display: grid;
-  grid-template-columns: 1fr 1.3fr 1.3fr 24px;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr) minmax(0, 1fr) 22px;
   gap: 5px;
   align-items: center;
 }

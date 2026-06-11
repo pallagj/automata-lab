@@ -7,6 +7,7 @@ import { CellResult } from "../../core/workspace";
 import { DiagnosticsList } from "../detail/DiagnosticsList";
 import { Code2, FileCode2, FunctionSquare, GripVertical, SlidersHorizontal, X } from "lucide-react";
 import { serializeDefinition } from "../../core/parse/serialize";
+import { machineCaps } from "../../core/machine/machine";
 import { opApplicability, OpInfo, OPS } from "./ops";
 import { detectEntityKind, EntityForm, parseEntityDraft } from "./EntityForm";
 
@@ -17,13 +18,22 @@ interface Props {
 }
 
 const KIND_LABEL: Record<string, string> = {
-  fsm: "véges automata",
-  pda: "veremautomata",
-  tm: "Turing-gép",
   grammar: "nyelvtan",
   regex: "reguláris kifejezés",
   verdict: "összehasonlítás"
 };
+
+/** A felismert gépfajta neve a cella fejlécébe — a konfigurációból. */
+function valueKindLabel(value: { kind: string }): string | undefined {
+  if (value.kind === "machine") {
+    const caps = machineCaps(value as never);
+    if (caps.isFSMLike) return "véges automata";
+    if (caps.isPDALike) return "veremautomata";
+    if (caps.isTMLike) return "Turing-gép";
+    return caps.label.replace("Általános", "általános");
+  }
+  return KIND_LABEL[value.kind];
+}
 
 /** Cellák közti drag&drop: az éppen vonszolt cella azonosítója. */
 let draggingId: string | null = null;
@@ -275,7 +285,7 @@ export const CellEditor: React.FC<Props> = ({ cell, index, result }) => {
       <div className="cell-main">
         <div className="cell-head">
           {result?.name && <span className="cell-name">{result.name}</span>}
-          {result?.value && <span className="cell-kind">{KIND_LABEL[result.value.kind]}</span>}
+          {result?.value && <span className="cell-kind">{valueKindLabel(result.value)}</span>}
           {regexMatch && !result?.value && <span className="cell-kind">reguláris kifejezés</span>}
           <span className="spacer" />
           <button
