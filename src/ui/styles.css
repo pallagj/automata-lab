@@ -885,6 +885,112 @@ details.card[open] > summary .chev {
   color: var(--accent);
 }
 
+.badge.danger {
+  background: var(--danger-soft);
+  color: var(--danger);
+}
+
+/* ====== Regex-elemző nézet ====== */
+
+.rx-pattern {
+  font-family: var(--font-mono);
+  font-size: 19px;
+  font-weight: 600;
+  background: var(--bg-soft);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 10px 14px;
+  overflow-x: auto;
+  white-space: nowrap;
+}
+
+.rx-legend {
+  margin-top: 8px;
+  font-size: 12.5px;
+  color: var(--muted);
+}
+
+.rx-legend code {
+  background: var(--panel-2);
+  border-radius: 5px;
+  padding: 1px 6px;
+  font-family: var(--font-mono);
+}
+
+.rx-tofsm {
+  margin-top: 10px;
+  color: var(--accent);
+}
+
+.rx-tree,
+.rx-tree ul {
+  list-style: none;
+  margin: 0;
+  padding-left: 18px;
+  font-size: 13px;
+}
+
+.rx-tree {
+  padding-left: 0;
+}
+
+.rx-tree li {
+  position: relative;
+  padding: 2px 0;
+}
+
+.rx-tree ul li::before {
+  content: "";
+  position: absolute;
+  left: -12px;
+  top: 0;
+  bottom: 50%;
+  width: 10px;
+  border-left: 1.5px solid var(--border);
+  border-bottom: 1.5px solid var(--border);
+  border-bottom-left-radius: 6px;
+}
+
+.rx-tree ul li:not(:last-child)::after {
+  content: "";
+  position: absolute;
+  left: -12px;
+  top: 0;
+  bottom: 0;
+  border-left: 1.5px solid var(--border);
+}
+
+.rx-node {
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+  background: var(--panel-2);
+  border-radius: 6px;
+  padding: 2px 8px;
+}
+
+.word-test {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.word-test input {
+  flex: 1;
+  min-width: 0;
+  background: var(--bg-soft);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-size: 13.5px;
+  padding: 8px 11px;
+}
+
+.word-test input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
 /* ====== Simulation ====== */
 
 .sim-row {

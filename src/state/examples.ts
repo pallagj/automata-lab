@@ -72,9 +72,10 @@ export const EXAMPLE_WORKSHEETS: ExampleWorksheet[] = [
     name: "Reguláris kifejezések és automaták",
     cells: [
       "R = regex((a|b)*abb)",
-      "DR = min(det(epsfree(R)))",
+      "A = toFsm(R)",
+      "DR = min(det(epsfree(A)))",
       NFA_M1,
-      "Egyenlo = equal(R, M1)"
+      "Egyenlo = equal(A, M1)"
     ]
   },
   {

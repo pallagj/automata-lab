@@ -176,20 +176,68 @@ class Builder {
   }
 }
 
+/** Reguláris kifejezés mint önálló érték — automatává a toFsm() alakítja. */
+export interface RegexDef {
+  kind: "regex";
+  name: string;
+  pattern: string;
+}
+
+function parseOrFail(pattern: string): { ast?: Node; error?: string } {
+  try {
+    return { ast: new Parser(pattern).parse() };
+  } catch (e) {
+    return {
+      error:
+        (e as Error).message +
+        " — Támogatott jelölés: literálok, ε, összefűzés, | vagy + (unió), * (ismétlés), ? (opcionális), zárójelek."
+    };
+  }
+}
+
+/** Regex-érték létrehozása szintaktikai ellenőrzéssel. */
+export function regexValue(pattern: string, name = "R"): OpResult<RegexDef> {
+  const cleaned = pattern.replaceAll(" ", "");
+  const p = parseOrFail(cleaned);
+  if (p.error) return failResult([err("Hibás reguláris kifejezés", p.error)]);
+  return okResult({ kind: "regex", name, pattern: cleaned });
+}
+
+/** A kifejezés szerkezeti fája az elemző-nézethez. */
+export interface RegexNodeInfo {
+  label: string;
+  children: RegexNodeInfo[];
+}
+
+function nodeInfo(n: Node): RegexNodeInfo {
+  switch (n.t) {
+    case "empty":
+      return { label: "∅ — üres nyelv", children: [] };
+    case "eps":
+      return { label: "ε — üres szó", children: [] };
+    case "lit":
+      return { label: `„${n.c}” betű`, children: [] };
+    case "cat":
+      return { label: "összefűzés", children: [nodeInfo(n.a), nodeInfo(n.b)] };
+    case "alt":
+      return { label: "unió ( | )", children: [nodeInfo(n.a), nodeInfo(n.b)] };
+    case "star":
+      return { label: "lezárás ( * )", children: [nodeInfo(n.a)] };
+    case "opt":
+      return { label: "opcionális ( ? )", children: [nodeInfo(n.a)] };
+  }
+}
+
+export function regexTree(pattern: string): RegexNodeInfo | null {
+  const p = parseOrFail(pattern.replaceAll(" ", ""));
+  return p.ast ? nodeInfo(p.ast) : null;
+}
+
 export function regexToNFA(pattern: string, name = "R"): OpResult<FSM> {
   const cleaned = pattern.replaceAll(" ", "");
-  let ast: Node;
-  try {
-    ast = new Parser(cleaned).parse();
-  } catch (e) {
-    return failResult([
-      err(
-        "Hibás reguláris kifejezés",
-        (e as Error).message +
-          " — Támogatott jelölés: literálok, ε, összefűzés, | vagy + (unió), * (ismétlés), ? (opcionális), zárójelek."
-      )
-    ]);
-  }
+  const p = parseOrFail(cleaned);
+  if (p.error) return failResult([err("Hibás reguláris kifejezés", p.error)]);
+  const ast = p.ast!;
   const b = new Builder();
   const frag = b.build(ast);
   const fsm = makeFSM({

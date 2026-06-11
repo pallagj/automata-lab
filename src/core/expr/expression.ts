@@ -16,21 +16,22 @@ import {
   starFSM,
   unionEpsilon
 } from "../fsm/ops";
-import { regexToNFA } from "../fsm/regex";
+import { RegexDef, regexToNFA, regexValue } from "../fsm/regex";
 import { Grammar, grammarToFSM, grammarToPDA, fsmToGrammar, removeEpsilonRules } from "../grammar/grammar";
 import { Definition } from "../parse/definitionParser";
 
 /**
  * Kifejezésnyelv: name = kifejezés
- *   - változók: korábban definiált gépek nevei
- *   - literálok: kisbetű/számjegy karakterek (egy-egy karaktert elfogadó automata)
- *   - műveletek: összefűzés (egymás után írás), + (unió), * (lezárás), zárójelek
+ *   - változók: korábban definiált gépek / regexek nevei
+ *   - műveletek nevek között: összefűzés (egymás után írás), + (unió),
+ *     * (lezárás), zárójelek
+ *   - betű-literálok NINCSENEK — betűsorozat csak a regex(...) belsejében
  *   - függvények: det, min, epsfree, complete, reachable, complement, union,
  *     intersect, difference, concat, star, reverse, clean, toGrammar, toFsm,
  *     toPda, regex, equal
  */
 
-export type ExprValue = Definition | EquivalenceVerdict;
+export type ExprValue = Definition | RegexDef | EquivalenceVerdict;
 
 export interface StepGroup {
   operation: string;
@@ -202,13 +203,13 @@ class ExprParser {
         }
         return { t: "call", fn: word as FuncName, args, rawArgs };
       }
-      // változó vagy literál-sorozat
+      // csak ismert név vagy függvény lehet — betű-literál nincs
       if (this.knownNames.has(word)) return { t: "var", name: word };
       if ((FUNCTION_NAMES as readonly string[]).includes(word))
         this.error(`A(z) „${word}” függvénynév után zárójel kell`);
-      // minden karakter külön literál (összefűzve)
-      const items: Expr[] = [...word].map((ch) => ({ t: "lit", c: ch === "$" ? EPS : ch }) as Expr);
-      return items.length === 1 ? items[0] : { t: "concat", items };
+      this.error(
+        `Ismeretlen név: „${word}” — gépekre a nevükkel hivatkozz; betűsorozatot csak a regex(…) belsejében használhatsz`
+      );
     }
     this.error(`Értelmezhetetlen karakter: „${c}”`);
   }
@@ -227,20 +228,6 @@ export function collectDependencies(src: string, knownNames: Set<string>): Set<s
 
 /* --------------------------- Kiértékelés --------------------------- */
 
-function literalFSM(c: string): FSM {
-  if (c === EPS) {
-    return makeFSM({ name: "ε", alphabet: [], states: ["S", "A"], start: "S", accept: ["A"], transitions: [{ from: "S", symbol: EPS, to: "A" }] });
-  }
-  return makeFSM({
-    name: c,
-    alphabet: [c],
-    states: ["S", "A"],
-    start: "S",
-    accept: ["A"],
-    transitions: [{ from: "S", symbol: c, to: "A" }]
-  });
-}
-
 class Evaluator {
   diagnostics: Diagnostic[] = [];
   stepGroups: StepGroup[] = [];
@@ -256,6 +243,16 @@ class Evaluator {
 
   asFSM(v: ExprValue, ctx: string): FSM {
     if (v.kind === "fsm") return v;
+    if (v.kind === "regex") {
+      // kényelmi automatikus konverzió: regex → ε-NFA (Thompson)
+      this.diagnostics.push(
+        info(
+          `A(z) ${v.name} regexet automatikusan ε-NFA-vá alakítottam`,
+          "A művelet véges automatát vár; a reguláris kifejezés a Thompson-konstrukcióval automatává alakítható — explicit módon: toFsm(" + v.name + ")."
+        )
+      );
+      return this.take(`toFsm(${v.name})`, regexToNFA(v.pattern, v.name));
+    }
     if (v.kind === "grammar") {
       // kényelmi automatikus konverzió 3. típusú nyelvtanra
       const r = grammarToFSM(v);
@@ -277,7 +274,8 @@ class Evaluator {
         return v;
       }
       case "lit":
-        return literalFSM(e.c);
+        // csak a regex() belső helykitöltője lehet — közvetlenül nem értékelődik ki
+        throw new Error("Betű-literálok csak a regex(…) belsejében használhatók");
       case "concat": {
         let acc = this.asFSM(this.evaluate(e.items[0]), "összefűzés");
         for (let i = 1; i < e.items.length; i++) {
@@ -361,7 +359,9 @@ class Evaluator {
       case "toFsm": {
         expectArgs(1);
         const v = this.evaluate(e.args[0]);
-        if (v.kind !== "grammar") throw new Error("A toFsm() nyelvtant vár");
+        if (v.kind === "regex") return this.take(label("toFsm"), regexToNFA(v.pattern, v.name));
+        if (v.kind !== "grammar")
+          throw new Error("A toFsm() nyelvtant vagy reguláris kifejezést vár");
         return this.take(label("toFsm"), grammarToFSM(v));
       }
       case "toPda": {
@@ -372,7 +372,7 @@ class Evaluator {
       }
       case "regex":
         expectArgs(1);
-        return this.take(label("regex"), regexToNFA(e.rawArgs[0]));
+        return this.take(label("regex"), regexValue(e.rawArgs[0]));
       case "equal": {
         expectArgs(2);
         return this.take(label("equal"), checkEquivalence(fsmArg(0), fsmArg(1)));
@@ -397,6 +397,8 @@ function describeKind(v: ExprValue): string {
       return "Turing-gép";
     case "grammar":
       return "nyelvtan";
+    case "regex":
+      return "reguláris kifejezés";
     case "verdict":
       return "összehasonlítás eredménye";
   }
@@ -415,7 +417,7 @@ export function evaluateExpression(
     return failResult([
       err(
         "Hibás kifejezés",
-        `${(e as Error).message}. Példák: detM = det(M) · u = union(M1, M2) · r = (ab)*+ba · e = equal(M1, M2)`
+        `${(e as Error).message}. Példák: detM = det(M) · u = union(M1, M2) · r = regex((ab)*+ba) · e = equal(M1, M2)`
       )
     ]);
   }

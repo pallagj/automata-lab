@@ -5,6 +5,7 @@ import { FSMView } from "./FSMView";
 import { PDAView } from "./PDAView";
 import { TMView } from "./TMView";
 import { GrammarView } from "./GrammarView";
+import { RegexView } from "./RegexView";
 import { VerdictView } from "./VerdictView";
 import { StepsPanel } from "./StepsPanel";
 import { DiagnosticsList } from "./DiagnosticsList";
@@ -50,6 +51,7 @@ export const DetailPane: React.FC<{ result: CellResult | null }> = ({ result }) 
       {v.kind === "pda" && <PDAView pda={v} />}
       {v.kind === "tm" && <TMView tm={v} />}
       {v.kind === "grammar" && <GrammarView grammar={v} />}
+      {v.kind === "regex" && <RegexView regex={v} />}
       {v.kind === "verdict" && <VerdictView verdict={v} />}
       <StepsPanel stepGroups={result.stepGroups} />
     </>

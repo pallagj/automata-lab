@@ -21,6 +21,7 @@ const KIND_LABEL: Record<string, string> = {
   pda: "veremautomata",
   tm: "Turing-gép",
   grammar: "nyelvtan",
+  regex: "reguláris kifejezés",
   verdict: "összehasonlítás"
 };
 
@@ -100,7 +101,9 @@ export const CellEditor: React.FC<Props> = ({ cell, index, result }) => {
 
   // kifejezés-cella eredménye kibontható szerkeszthető YAML-lá
   const expandable =
-    result?.isExpression && result.value && result.value.kind !== "verdict" ? result.value : null;
+    result?.isExpression && result.value && result.value.kind !== "verdict" && result.value.kind !== "regex"
+      ? result.value
+      : null;
 
   const openOpsMenu = () => {
     const rect = opsBtnRef.current?.getBoundingClientRect();
@@ -273,7 +276,7 @@ export const CellEditor: React.FC<Props> = ({ cell, index, result }) => {
         <div className="cell-head">
           {result?.name && <span className="cell-name">{result.name}</span>}
           {result?.value && <span className="cell-kind">{KIND_LABEL[result.value.kind]}</span>}
-          {regexMatch && <span className="cell-kind">reguláris kifejezés</span>}
+          {regexMatch && !result?.value && <span className="cell-kind">reguláris kifejezés</span>}
           <span className="spacer" />
           <button
             ref={opsBtnRef}

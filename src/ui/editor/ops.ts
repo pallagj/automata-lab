@@ -20,6 +20,7 @@ import {
   starFSM,
   unionEpsilon
 } from "../../core/fsm/ops";
+import { regexToNFA } from "../../core/fsm/regex";
 import { fsmToGrammar, grammarToFSM, grammarToPDA } from "../../core/grammar/grammar";
 import { OpResult } from "../../core/types";
 import { ExprValue } from "../../core/expr/expression";
@@ -50,7 +51,7 @@ export const OPS: OpInfo[] = [
   { group: "Nyelvműveletek", name: "reverse", desc: "megfordítás", args: 1, input: "fsm" },
 
   { group: "Konverzió", name: "toGrammar", desc: "automata → reguláris nyelvtan", args: 1, input: "fsm" },
-  { group: "Konverzió", name: "toFsm", desc: "nyelvtan → véges automata", args: 1, input: "grammar" },
+  { group: "Konverzió", name: "toFsm", desc: "nyelvtan / regex → véges automata", args: 1, input: "grammar" },
   { group: "Konverzió", name: "toPda", desc: "nyelvtan → veremautomata", args: 1, input: "grammar" },
 
   { group: "Vizsgálat", name: "equal", desc: "ekvivalencia-vizsgálat ellenpéldával", args: 2, input: "fsm" }
@@ -61,6 +62,7 @@ const KIND_HU: Record<string, string> = {
   pda: "veremautomata",
   tm: "Turing-gép",
   grammar: "nyelvtan",
+  regex: "reguláris kifejezés",
   verdict: "összehasonlítás eredménye"
 };
 
@@ -132,6 +134,16 @@ export function opApplicability(op: OpInfo, value: ExprValue | Definition | null
   const kind = value.kind;
   if (kind === "verdict")
     return { ok: false, reason: "összehasonlítás eredményére nem alkalmazható" };
+
+  if (kind === "regex") {
+    if (op.name === "toFsm") return { ok: true };
+    if (op.input === "grammar")
+      return { ok: false, reason: "nyelvtant vár — ez a cella: reguláris kifejezés" };
+    // automata-műveletek: a Thompson-féle ε-NFA-n teszteljük
+    const conv = regexToNFA(value.pattern, value.name);
+    if (!conv.ok) return { ok: false, reason: "hibás reguláris kifejezés" };
+    return dryRunFsmOp(op.name, conv.value!);
+  }
 
   if (op.input === "grammar") {
     if (kind !== "grammar")

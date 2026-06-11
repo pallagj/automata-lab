@@ -504,14 +504,28 @@ describe("munkalap-kiértékelés", () => {
     expect(rs[0].diagnostics.some((d) => d.title.includes("Körkörös"))).toBe(true);
   });
 
-  it("literál-kifejezés: (ab)*+ba", () => {
+  it("betű-literálok tiltása a kifejezésnyelvben", () => {
     const rs = evaluateCells(["R = (ab)*+ba"]);
-    const m = rs[0].value;
+    expect(rs[0].value).toBeNull();
+    expect(rs[0].diagnostics.some((d) => d.level === "error")).toBe(true);
+  });
+
+  it("regex önálló érték, toFsm alakítja automatává", () => {
+    const rs = evaluateCells(["R = regex((ab)*+ba)", "A = toFsm(R)"]);
+    expect(rs[0].value?.kind).toBe("regex");
+    const m = rs[1].value;
     expect(m?.kind).toBe("fsm");
     expect(acceptsFSM(m as never, "abab")).toBe(true);
     expect(acceptsFSM(m as never, "ba")).toBe(true);
     expect(acceptsFSM(m as never, "ab")).toBe(true);
     expect(acceptsFSM(m as never, "aab")).toBe(false);
+  });
+
+  it("regex automatikus konverziója automata-műveletben", () => {
+    const rs = evaluateCells(["R = regex(ab*)", "D = det(epsfree(R))"]);
+    expect(rs[1].value?.kind).toBe("fsm");
+    expect(acceptsFSM(rs[1].value as never, "abb")).toBe(true);
+    expect(acceptsFSM(rs[1].value as never, "ba")).toBe(false);
   });
 
   it("javítási lánc működik: min(det(epsfree(M)))", () => {
@@ -535,11 +549,11 @@ describe("munkalap-kiértékelés", () => {
   });
 
   it("szerializálás round-trip", () => {
-    const rs = evaluateCells(["R = det(epsfree(ab+a))"]);
-    const ser = serializeDefinition(rs[0].value as never);
+    const rs = evaluateCells(["R0 = regex(ab+a)", "R = det(epsfree(toFsm(R0)))"]);
+    const ser = serializeDefinition(rs[1].value as never);
     expect(ser).toContain("StateMachine:");
     const back = parseFSM(ser);
     expect(back.ok).toBe(true);
-    expect(checkEquivalence(back.value!, rs[0].value as never).value!.equal).toBe(true);
+    expect(checkEquivalence(back.value!, rs[1].value as never).value!.equal).toBe(true);
   });
 });

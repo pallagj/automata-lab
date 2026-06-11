@@ -65,7 +65,7 @@ export const HelpModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
             </tr>
             <tr>
               <td><code>regex((a|b)*abb)</code></td>
-              <td>reguláris kifejezés → ε-NFA (Thompson)</td>
+              <td>reguláris kifejezés mint érték — automatává a <code>toFsm()</code> alakítja</td>
             </tr>
             <tr>
               <td><code>equal(A,B)</code></td>
@@ -76,8 +76,8 @@ export const HelpModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
               <td>konverziók automata ↔ nyelvtan, nyelvtan → veremautomata</td>
             </tr>
             <tr>
-              <td><code>(ab)*+ba</code></td>
-              <td>gyors literál-kifejezés: összefűzés, + unió, * lezárás</td>
+              <td><code>A B</code>, <code>A+B</code>, <code>A*</code></td>
+              <td>műveletek nevesített automaták között: összefűzés, unió, lezárás — betű-literálok csak a <code>regex(…)</code> belsejében</td>
             </tr>
           </tbody>
         </table>
