@@ -3,7 +3,17 @@ import { Workspace, useAppStore } from "../../state/store";
 import { CellResult } from "../../core/workspace";
 import { CellEditor } from "./CellEditor";
 import { CELL_TEMPLATES } from "../../state/examples";
-import { Boxes, Braces, CircleDot, FunctionSquare, Layers, Plus, Regex, SquareStack } from "lucide-react";
+import {
+  Boxes,
+  Braces,
+  CircleDot,
+  FunctionSquare,
+  Layers,
+  Plus,
+  Regex,
+  SquareStack,
+  StickyNote
+} from "lucide-react";
 
 interface Props {
   workspace: Workspace;
@@ -68,23 +78,29 @@ const INSERT_OPTIONS: InsertOption[] = [
     icon: <Regex size={15} />,
     make: (used) => `${uniqueName("R", used)} = regex()`
   },
-  { label: "Kifejezés / művelet", icon: <FunctionSquare size={15} />, make: () => "" }
+  { label: "Kifejezés / művelet", icon: <FunctionSquare size={15} />, make: () => "" },
+  {
+    label: "Jegyzet",
+    icon: <StickyNote size={15} />,
+    make: () => "# Jegyzet\n# A #-tal kezdődő cella megjegyzés — ide írhatsz magyarázatot."
+  }
 ];
 
 export const EditorColumn: React.FC<Props> = ({ workspace, results }) => {
   const addCell = useAppStore((s) => s.addCell);
   const setCellSource = useAppStore((s) => s.setCellSource);
   const setActiveCell = useAppStore((s) => s.setActiveCell);
+  const activeCellId = useAppStore((s) => s.activeCellId);
   const [menuOpen, setMenuOpen] = useState(false);
 
-  /** az első üres cellát tölti ki; ha nincs, a lista végére kerül */
+  /** mint a Desmosban: üres aktív cellába írunk, egyébként alá szúrunk be */
   const insert = (source: string) => {
-    const empty = workspace.cells.find((c) => c.source.trim() === "");
-    if (empty) {
-      setCellSource(empty.id, source);
-      setActiveCell(empty.id);
+    const active = workspace.cells.find((c) => c.id === activeCellId);
+    if (active && active.source.trim() === "") {
+      setCellSource(active.id, source);
+      setActiveCell(active.id);
     } else {
-      addCell(source);
+      addCell(source, active?.id ?? null);
     }
   };
 

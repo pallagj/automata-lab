@@ -76,6 +76,21 @@ export const DetailPane: React.FC<{ result: CellResult | null }> = ({ result }) 
     return <EmptyCanvas />;
   }
 
+  if (result.comment) {
+    const cell = ws.cells.find((c) => c.id === activeCellId);
+    const text = (cell?.source ?? "")
+      .split("\n")
+      .map((l) => l.replace(/^\s*#\s?/, ""))
+      .join("\n")
+      .trim();
+    return (
+      <div className="card">
+        <div className="card-title">Jegyzet</div>
+        <p style={{ whiteSpace: "pre-wrap", margin: 0 }}>{text}</p>
+      </div>
+    );
+  }
+
   if (!result.value) {
     // a javítási javaslat az aktív cella kifejezését cseréli
     const applyFix = (code: string) => {

@@ -5,7 +5,18 @@ import {
   useAppStore,
   Workspace
 } from "../state/store";
-import { Download, HelpCircle, Moon, Pencil, Plus, Sparkles, Sun, Trash2, Upload } from "lucide-react";
+import {
+  Download,
+  FolderOpen,
+  HelpCircle,
+  Moon,
+  Pencil,
+  Plus,
+  Sparkles,
+  Sun,
+  Trash2,
+  Upload
+} from "lucide-react";
 import { HelpModal } from "./HelpModal";
 import { EXAMPLE_WORKSHEETS } from "../state/examples";
 
@@ -17,6 +28,7 @@ export const TopBar: React.FC = () => {
   const setActiveWorkspace = useAppStore((s) => s.setActiveWorkspace);
   const addWorkspace = useAppStore((s) => s.addWorkspace);
   const renameWorkspace = useAppStore((s) => s.renameWorkspace);
+  const setWorkspaceFolder = useAppStore((s) => s.setWorkspaceFolder);
   const deleteWorkspace = useAppStore((s) => s.deleteWorkspace);
   const importWorkspace = useAppStore((s) => s.importWorkspace);
   const [helpOpen, setHelpOpen] = useState(false);
@@ -55,6 +67,14 @@ export const TopBar: React.FC = () => {
     if (name && name.trim()) renameWorkspace(ws.id, name.trim());
   };
 
+  const onSetFolder = () => {
+    const folder = prompt(
+      "Melyik mappába kerüljön a munkalap? (üresen hagyva: mappán kívül)",
+      ws.folder ?? ""
+    );
+    if (folder !== null) setWorkspaceFolder(ws.id, folder);
+  };
+
   const onDelete = () => {
     if (confirm(`Biztosan törlöd a(z) „${ws.name}” munkalapot?`)) deleteWorkspace(ws.id);
   };
@@ -69,10 +89,23 @@ export const TopBar: React.FC = () => {
       </div>
 
       <select value={ws.id} onChange={(e) => setActiveWorkspace(e.target.value)} title="Munkalap választása">
-        {workspaces.map((w) => (
-          <option key={w.id} value={w.id}>
-            {w.name}
-          </option>
+        {workspaces
+          .filter((w) => !w.folder)
+          .map((w) => (
+            <option key={w.id} value={w.id}>
+              {w.name}
+            </option>
+          ))}
+        {[...new Set(workspaces.filter((w) => w.folder).map((w) => w.folder!))].sort().map((folder) => (
+          <optgroup key={folder} label={`📁 ${folder}`}>
+            {workspaces
+              .filter((w) => w.folder === folder)
+              .map((w) => (
+                <option key={w.id} value={w.id}>
+                  {w.name}
+                </option>
+              ))}
+          </optgroup>
         ))}
       </select>
 
@@ -81,6 +114,9 @@ export const TopBar: React.FC = () => {
       </button>
       <button className="icon-btn" onClick={onRename} title="Munkalap átnevezése">
         <Pencil size={15} />
+      </button>
+      <button className="icon-btn" onClick={onSetFolder} title="Munkalap mappába rendezése">
+        <FolderOpen size={15} />
       </button>
       <button className="icon-btn danger" onClick={onDelete} title="Munkalap törlése">
         <Trash2 size={15} />

@@ -543,6 +543,13 @@ describe("munkalap-kiértékelés", () => {
     expect((rs[3].value as { equal: boolean }).equal).toBe(true);
   });
 
+  it("#-tal kezdődő cella jegyzet, nem hiba", () => {
+    const rs = evaluateCells(["# Ez egy megjegyzés\n# több sorban"]);
+    expect(rs[0].comment).toBe(true);
+    expect(rs[0].diagnostics).toEqual([]);
+    expect(rs[0].value).toBeNull();
+  });
+
   it("hibás függőség jelzése", () => {
     const rs = evaluateCells(["X = det(Nincs)"]);
     expect(rs[0].value).toBeNull();

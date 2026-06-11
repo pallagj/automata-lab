@@ -286,6 +286,7 @@ export const CellEditor: React.FC<Props> = ({ cell, index, result }) => {
         <div className="cell-head">
           {result?.name && <span className="cell-name">{result.name}</span>}
           {result?.value && <span className="cell-kind">{valueKindLabel(result.value)}</span>}
+          {result?.comment && <span className="cell-kind">jegyzet</span>}
           {regexMatch && !result?.value && <span className="cell-kind">reguláris kifejezés</span>}
           <span className="spacer" />
           <button

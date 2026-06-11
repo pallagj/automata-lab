@@ -21,6 +21,8 @@ export interface CellResult {
   stepGroups: StepGroup[];
   isExpression: boolean;
   empty: boolean;
+  /** #-tal kezdődő cella: megjegyzés, nem értékelődik ki */
+  comment?: boolean;
 }
 
 export function evaluateCells(sources: string[]): CellResult[] {
@@ -47,6 +49,12 @@ export function evaluateCells(sources: string[]): CellResult[] {
     const trimmed = src.trim();
     if (trimmed === "") return;
     results[i].empty = false;
+
+    // #-tal kezdődő cella: jegyzet — nem értékeljük ki
+    if (trimmed.startsWith("#")) {
+      results[i].comment = true;
+      return;
+    }
 
     const def = parseDefinition(trimmed);
     if (def !== null) {

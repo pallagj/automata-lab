@@ -15,6 +15,8 @@ export interface Cell {
 export interface Workspace {
   id: string;
   name: string;
+  /** fő mappa neve a munkalap-választóban (üres/undefined = nincs mappában) */
+  folder?: string;
   cells: Cell[];
   createdAt: number;
   updatedAt: number;
@@ -46,6 +48,7 @@ interface AppState {
 
   addWorkspace: (name?: string) => void;
   renameWorkspace: (id: string, name: string) => void;
+  setWorkspaceFolder: (id: string, folder: string) => void;
   deleteWorkspace: (id: string) => void;
   importWorkspace: (ws: Workspace) => void;
 
@@ -117,6 +120,12 @@ export const useAppStore = create<AppState>()(
         set((s) => ({
           workspaces: s.workspaces.map((w) => (w.id === id ? { ...w, name, updatedAt: Date.now() } : w))
         })),
+      setWorkspaceFolder: (id, folder) =>
+        set((s) => ({
+          workspaces: s.workspaces.map((w) =>
+            w.id === id ? { ...w, folder: folder.trim() || undefined, updatedAt: Date.now() } : w
+          )
+        })),
       deleteWorkspace: (id) => {
         const rest = get().workspaces.filter((w) => w.id !== id);
         const list = rest.length > 0 ? rest : [newWorkspace("Munkalap 1")];
@@ -170,21 +179,25 @@ export const useAppStore = create<AppState>()(
         }));
       },
       removeCell: (cellId) =>
-        set((s) => ({
-          layouts: Object.fromEntries(Object.entries(s.layouts).filter(([k]) => k !== cellId)),
-          workspaces: s.workspaces.map((w) => {
-            if (w.id !== s.activeWorkspaceId) return w;
-            let cells = w.cells.filter((c) => c.id !== cellId);
-            if (cells.length === 0) cells = [{ id: uid(), source: "" }];
-            return { ...w, cells, updatedAt: Date.now() };
-          }),
-          activeCellId:
-            s.activeCellId === cellId
-              ? (s.workspaces
-                  .find((w) => w.id === s.activeWorkspaceId)
-                  ?.cells.filter((c) => c.id !== cellId)[0]?.id ?? null)
-              : s.activeCellId
-        })),
+        set((s) => {
+          const ws = s.workspaces.find((w) => w.id === s.activeWorkspaceId);
+          if (!ws) return {};
+          const idx = ws.cells.findIndex((c) => c.id === cellId);
+          let cells = ws.cells.filter((c) => c.id !== cellId);
+          if (cells.length === 0) cells = [{ id: uid(), source: "" }];
+          // mindig marad aktív cella: a törölt helyén álló (vagy az utolsó)
+          const activeCellId =
+            s.activeCellId === cellId || s.activeCellId === null
+              ? cells[Math.min(Math.max(idx, 0), cells.length - 1)].id
+              : s.activeCellId;
+          return {
+            layouts: Object.fromEntries(Object.entries(s.layouts).filter(([k]) => k !== cellId)),
+            workspaces: s.workspaces.map((w) =>
+              w.id === s.activeWorkspaceId ? { ...w, cells, updatedAt: Date.now() } : w
+            ),
+            activeCellId
+          };
+        }),
       moveCellTo: (cellId, toIndex) =>
         set((s) => ({
           workspaces: s.workspaces.map((w) => {
