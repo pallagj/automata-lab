@@ -172,7 +172,7 @@ export const FSMView: React.FC<{ fsm: FSM }> = ({ fsm }) => {
           </div>
         </div>
         <div style={{ height: 360 }}>
-          <GraphView spec={spec} onEdgeClick={stepEdge} cellId={cellId} editing={editing} />
+          <GraphView spec={spec} onEdgeClick={stepEdge} cellId={cellId} editing={editing} exportName={fsm.name} />
         </div>
       </div>
 

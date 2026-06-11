@@ -1,6 +1,10 @@
 import dagre from "@dagrejs/dagre";
 import React, { useEffect, useMemo, useRef, useState } from "react";
+import { Check, Copy, Download, FileImage, FileType } from "lucide-react";
 import { useAppStore } from "../../state/store";
+import { GraphEditing, suggestStateName } from "./editing";
+import { EdgeDialog, StateDialog } from "./GraphDialogs";
+import { buildStandaloneSVG, downloadFile, svgToPng, toTikz } from "./exporters";
 import "./graph.css";
 
 export interface GraphNode {
@@ -25,13 +29,6 @@ export interface GraphSpec {
   edges: GraphEdge[];
 }
 
-/** Vizuális szerkesztés visszahívásai — csak definíció-cellákra adott. */
-export interface GraphEditing {
-  addState: (x: number, y: number) => void;
-  connect: (from: string, to: string) => void;
-  editEdge: (edge: GraphEdge) => void;
-}
-
 interface Props {
   spec: GraphSpec;
   onEdgeClick?: (edge: GraphEdge) => void;
@@ -39,7 +36,13 @@ interface Props {
   /** pozíció-rögzítés kulcsa (cella) — ha van, az állapotok húzhatók */
   cellId?: string | null;
   editing?: GraphEditing | null;
+  /** export-fájlnév alapja */
+  exportName?: string;
 }
+
+type DialogState =
+  | { t: "state"; name: string | null; x: number; y: number }
+  | { t: "edge"; from: string; to: string };
 
 interface LaidOutNode extends GraphNode {
   x: number;
@@ -149,7 +152,7 @@ function layout(
   return { nodes, edges, bounds: [minX, minY, maxX - minX, maxY - minY] };
 }
 
-export const GraphView: React.FC<Props> = ({ spec, onEdgeClick, className, cellId, editing }) => {
+export const GraphView: React.FC<Props> = ({ spec, onEdgeClick, className, cellId, editing, exportName }) => {
   const savedPos = useAppStore((s) => (cellId ? s.layouts[cellId] : undefined));
   const setNodePos = useAppStore((s) => s.setNodePos);
 
@@ -170,6 +173,9 @@ export const GraphView: React.FC<Props> = ({ spec, onEdgeClick, className, cellI
   const connectRef = useRef<{ from: string } | null>(null);
   const [connectLine, setConnectLine] = useState<{ x1: number; y1: number; x2: number; y2: number } | null>(null);
   const [connectTarget, setConnectTarget] = useState<string | null>(null);
+  const [dialog, setDialog] = useState<DialogState | null>(null);
+  const [exportOpen, setExportOpen] = useState(false);
+  const [copied, setCopied] = useState(false);
 
   // csak a gráf szerkezetének változásakor illesztünk újra (mozgatáskor nem)
   const structKey = spec.nodes
@@ -221,7 +227,8 @@ export const GraphView: React.FC<Props> = ({ spec, onEdgeClick, className, cellI
   };
 
   const onPointerDown = (e: React.PointerEvent) => {
-    if ((e.target as Element).closest(".graph-edge-hit")) return;
+    // élre kattintáskor nem indul pan, hogy a kattintás megbízhatóan célba érjen
+    if ((e.target as Element).closest(".graph-edge")) return;
     dragRef.current = { x: e.clientX, y: e.clientY, view: vb };
     (e.currentTarget as Element).setPointerCapture(e.pointerId);
   };
@@ -278,6 +285,9 @@ export const GraphView: React.FC<Props> = ({ spec, onEdgeClick, className, cellI
       if (d.moved && cellId) {
         const [mx, my] = clientToView(e.clientX, e.clientY);
         setNodePos(cellId, d.id, mx + d.dx, my + d.dy);
+      } else if (!d.moved && editing) {
+        // kattintás (húzás nélkül) → állapot-szerkesztő dialógus
+        setDialog({ t: "state", name: d.id, x: 0, y: 0 });
       }
       setLivePos(null);
       return;
@@ -289,7 +299,7 @@ export const GraphView: React.FC<Props> = ({ spec, onEdgeClick, className, cellI
       setConnectTarget(null);
       const [mx, my] = clientToView(e.clientX, e.clientY);
       const target = findTarget(mx, my);
-      if (target && editing) editing.connect(from, target.id);
+      if (target && editing) setDialog({ t: "edge", from, to: target.id });
       return;
     }
     dragRef.current = null;
@@ -300,10 +310,44 @@ export const GraphView: React.FC<Props> = ({ spec, onEdgeClick, className, cellI
     if (editing && !el.closest(".graph-node") && !el.closest(".graph-edge")) {
       const [x, y] = clientToView(e.clientX, e.clientY);
       freezeView();
-      editing.addState(x, y);
+      setDialog({ t: "state", name: null, x, y });
       return;
     }
     setView(null);
+  };
+
+  /* ---- export ---- */
+  const exportBase = exportName?.trim() || "automata";
+  const exportBg = () =>
+    getComputedStyle(svgRef.current!.parentElement!).backgroundColor || "#ffffff";
+
+  const exportSVGText = () => buildStandaloneSVG(svgRef.current!, bounds, exportBg());
+
+  const onExportSVG = () => {
+    downloadFile(`${exportBase}.svg`, "image/svg+xml", exportSVGText());
+    setExportOpen(false);
+  };
+  const onExportPNG = async () => {
+    const blob = await svgToPng(exportSVGText(), bounds[2] + 20, bounds[3] + 20);
+    downloadFile(`${exportBase}.png`, "image/png", blob);
+    setExportOpen(false);
+  };
+  const tikzText = () =>
+    toTikz(
+      nodes.map((n) => ({ id: n.id, label: n.label, start: n.start, accept: n.accept, x: n.x, y: n.y })),
+      edges.map((e) => ({ from: e.from, to: e.to, label: e.label }))
+    );
+  const onExportTikz = () => {
+    downloadFile(`${exportBase}.tex`, "text/x-tex", tikzText());
+    setExportOpen(false);
+  };
+  const onCopyTikz = async () => {
+    await navigator.clipboard.writeText(tikzText());
+    setCopied(true);
+    setTimeout(() => {
+      setCopied(false);
+      setExportOpen(false);
+    }, 1200);
   };
 
   return (
@@ -331,11 +375,27 @@ export const GraphView: React.FC<Props> = ({ spec, onEdgeClick, className, cellI
         {edges.map((e) => (
           <g
             key={e.id}
-            className={`graph-edge ${e.active ? "active" : ""} ${e.clickable ? "clickable" : ""}`}
-            onClick={() => e.clickable && onEdgeClick?.(e)}
+            className={`graph-edge ${e.active ? "active" : ""} ${e.clickable ? "clickable" : ""} ${editing ? "editable" : ""}`}
+            onClick={() => {
+              if (e.clickable) onEdgeClick?.(e);
+              else if (editing) setDialog({ t: "edge", from: e.from, to: e.to });
+            }}
           >
             <path d={e.path} className="graph-edge-hit" fill="none" />
             <path d={e.path} className="graph-edge-line" fill="none" markerEnd={e.active ? "url(#arrow-active)" : "url(#arrow)"} />
+            {editing && (
+              <rect
+                x={e.labelX - (e.label.length * 7.2) / 2 - 8}
+                y={e.labelY - 15}
+                width={e.label.length * 7.2 + 16}
+                height={22}
+                className="graph-label-hit"
+                onClick={(ev) => {
+                  ev.stopPropagation();
+                  setDialog({ t: "edge", from: e.from, to: e.to });
+                }}
+              />
+            )}
             <text
               x={e.labelX}
               y={e.labelY}
@@ -344,7 +404,7 @@ export const GraphView: React.FC<Props> = ({ spec, onEdgeClick, className, cellI
               onClick={(ev) => {
                 if (editing) {
                   ev.stopPropagation();
-                  editing.editEdge(e);
+                  setDialog({ t: "edge", from: e.from, to: e.to });
                 }
               }}
             >
@@ -409,14 +469,74 @@ export const GraphView: React.FC<Props> = ({ spec, onEdgeClick, className, cellI
           </g>
         ))}
       </svg>
-      <button className="graph-fit" title="Nézet visszaállítása" onClick={() => setView(null)}>
-        ⤢
-      </button>
+
+      <div className="graph-tools">
+        <div className="menu-anchor">
+          <button
+            className="graph-fit"
+            title="Exportálás — SVG / PNG / LaTeX (TikZ)"
+            onClick={() => setExportOpen((o) => !o)}
+          >
+            <Download size={15} />
+          </button>
+          {exportOpen && (
+            <div className="graph-export-menu" onMouseLeave={() => setExportOpen(false)}>
+              <button onClick={onExportSVG}>
+                <FileImage size={14} /> SVG letöltése
+              </button>
+              <button onClick={onExportPNG}>
+                <FileImage size={14} /> PNG letöltése
+              </button>
+              <button onClick={onExportTikz}>
+                <FileType size={14} /> LaTeX (TikZ) letöltése
+              </button>
+              <button onClick={onCopyTikz}>
+                {copied ? <Check size={14} /> : <Copy size={14} />}
+                {copied ? "Másolva ✓" : "LaTeX (TikZ) másolása"}
+              </button>
+            </div>
+          )}
+        </div>
+        <button className="graph-fit" title="Nézet visszaállítása" onClick={() => setView(null)}>
+          ⤢
+        </button>
+      </div>
+
       {editing && (
         <div className="graph-hint">
-          dupla katt: új állapot · állapot húzása: áthelyezés · a széléről (gyűrű / ▸ pont) húzva:
-          átmenet · címkére katt: szerkesztés/törlés
+          dupla katt: új állapot · kattintás: állapot szerkesztése · húzás: áthelyezés · a széléről
+          (gyűrű / ▸ pont) húzva: átmenet · él címkéjére katt: átmenetek szerkesztése
         </div>
+      )}
+
+      {dialog?.t === "state" && editing && (
+        <StateDialog
+          mode={dialog.name ? "edit" : "new"}
+          initial={
+            dialog.name
+              ? editing.getState(dialog.name)
+              : {
+                  name: suggestStateName(new Set(editing.states)),
+                  isInit: editing.states.length === 0,
+                  isAccept: false
+                }
+          }
+          onSave={(p) =>
+            dialog.name ? editing.updateState(dialog.name, p) : editing.addState(p, dialog.x, dialog.y)
+          }
+          onDelete={dialog.name ? () => editing.deleteState(dialog.name!) : undefined}
+          onClose={() => setDialog(null)}
+        />
+      )}
+      {dialog?.t === "edge" && editing && (
+        <EdgeDialog
+          kind={editing.kind}
+          from={dialog.from}
+          to={dialog.to}
+          initial={editing.getEdge(dialog.from, dialog.to)}
+          onSave={(m) => editing.setEdge(dialog.from, dialog.to, m)}
+          onClose={() => setDialog(null)}
+        />
       )}
     </div>
   );

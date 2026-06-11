@@ -220,10 +220,20 @@
   max-width: calc(100% - 70px);
 }
 
-.graph-fit {
+.graph-tools {
   position: absolute;
   right: 10px;
   bottom: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.graph-tools .menu-anchor {
+  position: relative;
+}
+
+.graph-fit {
   width: 34px;
   height: 34px;
   border-radius: 10px;
@@ -232,9 +242,57 @@
   color: var(--text-soft);
   font-size: 16px;
   cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .graph-fit:hover {
   color: var(--text);
   border-color: var(--accent);
+}
+
+.graph-export-menu {
+  position: absolute;
+  right: 40px;
+  bottom: 0;
+  width: 215px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow);
+  padding: 5px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  z-index: 30;
+}
+
+.graph-export-menu button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: none;
+  border: none;
+  color: var(--text);
+  font-size: 13px;
+  text-align: left;
+  padding: 7px 9px;
+  border-radius: 7px;
+  cursor: pointer;
+}
+
+.graph-export-menu button:hover {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+/* nagyobb találati felület az él címkéjén */
+.graph-label-hit {
+  fill: transparent;
+  cursor: pointer;
+}
+
+.graph-edge.editable .graph-edge-hit {
+  cursor: pointer;
 }

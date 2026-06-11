@@ -6,13 +6,46 @@ import {
   parseEntityDraft,
   serializeEntityDraft
 } from "../editor/EntityForm";
-import { GraphEdge, GraphEditing } from "./GraphView";
 
 /**
- * Vizuális gráf-szerkesztés bekötése: az aktív cella YAML-definícióját
- * módosítja (állapot felvétele, átmenet húzása, címke átírása/törlése),
+ * Vizuális gráf-szerkesztés: az aktív cella YAML-definícióját módosítja
+ * strukturált műveletekkel (állapot/átmenet hozzáadás, átírás, törlés),
  * így az űrlap-, a kód- és a gráfnézet mindig szinkronban marad.
  */
+
+export interface StatePatch {
+  name: string;
+  isInit: boolean;
+  isAccept: boolean;
+}
+
+/**
+ * Egy átmenet „középrésze” mezőkre bontva:
+ *  - fsm: [jel]
+ *  - pda: [olvasott jel, verem teteje (le), verembe (fel)]
+ *  - tm:  [olvas, ír, mozgás (> < =)]
+ */
+export type EdgeMiddle = string[];
+
+export interface GraphEditing {
+  kind: "fsm" | "pda" | "tm";
+  states: string[];
+  getState(name: string): StatePatch;
+  /** hiba esetén hibaüzenettel tér vissza */
+  addState(p: StatePatch, x: number, y: number): string | null;
+  updateState(oldName: string, p: StatePatch): string | null;
+  deleteState(name: string): void;
+  getEdge(from: string, to: string): EdgeMiddle[];
+  /** üres lista = az összes from→to átmenet törlése */
+  setEdge(from: string, to: string, middles: EdgeMiddle[]): void;
+}
+
+const list = (s: string) => s.split(",").map((x) => x.trim()).filter(Boolean);
+
+const splitSlash = (s: string): [string, string] => {
+  const i = s.indexOf("/");
+  return i >= 0 ? [s.slice(0, i), s.slice(i + 1)] : [s, ""];
+};
 
 function suggestStateName(used: Set<string>): string {
   if (used.size > 0 && [...used].every((s) => /^q\d+$/.test(s))) {
@@ -26,13 +59,7 @@ function suggestStateName(used: Set<string>): string {
   return `s${i}`;
 }
 
-/** a kérdés szövege és példa az átmenet „közepére” géptípusonként */
-const MIDDLE_HINT: Record<EntityKind, [string, string]> = {
-  fsm: ["Átmenet jele(i), vesszővel elválasztva (ε: $):", "a"],
-  pda: ["Átmenet: „jel veremtető/verembe” — pl. a Z/AZ (ε: $); többet pontosvesszővel:", "a Z/AZ"],
-  tm: ["Átmenet: „olvas/ír mozgás” — pl. a/b > (mozgás: > < =); többet pontosvesszővel:", "a/a >"],
-  grammar: ["", ""]
-};
+export { suggestStateName };
 
 export function useGraphEditing(kind: EntityKind): {
   cellId: string | null;
@@ -51,62 +78,113 @@ export function useGraphEditing(kind: EntityKind): {
   }
 
   const commit = (d: EntityDraft) => setCellSource(cell.id, serializeEntityDraft(d));
-  const states = draft.states.split(",").map((s) => s.trim()).filter(Boolean);
-  const middleLen = kind === "fsm" ? 1 : 2;
-  const sep = kind === "fsm" ? "," : ";";
+  const states = list(draft.states);
+  const accept = list(draft.accept);
+  const init = draft.init.trim();
+  const lastIdx = kind === "fsm" ? 2 : 3;
 
-  /** „közép”-szöveg(ek) → teljes átmenet-sorok */
-  const middlesToRows = (from: string, to: string, text: string): string[][] =>
-    text
-      .split(sep)
-      .map((s) => s.trim())
-      .filter(Boolean)
-      .map((mid) => {
-        const parts = kind === "fsm" ? [mid] : mid.split(/\s+/);
-        while (parts.length < middleLen) parts.push("");
-        return [from, ...parts.slice(0, middleLen), to];
-      });
+  const middleOf = (r: string[]): EdgeMiddle => {
+    if (kind === "fsm") return [r[1]];
+    if (kind === "pda") return [r[1], ...splitSlash(r[2])];
+    return [...splitSlash(r[1]), r[2]]; // tm
+  };
+
+  const rowOf = (from: string, to: string, m: EdgeMiddle): string[] => {
+    if (kind === "fsm") return [from, m[0], to];
+    if (kind === "pda") return [from, m[0], `${m[1]}/${m[2]}`, to];
+    return [from, `${m[0]}/${m[1]}`, m[2], to]; // tm
+  };
+
+  /** közös állapot-mező frissítés név/init/accept alapján */
+  const applyState = (
+    d: EntityDraft,
+    nextStates: string[],
+    nextInit: string,
+    nextAccept: string[]
+  ): EntityDraft => ({
+    ...d,
+    states: nextStates.join(", "),
+    init: nextInit,
+    accept: nextAccept.join(", ")
+  });
+
+  const validateName = (name: string, ignore?: string): string | null => {
+    if (name === "") return "Az állapot neve nem lehet üres.";
+    if (/[\s,]/.test(name)) return "A névben ne legyen szóköz vagy vessző.";
+    if (states.includes(name) && name !== ignore) return `Már létezik „${name}” nevű állapot.`;
+    return null;
+  };
 
   const editing: GraphEditing = {
-    addState: (x, y) => {
-      const used = new Set(states);
-      const name = prompt("Új állapot neve:", suggestStateName(used))?.trim();
-      if (!name) return;
-      if (used.has(name)) {
-        alert(`Már létezik „${name}” nevű állapot.`);
-        return;
-      }
-      setNodePos(cell.id, name, x, y);
-      commit({
-        ...draft,
-        states: states.length === 0 ? name : `${draft.states.trim()}, ${name}`,
-        init: draft.init.trim() === "" ? name : draft.init
+    kind,
+    states,
+
+    getState: (name) => ({
+      name,
+      isInit: init === name,
+      isAccept: accept.includes(name)
+    }),
+
+    addState: (p, x, y) => {
+      const err = validateName(p.name);
+      if (err) return err;
+      setNodePos(cell.id, p.name, x, y);
+      commit(
+        applyState(
+          draft,
+          [...states, p.name],
+          p.isInit || init === "" ? p.name : init,
+          p.isAccept ? [...accept, p.name] : accept
+        )
+      );
+      return null;
+    },
+
+    updateState: (oldName, p) => {
+      const err = validateName(p.name, oldName);
+      if (err) return err;
+      const renamed = (s: string) => (s === oldName ? p.name : s);
+      const nextStates = states.map(renamed);
+      let nextInit = renamed(init);
+      if (p.isInit) nextInit = p.name;
+      // a kezdőállapot kipipálását nem engedjük el némán: marad, ami volt
+      let nextAccept = accept.map(renamed);
+      nextAccept = p.isAccept
+        ? nextAccept.includes(p.name)
+          ? nextAccept
+          : [...nextAccept, p.name]
+        : nextAccept.filter((s) => s !== p.name);
+      const rows = draft.rows.map((r) => {
+        const c = [...r];
+        if (c[0] === oldName) c[0] = p.name;
+        if (c[lastIdx] === oldName) c[lastIdx] = p.name;
+        return c;
       });
+      if (oldName !== p.name) {
+        const pos = useAppStore.getState().layouts[cell.id]?.[oldName];
+        if (pos) setNodePos(cell.id, p.name, pos.x, pos.y);
+      }
+      commit({ ...applyState(draft, nextStates, nextInit, nextAccept), rows });
+      return null;
     },
 
-    connect: (from, to) => {
-      const [hint, example] = MIDDLE_HINT[kind];
-      const text = prompt(hint, example);
-      if (text === null || text.trim() === "") return;
-      commit({ ...draft, rows: [...draft.rows, ...middlesToRows(from, to, text)] });
+    deleteState: (name) => {
+      const nextStates = states.filter((s) => s !== name);
+      const nextInit = init === name ? (nextStates[0] ?? "") : init;
+      const nextAccept = accept.filter((s) => s !== name);
+      const rows = draft.rows.filter((r) => r[0] !== name && r[lastIdx] !== name);
+      commit({ ...applyState(draft, nextStates, nextInit, nextAccept), rows });
     },
 
-    editEdge: (edge: GraphEdge) => {
-      const last = middleLen + 1;
-      const matches = draft.rows
-        .map((r, i) => ({ r, i }))
-        .filter(({ r }) => r[0] === edge.from && r[last] === edge.to);
-      if (matches.length === 0) return;
-      const current = matches
-        .map(({ r }) => r.slice(1, last).join(" "))
-        .join(`${sep} `);
-      const [hint] = MIDDLE_HINT[kind];
-      const text = prompt(`${hint}\n(Üresre törölve az átmenet törlődik.)`, current);
-      if (text === null) return;
-      const keep = draft.rows.filter((_, i) => !matches.some((m) => m.i === i));
-      const rows =
-        text.trim() === "" ? keep : [...keep, ...middlesToRows(edge.from, edge.to, text)];
-      commit({ ...draft, rows });
+    getEdge: (from, to) =>
+      draft.rows.filter((r) => r[0] === from && r[lastIdx] === to).map(middleOf),
+
+    setEdge: (from, to, middles) => {
+      const keep = draft.rows.filter((r) => !(r[0] === from && r[lastIdx] === to));
+      const added = middles
+        .filter((m) => m.some((f) => f.trim() !== ""))
+        .map((m) => rowOf(from, to, m.map((f) => f.trim())));
+      commit({ ...draft, rows: [...keep, ...added] });
     }
   };
 

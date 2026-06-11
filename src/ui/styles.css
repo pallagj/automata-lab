@@ -1341,6 +1341,159 @@ table.t td.state-cell.accept {
   font-size: 16px;
 }
 
+/* ====== Gráf-szerkesztő dialógusok ====== */
+
+.modal.gdialog {
+  width: min(460px, 94vw);
+  max-height: 86vh;
+  padding: 16px 18px;
+}
+
+.gd-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.gd-head h2 {
+  flex: 1;
+  margin: 0;
+  font-size: 17px;
+}
+
+.gd-body {
+  display: flex;
+  flex-direction: column;
+  gap: 11px;
+  margin: 14px 0 4px;
+}
+
+.gd-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 12px;
+  font-weight: 650;
+  color: var(--muted);
+}
+
+.gd-field input,
+.gd-edge-grid input,
+.gd-edge-grid select {
+  background: var(--bg-soft);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-size: 13.5px;
+  padding: 7px 10px;
+  min-width: 0;
+  width: 100%;
+}
+
+.gd-field input:focus,
+.gd-edge-grid input:focus,
+.gd-edge-grid select:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.gd-check {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.gd-check input {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+
+.gd-note {
+  color: var(--muted);
+  font-size: 12px;
+  font-style: normal;
+}
+
+.gd-note-row {
+  color: var(--warning);
+  font-size: 12.5px;
+}
+
+.gd-error {
+  color: var(--danger);
+  background: var(--danger-soft);
+  border-radius: 8px;
+  padding: 8px 11px;
+  font-size: 13px;
+}
+
+.gd-edge-grid {
+  display: grid;
+  gap: 6px;
+  align-items: center;
+}
+
+.gd-col-label {
+  font-size: 10.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+}
+
+.gd-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.gd-actions .spacer {
+  flex: 1;
+}
+
+.gd-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid var(--border);
+  background: var(--panel-2);
+  color: var(--text);
+  font-size: 13.5px;
+  font-weight: 600;
+  border-radius: 9px;
+  padding: 7px 14px;
+  cursor: pointer;
+}
+
+.gd-btn:hover {
+  border-color: var(--accent);
+}
+
+.gd-btn.primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
+.gd-btn.primary:hover {
+  filter: brightness(1.1);
+}
+
+.gd-btn.danger {
+  color: var(--danger);
+}
+
+.gd-btn.danger:hover {
+  border-color: var(--danger);
+  background: var(--danger-soft);
+}
+
 /* ====== Help modal ====== */
 
 .modal-back {

@@ -103,7 +103,7 @@ export const PDAView: React.FC<{ pda: PDA }> = ({ pda }) => {
           </div>
         </div>
         <div style={{ height: 320 }}>
-          <GraphView spec={spec} cellId={cellId} editing={editing} />
+          <GraphView spec={spec} cellId={cellId} editing={editing} exportName={pda.name} />
         </div>
       </div>
 

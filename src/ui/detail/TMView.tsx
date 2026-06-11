@@ -132,7 +132,7 @@ export const TMView: React.FC<{ tm: TM }> = ({ tm }) => {
           </div>
         </div>
         <div style={{ height: 320 }}>
-          <GraphView spec={spec} onEdgeClick={(e) => step(e)} cellId={cellId} editing={editing} />
+          <GraphView spec={spec} onEdgeClick={(e) => step(e)} cellId={cellId} editing={editing} exportName={tm.name} />
         </div>
       </div>
 
