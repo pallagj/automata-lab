@@ -376,10 +376,7 @@ export const GraphView: React.FC<Props> = ({ spec, onEdgeClick, className, cellI
           <g
             key={e.id}
             className={`graph-edge ${e.active ? "active" : ""} ${e.clickable ? "clickable" : ""} ${editing ? "editable" : ""}`}
-            onClick={() => {
-              if (e.clickable) onEdgeClick?.(e);
-              else if (editing) setDialog({ t: "edge", from: e.from, to: e.to });
-            }}
+            onClick={() => e.clickable && onEdgeClick?.(e)}
           >
             <path d={e.path} className="graph-edge-hit" fill="none" />
             <path d={e.path} className="graph-edge-line" fill="none" markerEnd={e.active ? "url(#arrow-active)" : "url(#arrow)"} />

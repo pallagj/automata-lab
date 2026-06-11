@@ -287,12 +287,15 @@
   color: var(--accent);
 }
 
-/* nagyobb találati felület az él címkéjén */
+/* nagyobb találati felület az él címkéjén — csak a címke szerkeszt */
 .graph-label-hit {
   fill: transparent;
   cursor: pointer;
 }
 
-.graph-edge.editable .graph-edge-hit {
-  cursor: pointer;
+/* a címke fölött jelezzük, hogy az szerkeszthető */
+.graph-edge.editable .graph-label-hit:hover ~ .graph-edge-label,
+.graph-edge.editable .graph-edge-label.editable:hover {
+  fill: var(--accent);
+  font-weight: 700;
 }
