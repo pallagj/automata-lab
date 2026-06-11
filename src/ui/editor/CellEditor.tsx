@@ -101,7 +101,7 @@ export const CellEditor: React.FC<Props> = ({ cell, index, result }) => {
 
   // kifejezés-cella eredménye kibontható szerkeszthető YAML-lá
   const expandable =
-    result?.isExpression && result.value && result.value.kind !== "verdict" && result.value.kind !== "regex"
+    result?.isExpression && result.value && (result.value.kind === "machine" || result.value.kind === "grammar")
       ? result.value
       : null;
 

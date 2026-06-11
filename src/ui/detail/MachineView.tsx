@@ -68,7 +68,7 @@ export const MachineView: React.FC<{ machine: Machine; stepGroups?: StepGroup[] 
   machine: m,
   stepGroups
 }) => {
-  const { cellId, editing } = useGraphEditing("machine");
+  const { cellId, editing } = useGraphEditing();
   const caps = useMemo(() => machineCaps(m), [m]);
   const analysis = useMemo(() => analyzeMachine(m), [m]);
   const head = hasInputHead(m);

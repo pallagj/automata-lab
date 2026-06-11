@@ -19,8 +19,14 @@ export const HelpModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
           transzformálhatók. Minden offline működik, a munkalapok automatikusan mentődnek a böngészőbe.
         </p>
 
-        <h3>Véges automata</h3>
-        <pre>{`StateMachine:
+        <h3>Gépek — egyetlen modell</h3>
+        <p>
+          Minden gép ugyanazzal a <code>Machine:</code> kulccsal készül: véges vezérlő + tetszőleges
+          tárolók. <b>A fajtáját a konfiguráció dönti el</b> — tároló nélkül véges automata, egy
+          veremmel veremautomata, egy szalaggal (amelyre a bemenet kerül) Turing-gép, más
+          kombinációval általános gép. A felület felismeri és ennek megfelelően nevezi el.
+        </p>
+        <pre>{`Machine:               # véges automata: nincs tároló
   name: M1
   charset: a, b
   states: S, A, F
@@ -82,51 +88,39 @@ export const HelpModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
           </tbody>
         </table>
 
-        <h3>Veremautomata</h3>
-        <pre>{`PushdownMachine:
+        <h3>Tárolók: verem, sor, szalag</h3>
+        <pre>{`Machine:               # veremautomata: egy verem
   name: AnBn
   charset: a, b
   states: q0, q1, q2
   init: q0
-  initStack: Z
-  accept: q2          # vagy acceptMode: emptyStack
-  transitions:
-    - q0 a Z/AZ q0    # a beolvasása: Z helyett AZ a verembe
-    - q0 b A/$ q1     # $ = nem ír semmit (ε)
-    - q1 $ Z/Z q2     # ε-lépés`}</pre>
+  accept: q2           # vagy acceptMode: emptyStorages
+  storages:
+    verem: stack       # a verem alapból Z-vel indul; másképp:
+  transitions:         #   verem: { type: stack, init: X }
+    - q0 a Z/AZ q0     # a beolvasása: Z helyett AZ a verembe
+    - q0 b A/$ q1      # $ = nem ír semmit (ε)
+    - q1 $ Z/Z q2      # ε-lépés
 
-        <h3>Turing-gép</h3>
-        <pre>{`TuringMachine:
+Machine:               # Turing-gép: egy szalag, rajta a bemenet
   name: T
   charset: a, b
   states: s, ok
   init: s
   accept: ok
+  input: szalag        # a bemenet erre a tárolóra kerül
+  storages:
+    szalag: tape
   transitions:
-    - s a/b > s     # a-t olvas, b-t ír, jobbra lép
-    - s _/& = ok    # _ = üres jel, & = ugyanazt írja vissza`}</pre>
-
-        <h3>Egyedi gép — tetszőleges tárolókkal</h3>
-        <pre>{`Machine:
-  name: AnBnCn
-  charset: a, b, c
-  states: qa, qb, qc, ok
-  init: qa
-  accept: ok          # vagy acceptMode: emptyStorages
-  input: head         # olvasófej (alapért.) — vagy egy tároló id-je
-  storages:           # akárhány tároló: stack / queue / tape
-    v1: stack(Z)
-    v2: stack(Z)
-  transitions:
-    - qa a $/A $/$ qa   # HONNAN BEMENET tárolónként-művelet… HOVA
-    - qc $ Z/$ Z/$ ok   # verem/sor: LE/FEL · szalag: a/b > (két elem)`}</pre>
+    - s a/b > s        # a-t olvas, b-t ír, jobbra lép
+    - s _/& = ok       # _ = üres jel, & = ugyanazt írja vissza`}</pre>
         <p>
-          A véges automata, a veremautomata és a Turing-gép mind ennek megszorított esete: az
-          automata tárolómentes, a veremautomata egy <code>stack</code>-et kap, a Turing-gép egy{" "}
-          <code>tape</code>-et, amelyre a bemenet kerül (<code>input: szalag</code>). Két veremmel
-          már Turing-erejű gép építhető — a fenti példa az <code>aⁿbⁿcⁿ</code> nyelvet ismeri fel,
-          ami veremautomatával nem lehetséges. Az automata-műveletek (<code>det</code>,{" "}
-          <code>min</code>…) csak tárolómentes gépre alkalmazhatók — az alkalmazás megmondja, miért.
+          Az átmenet-sor: <code>HONNAN [BEMENET] tárolónként-művelet… HOVA</code> — verem/sor egy
+          elem (<code>LE/FEL</code>), szalag kettő (<code>olvas/ír mozgás</code>). Akárhány tároló
+          kombinálható: két veremmel már Turing-erejű gép építhető (pl. <code>aⁿbⁿcⁿ</code>, ami
+          veremautomatával nem lehetséges), sorral (queue) sorautomata. Az automata-műveletek
+          (<code>det</code>, <code>min</code>…) csak tárolómentes gépre alkalmazhatók — az
+          alkalmazás megmondja, miért.
         </p>
 
         <h3>Nyelvtan</h3>

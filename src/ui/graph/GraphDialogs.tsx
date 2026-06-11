@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { Plus, Trash2, X } from "lucide-react";
 import { EdgeField, EdgeMiddle, StatePatch } from "./editing";
+import { MoveSelect } from "../editor/EntityForm";
 
 /** Kidolgozott szerkesztő-dialógusok a gráfhoz (állapot / átmenet). */
 
@@ -152,12 +153,7 @@ export const EdgeDialog: React.FC<EdgeDialogProps> = ({ fields, from, to, initia
             <React.Fragment key={i}>
               {row.map((val, j) =>
                 fields[j]?.widget === "move" ? (
-                  <select key={j} value={val} onChange={(e) => setCell(i, j, e.target.value)}>
-                    {![">", "<", "="].includes(val) && <option value={val} hidden />}
-                    <option value=">">→ jobbra</option>
-                    <option value="<">← balra</option>
-                    <option value="=">• helyben</option>
-                  </select>
+                  <MoveSelect key={j} value={val} onChange={(v) => setCell(i, j, v)} />
                 ) : (
                   <input
                     key={j}

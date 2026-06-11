@@ -3,7 +3,6 @@ import { activeWorkspace, useAppStore } from "../../state/store";
 import {
   draftStorages,
   EntityDraft,
-  EntityKind,
   parseEntityDraft,
   serializeEntityDraft
 } from "../editor/EntityForm";
@@ -32,7 +31,6 @@ export interface EdgeField {
 export type EdgeMiddle = string[];
 
 export interface GraphEditing {
-  kind: "fsm" | "machine";
   states: string[];
   /** az átmenet-dialógus mezői — a gép tárolóiból generálva */
   edgeFields: EdgeField[];
@@ -68,8 +66,7 @@ function suggestStateName(used: Set<string>): string {
 export { suggestStateName };
 
 /** A dialógus mezői: bemeneti jel + tárolónként a műveleteik részmezői. */
-export function edgeFieldsFor(kind: EntityKind, hasHead: boolean, storages: StorageSpec[]): EdgeField[] {
-  if (kind === "fsm") return [{ label: "jel (ε: $)", placeholder: "a", widget: "text" }];
+export function edgeFieldsFor(hasHead: boolean, storages: StorageSpec[]): EdgeField[] {
   const fields: EdgeField[] = [];
   if (hasHead) fields.push({ label: "olvasott jel (ε: $)", placeholder: "a", widget: "text" });
   for (const s of storages) {
@@ -89,8 +86,7 @@ export function edgeFieldsFor(kind: EntityKind, hasHead: boolean, storages: Stor
 }
 
 /** sor-tokenek (from/to nélkül) → dialógus-mezőértékek */
-export function tokensToFields(kind: EntityKind, hasHead: boolean, storages: StorageSpec[], tokens: string[]): string[] {
-  if (kind === "fsm") return [tokens[0] ?? ""];
+export function tokensToFields(hasHead: boolean, storages: StorageSpec[], tokens: string[]): string[] {
   const out: string[] = [];
   let i = 0;
   if (hasHead) out.push(tokens[i++] ?? "");
@@ -107,8 +103,7 @@ export function tokensToFields(kind: EntityKind, hasHead: boolean, storages: Sto
 }
 
 /** dialógus-mezőértékek → sor-tokenek (from/to nélkül) */
-export function fieldsToTokens(kind: EntityKind, hasHead: boolean, storages: StorageSpec[], fields: string[]): string[] {
-  if (kind === "fsm") return [fields[0] ?? ""];
+export function fieldsToTokens(hasHead: boolean, storages: StorageSpec[], fields: string[]): string[] {
   const out: string[] = [];
   let i = 0;
   if (hasHead) out.push(fields[i++] ?? "");
@@ -126,7 +121,7 @@ export function fieldsToTokens(kind: EntityKind, hasHead: boolean, storages: Sto
   return out;
 }
 
-export function useGraphEditing(kind: "fsm" | "machine"): {
+export function useGraphEditing(): {
   cellId: string | null;
   editing: GraphEditing | null;
 } {
@@ -138,32 +133,22 @@ export function useGraphEditing(kind: "fsm" | "machine"): {
   const cell = ws.cells.find((c) => c.id === activeCellId) ?? null;
   const draft = useMemo(() => (cell ? parseEntityDraft(cell.source) : null), [cell?.source]);
 
-  // a tárolómentes Machine-cella az automata-nézetben (FSMView) jelenik meg,
-  // a gráf-szerkesztése mégis a saját (machine) sorformátumával történik
-  const fsmLikeMachine =
-    kind === "fsm" &&
-    draft?.kind === "machine" &&
-    draft.input === "head" &&
-    draftStorages(draft).length === 0;
-
-  if (!cell || !draft || (draft.kind !== kind && !fsmLikeMachine)) {
+  if (!cell || !draft || draft.kind !== "machine") {
     return { cellId: activeCellId, editing: null };
   }
 
-  /** a sor-tokenek értelmezéséhez a draft tényleges fajtája számít */
-  const dk = draft.kind;
   const storages = draftStorages(draft);
-  const hasHead = dk === "fsm" || draft.input === "head";
+  const hasHead = draft.input === "head";
 
   const commit = (d: EntityDraft) => setCellSource(cell.id, serializeEntityDraft(d));
   const states = list(draft.states);
   const accept = list(draft.accept);
   const init = draft.init.trim();
 
-  const middleOf = (r: string[]): EdgeMiddle => tokensToFields(dk, hasHead, storages, r.slice(1, -1));
+  const middleOf = (r: string[]): EdgeMiddle => tokensToFields(hasHead, storages, r.slice(1, -1));
   const rowOf = (from: string, to: string, m: EdgeMiddle): string[] => [
     from,
-    ...fieldsToTokens(dk, hasHead, storages, m),
+    ...fieldsToTokens(hasHead, storages, m),
     to
   ];
 
@@ -190,9 +175,8 @@ export function useGraphEditing(kind: "fsm" | "machine"): {
   const lastIdx = (r: string[]) => r.length - 1;
 
   const editing: GraphEditing = {
-    kind,
     states,
-    edgeFields: edgeFieldsFor(dk, hasHead, storages),
+    edgeFields: edgeFieldsFor(hasHead, storages),
 
     getState: (name) => ({
       name,

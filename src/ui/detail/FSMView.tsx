@@ -28,7 +28,7 @@ import {
 } from "lucide-react";
 
 export const FSMView: React.FC<{ fsm: FSM; stepGroups?: StepGroup[] }> = ({ fsm, stepGroups }) => {
-  const { cellId, editing } = useGraphEditing("fsm");
+  const { cellId, editing } = useGraphEditing();
   const analysis = useMemo(() => analyzeFSM(fsm), [fsm]);
   const tm = useMemo(() => transMap(fsm), [fsm]);
 

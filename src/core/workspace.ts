@@ -72,7 +72,7 @@ export function evaluateCells(sources: string[]): CellResult[] {
     results[i].diagnostics.push(
       err(
         "Értelmezhetetlen cella",
-        "A cella vagy YAML-definíció (StateMachine / PushdownMachine / TuringMachine / Machine / Grammar kulccsal), vagy kifejezés („név = kifejezés” alakban) lehet."
+        "A cella vagy YAML-definíció (Machine / Grammar kulccsal), vagy kifejezés („név = kifejezés” alakban) lehet."
       )
     );
   });

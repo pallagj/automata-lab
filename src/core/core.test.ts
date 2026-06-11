@@ -15,9 +15,9 @@ import {
   unionEpsilon
 } from "./fsm/ops";
 import { regexToNFA } from "./fsm/regex";
-import { parseFSM, parseGrammar, parsePDA, parseTM } from "./parse/definitionParser";
+import { parseGrammar, parseMachine } from "./parse/definitionParser";
 import { classify, generateWords, grammarAccepts, grammarToFSM, grammarToPDA, fsmToGrammar, removeEpsilonRules } from "./grammar/grammar";
-import { machineCaps, runMachine } from "./machine/machine";
+import { machineCaps, machineToFSM, runMachine } from "./machine/machine";
 import { evaluateCells } from "./workspace";
 import { serializeDefinition } from "./parse/serialize";
 
@@ -257,9 +257,9 @@ describe("regex", () => {
 });
 
 describe("parser", () => {
-  it("FSM helyettesítőkkel és intervallummal", () => {
-    const r = parseFSM(`
-StateMachine:
+  it("automata helyettesítőkkel és intervallummal", () => {
+    const r = parseMachine(`
+Machine:
   name: M
   charset: a, b
   states: S, A-C
@@ -274,11 +274,11 @@ StateMachine:
     expect(r.ok).toBe(true);
     expect(r.value!.states).toEqual(["S", "A", "B", "C"]);
     // wildcard: S minden szimbólumra önmagába
-    expect(acceptsFSM(r.value!, "bbaba")).toBe(true);
+    expect(runMachine(r.value!, "bbaba").verdict).toBe("accepted");
   });
   it("ismeretlen állapot hibát ad", () => {
-    const r = parseFSM(`
-StateMachine:
+    const r = parseMachine(`
+Machine:
   name: M
   charset: a
   states: S
@@ -291,8 +291,8 @@ StateMachine:
     expect(r.diagnostics[0].title).toContain("X");
   });
   it("hiányzó init hibát ad", () => {
-    const r = parseFSM(`
-StateMachine:
+    const r = parseMachine(`
+Machine:
   name: M
   charset: a
   states: S
@@ -395,14 +395,15 @@ Grammar:
 
 describe("PDA", () => {
   it("a^n b^n elfogadása", () => {
-    const p = parsePDA(`
-PushdownMachine:
+    const p = parseMachine(`
+Machine:
   name: P
   charset: a, b
   states: q0, q1, q2
   init: q0
-  initStack: Z
   accept: q2
+  storages:
+    verem: stack
   transitions:
     - q0 a Z/AZ q0
     - q0 a A/AA q0
@@ -417,23 +418,24 @@ PushdownMachine:
     expect(runMachine(p, "ba").verdict).toBe("rejected");
   });
 
-  it("preset-visszaírás: a PushdownMachine tömör formában marad", () => {
-    const p = parsePDA(`
-PushdownMachine:
+  it("visszaírás: a veremautomata-gép formátuma round-trippel", () => {
+    const p = parseMachine(`
+Machine:
   name: P
   charset: a
   states: q0, q1
   init: q0
-  initStack: Z
   accept: q1
+  storages:
+    verem: stack
   transitions:
     - q0 a Z/AZ q0
     - q0 $ Z/Z q1
 `).value!;
     const ser = serializeDefinition(p);
-    expect(ser).toContain("PushdownMachine:");
-    expect(ser).toContain("initStack: Z");
-    const back = parsePDA(ser).value!;
+    expect(ser).toContain("Machine:");
+    expect(ser).toContain("verem: stack");
+    const back = parseMachine(ser).value!;
     for (const w of ["", "a", "aa"]) {
       expect(runMachine(back, w).verdict).toBe(runMachine(p, w).verdict);
     }
@@ -460,13 +462,16 @@ Grammar:
 
 describe("Turing-gép", () => {
   it("palindróma-ellenőrző", () => {
-    const t = parseTM(`
-TuringMachine:
+    const t = parseMachine(`
+Machine:
   name: T
   charset: a, b
   states: start, haveA, haveB, matchA, matchB, back, ok
   init: start
   accept: ok
+  input: szalag
+  storages:
+    szalag: tape
   transitions:
     - start a/_ > haveA
     - start b/_ > haveB
@@ -489,22 +494,25 @@ TuringMachine:
     expect(runMachine(t, "").verdict).toBe("accepted");
   });
 
-  it("preset-visszaírás: a TuringMachine tömör formában marad", () => {
-    const t = parseTM(`
-TuringMachine:
+  it("visszaírás: a Turing-gép formátuma round-trippel", () => {
+    const t = parseMachine(`
+Machine:
   name: T
   charset: a
   states: s, ok
   init: s
   accept: ok
+  input: szalag
+  storages:
+    szalag: tape
   transitions:
     - s a/a > s
     - s _/_ = ok
 `).value!;
     const ser = serializeDefinition(t);
-    expect(ser).toContain("TuringMachine:");
+    expect(ser).toContain("Machine:");
     expect(ser).toContain("a/a > s");
-    const back = parseTM(ser).value!;
+    const back = parseMachine(ser).value!;
     expect(runMachine(back, "aaa").verdict).toBe("accepted");
   });
 });
@@ -512,7 +520,7 @@ TuringMachine:
 describe("munkalap-kiértékelés", () => {
   it("kifejezések függőségi sorrendben", () => {
     const cells = [
-      `StateMachine:
+      `Machine:
   name: M
   charset: a, b
   states: 0, 1, 2
@@ -528,9 +536,9 @@ describe("munkalap-kiértékelés", () => {
       "V = equal(M, MD)"
     ];
     const rs = evaluateCells(cells);
-    expect(rs[0].value?.kind).toBe("fsm");
-    expect(rs[1].value?.kind).toBe("fsm");
-    expect(rs[2].value?.kind).toBe("fsm");
+    expect(rs[0].value?.kind).toBe("machine");
+    expect(rs[1].value?.kind).toBe("machine");
+    expect(rs[2].value?.kind).toBe("machine");
     expect(rs[3].value?.kind).toBe("verdict");
     expect((rs[3].value as { equal: boolean }).equal).toBe(true);
   });
@@ -556,23 +564,23 @@ describe("munkalap-kiértékelés", () => {
     const rs = evaluateCells(["R = regex((ab)*+ba)", "A = toFsm(R)"]);
     expect(rs[0].value?.kind).toBe("regex");
     const m = rs[1].value;
-    expect(m?.kind).toBe("fsm");
-    expect(acceptsFSM(m as never, "abab")).toBe(true);
-    expect(acceptsFSM(m as never, "ba")).toBe(true);
-    expect(acceptsFSM(m as never, "ab")).toBe(true);
-    expect(acceptsFSM(m as never, "aab")).toBe(false);
+    expect(m?.kind).toBe("machine");
+    expect(runMachine(m as never, "abab").verdict).toBe("accepted");
+    expect(runMachine(m as never, "ba").verdict).toBe("accepted");
+    expect(runMachine(m as never, "ab").verdict).toBe("accepted");
+    expect(runMachine(m as never, "aab").verdict).toBe("rejected");
   });
 
   it("regex automatikus konverziója automata-műveletben", () => {
     const rs = evaluateCells(["R = regex(ab*)", "D = det(epsfree(R))"]);
-    expect(rs[1].value?.kind).toBe("fsm");
-    expect(acceptsFSM(rs[1].value as never, "abb")).toBe(true);
-    expect(acceptsFSM(rs[1].value as never, "ba")).toBe(false);
+    expect(rs[1].value?.kind).toBe("machine");
+    expect(runMachine(rs[1].value as never, "abb").verdict).toBe("accepted");
+    expect(runMachine(rs[1].value as never, "ba").verdict).toBe("rejected");
   });
 
   it("javítási lánc működik: min(det(epsfree(M)))", () => {
     const cells = [
-      `StateMachine:
+      `Machine:
   name: M
   charset: a
   states: S, A
@@ -587,17 +595,18 @@ describe("munkalap-kiértékelés", () => {
     const rs = evaluateCells(cells);
     expect(rs[1].value).toBeNull();
     expect(rs[1].diagnostics[0].fix).toBeDefined();
-    expect(rs[2].value?.kind).toBe("fsm");
+    expect(rs[2].value?.kind).toBe("machine");
   });
 
   it("képesség-kapu: tárolós gépre nem megy automata-művelet", () => {
     const cells = [
-      `PushdownMachine:
+      `Machine:
   name: P
   charset: a
   states: q0
   init: q0
-  initStack: Z
+  storages:
+    verem: stack
   transitions:
     - q0 a Z/Z q0`,
       "D = det(P)"
@@ -622,10 +631,10 @@ describe("munkalap-kiértékelés", () => {
       "F = toFsm(M)"
     ];
     const rs = evaluateCells(cells);
-    expect(rs[1].value?.kind).toBe("fsm");
-    expect(rs[2].value?.kind).toBe("fsm");
-    expect(acceptsFSM(rs[2].value as never, "abb")).toBe(true);
-    expect(acceptsFSM(rs[2].value as never, "b")).toBe(false);
+    expect(rs[1].value?.kind).toBe("machine");
+    expect(rs[2].value?.kind).toBe("machine");
+    expect(runMachine(rs[2].value as never, "abb").verdict).toBe("accepted");
+    expect(runMachine(rs[2].value as never, "b").verdict).toBe("rejected");
   });
 
   it("toPda eredménye veremautomata-gép, és szimulálható", () => {
@@ -649,9 +658,11 @@ describe("munkalap-kiértékelés", () => {
   it("szerializálás round-trip", () => {
     const rs = evaluateCells(["R0 = regex(ab+a)", "R = det(epsfree(toFsm(R0)))"]);
     const ser = serializeDefinition(rs[1].value as never);
-    expect(ser).toContain("StateMachine:");
-    const back = parseFSM(ser);
+    expect(ser).toContain("Machine:");
+    const back = parseMachine(ser);
     expect(back.ok).toBe(true);
-    expect(checkEquivalence(back.value!, rs[1].value as never).value!.equal).toBe(true);
+    expect(
+      checkEquivalence(machineToFSM(back.value!)!, machineToFSM(rs[1].value as never)!).value!.equal
+    ).toBe(true);
   });
 });

@@ -384,7 +384,6 @@ export function grammarToPDA(g: Grammar): OpResult<Machine> {
   const pda: Machine = {
     kind: "machine",
     name: g.name,
-    preset: "pda",
     alphabet: [...g.terminals],
     states: [q],
     start: q,

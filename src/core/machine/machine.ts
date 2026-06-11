@@ -43,8 +43,6 @@ export interface MachineTransition {
 export interface Machine {
   kind: "machine";
   name: string;
-  /** megjelenítési preset — a felület címkéihez; a szemantikát a storages adja */
-  preset: "pda" | "tm" | null;
   alphabet: string[];
   states: string[];
   start: string;
@@ -388,6 +386,22 @@ export function machineToFSM(m: Machine): FSM | null {
     start: m.start,
     accept: [...m.accept],
     transitions: m.transitions.map((t) => ({ from: t.from, symbol: t.input, to: t.to }))
+  };
+}
+
+/** A véges-automata algoritmusok eredménye vissza az egységes gépmodellbe. */
+export function fsmToMachine(f: FSM): Machine {
+  return {
+    kind: "machine",
+    name: f.name,
+    alphabet: [...f.alphabet],
+    states: [...f.states],
+    start: f.start,
+    accept: [...f.accept],
+    acceptMode: "finalState",
+    input: "head",
+    storages: [],
+    transitions: f.transitions.map((t) => ({ from: t.from, to: t.to, input: t.symbol, ops: [] }))
   };
 }
 

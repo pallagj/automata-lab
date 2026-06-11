@@ -11,7 +11,7 @@ import {
   TapeState
 } from "./machine";
 import { acceptsFSM } from "../fsm/fsm";
-import { parseMachine, parseFSM } from "../parse/definitionParser";
+import { parseMachine } from "../parse/definitionParser";
 import { serializeMachine } from "../parse/serialize";
 
 const KETVEREM = `
@@ -22,8 +22,8 @@ Machine:
   init: qa
   accept: ok
   storages:
-    v1: stack(Z)
-    v2: stack(Z)
+    v1: stack
+    v2: stack
   transitions:
     - qa a $/A $/$ qa
     - qa $ $/$ $/$ qb
@@ -151,7 +151,7 @@ Machine:
   init: q
   accept: q
   storages:
-    v: stack(Z)
+    v: stack
   transitions:
     - q a Z/AZ q
     - q b A/$ q
@@ -176,7 +176,7 @@ Machine:
   init: q
   accept: q
   storages:
-    v: stack(Z)
+    v: stack
   transitions:
     - q a Z/Z q
     - q a A/A q
@@ -200,31 +200,40 @@ Machine:
     - B b B
 `).value!;
 
-  it("machineToFSM és a viselkedés egyezik", () => {
+  it("machineToFSM és a gép-szimuláció viselkedése egyezik", () => {
     expect(machineCaps(m).isFSMLike).toBe(true);
     const f = machineToFSM(m)!;
-    const ref = parseFSM(`
-StateMachine:
-  name: VegeB
-  charset: a, b
-  states: N, B
-  init: N
-  accept: B
-  transitions:
-    - N a N
-    - N b B
-    - B a N
-    - B b B
-`).value!;
     for (const w of ["", "b", "ab", "ba", "abab"]) {
-      expect(acceptsFSM(f, w)).toBe(acceptsFSM(ref, w));
-      expect(runMachine(m, w).verdict).toBe(acceptsFSM(ref, w) ? "accepted" : "rejected");
+      expect(runMachine(m, w).verdict).toBe(acceptsFSM(f, w) ? "accepted" : "rejected");
     }
   });
 
   it("tárolós gép nem alakítható automatává", () => {
     const p = parseMachine(KETVEREM).value!;
     expect(machineToFSM(p)).toBe(null);
+  });
+});
+
+describe("storages-formátum", () => {
+  it("beágyazott alak és verem-alapértelmezés (Z)", () => {
+    const m = parseMachine(`
+Machine:
+  name: S
+  charset: a
+  states: q
+  init: q
+  accept: q
+  storages:
+    rovid: stack
+    reszletes:
+      type: stack
+      init: XY
+    ures:
+      type: stack
+      init: ""
+  transitions: []
+`).value!;
+    expect(m.storages.map((s) => s.init)).toEqual(["Z", "XY", ""]);
   });
 });
 
@@ -238,7 +247,7 @@ Machine:
   init: q
   accept: q
   storages:
-    v: stack(Z)
+    v: stack
   transitions:
     - q a q
 `);

@@ -36,8 +36,7 @@ const EmptyCanvas: React.FC = () => {
     setCellSource(
       activeCellId,
       serializeEntityDraft({
-        kind: "fsm",
-        yamlKey: "StateMachine",
+        kind: "machine",
         name,
         charset: "a, b",
         states: "S",
@@ -45,7 +44,7 @@ const EmptyCanvas: React.FC = () => {
         accept: "",
         acceptMode: "finalState",
         input: "head",
-        storages: "",
+        storages: [],
         rows: []
       })
     );

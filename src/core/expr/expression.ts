@@ -18,7 +18,7 @@ import {
 } from "../fsm/ops";
 import { RegexDef, regexToNFA, regexValue } from "../fsm/regex";
 import { Grammar, grammarToFSM, grammarToPDA, fsmToGrammar, removeEpsilonRules } from "../grammar/grammar";
-import { machineCaps, machineToFSM } from "../machine/machine";
+import { fsmToMachine, machineCaps, machineToFSM } from "../machine/machine";
 import { Definition } from "../parse/definitionParser";
 
 /**
@@ -32,7 +32,12 @@ import { Definition } from "../parse/definitionParser";
  *     toPda, regex, equal
  */
 
-export type ExprValue = Definition | RegexDef | EquivalenceVerdict;
+/**
+ * A kiértékelés belső értékei között az FSM is megjelenik (a véges-automata
+ * algoritmusok ezen dolgoznak), de a végeredmény mindig az egységes
+ * gépmodellre konvertálódik — kifelé csak machine/grammar/regex/verdict létezik.
+ */
+export type ExprValue = Definition | FSM | RegexDef | EquivalenceVerdict;
 
 export interface StepGroup {
   operation: string;
@@ -265,17 +270,9 @@ class Evaluator {
       }
     }
     if (v.kind === "machine") {
-      // képesség-kapu: tárolómentes gép automataként kezelhető
+      // képesség-kapu: a tárolómentes gép maga a véges automata
       const f = machineToFSM(v);
-      if (f) {
-        this.diagnostics.push(
-          info(
-            `A(z) ${v.name} gép tárolómentes — véges automataként kezelem`,
-            "A gépnek nincs verme/sora/szalagja, ezért pontosan egy véges automatát ír le."
-          )
-        );
-        return f;
-      }
+      if (f) return f;
       throw new Error(
         `${ctx}: véges automatát vár, de a(z) ${v.name} ${machineCaps(v).label.toLowerCase()} (tárolói: ${v.storages
           .map((s) => `${s.id}: ${s.type}`)
@@ -449,7 +446,9 @@ export function evaluateExpression(
   }
   const ev = new Evaluator(env);
   try {
-    const value = ev.evaluate(ast);
+    let value = ev.evaluate(ast);
+    // a végeredmény az egységes gépmodellben jelenik meg
+    if (value.kind === "fsm") value = fsmToMachine(value);
     return okResult({ value, diagnostics: ev.diagnostics, stepGroups: ev.stepGroups }, ev.diagnostics);
   } catch (e) {
     if (e instanceof EvalDiagError) {

@@ -1,13 +1,16 @@
 /**
  * Beépített példák: teljes munkalapok (nem önálló cellák) — egy kattintással
  * betölthető, összefüggő feladatsorok.
+ *
+ * Minden gép ugyanazzal a Machine kulccsal készül; hogy automata,
+ * veremautomata vagy Turing-gép-e, azt a tárolói döntik el.
  */
 export interface ExampleWorksheet {
   name: string;
   cells: string[];
 }
 
-const NFA_M1 = `StateMachine:
+const NFA_M1 = `Machine:
   name: M1
   charset: a, b
   states: S, A, F
@@ -18,7 +21,7 @@ const NFA_M1 = `StateMachine:
     - S a A
     - A b F`;
 
-const DFA_PAROS_A = `StateMachine:
+const DFA_PAROS_A = `Machine:
   name: ParosA
   charset: a, b
   states: P, T
@@ -30,7 +33,7 @@ const DFA_PAROS_A = `StateMachine:
     - P b P
     - T b T`;
 
-const DFA_VEGE_B = `StateMachine:
+const DFA_VEGE_B = `Machine:
   name: VegeB
   charset: a, b
   states: N, B
@@ -42,7 +45,7 @@ const DFA_VEGE_B = `StateMachine:
     - B a N
     - B b B`;
 
-const ENFA_A_VAGY_B = `StateMachine:
+const ENFA_A_VAGY_B = `Machine:
   name: AvagyB
   charset: a, b
   states: S, A, B
@@ -92,13 +95,14 @@ export const EXAMPLE_WORKSHEETS: ExampleWorksheet[] = [
   {
     name: "Veremautomaták",
     cells: [
-      `PushdownMachine:
+      `Machine:
   name: AnBn
   charset: a, b
   states: q0, q1, q2
   init: q0
-  initStack: Z
   accept: q2
+  storages:
+    verem: stack
   transitions:
     - q0 a Z/AZ q0
     - q0 a A/AA q0
@@ -106,13 +110,14 @@ export const EXAMPLE_WORKSHEETS: ExampleWorksheet[] = [
     - q1 b A/$ q1
     - q1 $ Z/Z q2
     - q0 $ Z/Z q2`,
-      `PushdownMachine:
+      `Machine:
   name: Palindrom
   charset: a, b
   states: olvas, parosit, kesz
   init: olvas
-  initStack: Z
   accept: kesz
+  storages:
+    verem: stack
   transitions:
     - olvas a $/a olvas
     - olvas b $/b olvas
@@ -125,12 +130,15 @@ export const EXAMPLE_WORKSHEETS: ExampleWorksheet[] = [
   {
     name: "Turing-gépek",
     cells: [
-      `TuringMachine:
+      `Machine:
   name: Palindrom
   charset: a, b
   states: start, vanA, vanB, parA, parB, vissza, ok
   init: start
   accept: ok
+  input: szalag
+  storages:
+    szalag: tape
   transitions:
     - start a/_ > vanA
     - start b/_ > vanB
@@ -145,12 +153,15 @@ export const EXAMPLE_WORKSHEETS: ExampleWorksheet[] = [
     - parB _/& = ok
     - vissza ./& < vissza
     - vissza _/& > start`,
-      `TuringMachine:
+      `Machine:
   name: Novel
   charset: 0, 1
   states: jobbra, atvitel, kesz
   init: jobbra
   accept: kesz
+  input: szalag
+  storages:
+    szalag: tape
   transitions:
     - jobbra ./& > jobbra
     - jobbra _/& < atvitel
@@ -169,8 +180,8 @@ export const EXAMPLE_WORKSHEETS: ExampleWorksheet[] = [
   init: qa
   accept: ok
   storages:
-    v1: stack(Z)
-    v2: stack(Z)
+    v1: stack
+    v2: stack
   transitions:
     - qa a $/A $/$ qa
     - qa $ $/$ $/$ qb
@@ -225,9 +236,9 @@ export const EXAMPLE_WORKSHEETS: ExampleWorksheet[] = [
   }
 ];
 
-/** Cellasablonok az „+ Beszúrás” menühöz. */
+/** Cellasablonok az „+ Beszúrás” menühöz — mind ugyanaz a Machine, más tárolókkal. */
 export const CELL_TEMPLATES: Record<string, string> = {
-  fsm: `StateMachine:
+  fsm: `Machine:
   name: M
   charset: a, b
   states: S, A
@@ -238,22 +249,26 @@ export const CELL_TEMPLATES: Record<string, string> = {
     - S b S
     - A a A
     - A b S`,
-  pda: `PushdownMachine:
+  pda: `Machine:
   name: P
   charset: a, b
   states: q0, q1
   init: q0
-  initStack: Z
   accept: q1
+  storages:
+    verem: stack
   transitions:
     - q0 a Z/AZ q0
     - q0 $ Z/Z q1`,
-  tm: `TuringMachine:
+  tm: `Machine:
   name: T
   charset: a, b
   states: start, ok
   init: start
   accept: ok
+  input: szalag
+  storages:
+    szalag: tape
   transitions:
     - start a/a > start
     - start _/_ = ok`,
@@ -271,8 +286,8 @@ export const CELL_TEMPLATES: Record<string, string> = {
   init: q0
   accept: q1
   storages:
-    v1: stack(Z)
-    v2: stack(Z)
+    v1: stack
+    v2: stack
   transitions:
     - q0 a Z/AZ $/$ q0
     - q0 $ Z/Z $/$ q1`
