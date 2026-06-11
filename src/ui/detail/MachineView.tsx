@@ -187,6 +187,13 @@ export const MachineView: React.FC<{ machine: Machine; stepGroups?: StepGroup[] 
         {caps.label} — {m.name}
       </span>
       <span className="badge accent">{m.states.length} állapot</span>
+      {m.storages
+        .filter((s) => s.init !== "")
+        .map((s) => (
+          <span key={s.id} className="badge accent" title={`A(z) ${s.id} tároló kezdőtartalma`}>
+            kezdő {s.id}: {s.init}
+          </span>
+        ))}
       <span
         className={`badge ${analysis.isDeterministic ? "ok" : "no"}`}
         title={
