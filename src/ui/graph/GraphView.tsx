@@ -1,5 +1,5 @@
 import dagre from "@dagrejs/dagre";
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useLayoutEffect, useMemo, useRef, useState } from "react";
 import { Check, Copy, Download, FileImage, FileType } from "lucide-react";
 import { useAppStore } from "../../state/store";
 import { GraphEditing, suggestStateName } from "./editing";
@@ -182,16 +182,21 @@ export const GraphView: React.FC<Props> = ({ spec, onEdgeClick, className, cellI
     .map((n) => n.id)
     .sort()
     .join("|");
-  useEffect(() => {
+  // festés előtt nullázunk, különben egy képkockára a régi nagyítás látszik az új gráfon
+  useLayoutEffect(() => {
     setView(null);
   }, [structKey]);
 
   // a vászon mérete az automatikus illesztés zoom-korlátjához
   const [size, setSize] = useState<{ w: number; h: number } | null>(null);
-  useEffect(() => {
+  // useLayoutEffect + azonnali mérés: az első festés előtt megvan a méret,
+  // így nem villan fel a korlát nélküli (túlnagyított) illesztés egy képkockára
+  useLayoutEffect(() => {
     const el = svgRef.current;
     if (!el) return;
-    const ro = new ResizeObserver(() => setSize({ w: el.clientWidth, h: el.clientHeight }));
+    const measure = () => setSize({ w: el.clientWidth, h: el.clientHeight });
+    measure();
+    const ro = new ResizeObserver(measure);
     ro.observe(el);
     return () => ro.disconnect();
   }, []);
