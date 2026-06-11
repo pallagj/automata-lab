@@ -3,6 +3,14 @@ import { Diagnostic, EPS, err, failResult, info, okResult, OpResult, warn } from
 import { FSM, makeFSM } from "../fsm/fsm";
 import { PDA, PDATransition } from "../pda/pda";
 import { TM, TMTransition, TM_BLANK } from "../tm/tm";
+import {
+  Machine,
+  MachineTransition,
+  StorageOp,
+  StorageSpec,
+  StorageType,
+  TAPE_BLANK
+} from "../machine/machine";
 import { Grammar, GrammarRule } from "../grammar/grammar";
 
 /**
@@ -392,6 +400,264 @@ export function parseTM(source: string): OpResult<TM> {
   }
 
   return okResult(tm, diags);
+}
+
+/* ------------------------------------------------------------------ */
+/* Általános gép (Machine)                                              */
+/* ------------------------------------------------------------------ */
+
+const STORAGE_TYPES: Record<string, StorageType> = {
+  stack: "stack",
+  verem: "stack",
+  queue: "queue",
+  sor: "queue",
+  tape: "tape",
+  szalag: "tape"
+};
+
+/** "stack(Z)" / "queue" / "tape(abc)" alakú tároló-leírás. */
+function parseStorageDecl(id: string, raw: string): OpResult<StorageSpec> {
+  const m = /^\s*([A-Za-zÀ-ž]+)\s*(?:\(\s*([^)]*)\s*\))?\s*$/.exec(raw);
+  const type = m ? STORAGE_TYPES[m[1]] : undefined;
+  if (!m || !type) {
+    return failResult([
+      err(
+        `Ismeretlen tárolótípus: „${raw}” (${id})`,
+        "Használható: stack/verem, queue/sor, tape/szalag — kezdőtartalommal: stack(Z)."
+      )
+    ]);
+  }
+  const init = m[2] ?? "";
+  return okResult({ id, type, init: EPS_ALIASES.has(init) ? "" : init });
+}
+
+/** hány tokent foglal el egy tároló az átmenet-sorban */
+const STORAGE_TOKENS: Record<StorageType, number> = { stack: 1, queue: 1, tape: 2 };
+
+const MOVE_MAP: Record<string, "L" | "R" | "S"> = { ">": "R", "<": "L", "=": "S", R: "R", L: "L", S: "S" };
+
+/**
+ * Egy tároló műveletének beolvasása az átmenet-sor tokenjeiből.
+ * stack: "Z/AZ" · queue: "A/BA" · tape: "a/b >" (két token).
+ */
+function parseStorageOp(
+  spec: StorageSpec,
+  tokens: string[],
+  line: string,
+  alphabet: string[]
+): OpResult<StorageOp> {
+  const bad = (what: string, hint: string) =>
+    failResult<StorageOp>([err(`${what}: „${tokens.join(" ")}” (${spec.id})`, `Sor: „${line}”. ${hint}`)]);
+
+  if (spec.type === "tape") {
+    const [rw, moveRaw] = tokens;
+    if (!rw.includes("/")) return bad("Hibás szalagművelet", "Alak: OLVAS/ÍR MOZGÁS — pl. „a/b >”. Üres jel: _ , „ugyanazt írja”: &.");
+    const [read, writeRaw] = rw.split("/");
+    const move = MOVE_MAP[moveRaw];
+    if (!move) return bad("Ismeretlen mozgás", "Használható: > < = (vagy R L S).");
+    if (read !== "." && read !== TAPE_BLANK && !alphabet.includes(read))
+      return bad("Ismeretlen szalagjel", `Szalagábécé: ${[...alphabet, TAPE_BLANK].join(", ")}`);
+    return okResult({ type: "tape", read, write: writeRaw, move });
+  }
+
+  const tok = tokens[0];
+  if (!tok.includes("/"))
+    return bad(
+      "Hibás tárolóművelet",
+      spec.type === "stack"
+        ? "Verem-alak: LEVESZ/FELÍR — pl. „Z/AZ”; ε-hoz $."
+        : "Sor-alak: KIVESZ/BETESZ — pl. „A/BA”; ε-hoz $."
+    );
+  const [aRaw, bRaw] = tok.split("/");
+  const a = normEps(aRaw);
+  const b = EPS_ALIASES.has(bRaw) ? "" : bRaw;
+  return okResult(
+    spec.type === "stack" ? { type: "stack", pop: a, push: b } : { type: "queue", take: a, put: b }
+  );
+}
+
+/**
+ * Általános gép YAML-ből:
+ *
+ *   Machine:
+ *     name: AnBnCn
+ *     charset: a, b, c
+ *     states: q0, q1, q2
+ *     init: q0
+ *     accept: q2
+ *     input: head            # alapértelmezés; vagy egy tároló id-je
+ *     storages:
+ *       v1: stack(Z)
+ *       v2: stack(Z)
+ *     transitions:
+ *       - q0 a Z/AZ $/B q0   # FROM INPUT tárolónként-op… TO
+ */
+export function parseMachine(source: string): OpResult<Machine> {
+  const base = parseYamlBody(source, ["Machine", "machine", "gep", "gép"]);
+  if (!base.ok) return failResult(base.diagnostics);
+  const { name, body } = base.value!;
+  const diags: Diagnostic[] = [];
+
+  for (const [f, what] of [
+    ["states", "Az állapotok felsorolása"],
+    ["init", "A kezdőállapot"],
+    ["charset", "A bemeneti ábécé"]
+  ] as const) {
+    const d = requireField(body, f, what);
+    if (d) return failResult([d]);
+  }
+
+  const alphabet = parseList(body["charset"], "charset", diags);
+  const states = parseList(body["states"], "states", diags);
+  const accept = parseList(body["accept"], "accept", diags);
+  const start = String(body["init"]).trim();
+
+  const stateSet = new Set(states);
+  if (!stateSet.has(start)) return failResult([err(`A kezdőállapot (${start}) nincs az állapotok között`)]);
+  for (const a of accept)
+    if (!stateSet.has(a)) return failResult([err(`Az elfogadó állapot (${a}) nincs az állapotok között`)]);
+
+  // tárolók: mapping (id → "stack(Z)") vagy hiányzó (= tárolómentes gép)
+  const storages: StorageSpec[] = [];
+  const storagesRaw = body["storages"];
+  if (storagesRaw !== undefined && storagesRaw !== null) {
+    if (typeof storagesRaw !== "object" || Array.isArray(storagesRaw)) {
+      return failResult([
+        err("A storages mező kulcs-érték párokat vár", "Például:\n  storages:\n    v1: stack(Z)\n    v2: queue")
+      ]);
+    }
+    for (const [id, raw] of Object.entries(storagesRaw as Record<string, unknown>)) {
+      const r = parseStorageDecl(id.trim(), String(raw ?? ""));
+      if (!r.ok) return failResult(r.diagnostics);
+      if (storages.some((s) => s.id === r.value!.id))
+        return failResult([err(`Kétszer szereplő tároló-azonosító: „${id}”`)]);
+      storages.push(r.value!);
+    }
+  }
+
+  // bemenet: olvasófej vagy egy tároló
+  const inputRaw = String(body["input"] ?? "head").trim();
+  const input = inputRaw === "" || inputRaw === "head" || inputRaw === "fej" ? "head" : inputRaw;
+  if (input !== "head" && !storages.some((s) => s.id === input)) {
+    return failResult([
+      err(
+        `Az input mező (${input}) nem egy tároló azonosítója`,
+        `Használj „head”-et (olvasófej), vagy az egyik tároló nevét: ${storages.map((s) => s.id).join(", ") || "—"}.`
+      )
+    ]);
+  }
+
+  const acceptModeRaw = String(body["acceptMode"] ?? "finalState").trim();
+  const acceptMode: Machine["acceptMode"] =
+    acceptModeRaw === "emptyStorages" || acceptModeRaw === "emptyStack" ? "emptyStorages" : "finalState";
+
+  if (accept.length === 0 && acceptMode === "finalState" && input === "head" && storages.length > 0)
+    diags.push(
+      info(
+        "Nincs elfogadó állapot — üres tárolókkal való elfogadásra az acceptMode: emptyStorages való",
+        "Elfogadó állapot nélkül és finalState módban a gép az üres nyelvet ismeri fel."
+      )
+    );
+
+  const tokensPerLine = 2 + (input === "head" ? 1 : 0) + storages.reduce((n, s) => n + STORAGE_TOKENS[s.type], 0);
+  const transitions: MachineTransition[] = [];
+  const lines = parseList(body["transitions"], "transitions", diags, false);
+  for (const line of lines) {
+    const parts = line.split(/\s+/).filter((p) => p !== "");
+    if (parts.length !== tokensPerLine) {
+      const shape = [
+        "HONNAN",
+        ...(input === "head" ? ["BEMENET"] : []),
+        ...storages.map((s) => (s.type === "tape" ? `${s.id}:OLVAS/ÍR MOZGÁS` : `${s.id}:LE/FEL`)),
+        "HOVA"
+      ].join(" ");
+      return failResult([err(`Hibás átmenet: „${line}”`, `Ehhez a géphez ${tokensPerLine} elem kell: ${shape}`)]);
+    }
+    const from = parts[0];
+    const to = parts[parts.length - 1];
+    if (from !== "." && !stateSet.has(from))
+      return failResult([err(`Ismeretlen állapot az átmenetben: „${from}”`, `Sor: „${line}”.`)]);
+    if (to !== "." && to !== "&" && !stateSet.has(to))
+      return failResult([err(`Ismeretlen célállapot az átmenetben: „${to}”`, `Sor: „${line}”.`)]);
+
+    let idx = 1;
+    let inputSym = EPS;
+    if (input === "head") {
+      inputSym = normEps(parts[idx++]);
+      if (inputSym !== EPS && parts[1] !== "." && !alphabet.includes(inputSym))
+        return failResult([
+          err(`Ismeretlen bemeneti szimbólum: „${parts[1]}”`, `Sor: „${line}”. Ábécé: ${alphabet.join(", ")} (ε-hoz $).`)
+        ]);
+    }
+    const ops: StorageOp[] = [];
+    for (const s of storages) {
+      const toks = parts.slice(idx, idx + STORAGE_TOKENS[s.type]);
+      idx += STORAGE_TOKENS[s.type];
+      const r = parseStorageOp(s, toks, line, alphabet);
+      if (!r.ok) return failResult(r.diagnostics);
+      ops.push(r.value!);
+    }
+
+    // helyettesítők: "." az állapot-, bemenet- és szalagolvasás-pozíciókban,
+    // "&" a célállapotban ("ugyanoda") és a szalag-írásban ("ugyanazt írja")
+    const rawInput = input === "head" ? (parts[1] === "." ? "." : inputSym) : EPS;
+    expandWildcard(
+      [from, ...(input === "head" ? [rawInput] : []), to],
+      [states, ...(input === "head" ? [alphabet] : []), states],
+      (resolved) => {
+        const f = resolved[0];
+        const inp = input === "head" ? resolved[1] : EPS;
+        const t = resolved[resolved.length - 1];
+        const target = t === "&" ? f : t;
+        // szalag-olvasás "." kibontása minden ábécébeli jelre + a write "&" feloldása
+        const expandTapeOps = (i: number, acc: StorageOp[]) => {
+          if (i === ops.length) {
+            transitions.push({ from: f, to: target, input: inp, ops: acc });
+            return;
+          }
+          const op = ops[i];
+          if (op.type !== "tape") {
+            expandTapeOps(i + 1, [...acc, op]);
+            return;
+          }
+          const reads = op.read === "." ? alphabet : [op.read];
+          for (const sym of reads) {
+            expandTapeOps(i + 1, [...acc, { ...op, read: sym, write: op.write === "&" ? sym : op.write }]);
+          }
+        };
+        expandTapeOps(0, []);
+      }
+    );
+  }
+
+  // szalag-írások utólagos validálása (a & és . feloldása után)
+  for (const t of transitions) {
+    for (let i = 0; i < t.ops.length; i++) {
+      const op = t.ops[i];
+      if (op.type === "tape" && op.write !== TAPE_BLANK && !alphabet.includes(op.write))
+        return failResult([
+          err(
+            `Ismeretlen szalagjel az írásban: „${op.write}” (${storages[i].id})`,
+            `Szalagábécé: ${[...alphabet, TAPE_BLANK].join(", ")}`
+          )
+        ]);
+    }
+  }
+
+  const machine: Machine = {
+    kind: "machine",
+    name: name || "M",
+    preset: null,
+    alphabet,
+    states,
+    start,
+    accept,
+    acceptMode,
+    input,
+    storages,
+    transitions
+  };
+  return okResult(machine, diags);
 }
 
 /* ------------------------------------------------------------------ */

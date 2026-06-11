@@ -2,6 +2,7 @@ import { EPS } from "../types";
 import { FSM } from "../fsm/fsm";
 import { PDA } from "../pda/pda";
 import { TM } from "../tm/tm";
+import { Machine, StorageOp } from "../machine/machine";
 import { Grammar } from "../grammar/grammar";
 import { Definition } from "./definitionParser";
 
@@ -73,6 +74,49 @@ function serializeTM(t: TM): string {
   ];
   for (const tr of t.transitions) {
     lines.push(`    - ${scalar(`${tr.from} ${tr.read}/${tr.write} ${moveMap[tr.move]} ${tr.to}`)}`);
+  }
+  return lines.join("\n");
+}
+
+const MOVE_CHAR = { R: ">", L: "<", S: "=" } as const;
+
+function storageOpToken(op: StorageOp): string {
+  switch (op.type) {
+    case "stack":
+      return `${op.pop === EPS ? "$" : op.pop}/${op.push === "" ? "$" : op.push}`;
+    case "queue":
+      return `${op.take === EPS ? "$" : op.take}/${op.put === "" ? "$" : op.put}`;
+    case "tape":
+      return `${op.read}/${op.write} ${MOVE_CHAR[op.move]}`;
+  }
+}
+
+export function serializeMachine(m: Machine): string {
+  const lines = [
+    "Machine:",
+    `  name: ${scalar(m.name)}`,
+    `  charset: ${listLine(m.alphabet)}`,
+    `  states: ${listLine(m.states)}`,
+    `  init: ${scalar(m.start)}`,
+    `  accept: ${listLine(m.accept)}`
+  ];
+  if (m.acceptMode !== "finalState") lines.push(`  acceptMode: ${m.acceptMode}`);
+  if (m.input !== "head") lines.push(`  input: ${scalar(m.input)}`);
+  if (m.storages.length > 0) {
+    lines.push("  storages:");
+    for (const s of m.storages) {
+      lines.push(`    ${s.id}: ${s.type}${s.init !== "" ? `(${s.init})` : ""}`);
+    }
+  }
+  lines.push("  transitions:");
+  for (const t of m.transitions) {
+    const tokens = [
+      t.from,
+      ...(m.input === "head" ? [t.input === EPS ? "$" : t.input] : []),
+      ...t.ops.map(storageOpToken),
+      t.to
+    ];
+    lines.push(`    - ${scalar(tokens.join(" "))}`);
   }
   return lines.join("\n");
 }
