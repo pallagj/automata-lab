@@ -36,13 +36,8 @@ interface InsertOption {
   make: (used: Set<string>) => string;
 }
 
+/** A gépek erősorrendben, utána nyelvtan, regex, végül a szabad kifejezés. */
 const INSERT_OPTIONS: InsertOption[] = [
-  { label: "Kifejezés", icon: <FunctionSquare size={15} />, make: () => "" },
-  {
-    label: "Reguláris kifejezés",
-    icon: <Regex size={15} />,
-    make: (used) => `${uniqueName("R", used)} = regex()`
-  },
   {
     label: "Véges automata",
     icon: <CircleDot size={15} />,
@@ -59,20 +54,39 @@ const INSERT_OPTIONS: InsertOption[] = [
     make: (used) => CELL_TEMPLATES.tm.replace("name: T", `name: ${uniqueName("T", used)}`)
   },
   {
+    label: "Egyedi gép (tárolókkal)",
+    icon: <Boxes size={15} />,
+    make: (used) => CELL_TEMPLATES.machine.replace("name: Gep", `name: ${uniqueName("Gep", used)}`)
+  },
+  {
     label: "Nyelvtan",
     icon: <Braces size={15} />,
     make: (used) => CELL_TEMPLATES.grammar.replace("name: G", `name: ${uniqueName("G", used)}`)
   },
   {
-    label: "Egyedi gép (tárolókkal)",
-    icon: <Boxes size={15} />,
-    make: (used) => CELL_TEMPLATES.machine.replace("name: Gep", `name: ${uniqueName("Gep", used)}`)
-  }
+    label: "Reguláris kifejezés",
+    icon: <Regex size={15} />,
+    make: (used) => `${uniqueName("R", used)} = regex()`
+  },
+  { label: "Kifejezés / művelet", icon: <FunctionSquare size={15} />, make: () => "" }
 ];
 
 export const EditorColumn: React.FC<Props> = ({ workspace, results }) => {
   const addCell = useAppStore((s) => s.addCell);
+  const setCellSource = useAppStore((s) => s.setCellSource);
+  const setActiveCell = useAppStore((s) => s.setActiveCell);
   const [menuOpen, setMenuOpen] = useState(false);
+
+  /** az első üres cellát tölti ki; ha nincs, a lista végére kerül */
+  const insert = (source: string) => {
+    const empty = workspace.cells.find((c) => c.source.trim() === "");
+    if (empty) {
+      setCellSource(empty.id, source);
+      setActiveCell(empty.id);
+    } else {
+      addCell(source);
+    }
+  };
 
   return (
     <>
@@ -94,7 +108,7 @@ export const EditorColumn: React.FC<Props> = ({ workspace, results }) => {
                 <button
                   key={opt.label}
                   onClick={() => {
-                    addCell(opt.make(usedNames(workspace)));
+                    insert(opt.make(usedNames(workspace)));
                     setMenuOpen(false);
                   }}
                 >
