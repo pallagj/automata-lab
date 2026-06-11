@@ -169,6 +169,7 @@ export const GraphView: React.FC<Props> = ({ spec, onEdgeClick, className, cellI
   const nodeDragRef = useRef<{ id: string; dx: number; dy: number; moved: boolean } | null>(null);
   const connectRef = useRef<{ from: string } | null>(null);
   const [connectLine, setConnectLine] = useState<{ x1: number; y1: number; x2: number; y2: number } | null>(null);
+  const [connectTarget, setConnectTarget] = useState<string | null>(null);
 
   // csak a gráf szerkezetének változásakor illesztünk újra (mozgatáskor nem)
   const structKey = spec.nodes
@@ -193,6 +194,20 @@ export const GraphView: React.FC<Props> = ({ spec, onEdgeClick, className, cellI
   /** húzás indítása előtt rögzítjük a nézetet, hogy ne ugráljon az illesztés */
   const freezeView = () => {
     if (!view) setView([vb[0], vb[1], vb[2], vb[3]]);
+  };
+
+  /** a legközelebbi, elég közeli csomópont (átfedő állapotoknál is jó) */
+  const findTarget = (mx: number, my: number): LaidOutNode | null => {
+    let target: LaidOutNode | null = null;
+    let best = Infinity;
+    for (const n of nodes) {
+      const d = Math.hypot(n.x - mx, n.y - my);
+      if (d <= n.r + 10 && d < best) {
+        best = d;
+        target = n;
+      }
+    }
+    return target;
   };
 
   const onWheel = (e: React.WheelEvent) => {
@@ -241,6 +256,7 @@ export const GraphView: React.FC<Props> = ({ spec, onEdgeClick, className, cellI
     if (connectRef.current) {
       const [mx, my] = clientToView(e.clientX, e.clientY);
       setConnectLine((l) => (l ? { ...l, x2: mx, y2: my } : null));
+      setConnectTarget(findTarget(mx, my)?.id ?? null);
       return;
     }
     const d = dragRef.current;
@@ -270,17 +286,9 @@ export const GraphView: React.FC<Props> = ({ spec, onEdgeClick, className, cellI
       const from = connectRef.current.from;
       connectRef.current = null;
       setConnectLine(null);
+      setConnectTarget(null);
       const [mx, my] = clientToView(e.clientX, e.clientY);
-      // a legközelebbi, elég közeli csomópont a cél (átfedő állapotoknál is jó)
-      let target: LaidOutNode | null = null;
-      let best = Infinity;
-      for (const n of nodes) {
-        const d = Math.hypot(n.x - mx, n.y - my);
-        if (d <= n.r + 10 && d < best) {
-          best = d;
-          target = n;
-        }
-      }
+      const target = findTarget(mx, my);
       if (target && editing) editing.connect(from, target.id);
       return;
     }
@@ -359,7 +367,9 @@ export const GraphView: React.FC<Props> = ({ spec, onEdgeClick, className, cellI
         {nodes.map((n) => (
           <g
             key={n.id}
-            className={`graph-node ${n.active ? "active" : ""} ${cellId ? "movable" : ""}`}
+            className={`graph-node ${n.active ? "active" : ""} ${cellId ? "movable" : ""} ${
+              connectTarget === n.id ? "connect-target" : ""
+            }`}
             transform={`translate(${n.x} ${n.y})`}
             onPointerDown={(e) => onNodePointerDown(e, n)}
           >
@@ -369,21 +379,32 @@ export const GraphView: React.FC<Props> = ({ spec, onEdgeClick, className, cellI
               </>
             )}
             {n.active && <circle r={n.r + 7} className="graph-node-halo" />}
+            {editing && <circle r={n.r + 5} className="graph-ring-vis" />}
             <circle r={n.r} className="graph-node-circle" />
             {n.accept && <circle r={n.r - 4.5} className="graph-node-accept" />}
             <text className="graph-node-label" textAnchor="middle" dominantBaseline="central">
               {n.label}
             </text>
             {editing && (
-              <circle
-                cx={n.r * 0.71 + 6}
-                cy={-n.r * 0.71 - 6}
-                r={6.5}
-                className="graph-port"
-                onPointerDown={(e) => onPortPointerDown(e, n)}
-              >
-                <title>Húzd egy másik állapotra új átmenethez</title>
-              </circle>
+              <>
+                {/* a szegély sávjából (gyűrű) indul az él-húzás */}
+                <circle
+                  r={n.r + 4}
+                  className="graph-ring-hit"
+                  onPointerDown={(e) => onPortPointerDown(e, n)}
+                >
+                  <title>Húzd egy másik állapotra új átmenethez</title>
+                </circle>
+                <g
+                  className="graph-port-dot"
+                  transform={`translate(${n.r + 12} 0)`}
+                  onPointerDown={(e) => onPortPointerDown(e, n)}
+                >
+                  <circle r={7.5} className="port-dot-bg" />
+                  <path d="M -2.6 -3.4 L 2.6 0 L -2.6 3.4" className="port-dot-arrow" fill="none" />
+                  <title>Húzd egy másik állapotra új átmenethez</title>
+                </g>
+              </>
             )}
           </g>
         ))}
@@ -393,8 +414,8 @@ export const GraphView: React.FC<Props> = ({ spec, onEdgeClick, className, cellI
       </button>
       {editing && (
         <div className="graph-hint">
-          dupla katt: új állapot · állapot húzása: áthelyezés · ◦ pontból húzva: átmenet · címkére
-          katt: szerkesztés/törlés
+          dupla katt: új állapot · állapot húzása: áthelyezés · a széléről (gyűrű / ▸ pont) húzva:
+          átmenet · címkére katt: szerkesztés/törlés
         </div>
       )}
     </div>
