@@ -10,9 +10,11 @@ import {
   stepPDAConfigs
 } from "../../core/pda/pda";
 import { GraphSpec, GraphView } from "../graph/GraphView";
+import { useGraphEditing } from "../graph/editing";
 import { Check, ChevronRight, Layers, Play, RotateCcw, StepForward, Table2, Undo2, X } from "lucide-react";
 
 export const PDAView: React.FC<{ pda: PDA }> = ({ pda }) => {
+  const { cellId, editing } = useGraphEditing("pda");
   const [input, setInput] = useState("");
   const [history, setHistory] = useState<PDAConfig[][]>([[initialConfig(pda)]]);
 
@@ -101,7 +103,7 @@ export const PDAView: React.FC<{ pda: PDA }> = ({ pda }) => {
           </div>
         </div>
         <div style={{ height: 320 }}>
-          <GraphView spec={spec} />
+          <GraphView spec={spec} cellId={cellId} editing={editing} />
         </div>
       </div>
 

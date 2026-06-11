@@ -31,9 +31,12 @@ interface AppState {
   mobileTab: MobileTab;
   /** a bal oldali cellapanel szélessége px-ben */
   paneWidth: number;
+  /** kézzel rögzített gráf-pozíciók: cellId → állapotnév → koordináta */
+  layouts: Record<string, Record<string, { x: number; y: number }>>;
 
   setTheme: (t: Theme) => void;
   setPaneWidth: (w: number) => void;
+  setNodePos: (cellId: string, node: string, x: number, y: number) => void;
   setMobileTab: (t: MobileTab) => void;
   setActiveWorkspace: (id: string) => void;
   setActiveCell: (id: string | null) => void;
@@ -79,9 +82,17 @@ export const useAppStore = create<AppState>()(
         : "dark") as Theme,
       mobileTab: "code",
       paneWidth: 420,
+      layouts: {},
 
       setTheme: (theme) => set({ theme }),
       setPaneWidth: (paneWidth) => set({ paneWidth }),
+      setNodePos: (cellId, node, x, y) =>
+        set((s) => ({
+          layouts: {
+            ...s.layouts,
+            [cellId]: { ...(s.layouts[cellId] ?? {}), [node]: { x, y } }
+          }
+        })),
       setMobileTab: (mobileTab) => set({ mobileTab }),
       setActiveWorkspace: (id) => {
         const ws = get().workspaces.find((w) => w.id === id);
@@ -155,6 +166,7 @@ export const useAppStore = create<AppState>()(
       },
       removeCell: (cellId) =>
         set((s) => ({
+          layouts: Object.fromEntries(Object.entries(s.layouts).filter(([k]) => k !== cellId)),
           workspaces: s.workspaces.map((w) => {
             if (w.id !== s.activeWorkspaceId) return w;
             let cells = w.cells.filter((c) => c.id !== cellId);

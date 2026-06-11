@@ -120,6 +120,63 @@
   fill: var(--accent);
 }
 
+/* ====== vizuális szerkesztés ====== */
+
+.graph-node.movable {
+  cursor: grab;
+}
+
+.graph-node.movable:active {
+  cursor: grabbing;
+}
+
+.graph-port {
+  fill: var(--panel);
+  stroke: var(--accent);
+  stroke-width: 1.8;
+  cursor: crosshair;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+
+.graph-node:hover .graph-port {
+  opacity: 1;
+}
+
+.graph-port:hover {
+  fill: var(--accent-soft);
+}
+
+.graph-connect-line {
+  stroke: var(--accent);
+  stroke-width: 1.8;
+  stroke-dasharray: 6 5;
+  pointer-events: none;
+}
+
+.graph-edge-label.editable {
+  cursor: pointer;
+}
+
+.graph-edge-label.editable:hover {
+  fill: var(--accent);
+  font-weight: 700;
+}
+
+.graph-hint {
+  position: absolute;
+  left: 10px;
+  bottom: 10px;
+  font-size: 11px;
+  color: var(--muted);
+  background: color-mix(in srgb, var(--panel) 82%, transparent);
+  border: 1px solid var(--border-soft);
+  border-radius: 8px;
+  padding: 4px 10px;
+  pointer-events: none;
+  max-width: calc(100% - 70px);
+}
+
 .graph-fit {
   position: absolute;
   right: 10px;

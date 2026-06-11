@@ -11,11 +11,13 @@ import {
   TM_BLANK
 } from "../../core/tm/tm";
 import { GraphEdge, GraphSpec, GraphView } from "../graph/GraphView";
+import { useGraphEditing } from "../graph/editing";
 import { Check, ChevronRight, Play, RotateCcw, StepForward, Table2, Undo2, X } from "lucide-react";
 
 const MAX_RUN = 5000;
 
 export const TMView: React.FC<{ tm: TM }> = ({ tm }) => {
+  const { cellId, editing } = useGraphEditing("tm");
   const [input, setInput] = useState("");
   const [history, setHistory] = useState<TMConfig[]>([initialTMConfig(tm, "")]);
 
@@ -130,7 +132,7 @@ export const TMView: React.FC<{ tm: TM }> = ({ tm }) => {
           </div>
         </div>
         <div style={{ height: 320 }}>
-          <GraphView spec={spec} onEdgeClick={(e) => step(e)} />
+          <GraphView spec={spec} onEdgeClick={(e) => step(e)} cellId={cellId} editing={editing} />
         </div>
       </div>
 

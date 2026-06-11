@@ -1,5 +1,6 @@
 import dagre from "@dagrejs/dagre";
 import React, { useEffect, useMemo, useRef, useState } from "react";
+import { useAppStore } from "../../state/store";
 import "./graph.css";
 
 export interface GraphNode {
@@ -24,10 +25,20 @@ export interface GraphSpec {
   edges: GraphEdge[];
 }
 
+/** Vizuális szerkesztés visszahívásai — csak definíció-cellákra adott. */
+export interface GraphEditing {
+  addState: (x: number, y: number) => void;
+  connect: (from: string, to: string) => void;
+  editEdge: (edge: GraphEdge) => void;
+}
+
 interface Props {
   spec: GraphSpec;
   onEdgeClick?: (edge: GraphEdge) => void;
   className?: string;
+  /** pozíció-rögzítés kulcsa (cella) — ha van, az állapotok húzhatók */
+  cellId?: string | null;
+  editing?: GraphEditing | null;
 }
 
 interface LaidOutNode extends GraphNode {
@@ -46,7 +57,10 @@ function nodeRadius(label: string): number {
   return Math.max(22, 10 + label.length * 4.6);
 }
 
-function layout(spec: GraphSpec): { nodes: LaidOutNode[]; edges: LaidOutEdge[]; bounds: [number, number, number, number] } {
+function layout(
+  spec: GraphSpec,
+  overrides: Map<string, { x: number; y: number }>
+): { nodes: LaidOutNode[]; edges: LaidOutEdge[]; bounds: [number, number, number, number] } {
   const g = new dagre.graphlib.Graph({ multigraph: true });
   g.setGraph({ rankdir: "LR", nodesep: 34, ranksep: 56, marginx: 24, marginy: 24 });
   g.setDefaultEdgeLabel(() => ({}));
@@ -65,7 +79,7 @@ function layout(spec: GraphSpec): { nodes: LaidOutNode[]; edges: LaidOutEdge[]; 
   dagre.layout(g);
 
   const nodes: LaidOutNode[] = spec.nodes.map((n) => {
-    const pos = g.node(n.id);
+    const pos = overrides.get(n.id) ?? g.node(n.id);
     return { ...n, x: pos?.x ?? 0, y: pos?.y ?? 0, r: radii.get(n.id)! };
   });
   const byId = new Map(nodes.map((n) => [n.id, n]));
@@ -135,16 +149,35 @@ function layout(spec: GraphSpec): { nodes: LaidOutNode[]; edges: LaidOutEdge[]; 
   return { nodes, edges, bounds: [minX, minY, maxX - minX, maxY - minY] };
 }
 
-export const GraphView: React.FC<Props> = ({ spec, onEdgeClick, className }) => {
-  const { nodes, edges, bounds } = useMemo(() => layout(spec), [spec]);
+export const GraphView: React.FC<Props> = ({ spec, onEdgeClick, className, cellId, editing }) => {
+  const savedPos = useAppStore((s) => (cellId ? s.layouts[cellId] : undefined));
+  const setNodePos = useAppStore((s) => s.setNodePos);
+
+  // élő (húzás közbeni) pozíció a mentett fölé rétegezve
+  const [livePos, setLivePos] = useState<{ id: string; x: number; y: number } | null>(null);
+  const overrides = useMemo(() => {
+    const m = new Map<string, { x: number; y: number }>();
+    if (savedPos) for (const [k, v] of Object.entries(savedPos)) m.set(k, v);
+    if (livePos) m.set(livePos.id, livePos);
+    return m;
+  }, [savedPos, livePos]);
+
+  const { nodes, edges, bounds } = useMemo(() => layout(spec, overrides), [spec, overrides]);
   const [view, setView] = useState<[number, number, number, number] | null>(null);
   const svgRef = useRef<SVGSVGElement>(null);
   const dragRef = useRef<{ x: number; y: number; view: [number, number, number, number] } | null>(null);
-  const boundsKey = bounds.join(",");
+  const nodeDragRef = useRef<{ id: string; dx: number; dy: number; moved: boolean } | null>(null);
+  const connectRef = useRef<{ from: string } | null>(null);
+  const [connectLine, setConnectLine] = useState<{ x1: number; y1: number; x2: number; y2: number } | null>(null);
 
+  // csak a gráf szerkezetének változásakor illesztünk újra (mozgatáskor nem)
+  const structKey = spec.nodes
+    .map((n) => n.id)
+    .sort()
+    .join("|");
   useEffect(() => {
-    setView(null); // új gráf → új illesztés
-  }, [boundsKey]);
+    setView(null);
+  }, [structKey]);
 
   const vb = view ?? bounds;
 
@@ -155,6 +188,11 @@ export const GraphView: React.FC<Props> = ({ spec, onEdgeClick, className }) => 
     const padX = (rect.width - vb[2] * scale) / 2;
     const padY = (rect.height - vb[3] * scale) / 2;
     return [vb[0] + (cx - rect.left - padX) / scale, vb[1] + (cy - rect.top - padY) / scale];
+  };
+
+  /** húzás indítása előtt rögzítjük a nézetet, hogy ne ugráljon az illesztés */
+  const freezeView = () => {
+    if (!view) setView([vb[0], vb[1], vb[2], vb[3]]);
   };
 
   const onWheel = (e: React.WheelEvent) => {
@@ -172,9 +210,41 @@ export const GraphView: React.FC<Props> = ({ spec, onEdgeClick, className }) => 
     dragRef.current = { x: e.clientX, y: e.clientY, view: vb };
     (e.currentTarget as Element).setPointerCapture(e.pointerId);
   };
+
+  const onNodePointerDown = (e: React.PointerEvent, n: LaidOutNode) => {
+    if (!cellId) return;
+    e.stopPropagation();
+    freezeView();
+    const [mx, my] = clientToView(e.clientX, e.clientY);
+    nodeDragRef.current = { id: n.id, dx: n.x - mx, dy: n.y - my, moved: false };
+    svgRef.current?.setPointerCapture(e.pointerId);
+  };
+
+  const onPortPointerDown = (e: React.PointerEvent, n: LaidOutNode) => {
+    if (!editing) return;
+    e.stopPropagation();
+    freezeView();
+    connectRef.current = { from: n.id };
+    setConnectLine({ x1: n.x, y1: n.y, x2: n.x, y2: n.y });
+    svgRef.current?.setPointerCapture(e.pointerId);
+  };
+
   const onPointerMove = (e: React.PointerEvent) => {
+    if (!svgRef.current) return;
+    if (nodeDragRef.current) {
+      const d = nodeDragRef.current;
+      const [mx, my] = clientToView(e.clientX, e.clientY);
+      d.moved = true;
+      setLivePos({ id: d.id, x: mx + d.dx, y: my + d.dy });
+      return;
+    }
+    if (connectRef.current) {
+      const [mx, my] = clientToView(e.clientX, e.clientY);
+      setConnectLine((l) => (l ? { ...l, x2: mx, y2: my } : null));
+      return;
+    }
     const d = dragRef.current;
-    if (!d || !svgRef.current) return;
+    if (!d) return;
     const rect = svgRef.current.getBoundingClientRect();
     const scale = Math.min(rect.width / d.view[2], rect.height / d.view[3]);
     setView([
@@ -184,8 +254,48 @@ export const GraphView: React.FC<Props> = ({ spec, onEdgeClick, className }) => 
       d.view[3]
     ]);
   };
-  const onPointerUp = () => {
+
+  const onPointerUp = (e: React.PointerEvent) => {
+    if (nodeDragRef.current) {
+      const d = nodeDragRef.current;
+      nodeDragRef.current = null;
+      if (d.moved && cellId) {
+        const [mx, my] = clientToView(e.clientX, e.clientY);
+        setNodePos(cellId, d.id, mx + d.dx, my + d.dy);
+      }
+      setLivePos(null);
+      return;
+    }
+    if (connectRef.current) {
+      const from = connectRef.current.from;
+      connectRef.current = null;
+      setConnectLine(null);
+      const [mx, my] = clientToView(e.clientX, e.clientY);
+      // a legközelebbi, elég közeli csomópont a cél (átfedő állapotoknál is jó)
+      let target: LaidOutNode | null = null;
+      let best = Infinity;
+      for (const n of nodes) {
+        const d = Math.hypot(n.x - mx, n.y - my);
+        if (d <= n.r + 10 && d < best) {
+          best = d;
+          target = n;
+        }
+      }
+      if (target && editing) editing.connect(from, target.id);
+      return;
+    }
     dragRef.current = null;
+  };
+
+  const onDoubleClick = (e: React.MouseEvent) => {
+    const el = e.target as Element;
+    if (editing && !el.closest(".graph-node") && !el.closest(".graph-edge")) {
+      const [x, y] = clientToView(e.clientX, e.clientY);
+      freezeView();
+      editing.addState(x, y);
+      return;
+    }
+    setView(null);
   };
 
   return (
@@ -199,7 +309,7 @@ export const GraphView: React.FC<Props> = ({ spec, onEdgeClick, className }) => 
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}
         onPointerUp={onPointerUp}
-        onDoubleClick={() => setView(null)}
+        onDoubleClick={onDoubleClick}
       >
         <defs>
           <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
@@ -218,14 +328,41 @@ export const GraphView: React.FC<Props> = ({ spec, onEdgeClick, className }) => 
           >
             <path d={e.path} className="graph-edge-hit" fill="none" />
             <path d={e.path} className="graph-edge-line" fill="none" markerEnd={e.active ? "url(#arrow-active)" : "url(#arrow)"} />
-            <text x={e.labelX} y={e.labelY} className="graph-edge-label" textAnchor="middle">
+            <text
+              x={e.labelX}
+              y={e.labelY}
+              className={`graph-edge-label ${editing ? "editable" : ""}`}
+              textAnchor="middle"
+              onClick={(ev) => {
+                if (editing) {
+                  ev.stopPropagation();
+                  editing.editEdge(e);
+                }
+              }}
+            >
               {e.label}
             </text>
           </g>
         ))}
 
+        {connectLine && (
+          <line
+            x1={connectLine.x1}
+            y1={connectLine.y1}
+            x2={connectLine.x2}
+            y2={connectLine.y2}
+            className="graph-connect-line"
+            markerEnd="url(#arrow)"
+          />
+        )}
+
         {nodes.map((n) => (
-          <g key={n.id} className={`graph-node ${n.active ? "active" : ""}`} transform={`translate(${n.x} ${n.y})`}>
+          <g
+            key={n.id}
+            className={`graph-node ${n.active ? "active" : ""} ${cellId ? "movable" : ""}`}
+            transform={`translate(${n.x} ${n.y})`}
+            onPointerDown={(e) => onNodePointerDown(e, n)}
+          >
             {n.start && (
               <>
                 <line x1={-n.r - 26} y1={0} x2={-n.r - 7} y2={0} className="graph-start-line" markerEnd="url(#arrow)" />
@@ -237,12 +374,29 @@ export const GraphView: React.FC<Props> = ({ spec, onEdgeClick, className }) => 
             <text className="graph-node-label" textAnchor="middle" dominantBaseline="central">
               {n.label}
             </text>
+            {editing && (
+              <circle
+                cx={n.r * 0.71 + 6}
+                cy={-n.r * 0.71 - 6}
+                r={6.5}
+                className="graph-port"
+                onPointerDown={(e) => onPortPointerDown(e, n)}
+              >
+                <title>Húzd egy másik állapotra új átmenethez</title>
+              </circle>
+            )}
           </g>
         ))}
       </svg>
       <button className="graph-fit" title="Nézet visszaállítása" onClick={() => setView(null)}>
         ⤢
       </button>
+      {editing && (
+        <div className="graph-hint">
+          dupla katt: új állapot · állapot húzása: áthelyezés · ◦ pontból húzva: átmenet · címkére
+          katt: szerkesztés/törlés
+        </div>
+      )}
     </div>
   );
 };

@@ -10,6 +10,7 @@ import {
   transMap
 } from "../../core/fsm/fsm";
 import { GraphEdge, GraphSpec, GraphView } from "../graph/GraphView";
+import { useGraphEditing } from "../graph/editing";
 import {
   Check,
   ChevronRight,
@@ -23,6 +24,7 @@ import {
 } from "lucide-react";
 
 export const FSMView: React.FC<{ fsm: FSM }> = ({ fsm }) => {
+  const { cellId, editing } = useGraphEditing("fsm");
   const analysis = useMemo(() => analyzeFSM(fsm), [fsm]);
   const tm = useMemo(() => transMap(fsm), [fsm]);
 
@@ -170,7 +172,7 @@ export const FSMView: React.FC<{ fsm: FSM }> = ({ fsm }) => {
           </div>
         </div>
         <div style={{ height: 360 }}>
-          <GraphView spec={spec} onEdgeClick={stepEdge} />
+          <GraphView spec={spec} onEdgeClick={stepEdge} cellId={cellId} editing={editing} />
         </div>
       </div>
 
