@@ -33,7 +33,10 @@ interface AppState {
   paneWidth: number;
   /** kézzel rögzített gráf-pozíciók: cellId → állapotnév → koordináta */
   layouts: Record<string, Record<string, { x: number; y: number }>>;
+  /** „ne figyelmeztess többé” a gépfajta-váltó szerkesztéseknél */
+  hideKindChangeWarning: boolean;
 
+  setHideKindChangeWarning: (v: boolean) => void;
   setTheme: (t: Theme) => void;
   setPaneWidth: (w: number) => void;
   setNodePos: (cellId: string, node: string, x: number, y: number) => void;
@@ -83,7 +86,9 @@ export const useAppStore = create<AppState>()(
       mobileTab: "code",
       paneWidth: 420,
       layouts: {},
+      hideKindChangeWarning: false,
 
+      setHideKindChangeWarning: (hideKindChangeWarning) => set({ hideKindChangeWarning }),
       setTheme: (theme) => set({ theme }),
       setPaneWidth: (paneWidth) => set({ paneWidth }),
       setNodePos: (cellId, node, x, y) =>

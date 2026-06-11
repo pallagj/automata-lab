@@ -1,8 +1,10 @@
 import React, { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import yaml from "js-yaml";
-import { Plus, X } from "lucide-react";
-import { StorageSpec, StorageType } from "../../core/machine/machine";
+import { Plus, TriangleAlert, X } from "lucide-react";
+import { Machine, machineCaps, StorageSpec, StorageType } from "../../core/machine/machine";
 import { parseStorageEntry } from "../../core/parse/definitionParser";
+import { useAppStore } from "../../state/store";
 
 /**
  * Interaktív entitás-szerkesztő: a YAML-definíció helyett űrlapon adható meg
@@ -222,6 +224,89 @@ export const MoveSelect: React.FC<{
   </select>
 );
 
+/** A felismert gépfajta — csak a bemenettől és a tárolóktól függ. */
+function draftKindLabel(d: EntityDraft): string {
+  const probe: Machine = {
+    kind: "machine",
+    name: "",
+    alphabet: [],
+    states: [],
+    start: "",
+    accept: [],
+    acceptMode: "finalState",
+    input: d.input,
+    storages: d.storages,
+    transitions: []
+  };
+  return machineCaps(probe).label;
+}
+
+/* ------------------- fajtaváltás-figyelmeztető dialógus ------------------- */
+
+interface KindChangeRequest {
+  fromLabel: string;
+  toLabel: string;
+  apply: () => void;
+}
+
+const KindChangeDialog: React.FC<{ req: KindChangeRequest; onClose: () => void }> = ({ req, onClose }) => {
+  const setHide = useAppStore((s) => s.setHideKindChangeWarning);
+  const [dontAskAgain, setDontAskAgain] = useState(false);
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onClose]);
+  return createPortal(
+    <div className="modal-back" onClick={onClose}>
+      <div className="modal gdialog" onClick={(e) => e.stopPropagation()}>
+        <div className="gd-head">
+          <h2>
+            <TriangleAlert size={16} style={{ verticalAlign: "-3px", marginRight: 6 }} />
+            A gép fajtája megváltozik
+          </h2>
+          <button className="icon-btn" onClick={onClose}>
+            <X size={15} />
+          </button>
+        </div>
+        <div className="gd-body">
+          <p style={{ margin: 0 }}>
+            Ez a módosítás a gépet <b>{req.fromLabel.toLowerCase()}</b> helyett{" "}
+            <b>{req.toLabel.toLowerCase()}</b> géppé alakítja — a tárolók határozzák meg, milyen
+            nyelveket képes felismerni. A meglévő átmenetek igazodnak: új tároló érintetlenül
+            hagyó művelettel egészül ki, törölt tároló műveletei elvesznek.
+          </p>
+          <label className="gd-check">
+            <input
+              type="checkbox"
+              checked={dontAskAgain}
+              onChange={(e) => setDontAskAgain(e.target.checked)}
+            />
+            <span>Ne figyelmeztess többé</span>
+          </label>
+        </div>
+        <div className="gd-actions">
+          <span className="spacer" />
+          <button className="gd-btn" onClick={onClose}>
+            Mégse
+          </button>
+          <button
+            className="gd-btn primary"
+            onClick={() => {
+              if (dontAskAgain) setHide(true);
+              req.apply();
+              onClose();
+            }}
+          >
+            Módosítom
+          </button>
+        </div>
+      </div>
+    </div>,
+    document.body
+  );
+};
+
 /* ----------------------------- tárolók ----------------------------- */
 
 const STORAGE_TYPE_LABEL: Record<StorageType, string> = {
@@ -249,6 +334,8 @@ interface Props {
 export const EntityForm: React.FC<Props> = ({ source, onChange }) => {
   const [draft, setDraft] = useState<EntityDraft | null>(() => parseEntityDraft(source));
   const lastSerialized = useRef(source);
+  const hideKindWarning = useAppStore((s) => s.hideKindChangeWarning);
+  const [kindChange, setKindChange] = useState<KindChangeRequest | null>(null);
 
   // külső forrásváltozás (pl. kód-nézetben szerkesztés) követése
   useEffect(() => {
@@ -306,16 +393,32 @@ export const EntityForm: React.FC<Props> = ({ source, onChange }) => {
     };
   };
 
+  /**
+   * Szerkezeti módosítás (tárolók/bemenet): ha megváltoztatná a gép felismert
+   * fajtáját, előbb megerősítést kérünk — hacsak a felhasználó le nem tiltotta.
+   */
+  const commitStructural = (next: EntityDraft, renames?: Map<string, string>) => {
+    const apply = () => update(reshapeRows(draft, next, renames));
+    const fromLabel = draftKindLabel(draft);
+    const toLabel = draftKindLabel(next);
+    if (fromLabel !== toLabel && !hideKindWarning) {
+      setKindChange({ fromLabel, toLabel, apply });
+    } else {
+      apply();
+    }
+  };
+
   const setField = (field: keyof EntityDraft, value: string) => {
     const next: EntityDraft = { ...draft, [field]: value };
-    update(field === "input" ? reshapeRows(draft, next) : next);
+    if (field === "input") commitStructural(next);
+    else update(next);
   };
 
   const setStorages = (storages: StorageSpec[]) => {
     const next: EntityDraft = { ...draft, storages };
     // ha a bemenet egy törölt tárolóra mutatott, vissza az olvasófejre
     if (next.input !== "head" && !storages.some((s) => s.id === next.input)) next.input = "head";
-    update(reshapeRows(draft, next));
+    commitStructural(next);
   };
 
   const setStorage = (i: number, patch: Partial<StorageSpec>) => {
@@ -328,7 +431,7 @@ export const EntityForm: React.FC<Props> = ({ source, onChange }) => {
     const next: EntityDraft = { ...draft, storages };
     const renames = patch.id ? new Map([[updated.id, prev.id]]) : undefined;
     if (patch.id && draft.input === prev.id) next.input = patch.id;
-    update(reshapeRows(draft, next, renames));
+    commitStructural(next, renames);
   };
 
   const addStorage = () => {
@@ -474,6 +577,8 @@ export const EntityForm: React.FC<Props> = ({ source, onChange }) => {
           <Plus size={13} /> {k === "grammar" ? "új szabály" : "új átmenet"}
         </button>
       </div>
+
+      {kindChange && <KindChangeDialog req={kindChange} onClose={() => setKindChange(null)} />}
     </div>
   );
 };
