@@ -19,6 +19,11 @@ részletes, tanulást segítő magyarázatokkal.
 - **Veremautomata:** valódi nemdeterminisztikus szimuláció konfigurációhalmazzal, verem-megjelenítés,
   elfogadás üres veremmel vagy elfogadó állapottal.
 - **Turing-gép:** szalag-vizualizáció, lépésenkénti futtatás, nemdeterminizmus jelzése és ágválasztás.
+- **Általános gépmodell:** minden gép egy közös modell megszorítása — véges vezérlő + tetszőleges
+  számú, konfigurálható tároló (`stack` / `queue` / `tape`). A `Machine:` kulccsal egyedi gépek
+  építhetők (pl. kétvermes gép az `aⁿbⁿcⁿ`-hez, sorautomata), egységes szimulációval és
+  determinizmus-analízissel; az automata-műveletek képesség-alapon kapuzottak.
+- **Közvetlenül szerkeszthető szalag:** a bemenet magán a vizualizált szalagon írható.
 - **Nyelvtanok:** pontos Chomsky-osztályozás — minden szinthez megmutatja, *melyik szabály miért*
   sérti a feltételt; szógenerálás levezetésekkel, szó-levezethetőség teszt, ε-mentesítés,
   RG ↔ NFA és CFG → PDA konverziók.

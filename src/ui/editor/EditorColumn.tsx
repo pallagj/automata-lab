@@ -3,7 +3,7 @@ import { Workspace, useAppStore } from "../../state/store";
 import { CellResult } from "../../core/workspace";
 import { CellEditor } from "./CellEditor";
 import { CELL_TEMPLATES } from "../../state/examples";
-import { Braces, CircleDot, FunctionSquare, Layers, Plus, Regex, SquareStack } from "lucide-react";
+import { Boxes, Braces, CircleDot, FunctionSquare, Layers, Plus, Regex, SquareStack } from "lucide-react";
 
 interface Props {
   workspace: Workspace;
@@ -62,6 +62,11 @@ const INSERT_OPTIONS: InsertOption[] = [
     label: "Nyelvtan",
     icon: <Braces size={15} />,
     make: (used) => CELL_TEMPLATES.grammar.replace("name: G", `name: ${uniqueName("G", used)}`)
+  },
+  {
+    label: "Egyedi gép (tárolókkal)",
+    icon: <Boxes size={15} />,
+    make: (used) => CELL_TEMPLATES.machine.replace("name: Gep", `name: ${uniqueName("Gep", used)}`)
   }
 ];
 

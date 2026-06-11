@@ -160,6 +160,39 @@ export const EXAMPLE_WORKSHEETS: ExampleWorksheet[] = [
     ]
   },
   {
+    name: "Egyedi gépek — két verem, sor",
+    cells: [
+      `Machine:
+  name: AnBnCn
+  charset: a, b, c
+  states: qa, qb, qc, ok
+  init: qa
+  accept: ok
+  storages:
+    v1: stack(Z)
+    v2: stack(Z)
+  transitions:
+    - qa a $/A $/$ qa
+    - qa $ $/$ $/$ qb
+    - qb b A/$ $/B qb
+    - qb $ $/$ $/$ qc
+    - qc c $/$ B/$ qc
+    - qc $ Z/$ Z/$ ok`,
+      `Machine:
+  name: AnBnSorral
+  charset: a, b
+  states: gyujt, fogyaszt
+  init: gyujt
+  acceptMode: emptyStorages
+  storages:
+    s: queue
+  transitions:
+    - gyujt a $/A gyujt
+    - gyujt $ $/$ fogyaszt
+    - fogyaszt b A/$ fogyaszt`
+    ]
+  },
+  {
     name: "Nyelvtanok és konverziók",
     cells: [
       `Grammar:
@@ -230,7 +263,19 @@ export const CELL_TEMPLATES: Record<string, string> = {
   variables: S
   init: S
   rules:
-    - S -> aS | b`
+    - S -> aS | b`,
+  machine: `Machine:
+  name: Gep
+  charset: a, b
+  states: q0, q1
+  init: q0
+  accept: q1
+  storages:
+    v1: stack(Z)
+    v2: stack(Z)
+  transitions:
+    - q0 a Z/AZ $/$ q0
+    - q0 $ Z/Z $/$ q1`
 };
 
 export const STARTER_CELLS: string[] = EXAMPLE_WORKSHEETS[0].cells;

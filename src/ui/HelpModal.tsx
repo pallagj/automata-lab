@@ -106,6 +106,29 @@ export const HelpModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
     - s a/b > s     # a-t olvas, b-t ír, jobbra lép
     - s _/& = ok    # _ = üres jel, & = ugyanazt írja vissza`}</pre>
 
+        <h3>Egyedi gép — tetszőleges tárolókkal</h3>
+        <pre>{`Machine:
+  name: AnBnCn
+  charset: a, b, c
+  states: qa, qb, qc, ok
+  init: qa
+  accept: ok          # vagy acceptMode: emptyStorages
+  input: head         # olvasófej (alapért.) — vagy egy tároló id-je
+  storages:           # akárhány tároló: stack / queue / tape
+    v1: stack(Z)
+    v2: stack(Z)
+  transitions:
+    - qa a $/A $/$ qa   # HONNAN BEMENET tárolónként-művelet… HOVA
+    - qc $ Z/$ Z/$ ok   # verem/sor: LE/FEL · szalag: a/b > (két elem)`}</pre>
+        <p>
+          A véges automata, a veremautomata és a Turing-gép mind ennek megszorított esete: az
+          automata tárolómentes, a veremautomata egy <code>stack</code>-et kap, a Turing-gép egy{" "}
+          <code>tape</code>-et, amelyre a bemenet kerül (<code>input: szalag</code>). Két veremmel
+          már Turing-erejű gép építhető — a fenti példa az <code>aⁿbⁿcⁿ</code> nyelvet ismeri fel,
+          ami veremautomatával nem lehetséges. Az automata-műveletek (<code>det</code>,{" "}
+          <code>min</code>…) csak tárolómentes gépre alkalmazhatók — az alkalmazás megmondja, miért.
+        </p>
+
         <h3>Nyelvtan</h3>
         <pre>{`Grammar:
   name: G
