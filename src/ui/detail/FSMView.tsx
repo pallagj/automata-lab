@@ -11,10 +11,13 @@ import {
 } from "../../core/fsm/fsm";
 import { GraphEdge, GraphSpec, GraphView } from "../graph/GraphView";
 import { useGraphEditing } from "../graph/editing";
+import { Stage, StagePanel } from "./Stage";
+import { StepsContent } from "./StepsPanel";
+import { StepGroup } from "../../core/expr/expression";
 import {
   Check,
-  ChevronRight,
   ListOrdered,
+  ListTree,
   Play,
   RotateCcw,
   StepForward,
@@ -23,7 +26,7 @@ import {
   X
 } from "lucide-react";
 
-export const FSMView: React.FC<{ fsm: FSM }> = ({ fsm }) => {
+export const FSMView: React.FC<{ fsm: FSM; stepGroups?: StepGroup[] }> = ({ fsm, stepGroups }) => {
   const { cellId, editing } = useGraphEditing("fsm");
   const analysis = useMemo(() => analyzeFSM(fsm), [fsm]);
   const tm = useMemo(() => transMap(fsm), [fsm]);
@@ -121,140 +124,64 @@ export const FSMView: React.FC<{ fsm: FSM }> = ({ fsm }) => {
 
   const symbols = analysis.hasEpsilon ? [...fsm.alphabet, EPS] : fsm.alphabet;
 
-  return (
+  const chips = (
     <>
-      <div className="card">
-        <div className="card-title">Automata — {fsm.name}</div>
-        <div className="card-body">
-          <div className="badges">
-            <span className="badge accent">{fsm.states.length} állapot</span>
-            <span
-              className={`badge ${analysis.isDeterministic ? "ok" : "no"}`}
-              title={
-                analysis.isDeterministic
-                  ? "Minden (állapot, szimbólum) párhoz legfeljebb egy átmenet tartozik, és nincs ε-átmenet."
-                  : `Nemdeterminisztikus pontok: ${analysis.nondeterministicAt
-                      .slice(0, 3)
-                      .map((n) => `δ(${n.state},${n.symbol})={${n.targets.join(",")}}`)
-                      .join("; ")}${analysis.hasEpsilon ? " — és ε-átmenetek is vannak" : ""}`
-              }
-            >
-              {analysis.isDeterministic ? "determinisztikus" : "nemdeterminisztikus"}
-            </span>
-            <span
-              className={`badge ${analysis.isComplete ? "ok" : "no"}`}
-              title={
-                analysis.isComplete
-                  ? "Minden (állapot, szimbólum) párhoz van átmenet."
-                  : `Hiányzó átmenetek: ${analysis.missing
-                      .slice(0, 4)
-                      .map((m) => `δ(${m.state},${m.symbol})`)
-                      .join(", ")}${analysis.missing.length > 4 ? ", …" : ""}`
-              }
-            >
-              {analysis.isComplete ? "teljes" : "nem teljes"}
-            </span>
-            <span
-              className={`badge ${analysis.hasEpsilon ? "warn" : "ok"}`}
-              title={
-                analysis.hasEpsilon
-                  ? `ε-átmenetek: ${analysis.epsilonTransitions.map((t) => `${t.from}→${t.to}`).join(", ")}`
-                  : "Nincs ε-átmenet."
-              }
-            >
-              {analysis.hasEpsilon ? "ε-átmenetes" : "ε-mentes"}
-            </span>
-            {analysis.unreachableStates.length > 0 && (
-              <span className="badge warn" title="A kezdőállapotból nem elérhető állapotok — a reachable() művelettel elhagyhatók.">
-                elérhetetlen: {analysis.unreachableStates.join(", ")}
-              </span>
-            )}
-          </div>
-        </div>
-        <div style={{ height: 360 }}>
-          <GraphView spec={spec} onEdgeClick={stepEdge} cellId={cellId} editing={editing} exportName={fsm.name} />
-        </div>
-      </div>
+      <span className="stage-title">Automata — {fsm.name}</span>
+      <span className="badge accent">{fsm.states.length} állapot</span>
+      <span
+        className={`badge ${analysis.isDeterministic ? "ok" : "no"}`}
+        title={
+          analysis.isDeterministic
+            ? "Minden (állapot, szimbólum) párhoz legfeljebb egy átmenet tartozik, és nincs ε-átmenet."
+            : `Nemdeterminisztikus pontok: ${analysis.nondeterministicAt
+                .slice(0, 3)
+                .map((n) => `δ(${n.state},${n.symbol})={${n.targets.join(",")}}`)
+                .join("; ")}${analysis.hasEpsilon ? " — és ε-átmenetek is vannak" : ""}`
+        }
+      >
+        {analysis.isDeterministic ? "determinisztikus" : "nemdeterminisztikus"}
+      </span>
+      <span
+        className={`badge ${analysis.isComplete ? "ok" : "no"}`}
+        title={
+          analysis.isComplete
+            ? "Minden (állapot, szimbólum) párhoz van átmenet."
+            : `Hiányzó átmenetek: ${analysis.missing
+                .slice(0, 4)
+                .map((m) => `δ(${m.state},${m.symbol})`)
+                .join(", ")}${analysis.missing.length > 4 ? ", …" : ""}`
+        }
+      >
+        {analysis.isComplete ? "teljes" : "nem teljes"}
+      </span>
+      <span
+        className={`badge ${analysis.hasEpsilon ? "warn" : "ok"}`}
+        title={
+          analysis.hasEpsilon
+            ? `ε-átmenetek: ${analysis.epsilonTransitions.map((t) => `${t.from}→${t.to}`).join(", ")}`
+            : "Nincs ε-átmenet."
+        }
+      >
+        {analysis.hasEpsilon ? "ε-átmenetes" : "ε-mentes"}
+      </span>
+      {analysis.unreachableStates.length > 0 && (
+        <span className="badge warn" title="A kezdőállapotból nem elérhető állapotok — a reachable() művelettel elhagyhatók.">
+          elérhetetlen: {analysis.unreachableStates.join(", ")}
+        </span>
+      )}
+    </>
+  );
 
-      <div className="card">
-        <div className="card-title">Szimuláció</div>
-        <div className="card-body">
-          <div className="sim-row">
-            <input
-              className="sim-input"
-              value={input}
-              placeholder="bemeneti szó, pl. abab"
-              onChange={(e) => {
-                setInput(e.target.value);
-                setHistory([initialStates(fsm)]);
-              }}
-              spellCheck={false}
-            />
-            <button className="sim-btn" onClick={reset} title="Újraindítás">
-              <RotateCcw size={16} />
-            </button>
-            <button className="sim-btn" onClick={stepBack} disabled={history.length <= 1} title="Visszalépés">
-              <Undo2 size={16} />
-            </button>
-            <button className="sim-btn" onClick={step} disabled={status !== "working"} title="Egy lépés">
-              <StepForward size={16} />
-            </button>
-            <button className="sim-btn" onClick={runAll} disabled={status !== "working"} title="Futtatás végig">
-              <Play size={16} />
-            </button>
-            <span className={`verdict-pill ${status}`}>
-              {status === "accepted" && (
-                <>
-                  <Check size={15} /> elfogadja
-                </>
-              )}
-              {status === "rejected" && (
-                <>
-                  <X size={15} /> elutasítja
-                </>
-              )}
-              {status === "working" && <>fut…</>}
-            </span>
-          </div>
-
-          {input.length > 0 && (
-            <div className="tape">
-              {[...input].map((c, i) => (
-                <span key={i} className={`tape-cell ${i === pos ? "head" : ""} ${i < pos ? "done" : ""}`}>
-                  {c}
-                </span>
-              ))}
-            </div>
-          )}
-
-          <div className="timeline">
-            {history.map((set, i) => (
-              <button
-                key={i}
-                className={i === history.length - 1 ? "current" : ""}
-                onClick={() => setHistory((h) => h.slice(0, i + 1))}
-                title={i === 0 ? "kezdőállapotok (ε-lezárással)" : `a(z) „${input[i - 1]}” beolvasása után`}
-              >
-                {i === 0 ? "▶" : input[i - 1]} {setName(epsilonClosure(fsm, set, tm))}
-              </button>
-            ))}
-          </div>
-
-          {nextChar !== null && status === "working" && (
-            <div style={{ marginTop: 8, fontSize: 13, color: "var(--muted)" }}>
-              Tipp: a gráfon a kiemelt élekre kattintva ágat is választhatsz (NFA-felfedezés).
-            </div>
-          )}
-        </div>
-      </div>
-
-      <details className="card">
-        <summary className="card-title">
-          <Table2 size={15} />
-          Átmenet-táblázat
-          <ChevronRight size={15} className="chev" />
-        </summary>
-        <div className="card-body t-wrap">
+  const panels: StagePanel[] = [
+    {
+      key: "table",
+      title: (
+        <>
+          <Table2 size={14} /> Átmenet-táblázat
+        </>
+      ),
+      content: (
+        <div className="t-wrap">
           <table className="t">
             <thead>
               <tr>
@@ -280,45 +207,132 @@ export const FSMView: React.FC<{ fsm: FSM }> = ({ fsm }) => {
             </tbody>
           </table>
         </div>
-      </details>
-
-      <details className="card">
-        <summary className="card-title">
-          <ListOrdered size={15} />
-          Elfogadott szavak (minta)
-          <ChevronRight size={15} className="chev" />
-        </summary>
-        <div className="card-body">
-          {words.words.length === 0 ? (
-            <div style={{ color: "var(--muted)" }}>
-              Nem találtam elfogadott szót 7 hosszig — lehet, hogy a felismerendő nyelv üres.
+      )
+    },
+    {
+      key: "words",
+      title: (
+        <>
+          <ListOrdered size={14} /> Elfogadott szavak
+        </>
+      ),
+      content:
+        words.words.length === 0 ? (
+          <div style={{ color: "var(--muted)" }}>
+            Nem találtam elfogadott szót 7 hosszig — lehet, hogy a felismerendő nyelv üres.
+          </div>
+        ) : (
+          <>
+            <div className="words">
+              {words.words.map((w) => (
+                <button
+                  key={w}
+                  className="word-chip"
+                  title="Kattints: betöltés a szimulációba"
+                  onClick={() => {
+                    setInput(w === EPS ? "" : w);
+                    setHistory([initialStates(fsm)]);
+                  }}
+                >
+                  {w}
+                </button>
+              ))}
             </div>
-          ) : (
-            <>
-              <div className="words">
-                {words.words.map((w) => (
-                  <button
-                    key={w}
-                    className="word-chip"
-                    title="Kattints: betöltés a szimulációba"
-                    onClick={() => {
-                      setInput(w === EPS ? "" : w);
-                      setHistory([initialStates(fsm)]);
-                    }}
-                  >
-                    {w}
-                  </button>
-                ))}
+            {!words.exhaustive && (
+              <div style={{ marginTop: 8, fontSize: 12.5, color: "var(--muted)" }}>
+                …és a nyelv ennél bővebb (a lista 7 hosszig / 24 szóig terjed).
               </div>
-              {!words.exhaustive && (
-                <div style={{ marginTop: 8, fontSize: 12.5, color: "var(--muted)" }}>
-                  …és a nyelv ennél bővebb (a lista 7 hosszig / 24 szóig terjed).
-                </div>
-              )}
+            )}
+          </>
+        )
+    }
+  ];
+  if (stepGroups && stepGroups.length > 0) {
+    panels.push({
+      key: "steps",
+      title: (
+        <>
+          <ListTree size={14} /> Hogyan készült?
+        </>
+      ),
+      content: <StepsContent stepGroups={stepGroups} />
+    });
+  }
+
+  const bottom = (
+    <>
+      <div className="sim-row">
+        <input
+          className="sim-input"
+          value={input}
+          placeholder="bemeneti szó, pl. abab"
+          onChange={(e) => {
+            setInput(e.target.value);
+            setHistory([initialStates(fsm)]);
+          }}
+          spellCheck={false}
+        />
+        <button className="sim-btn" onClick={reset} title="Újraindítás">
+          <RotateCcw size={16} />
+        </button>
+        <button className="sim-btn" onClick={stepBack} disabled={history.length <= 1} title="Visszalépés">
+          <Undo2 size={16} />
+        </button>
+        <button className="sim-btn" onClick={step} disabled={status !== "working"} title="Egy lépés">
+          <StepForward size={16} />
+        </button>
+        <button className="sim-btn" onClick={runAll} disabled={status !== "working"} title="Futtatás végig">
+          <Play size={16} />
+        </button>
+        <span className={`verdict-pill ${status}`}>
+          {status === "accepted" && (
+            <>
+              <Check size={15} /> elfogadja
             </>
           )}
+          {status === "rejected" && (
+            <>
+              <X size={15} /> elutasítja
+            </>
+          )}
+          {status === "working" && <>fut…</>}
+        </span>
+      </div>
+
+      {input.length > 0 && (
+        <div className="tape">
+          {[...input].map((c, i) => (
+            <span key={i} className={`tape-cell ${i === pos ? "head" : ""} ${i < pos ? "done" : ""}`}>
+              {c}
+            </span>
+          ))}
         </div>
-      </details>
+      )}
+
+      <div className="timeline">
+        {history.map((set, i) => (
+          <button
+            key={i}
+            className={i === history.length - 1 ? "current" : ""}
+            onClick={() => setHistory((h) => h.slice(0, i + 1))}
+            title={i === 0 ? "kezdőállapotok (ε-lezárással)" : `a(z) „${input[i - 1]}” beolvasása után`}
+          >
+            {i === 0 ? "▶" : input[i - 1]} {setName(epsilonClosure(fsm, set, tm))}
+          </button>
+        ))}
+        {nextChar !== null && status === "working" && (
+          <span className="sim-tip">a gráf kiemelt éleire kattintva ágat választhatsz</span>
+        )}
+      </div>
     </>
+  );
+
+  return (
+    <Stage
+      graph={<GraphView spec={spec} onEdgeClick={stepEdge} cellId={cellId} editing={editing} exportName={fsm.name} />}
+      chips={chips}
+      panels={panels}
+      bottom={bottom}
+    />
   );
 };

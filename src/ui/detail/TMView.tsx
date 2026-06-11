@@ -12,11 +12,14 @@ import {
 } from "../../core/tm/tm";
 import { GraphEdge, GraphSpec, GraphView } from "../graph/GraphView";
 import { useGraphEditing } from "../graph/editing";
-import { Check, ChevronRight, Play, RotateCcw, StepForward, Table2, Undo2, X } from "lucide-react";
+import { Stage, StagePanel } from "./Stage";
+import { StepsContent } from "./StepsPanel";
+import { StepGroup } from "../../core/expr/expression";
+import { Check, ListTree, Play, RotateCcw, StepForward, Table2, Undo2, X } from "lucide-react";
 
 const MAX_RUN = 5000;
 
-export const TMView: React.FC<{ tm: TM }> = ({ tm }) => {
+export const TMView: React.FC<{ tm: TM; stepGroups?: StepGroup[] }> = ({ tm, stepGroups }) => {
   const { cellId, editing } = useGraphEditing("tm");
   const [input, setInput] = useState("");
   const [history, setHistory] = useState<TMConfig[]>([initialTMConfig(tm, "")]);
@@ -111,94 +114,34 @@ export const TMView: React.FC<{ tm: TM }> = ({ tm }) => {
 
   const tape = tapeWindow(cfg, 12);
 
-  return (
+  const chips = (
     <>
-      <div className="card">
-        <div className="card-title">Turing-gép — {tm.name}</div>
-        <div className="card-body">
-          <div className="badges">
-            <span className="badge accent">{tm.states.length} állapot</span>
-            <span className="badge accent">lépések: {cfg.steps}</span>
-            {nondet.nondeterministicAt.length > 0 && (
-              <span
-                className="badge warn"
-                title={`Többértékű átmenetek: ${nondet.nondeterministicAt
-                  .map((n) => `δ(${n.state}, ${n.read === TM_BLANK ? "␣" : n.read})`)
-                  .join(", ")} — a gráfon kattintva választhatsz ágat.`}
-              >
-                nemdeterminisztikus
-              </span>
-            )}
-          </div>
-        </div>
-        <div style={{ height: 320 }}>
-          <GraphView spec={spec} onEdgeClick={(e) => step(e)} cellId={cellId} editing={editing} exportName={tm.name} />
-        </div>
-      </div>
+      <span className="stage-title">Turing-gép — {tm.name}</span>
+      <span className="badge accent">{tm.states.length} állapot</span>
+      <span className="badge accent">lépések: {cfg.steps}</span>
+      {nondet.nondeterministicAt.length > 0 && (
+        <span
+          className="badge warn"
+          title={`Többértékű átmenetek: ${nondet.nondeterministicAt
+            .map((n) => `δ(${n.state}, ${n.read === TM_BLANK ? "␣" : n.read})`)
+            .join(", ")} — a gráfon kattintva választhatsz ágat.`}
+        >
+          nemdeterminisztikus
+        </span>
+      )}
+    </>
+  );
 
-      <div className="card">
-        <div className="card-title">Szimuláció — szalag</div>
-        <div className="card-body">
-          <div className="sim-row">
-            <input
-              className="sim-input"
-              value={input}
-              placeholder="szalag kezdeti tartalma, pl. abba"
-              onChange={(e) => {
-                setInput(e.target.value);
-                setHistory([initialTMConfig(tm, e.target.value)]);
-              }}
-              spellCheck={false}
-            />
-            <button className="sim-btn" onClick={reset} title="Újraindítás">
-              <RotateCcw size={16} />
-            </button>
-            <button className="sim-btn" onClick={stepBack} disabled={history.length <= 1} title="Visszalépés">
-              <Undo2 size={16} />
-            </button>
-            <button className="sim-btn" onClick={() => step()} disabled={displayStatus !== "working"} title="Egy lépés">
-              <StepForward size={16} />
-            </button>
-            <button className="sim-btn" onClick={runAll} disabled={displayStatus !== "working"} title="Futtatás">
-              <Play size={16} />
-            </button>
-            <span className={`verdict-pill ${displayStatus}`}>
-              {displayStatus === "accepted" && (
-                <>
-                  <Check size={15} /> elfogadja
-                </>
-              )}
-              {displayStatus === "rejected" && (
-                <>
-                  <X size={15} /> elutasítja
-                </>
-              )}
-              {displayStatus === "working" && <>fut…</>}
-              {displayStatus === "limit" && <>lépéskorlát ({MAX_RUN})</>}
-            </span>
-          </div>
-
-          <div className="tape" style={{ marginTop: 10 }}>
-            {tape.cells.map((c, i) => (
-              <span key={tape.startPos + i} className={`tape-cell ${i === tape.headIndex ? "head" : ""}`}>
-                {c === TM_BLANK ? "␣" : c}
-              </span>
-            ))}
-          </div>
-          <div style={{ fontSize: 12.5, color: "var(--muted)", marginTop: 4 }}>
-            aktuális állapot: <b style={{ color: "var(--accent)" }}>{cfg.state}</b> · fejpozíció: {cfg.head}
-            {options.length > 1 && " · több átmenet is illeszkedik — a gráfon választhatsz"}
-          </div>
-        </div>
-      </div>
-
-      <details className="card">
-        <summary className="card-title">
-          <Table2 size={15} />
-          Átmenetek
-          <ChevronRight size={15} className="chev" />
-        </summary>
-        <div className="card-body t-wrap">
+  const panels: StagePanel[] = [
+    {
+      key: "table",
+      title: (
+        <>
+          <Table2 size={14} /> Átmenetek
+        </>
+      ),
+      content: (
+        <div className="t-wrap">
           <table className="t">
             <thead>
               <tr>
@@ -222,7 +165,82 @@ export const TMView: React.FC<{ tm: TM }> = ({ tm }) => {
             </tbody>
           </table>
         </div>
-      </details>
+      )
+    }
+  ];
+  if (stepGroups && stepGroups.length > 0) {
+    panels.push({
+      key: "steps",
+      title: (
+        <>
+          <ListTree size={14} /> Hogyan készült?
+        </>
+      ),
+      content: <StepsContent stepGroups={stepGroups} />
+    });
+  }
+
+  const bottom = (
+    <>
+      <div className="sim-row">
+        <input
+          className="sim-input"
+          value={input}
+          placeholder="szalag kezdeti tartalma, pl. abba"
+          onChange={(e) => {
+            setInput(e.target.value);
+            setHistory([initialTMConfig(tm, e.target.value)]);
+          }}
+          spellCheck={false}
+        />
+        <button className="sim-btn" onClick={reset} title="Újraindítás">
+          <RotateCcw size={16} />
+        </button>
+        <button className="sim-btn" onClick={stepBack} disabled={history.length <= 1} title="Visszalépés">
+          <Undo2 size={16} />
+        </button>
+        <button className="sim-btn" onClick={() => step()} disabled={displayStatus !== "working"} title="Egy lépés">
+          <StepForward size={16} />
+        </button>
+        <button className="sim-btn" onClick={runAll} disabled={displayStatus !== "working"} title="Futtatás">
+          <Play size={16} />
+        </button>
+        <span className={`verdict-pill ${displayStatus}`}>
+          {displayStatus === "accepted" && (
+            <>
+              <Check size={15} /> elfogadja
+            </>
+          )}
+          {displayStatus === "rejected" && (
+            <>
+              <X size={15} /> elutasítja
+            </>
+          )}
+          {displayStatus === "working" && <>fut…</>}
+          {displayStatus === "limit" && <>lépéskorlát ({MAX_RUN})</>}
+        </span>
+      </div>
+
+      <div className="tape" style={{ marginTop: 10 }}>
+        {tape.cells.map((c, i) => (
+          <span key={tape.startPos + i} className={`tape-cell ${i === tape.headIndex ? "head" : ""}`}>
+            {c === TM_BLANK ? "␣" : c}
+          </span>
+        ))}
+      </div>
+      <div style={{ fontSize: 12.5, color: "var(--muted)", marginTop: 4 }}>
+        aktuális állapot: <b style={{ color: "var(--accent)" }}>{cfg.state}</b> · fejpozíció: {cfg.head}
+        {options.length > 1 && " · több átmenet is illeszkedik — a gráfon választhatsz"}
+      </div>
     </>
+  );
+
+  return (
+    <Stage
+      graph={<GraphView spec={spec} onEdgeClick={(e) => step(e)} cellId={cellId} editing={editing} exportName={tm.name} />}
+      chips={chips}
+      panels={panels}
+      bottom={bottom}
+    />
   );
 };

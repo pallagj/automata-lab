@@ -32,6 +32,20 @@ const Step: React.FC<{ step: AlgoStep }> = ({ step }) => (
   </div>
 );
 
+/** A lépéslista tartalma — kártyában és lebegő panelben is használható. */
+export const StepsContent: React.FC<{ stepGroups: StepGroup[] }> = ({ stepGroups }) => (
+  <>
+    {stepGroups.map((g, i) => (
+      <div key={i}>
+        {stepGroups.length > 1 && <div className="step-op">{g.operation}</div>}
+        {g.steps.map((s, j) => (
+          <Step key={j} step={s} />
+        ))}
+      </div>
+    ))}
+  </>
+);
+
 export const StepsPanel: React.FC<{ stepGroups: StepGroup[] }> = ({ stepGroups }) => {
   if (stepGroups.length === 0) return null;
   return (
@@ -42,14 +56,7 @@ export const StepsPanel: React.FC<{ stepGroups: StepGroup[] }> = ({ stepGroups }
         <ChevronRight size={15} className="chev" />
       </summary>
       <div className="card-body">
-        {stepGroups.map((g, i) => (
-          <div key={i}>
-            {stepGroups.length > 1 && <div className="step-op">{g.operation}</div>}
-            {g.steps.map((s, j) => (
-              <Step key={j} step={s} />
-            ))}
-          </div>
-        ))}
+        <StepsContent stepGroups={stepGroups} />
       </div>
     </details>
   );
