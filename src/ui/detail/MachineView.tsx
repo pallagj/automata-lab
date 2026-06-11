@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useMemo, useState } from "react";
 import { EPS } from "../../core/types";
 import {
   analyzeMachine,
@@ -73,15 +73,23 @@ export const MachineView: React.FC<{ machine: Machine; stepGroups?: StepGroup[] 
   const analysis = useMemo(() => analyzeMachine(m), [m]);
   const head = hasInputHead(m);
 
-  const [input, setInput] = useState("");
-  const [history, setHistory] = useState<MachineConfig[][]>([[initialMachineConfig(m, "")]]);
+  const [inputState, setInput] = useState("");
+  const [historyState, setHistory] = useState<MachineConfig[][]>([[initialMachineConfig(m, "")]]);
   const [selected, setSelected] = useState(0);
 
-  useEffect(() => {
+  // gépváltáskor render közben nullázunk: a régi konfigurációk tárolói nem
+  // illenek az új géphez, egyetlen ilyen képkocka is összeomlana
+  const [forMachine, setForMachine] = useState(m);
+  const machineChanged = forMachine !== m;
+  if (machineChanged) {
+    setForMachine(m);
     setInput("");
     setHistory([[initialMachineConfig(m, "")]]);
     setSelected(0);
-  }, [m]);
+  }
+  // a folyamatban lévő (eldobás előtti) renderben is az új géphez illő adatokkal dolgozunk
+  const input = machineChanged ? "" : inputState;
+  const history = machineChanged ? [[initialMachineConfig(m, "")]] : historyState;
 
   const configs = history[history.length - 1];
   const featured = configs[Math.min(selected, configs.length - 1)] ?? null;
