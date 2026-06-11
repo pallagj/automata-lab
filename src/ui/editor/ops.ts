@@ -1,13 +1,60 @@
-/** A kifejezésnyelv műveletei a cella-súgóhoz: leírás + paraméterszám + elvárt bemenet. */
+/**
+ * A kifejezésnyelv műveletei a cella-műveletmenühöz: leírás, csoport,
+ * paraméterszám és pontos alkalmazhatóság-vizsgálat (dry-run a core
+ * algoritmusokkal, így mindig ugyanazt mondja, mint a tényleges kiértékelés).
+ */
+import { Definition } from "../../core/parse/definitionParser";
+import { FSM } from "../../core/fsm/fsm";
+import {
+  checkEquivalence,
+  cleanFSM,
+  complement,
+  complete,
+  concatFSM,
+  determinize,
+  minimize,
+  product,
+  reachable,
+  removeEpsilon,
+  reverseFSM,
+  starFSM,
+  unionEpsilon
+} from "../../core/fsm/ops";
+import { fsmToGrammar, grammarToFSM, grammarToPDA } from "../../core/grammar/grammar";
+import { OpResult } from "../../core/types";
+import { ExprValue } from "../../core/expr/expression";
+
 export interface OpInfo {
   name: string;
   desc: string;
   args: 1 | 2;
   /** milyen értékre alkalmazható */
-  input: "fsm" | "grammar" | "empty";
+  input: "fsm" | "grammar";
+  group: string;
 }
 
-export type CellKind = "fsm" | "pda" | "tm" | "grammar" | "verdict" | null;
+export const OPS: OpInfo[] = [
+  { group: "Normalizálás", name: "epsfree", desc: "ε-mentesítés", args: 1, input: "fsm" },
+  { group: "Normalizálás", name: "det", desc: "determinizálás (hatványhalmaz-konstrukció)", args: 1, input: "fsm" },
+  { group: "Normalizálás", name: "complete", desc: "teljessé tétel csapdaállapottal", args: 1, input: "fsm" },
+  { group: "Normalizálás", name: "reachable", desc: "elérhetetlen állapotok elhagyása", args: 1, input: "fsm" },
+  { group: "Normalizálás", name: "min", desc: "minimalizálás (partíciófinomítás)", args: 1, input: "fsm" },
+  { group: "Normalizálás", name: "clean", desc: "állapotok átnevezése (A, B, C…)", args: 1, input: "fsm" },
+
+  { group: "Nyelvműveletek", name: "complement", desc: "komplementer nyelv", args: 1, input: "fsm" },
+  { group: "Nyelvműveletek", name: "union", desc: "unió (két automata)", args: 2, input: "fsm" },
+  { group: "Nyelvműveletek", name: "intersect", desc: "metszet (két automata)", args: 2, input: "fsm" },
+  { group: "Nyelvműveletek", name: "difference", desc: "különbség (két automata)", args: 2, input: "fsm" },
+  { group: "Nyelvműveletek", name: "concat", desc: "összefűzés (két automata)", args: 2, input: "fsm" },
+  { group: "Nyelvműveletek", name: "star", desc: "lezárás (Kleene-csillag)", args: 1, input: "fsm" },
+  { group: "Nyelvműveletek", name: "reverse", desc: "megfordítás", args: 1, input: "fsm" },
+
+  { group: "Konverzió", name: "toGrammar", desc: "automata → reguláris nyelvtan", args: 1, input: "fsm" },
+  { group: "Konverzió", name: "toFsm", desc: "nyelvtan → véges automata", args: 1, input: "grammar" },
+  { group: "Konverzió", name: "toPda", desc: "nyelvtan → veremautomata", args: 1, input: "grammar" },
+
+  { group: "Vizsgálat", name: "equal", desc: "ekvivalencia-vizsgálat ellenpéldával", args: 2, input: "fsm" }
+];
 
 const KIND_HU: Record<string, string> = {
   fsm: "véges automata",
@@ -17,54 +64,93 @@ const KIND_HU: Record<string, string> = {
   verdict: "összehasonlítás eredménye"
 };
 
-/**
- * Alkalmazható-e a művelet az adott cellára?
- * (a jobblineáris nyelvtan automatikusan automatává alakul, ezért arra
- * az automata-műveletek is mennek)
- */
-export function opApplicability(
-  op: OpInfo,
-  kind: CellKind,
-  grammarIsRightLinear: boolean
-): { ok: boolean; reason?: string } {
-  if (kind === null) return { ok: true }; // üres cella: sablon beszúrható
-  switch (op.input) {
-    case "fsm":
-      if (kind === "fsm") return { ok: true };
-      if (kind === "grammar" && grammarIsRightLinear)
-        return { ok: true };
-      return {
-        ok: false,
-        reason: `véges automatát vár — ez a cella: ${KIND_HU[kind]}${
-          kind === "grammar" ? " (nem jobblineáris)" : ""
-        }`
-      };
-    case "grammar":
-      return kind === "grammar"
-        ? { ok: true }
-        : { ok: false, reason: `nyelvtant vár — ez a cella: ${KIND_HU[kind]}` };
-    case "empty":
-      return { ok: false, reason: "csak üres cellába illeszthető (nyers szöveget vár)" };
+export interface Applicability {
+  ok: boolean;
+  reason?: string;
+  /** működő javítási lánc, pl. min(complete(det(M))) */
+  fixChain?: string;
+}
+
+/** Az op dry-run eredményéből olvassuk ki, miért nem alkalmazható. */
+function fromDryRun(r: OpResult<unknown>): Applicability {
+  if (r.ok) return { ok: true };
+  const firstErr = r.diagnostics.find((d) => d.level === "error");
+  return {
+    ok: false,
+    reason: firstErr?.title ?? "a művelet előfeltétele nem teljesül",
+    fixChain: firstErr?.fix?.code
+  };
+}
+
+function dryRunFsmOp(op: string, f: FSM): Applicability {
+  switch (op) {
+    case "det":
+      return fromDryRun(determinize(f));
+    case "min":
+      return fromDryRun(minimize(f));
+    case "epsfree":
+      return fromDryRun(removeEpsilon(f));
+    case "complete":
+      return fromDryRun(complete(f));
+    case "reachable":
+      return fromDryRun(reachable(f));
+    case "complement":
+      return fromDryRun(complement(f));
+    case "intersect":
+    case "difference":
+      // a szorzat-konstrukció előfeltételeit a cella saját gépén teszteljük
+      return fromDryRun(product(f, f, op));
+    case "union": {
+      // teljes DFA-kra szorzat, egyébként ε-konstrukció — mindig megy
+      const p = product(f, f, "union");
+      return fromDryRun(p.ok ? p : unionEpsilon(f, f));
+    }
+    case "concat":
+      return fromDryRun(concatFSM(f, f));
+    case "star":
+      return fromDryRun(starFSM(f));
+    case "reverse":
+      return fromDryRun(reverseFSM(f));
+    case "clean":
+      return fromDryRun(cleanFSM(f));
+    case "toGrammar":
+      return fromDryRun(fsmToGrammar(f));
+    case "equal":
+      return fromDryRun(checkEquivalence(f, f));
+    default:
+      return { ok: true };
   }
 }
 
-export const OPS: OpInfo[] = [
-  { name: "det", desc: "determinizálás (hatványhalmaz-konstrukció)", args: 1, input: "fsm" },
-  { name: "min", desc: "minimalizálás (partíciófinomítás)", args: 1, input: "fsm" },
-  { name: "epsfree", desc: "ε-mentesítés", args: 1, input: "fsm" },
-  { name: "complete", desc: "teljessé tétel csapdaállapottal", args: 1, input: "fsm" },
-  { name: "reachable", desc: "elérhetetlen állapotok elhagyása", args: 1, input: "fsm" },
-  { name: "complement", desc: "komplementer nyelv", args: 1, input: "fsm" },
-  { name: "union", desc: "unió (két automata)", args: 2, input: "fsm" },
-  { name: "intersect", desc: "metszet (két automata)", args: 2, input: "fsm" },
-  { name: "difference", desc: "különbség (két automata)", args: 2, input: "fsm" },
-  { name: "concat", desc: "összefűzés (két automata)", args: 2, input: "fsm" },
-  { name: "star", desc: "lezárás (Kleene-csillag)", args: 1, input: "fsm" },
-  { name: "reverse", desc: "megfordítás", args: 1, input: "fsm" },
-  { name: "clean", desc: "állapotok átnevezése (A, B, C…)", args: 1, input: "fsm" },
-  { name: "toGrammar", desc: "automata → reguláris nyelvtan", args: 1, input: "fsm" },
-  { name: "toFsm", desc: "nyelvtan → véges automata", args: 1, input: "grammar" },
-  { name: "toPda", desc: "nyelvtan → veremautomata", args: 1, input: "grammar" },
-  { name: "equal", desc: "ekvivalencia-vizsgálat ellenpéldával", args: 2, input: "fsm" },
-  { name: "regex", desc: "reguláris kifejezés → ε-NFA", args: 1, input: "empty" }
-];
+/**
+ * Alkalmazható-e a művelet az adott cella értékére? Üres cellára minden
+ * megengedett (sablon szúródik be); egyébként a tényleges core algoritmus
+ * előfeltétel-ellenőrzése dönt, így a „min ε-átmenetekkel” is piros lesz.
+ */
+export function opApplicability(op: OpInfo, value: ExprValue | Definition | null): Applicability {
+  if (value === null) return { ok: true };
+  const kind = value.kind;
+  if (kind === "verdict")
+    return { ok: false, reason: "összehasonlítás eredményére nem alkalmazható" };
+
+  if (op.input === "grammar") {
+    if (kind !== "grammar")
+      return { ok: false, reason: `nyelvtant vár — ez a cella: ${KIND_HU[kind]}` };
+    return fromDryRun(op.name === "toPda" ? grammarToPDA(value) : grammarToFSM(value));
+  }
+
+  // op.input === "fsm"
+  let fsm: FSM;
+  if (kind === "fsm") {
+    fsm = value;
+  } else if (kind === "grammar") {
+    // jobblineáris nyelvtan automatikusan automatává alakul
+    const conv = grammarToFSM(value);
+    if (!conv.ok)
+      return { ok: false, reason: "véges automatát vár — ez a nyelvtan nem jobblineáris" };
+    fsm = conv.value!;
+  } else {
+    return { ok: false, reason: `véges automatát vár — ez a cella: ${KIND_HU[kind]}` };
+  }
+  return dryRunFsmOp(op.name, fsm);
+}

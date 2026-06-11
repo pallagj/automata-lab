@@ -5,10 +5,10 @@ import { yaml } from "@codemirror/lang-yaml";
 import { Cell, useAppStore } from "../../state/store";
 import { CellResult } from "../../core/workspace";
 import { DiagnosticsList } from "../detail/DiagnosticsList";
-import { ArrowDown, ArrowUp, FileCode2, FunctionSquare, Trash2 } from "lucide-react";
+import { Code2, FileCode2, FunctionSquare, GripVertical, SlidersHorizontal, X } from "lucide-react";
 import { serializeDefinition } from "../../core/parse/serialize";
-import { classify } from "../../core/grammar/grammar";
 import { opApplicability, OpInfo, OPS } from "./ops";
+import { detectEntityKind, EntityForm, parseEntityDraft } from "./EntityForm";
 
 interface Props {
   cell: Cell;
@@ -24,39 +24,76 @@ const KIND_LABEL: Record<string, string> = {
   verdict: "összehasonlítás"
 };
 
+/** Cellák közti drag&drop: az éppen vonszolt cella azonosítója. */
+let draggingId: string | null = null;
+
+/** Kidolgozott figyelmeztető jelvény a gutterbe (nem emoji). */
+const SeverityBadge: React.FC<{ level: "error" | "warning" | "info" }> = ({ level }) => {
+  if (level === "info") {
+    return (
+      <svg viewBox="0 0 24 24" width="17" height="17" className={`gutter-warn ${level}`}>
+        <circle cx="12" cy="12" r="9.5" fill="currentColor" />
+        <circle cx="12" cy="7.6" r="1.5" fill="var(--panel)" />
+        <rect x="10.7" y="10.4" width="2.6" height="7" rx="1.3" fill="var(--panel)" />
+      </svg>
+    );
+  }
+  return (
+    <svg viewBox="0 0 24 24" width="18" height="18" className={`gutter-warn ${level}`}>
+      <path
+        d="M10.43 4.1 2.9 17.4a1.8 1.8 0 0 0 1.57 2.7h15.06a1.8 1.8 0 0 0 1.57-2.7L13.57 4.1a1.8 1.8 0 0 0-3.14 0Z"
+        fill="currentColor"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        strokeLinejoin="round"
+      />
+      <rect x="10.8" y="8.4" width="2.4" height="6" rx="1.2" fill="var(--panel)" />
+      <circle cx="12" cy="16.8" r="1.45" fill="var(--panel)" />
+    </svg>
+  );
+};
+
+const REGEX_CELL = /^\s*([A-Za-z][A-Za-z0-9_'′]*)\s*=\s*regex\(([\s\S]*)\)\s*$/;
+
 export const CellEditor: React.FC<Props> = ({ cell, index, result }) => {
   const theme = useAppStore((s) => s.theme);
   const activeCellId = useAppStore((s) => s.activeCellId);
   const setActiveCell = useAppStore((s) => s.setActiveCell);
   const setCellSource = useAppStore((s) => s.setCellSource);
   const removeCell = useAppStore((s) => s.removeCell);
-  const moveCell = useAppStore((s) => s.moveCell);
+  const moveCellTo = useAppStore((s) => s.moveCellTo);
   const addCell = useAppStore((s) => s.addCell);
+
   const [opsOpen, setOpsOpen] = useState(false);
   const [menuPos, setMenuPos] = useState<{ top: number; left: number }>({ top: 0, left: 0 });
   const opsBtnRef = useRef<HTMLButtonElement>(null);
 
-  const cellKind = result?.value?.kind ?? null;
-  const grammarIsRightLinear = useMemo(() => {
-    if (result?.value?.kind !== "grammar") return false;
-    const c = classify(result.value);
-    return c.type === 3 && c.direction === "right";
-  }, [result]);
+  const [diagOpen, setDiagOpen] = useState(false);
+  const [diagPos, setDiagPos] = useState<{ top: number; left: number }>({ top: 0, left: 0 });
+  const diagTimer = useRef<number | null>(null);
+  const warnRef = useRef<HTMLSpanElement>(null);
 
-  const openOpsMenu = () => {
-    const rect = opsBtnRef.current?.getBoundingClientRect();
-    if (rect) {
-      const width = Math.min(380, window.innerWidth - 16);
-      setMenuPos({
-        top: Math.min(rect.bottom + 6, window.innerHeight - 60),
-        left: Math.max(8, Math.min(rect.left, window.innerWidth - width - 8))
-      });
-    }
-    setOpsOpen(true);
-  };
+  const [dragReady, setDragReady] = useState(false);
+  const [dropPos, setDropPos] = useState<"above" | "below" | null>(null);
+
+  // entitás-cella: űrlap- vagy kódnézet
+  const entityKind = detectEntityKind(cell.source);
+  const formAvailable = entityKind !== null && parseEntityDraft(cell.source) !== null;
+  const [codeView, setCodeView] = useState(false);
+  const showForm = formAvailable && !codeView;
+
+  const regexMatch = REGEX_CELL.exec(cell.source);
 
   const isActive = cell.id === activeCellId;
-  const hasError = (result?.diagnostics ?? []).some((d) => d.level === "error");
+  const diagnostics = result?.diagnostics ?? [];
+  const worst: "error" | "warning" | "info" | null = diagnostics.some((d) => d.level === "error")
+    ? "error"
+    : diagnostics.some((d) => d.level === "warning")
+      ? "warning"
+      : diagnostics.length > 0
+        ? "info"
+        : null;
+  const hasError = worst === "error";
   const isYaml = /^\s*[A-Za-z]+\s*:/.test(cell.source);
 
   const extensions = useMemo(() => (isYaml ? [yaml()] : []), [isYaml]);
@@ -65,9 +102,38 @@ export const CellEditor: React.FC<Props> = ({ cell, index, result }) => {
   const expandable =
     result?.isExpression && result.value && result.value.kind !== "verdict" ? result.value : null;
 
+  const openOpsMenu = () => {
+    const rect = opsBtnRef.current?.getBoundingClientRect();
+    if (rect) {
+      const width = Math.min(400, window.innerWidth - 16);
+      setMenuPos({
+        top: Math.min(rect.bottom + 6, window.innerHeight - 60),
+        left: Math.max(8, Math.min(rect.left - width + rect.width, window.innerWidth - width - 8))
+      });
+    }
+    setOpsOpen(true);
+  };
+
+  const openDiag = () => {
+    if (diagTimer.current) window.clearTimeout(diagTimer.current);
+    const rect = warnRef.current?.getBoundingClientRect();
+    if (rect) {
+      setDiagPos({
+        top: Math.max(8, Math.min(rect.top - 6, window.innerHeight - 220)),
+        left: rect.right + 8
+      });
+    }
+    setDiagOpen(true);
+  };
+  const closeDiagSoon = () => {
+    if (diagTimer.current) window.clearTimeout(diagTimer.current);
+    diagTimer.current = window.setTimeout(() => setDiagOpen(false), 180);
+  };
+
   const applyFix = (code: string) => {
     const asg = /^\s*([A-Za-z][A-Za-z0-9_'′]*)\s*=/.exec(cell.source);
     setCellSource(cell.id, asg ? `${asg[1]} = ${code}` : code);
+    setDiagOpen(false);
   };
 
   /** A kiválasztott művelettel körbeveszi a cella kifejezését. */
@@ -88,69 +154,216 @@ export const CellEditor: React.FC<Props> = ({ cell, index, result }) => {
     }
   };
 
+  /* ---- drag & drop a gutterrel ---- */
+  const onDragStart = (e: React.DragEvent) => {
+    if (!dragReady) {
+      e.preventDefault();
+      return;
+    }
+    draggingId = cell.id;
+    e.dataTransfer.effectAllowed = "move";
+    e.dataTransfer.setData("text/plain", cell.id);
+  };
+  const onDragEnd = () => {
+    draggingId = null;
+    setDragReady(false);
+    setDropPos(null);
+  };
+  const onDragOver = (e: React.DragEvent) => {
+    if (!draggingId || draggingId === cell.id) return;
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "move";
+    const rect = e.currentTarget.getBoundingClientRect();
+    setDropPos(e.clientY < rect.top + rect.height / 2 ? "above" : "below");
+  };
+  const onDrop = (e: React.DragEvent) => {
+    if (!draggingId || draggingId === cell.id) return;
+    e.preventDefault();
+    moveCellTo(draggingId, dropPos === "above" ? index : index + 1);
+    setDropPos(null);
+  };
+
+  /* ---- műveletmenü csoportokkal ---- */
+  const renderOpsMenu = () => {
+    const value = result?.value ?? null;
+    const items: React.ReactNode[] = [];
+    let lastGroup = "";
+    for (const op of OPS) {
+      if (op.group !== lastGroup) {
+        lastGroup = op.group;
+        items.push(
+          <div className="menu-group" key={`g-${op.group}`}>
+            {op.group}
+          </div>
+        );
+      }
+      const app = opApplicability(op, value);
+      items.push(
+        <button
+          key={op.name}
+          className={app.ok ? "" : "not-applicable"}
+          disabled={!app.ok}
+          title={app.ok ? op.desc : `Erre a cellára nem alkalmazható: ${app.reason}`}
+          onClick={(e) => {
+            e.stopPropagation();
+            if (app.ok) applyOp(op);
+          }}
+        >
+          <code className="op-name">{op.name}(…)</code> {op.desc}
+          {!app.ok && (
+            <span className="op-reason">
+              {app.reason}
+              {app.fixChain ? (
+                <>
+                  {" "}
+                  — működő lánc: <code>{app.fixChain}</code>
+                </>
+              ) : null}
+            </span>
+          )}
+        </button>
+      );
+    }
+    return items;
+  };
+
   return (
     <div
-      className={`cell ${isActive ? "active" : ""} ${hasError ? "has-error" : ""}`}
+      className={`cell ${isActive ? "active" : ""} ${hasError ? "has-error" : ""} ${
+        dropPos ? `drop-${dropPos}` : ""
+      }`}
       onFocusCapture={() => setActiveCell(cell.id)}
       onClick={() => setActiveCell(cell.id)}
+      onKeyDownCapture={(e) => {
+        if (e.key === "Enter" && e.altKey) {
+          e.preventDefault();
+          e.stopPropagation();
+          addCell("", cell.id);
+        }
+      }}
+      draggable={dragReady}
+      onDragStart={onDragStart}
+      onDragEnd={onDragEnd}
+      onDragOver={onDragOver}
+      onDragLeave={() => setDropPos(null)}
+      onDrop={onDrop}
     >
-      <div className="cell-head">
-        {result?.name && <span className="cell-name">{result.name}</span>}
-        {result?.value && <span className="cell-kind">{KIND_LABEL[result.value.kind]}</span>}
-        <span className="spacer" />
-        <button
-          ref={opsBtnRef}
-          className="cell-tool"
-          title="Műveletek — a kiválasztott művelettel körbeveszi a cellát"
-          onClick={(e) => {
-            e.stopPropagation();
-            opsOpen ? setOpsOpen(false) : openOpsMenu();
-          }}
-        >
-          <FunctionSquare size={15} />
-        </button>
-        {expandable && (
+      <div
+        className="cell-gutter"
+        title="Fogd meg és húzd a cella átrendezéséhez"
+        onMouseDown={() => setDragReady(true)}
+        onMouseUp={() => setDragReady(false)}
+      >
+        <span className="cell-index">{index + 1}</span>
+        <GripVertical size={13} className="grip" />
+        {worst && (
+          <span
+            ref={warnRef}
+            className="gutter-warn-wrap"
+            onMouseEnter={openDiag}
+            onMouseLeave={closeDiagSoon}
+            onMouseDown={(e) => e.stopPropagation()}
+          >
+            <SeverityBadge level={worst} />
+          </span>
+        )}
+      </div>
+
+      <div className="cell-main">
+        <div className="cell-head">
+          {result?.name && <span className="cell-name">{result.name}</span>}
+          {result?.value && <span className="cell-kind">{KIND_LABEL[result.value.kind]}</span>}
+          {regexMatch && <span className="cell-kind">reguláris kifejezés</span>}
+          <span className="spacer" />
           <button
+            ref={opsBtnRef}
             className="cell-tool"
-            title="Kibontás szerkeszthető definícióvá"
+            title="Műveletek — a kiválasztott művelettel körbeveszi a cellát"
             onClick={(e) => {
               e.stopPropagation();
-              setCellSource(cell.id, serializeDefinition(expandable));
+              opsOpen ? setOpsOpen(false) : openOpsMenu();
             }}
           >
-            <FileCode2 size={15} />
+            <FunctionSquare size={15} />
           </button>
+          {formAvailable && (
+            <button
+              className="cell-tool"
+              title={showForm ? "YAML-kód szerkesztése" : "Vissza az űrlapos szerkesztéshez"}
+              onClick={(e) => {
+                e.stopPropagation();
+                setCodeView((v) => !v);
+              }}
+            >
+              {showForm ? <Code2 size={15} /> : <SlidersHorizontal size={15} />}
+            </button>
+          )}
+          {expandable && (
+            <button
+              className="cell-tool"
+              title="Kibontás szerkeszthető definícióvá"
+              onClick={(e) => {
+                e.stopPropagation();
+                setCellSource(cell.id, serializeDefinition(expandable));
+              }}
+            >
+              <FileCode2 size={15} />
+            </button>
+          )}
+          <button
+            className="cell-tool danger"
+            title="Cella törlése"
+            onClick={(e) => {
+              e.stopPropagation();
+              removeCell(cell.id);
+            }}
+          >
+            <X size={15} />
+          </button>
+        </div>
+
+        {regexMatch ? (
+          <div className="regex-row">
+            <input
+              className="rx-name"
+              value={regexMatch[1]}
+              onChange={(e) =>
+                setCellSource(cell.id, `${e.target.value} = regex(${regexMatch[2]})`)
+              }
+              title="A kapott automata neve"
+            />
+            <span className="rx-eq">=</span>
+            <span className="rx-chip">regex</span>
+            <input
+              className="rx-body"
+              value={regexMatch[2]}
+              onChange={(e) =>
+                setCellSource(cell.id, `${regexMatch[1]} = regex(${e.target.value})`)
+              }
+              placeholder="(a|b)*abb"
+              title="Reguláris kifejezés — műveletek: | (vagy), * (lezárás), zárójelek, $ (ε)"
+            />
+          </div>
+        ) : showForm ? (
+          <EntityForm source={cell.source} onChange={(s) => setCellSource(cell.id, s)} />
+        ) : (
+          <div className="cell-editor">
+            <CodeMirror
+              value={cell.source}
+              theme={theme}
+              extensions={extensions}
+              onChange={(value) => setCellSource(cell.id, value)}
+              onFocus={() => setActiveCell(cell.id)}
+              basicSetup={{
+                lineNumbers: cell.source.split("\n").length > 3,
+                foldGutter: false,
+                autocompletion: false,
+                highlightActiveLine: false,
+                highlightActiveLineGutter: false
+              }}
+            />
+          </div>
         )}
-        <button
-          className="cell-tool"
-          title="Mozgatás felfelé"
-          onClick={(e) => {
-            e.stopPropagation();
-            moveCell(cell.id, -1);
-          }}
-        >
-          <ArrowUp size={15} />
-        </button>
-        <button
-          className="cell-tool"
-          title="Mozgatás lefelé"
-          onClick={(e) => {
-            e.stopPropagation();
-            moveCell(cell.id, 1);
-          }}
-        >
-          <ArrowDown size={15} />
-        </button>
-        <button
-          className="cell-tool danger"
-          title="Cella törlése"
-          onClick={(e) => {
-            e.stopPropagation();
-            removeCell(cell.id);
-          }}
-        >
-          <Trash2 size={15} />
-        </button>
       </div>
 
       {opsOpen &&
@@ -158,51 +371,25 @@ export const CellEditor: React.FC<Props> = ({ cell, index, result }) => {
           <>
             <div className="popover-back" onClick={() => setOpsOpen(false)} />
             <div className="menu popover" style={{ top: menuPos.top, left: menuPos.left }}>
-              <div className="menu-group">Műveletek — kattints, és körbeveszi a cellát</div>
-              {OPS.map((op) => {
-                const app = opApplicability(op, cellKind, grammarIsRightLinear);
-                return (
-                  <button
-                    key={op.name}
-                    className={app.ok ? "" : "not-applicable"}
-                    disabled={!app.ok}
-                    title={app.ok ? op.desc : `Erre a cellára nem alkalmazható: ${app.reason}`}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      if (app.ok) applyOp(op);
-                    }}
-                  >
-                    <code className="op-name">{op.name}(…)</code> {op.desc}
-                    {!app.ok && <span className="op-reason">{app.reason}</span>}
-                  </button>
-                );
-              })}
+              {renderOpsMenu()}
             </div>
           </>,
           document.body
         )}
 
-      <div className="cell-editor">
-        <CodeMirror
-          value={cell.source}
-          theme={theme}
-          extensions={extensions}
-          onChange={(value) => setCellSource(cell.id, value)}
-          onFocus={() => setActiveCell(cell.id)}
-          placeholder="kifejezés…"
-          basicSetup={{
-            lineNumbers: cell.source.split("\n").length > 3,
-            foldGutter: false,
-            autocompletion: false,
-            highlightActiveLine: false,
-            highlightActiveLineGutter: false
-          }}
-        />
-      </div>
-
-      {result && isActive && (
-        <DiagnosticsList diagnostics={result.diagnostics} onApplyFix={applyFix} />
-      )}
+      {diagOpen &&
+        diagnostics.length > 0 &&
+        createPortal(
+          <div
+            className="diag-popover"
+            style={{ top: diagPos.top, left: diagPos.left }}
+            onMouseEnter={openDiag}
+            onMouseLeave={closeDiagSoon}
+          >
+            <DiagnosticsList diagnostics={diagnostics} onApplyFix={applyFix} />
+          </div>,
+          document.body
+        )}
     </div>
   );
 };

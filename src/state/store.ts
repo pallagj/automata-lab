@@ -29,8 +29,11 @@ interface AppState {
   activeCellId: string | null;
   theme: Theme;
   mobileTab: MobileTab;
+  /** a bal oldali cellapanel szélessége px-ben */
+  paneWidth: number;
 
   setTheme: (t: Theme) => void;
+  setPaneWidth: (w: number) => void;
   setMobileTab: (t: MobileTab) => void;
   setActiveWorkspace: (id: string) => void;
   setActiveCell: (id: string | null) => void;
@@ -43,7 +46,7 @@ interface AppState {
   setCellSource: (cellId: string, source: string) => void;
   addCell: (source?: string, afterCellId?: string | null) => void;
   removeCell: (cellId: string) => void;
-  moveCell: (cellId: string, dir: -1 | 1) => void;
+  moveCellTo: (cellId: string, toIndex: number) => void;
 }
 
 let counter = 0;
@@ -75,8 +78,10 @@ export const useAppStore = create<AppState>()(
         ? "light"
         : "dark") as Theme,
       mobileTab: "code",
+      paneWidth: 420,
 
       setTheme: (theme) => set({ theme }),
+      setPaneWidth: (paneWidth) => set({ paneWidth }),
       setMobileTab: (mobileTab) => set({ mobileTab }),
       setActiveWorkspace: (id) => {
         const ws = get().workspaces.find((w) => w.id === id);
@@ -163,15 +168,16 @@ export const useAppStore = create<AppState>()(
                   ?.cells.filter((c) => c.id !== cellId)[0]?.id ?? null)
               : s.activeCellId
         })),
-      moveCell: (cellId, dir) =>
+      moveCellTo: (cellId, toIndex) =>
         set((s) => ({
           workspaces: s.workspaces.map((w) => {
             if (w.id !== s.activeWorkspaceId) return w;
             const cells = [...w.cells];
             const i = cells.findIndex((c) => c.id === cellId);
-            const j = i + dir;
-            if (i < 0 || j < 0 || j >= cells.length) return w;
-            [cells[i], cells[j]] = [cells[j], cells[i]];
+            if (i < 0) return w;
+            const [moved] = cells.splice(i, 1);
+            const j = Math.max(0, Math.min(cells.length, toIndex > i ? toIndex - 1 : toIndex));
+            cells.splice(j, 0, moved);
             return { ...w, cells, updatedAt: Date.now() };
           })
         }))

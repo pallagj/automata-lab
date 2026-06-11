@@ -5,8 +5,9 @@ import {
   useAppStore,
   Workspace
 } from "../state/store";
-import { Download, HelpCircle, Moon, Pencil, Plus, Sun, Trash2, Upload } from "lucide-react";
+import { Download, HelpCircle, Moon, Pencil, Plus, Sparkles, Sun, Trash2, Upload } from "lucide-react";
 import { HelpModal } from "./HelpModal";
+import { EXAMPLE_WORKSHEETS } from "../state/examples";
 
 export const TopBar: React.FC = () => {
   const theme = useAppStore((s) => s.theme);
@@ -19,7 +20,16 @@ export const TopBar: React.FC = () => {
   const deleteWorkspace = useAppStore((s) => s.deleteWorkspace);
   const importWorkspace = useAppStore((s) => s.importWorkspace);
   const [helpOpen, setHelpOpen] = useState(false);
+  const [examplesOpen, setExamplesOpen] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
+
+  const loadExample = (name: string, cells: string[]) => {
+    importWorkspace({
+      name,
+      cells: cells.map((source) => ({ id: "", source }))
+    } as Workspace);
+    setExamplesOpen(false);
+  };
 
   const onExport = () => {
     const blob = new Blob([exportWorkspaceJSON(ws)], { type: "application/json" });
@@ -75,6 +85,27 @@ export const TopBar: React.FC = () => {
       <button className="icon-btn danger" onClick={onDelete} title="Munkalap törlése">
         <Trash2 size={15} />
       </button>
+
+      <div className="menu-anchor">
+        <button
+          className="icon-btn"
+          onClick={() => setExamplesOpen((o) => !o)}
+          title="Beépített példa-munkalap betöltése"
+        >
+          <Sparkles size={15} />
+          <span className="hide-sm">Példák</span>
+        </button>
+        {examplesOpen && (
+          <div className="menu insert-menu" onMouseLeave={() => setExamplesOpen(false)}>
+            <div className="menu-group">Példa-munkalapok</div>
+            {EXAMPLE_WORKSHEETS.map((e) => (
+              <button key={e.name} onClick={() => loadExample(e.name, e.cells)}>
+                {e.name}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
 
       <div className="spacer" />
 

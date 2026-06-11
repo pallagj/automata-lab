@@ -12,6 +12,25 @@ export const App: React.FC = () => {
   const setMobileTab = useAppStore((s) => s.setMobileTab);
   const ws = useAppStore(activeWorkspace);
   const activeCellId = useAppStore((s) => s.activeCellId);
+  const paneWidth = useAppStore((s) => s.paneWidth);
+  const setPaneWidth = useAppStore((s) => s.setPaneWidth);
+
+  /** a bal panel szélességének húzása */
+  const onResizeStart = (e: React.PointerEvent) => {
+    e.preventDefault();
+    const startX = e.clientX;
+    const startW = paneWidth;
+    const move = (ev: PointerEvent) =>
+      setPaneWidth(Math.min(760, Math.max(280, startW + ev.clientX - startX)));
+    const up = () => {
+      window.removeEventListener("pointermove", move);
+      window.removeEventListener("pointerup", up);
+      document.body.classList.remove("resizing");
+    };
+    document.body.classList.add("resizing");
+    window.addEventListener("pointermove", move);
+    window.addEventListener("pointerup", up);
+  };
 
   useEffect(() => {
     document.documentElement.setAttribute("data-theme", theme);
@@ -29,10 +48,14 @@ export const App: React.FC = () => {
   return (
     <div className="app">
       <TopBar />
-      <div className={`app-body tab-${mobileTab}`}>
+      <div
+        className={`app-body tab-${mobileTab}`}
+        style={{ ["--pane-w" as string]: `${paneWidth}px` } as React.CSSProperties}
+      >
         <div className="editor-col">
           <EditorColumn workspace={ws} results={results} />
         </div>
+        <div className="col-resizer" onPointerDown={onResizeStart} title="Húzd a panel átméretezéséhez" />
         <div className="detail-col">
           <DetailPane result={activeResult} />
         </div>

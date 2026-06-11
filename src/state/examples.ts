@@ -1,14 +1,13 @@
-export interface Example {
-  group: string;
-  title: string;
-  source: string;
+/**
+ * Beépített példák: teljes munkalapok (nem önálló cellák) — egy kattintással
+ * betölthető, összefüggő feladatsorok.
+ */
+export interface ExampleWorksheet {
+  name: string;
+  cells: string[];
 }
 
-export const EXAMPLES: Example[] = [
-  {
-    group: "Véges automata",
-    title: "NFA — „ab”-re végződik",
-    source: `StateMachine:
+const NFA_M1 = `StateMachine:
   name: M1
   charset: a, b
   states: S, A, F
@@ -17,12 +16,9 @@ export const EXAMPLES: Example[] = [
   transitions:
     - S . S
     - S a A
-    - A b F`
-  },
-  {
-    group: "Véges automata",
-    title: "DFA — páros sok a",
-    source: `StateMachine:
+    - A b F`;
+
+const DFA_PAROS_A = `StateMachine:
   name: ParosA
   charset: a, b
   states: P, T
@@ -32,12 +28,21 @@ export const EXAMPLES: Example[] = [
     - P a T
     - T a P
     - P b P
-    - T b T`
-  },
-  {
-    group: "Véges automata",
-    title: "ε-NFA — a* vagy b*",
-    source: `StateMachine:
+    - T b T`;
+
+const DFA_VEGE_B = `StateMachine:
+  name: VegeB
+  charset: a, b
+  states: N, B
+  init: N
+  accept: B
+  transitions:
+    - N a N
+    - N b B
+    - B a N
+    - B b B`;
+
+const ENFA_A_VAGY_B = `StateMachine:
   name: AvagyB
   charset: a, b
   states: S, A, B
@@ -47,37 +52,46 @@ export const EXAMPLES: Example[] = [
     - S $ A
     - S $ B
     - A a A
-    - B b B`
+    - B b B`;
+
+export const EXAMPLE_WORKSHEETS: ExampleWorksheet[] = [
+  {
+    name: "Bemutató — determinizálás és minimalizálás",
+    cells: [NFA_M1, "D = det(M1)", "K = min(D)", "E = equal(M1, K)"]
   },
   {
-    group: "Kifejezés",
-    title: "Determinizálás lépésekkel",
-    source: `D = det(M1)`
+    name: "ε-mentesítés lépésről lépésre",
+    cells: [
+      ENFA_A_VAGY_B,
+      "EM = epsfree(AvagyB)",
+      "DM = det(EM)",
+      "KM = min(complete(DM))"
+    ]
   },
   {
-    group: "Kifejezés",
-    title: "Minimalizálás (javítási lánccal)",
-    source: `K = min(complete(det(epsfree(M1))))`
+    name: "Reguláris kifejezések és automaták",
+    cells: [
+      "R = regex((a|b)*abb)",
+      "DR = min(det(epsfree(R)))",
+      NFA_M1,
+      "Egyenlo = equal(R, M1)"
+    ]
   },
   {
-    group: "Kifejezés",
-    title: "Reguláris kifejezésből automata",
-    source: `R = regex((a|b)*abb)`
+    name: "Halmazműveletek nyelveken",
+    cells: [
+      DFA_PAROS_A,
+      DFA_VEGE_B,
+      "Metszet = intersect(ParosA, VegeB)",
+      "Unio = union(ParosA, VegeB)",
+      "Kulonbseg = difference(ParosA, VegeB)",
+      "Komplementer = complement(ParosA)"
+    ]
   },
   {
-    group: "Kifejezés",
-    title: "Két automata összehasonlítása",
-    source: `E = equal(M1, D)`
-  },
-  {
-    group: "Kifejezés",
-    title: "Halmazműveletek",
-    source: `U = union(D, det(epsfree(R)))`
-  },
-  {
-    group: "Veremautomata",
-    title: "aⁿbⁿ",
-    source: `PushdownMachine:
+    name: "Veremautomaták",
+    cells: [
+      `PushdownMachine:
   name: AnBn
   charset: a, b
   states: q0, q1, q2
@@ -90,12 +104,8 @@ export const EXAMPLES: Example[] = [
     - q0 b A/$ q1
     - q1 b A/$ q1
     - q1 $ Z/Z q2
-    - q0 $ Z/Z q2`
-  },
-  {
-    group: "Veremautomata",
-    title: "Páros hosszú palindromok",
-    source: `PushdownMachine:
+    - q0 $ Z/Z q2`,
+      `PushdownMachine:
   name: Palindrom
   charset: a, b
   states: olvas, parosit, kesz
@@ -109,11 +119,12 @@ export const EXAMPLES: Example[] = [
     - parosit a a/$ parosit
     - parosit b b/$ parosit
     - parosit $ Z/Z kesz`
+    ]
   },
   {
-    group: "Turing-gép",
-    title: "Palindróma-ellenőrző",
-    source: `TuringMachine:
+    name: "Turing-gépek",
+    cells: [
+      `TuringMachine:
   name: Palindrom
   charset: a, b
   states: start, vanA, vanB, parA, parB, vissza, ok
@@ -132,12 +143,8 @@ export const EXAMPLES: Example[] = [
     - parB b/_ < vissza
     - parB _/& = ok
     - vissza ./& < vissza
-    - vissza _/& > start`
-  },
-  {
-    group: "Turing-gép",
-    title: "Bináris növelés (+1)",
-    source: `TuringMachine:
+    - vissza _/& > start`,
+      `TuringMachine:
   name: Novel
   charset: 0, 1
   states: jobbra, atvitel, kesz
@@ -149,34 +156,29 @@ export const EXAMPLES: Example[] = [
     - atvitel 1/0 < atvitel
     - atvitel 0/1 = kesz
     - atvitel _/1 = kesz`
+    ]
   },
   {
-    group: "Nyelvtan",
-    title: "Reguláris (3. típusú)",
-    source: `Grammar:
+    name: "Nyelvtanok és konverziók",
+    cells: [
+      `Grammar:
   name: G3
   charset: a, b
   variables: S, A
   init: S
   rules:
     - S -> aS | bA
-    - A -> bA | b`
-  },
-  {
-    group: "Nyelvtan",
-    title: "Környezetfüggetlen — aⁿbⁿ",
-    source: `Grammar:
+    - A -> bA | b`,
+      "F = toFsm(G3)",
+      `Grammar:
   name: G2
   charset: a, b
   variables: S
   init: S
   rules:
-    - S -> aSb | $`
-  },
-  {
-    group: "Nyelvtan",
-    title: "Környezetfüggő — aⁿbⁿcⁿ",
-    source: `Grammar:
+    - S -> aSb | $`,
+      "P = toPda(G2)",
+      `Grammar:
   name: G1
   charset: a, b, c
   variables: S, B
@@ -185,12 +187,49 @@ export const EXAMPLES: Example[] = [
     - S -> aSBc | abc
     - cB -> Bc
     - bB -> bb`
+    ]
   }
 ];
 
-export const STARTER_CELLS: string[] = [
-  EXAMPLES[0].source,
-  "D = det(M1)",
-  "K = min(D)",
-  "E = equal(M1, K)"
-];
+/** Cellasablonok az „+ Beszúrás” menühöz. */
+export const CELL_TEMPLATES: Record<string, string> = {
+  fsm: `StateMachine:
+  name: M
+  charset: a, b
+  states: S, A
+  init: S
+  accept: A
+  transitions:
+    - S a A
+    - S b S
+    - A a A
+    - A b S`,
+  pda: `PushdownMachine:
+  name: P
+  charset: a, b
+  states: q0, q1
+  init: q0
+  initStack: Z
+  accept: q1
+  transitions:
+    - q0 a Z/AZ q0
+    - q0 $ Z/Z q1`,
+  tm: `TuringMachine:
+  name: T
+  charset: a, b
+  states: start, ok
+  init: start
+  accept: ok
+  transitions:
+    - start a/a > start
+    - start _/_ = ok`,
+  grammar: `Grammar:
+  name: G
+  charset: a, b
+  variables: S
+  init: S
+  rules:
+    - S -> aS | b`
+};
+
+export const STARTER_CELLS: string[] = EXAMPLE_WORKSHEETS[0].cells;
