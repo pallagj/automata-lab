@@ -186,7 +186,36 @@ export const GraphView: React.FC<Props> = ({ spec, onEdgeClick, className, cellI
     setView(null);
   }, [structKey]);
 
-  const vb = view ?? bounds;
+  // a vászon mérete az automatikus illesztés zoom-korlátjához
+  const [size, setSize] = useState<{ w: number; h: number } | null>(null);
+  useEffect(() => {
+    const el = svgRef.current;
+    if (!el) return;
+    const ro = new ResizeObserver(() => setSize({ w: el.clientWidth, h: el.clientHeight }));
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
+  // automatikus illesztés felső zoom-korláttal: kis gráf nagy vásznon ne legyen óriási
+  const MAX_FIT_SCALE = 1.3;
+  const fitted = useMemo<[number, number, number, number]>(() => {
+    let [x, y, w, h] = bounds;
+    if (size) {
+      const needW = size.w / MAX_FIT_SCALE;
+      const needH = size.h / MAX_FIT_SCALE;
+      if (w < needW) {
+        x -= (needW - w) / 2;
+        w = needW;
+      }
+      if (h < needH) {
+        y -= (needH - h) / 2;
+        h = needH;
+      }
+    }
+    return [x, y, w, h];
+  }, [bounds, size]);
+
+  const vb = view ?? fitted;
 
   const clientToView = (cx: number, cy: number): [number, number] => {
     const rect = svgRef.current!.getBoundingClientRect();
