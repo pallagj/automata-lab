@@ -561,7 +561,7 @@ export const GraphView: React.FC<Props> = ({ spec, onEdgeClick, className, cellI
       )}
       {dialog?.t === "edge" && editing && (
         <EdgeDialog
-          kind={editing.kind}
+          fields={editing.edgeFields}
           from={dialog.from}
           to={dialog.to}
           initial={editing.getEdge(dialog.from, dialog.to)}

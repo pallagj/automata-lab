@@ -17,8 +17,7 @@ import {
 import { regexToNFA } from "./fsm/regex";
 import { parseFSM, parseGrammar, parsePDA, parseTM } from "./parse/definitionParser";
 import { classify, generateWords, grammarAccepts, grammarToFSM, grammarToPDA, fsmToGrammar, removeEpsilonRules } from "./grammar/grammar";
-import { runPDA } from "./pda/pda";
-import { runTM } from "./tm/tm";
+import { machineCaps, runMachine } from "./machine/machine";
 import { evaluateCells } from "./workspace";
 import { serializeDefinition } from "./parse/serialize";
 
@@ -411,10 +410,33 @@ PushdownMachine:
     - q1 b A/$ q1
     - q1 $ Z/Z q2
 `).value!;
-    expect(runPDA(p, "aabb").verdict).toBe("accepted");
-    expect(runPDA(p, "ab").verdict).toBe("accepted");
-    expect(runPDA(p, "abb").verdict).toBe("rejected");
-    expect(runPDA(p, "ba").verdict).toBe("rejected");
+    expect(machineCaps(p).isPDALike).toBe(true);
+    expect(runMachine(p, "aabb").verdict).toBe("accepted");
+    expect(runMachine(p, "ab").verdict).toBe("accepted");
+    expect(runMachine(p, "abb").verdict).toBe("rejected");
+    expect(runMachine(p, "ba").verdict).toBe("rejected");
+  });
+
+  it("preset-visszaírás: a PushdownMachine tömör formában marad", () => {
+    const p = parsePDA(`
+PushdownMachine:
+  name: P
+  charset: a
+  states: q0, q1
+  init: q0
+  initStack: Z
+  accept: q1
+  transitions:
+    - q0 a Z/AZ q0
+    - q0 $ Z/Z q1
+`).value!;
+    const ser = serializeDefinition(p);
+    expect(ser).toContain("PushdownMachine:");
+    expect(ser).toContain("initStack: Z");
+    const back = parsePDA(ser).value!;
+    for (const w of ["", "a", "aa"]) {
+      expect(runMachine(back, w).verdict).toBe(runMachine(p, w).verdict);
+    }
   });
 
   it("CFG → PDA: palindromok", () => {
@@ -430,9 +452,9 @@ Grammar:
     const r = grammarToPDA(g);
     expect(r.ok).toBe(true);
     const p = r.value!;
-    expect(runPDA(p, "abba").verdict).toBe("accepted");
-    expect(runPDA(p, "aba").verdict).toBe("accepted");
-    expect(runPDA(p, "abab").verdict).toBe("rejected");
+    expect(runMachine(p, "abba").verdict).toBe("accepted");
+    expect(runMachine(p, "aba").verdict).toBe("accepted");
+    expect(runMachine(p, "abab").verdict).toBe("rejected");
   });
 });
 
@@ -460,10 +482,30 @@ TuringMachine:
     - back ./& < back
     - back _/& > start
 `).value!;
-    expect(runTM(t, "abba").status).toBe("accepted");
-    expect(runTM(t, "aba").status).toBe("accepted");
-    expect(runTM(t, "ab").status).toBe("rejected");
-    expect(runTM(t, "").status).toBe("accepted");
+    expect(machineCaps(t).isTMLike).toBe(true);
+    expect(runMachine(t, "abba").verdict).toBe("accepted");
+    expect(runMachine(t, "aba").verdict).toBe("accepted");
+    expect(runMachine(t, "ab").verdict).toBe("rejected");
+    expect(runMachine(t, "").verdict).toBe("accepted");
+  });
+
+  it("preset-visszaírás: a TuringMachine tömör formában marad", () => {
+    const t = parseTM(`
+TuringMachine:
+  name: T
+  charset: a
+  states: s, ok
+  init: s
+  accept: ok
+  transitions:
+    - s a/a > s
+    - s _/_ = ok
+`).value!;
+    const ser = serializeDefinition(t);
+    expect(ser).toContain("TuringMachine:");
+    expect(ser).toContain("a/a > s");
+    const back = parseTM(ser).value!;
+    expect(runMachine(back, "aaa").verdict).toBe("accepted");
   });
 });
 

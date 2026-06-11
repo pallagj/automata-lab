@@ -18,6 +18,7 @@ import {
 } from "../fsm/ops";
 import { RegexDef, regexToNFA, regexValue } from "../fsm/regex";
 import { Grammar, grammarToFSM, grammarToPDA, fsmToGrammar, removeEpsilonRules } from "../grammar/grammar";
+import { machineCaps, machineToFSM } from "../machine/machine";
 import { Definition } from "../parse/definitionParser";
 
 /**
@@ -263,6 +264,24 @@ class Evaluator {
         return this.take(`toFsm(${v.name})`, r);
       }
     }
+    if (v.kind === "machine") {
+      // képesség-kapu: tárolómentes gép automataként kezelhető
+      const f = machineToFSM(v);
+      if (f) {
+        this.diagnostics.push(
+          info(
+            `A(z) ${v.name} gép tárolómentes — véges automataként kezelem`,
+            "A gépnek nincs verme/sora/szalagja, ezért pontosan egy véges automatát ír le."
+          )
+        );
+        return f;
+      }
+      throw new Error(
+        `${ctx}: véges automatát vár, de a(z) ${v.name} gépnek tárolója van (${v.storages
+          .map((s) => `${s.id}: ${s.type}`)
+          .join(", ")}) — az automata-műveletek csak tárolómentes gépekre alkalmazhatók`
+      );
+    }
     throw new Error(`${ctx}: véges automatát vár, de ${describeKind(v)} érkezett`);
   }
 
@@ -391,10 +410,8 @@ function describeKind(v: ExprValue): string {
   switch (v.kind) {
     case "fsm":
       return "véges automata";
-    case "pda":
-      return "veremautomata";
-    case "tm":
-      return "Turing-gép";
+    case "machine":
+      return machineCaps(v).label.toLowerCase();
     case "grammar":
       return "nyelvtan";
     case "regex":

@@ -9,7 +9,7 @@ import {
   OpResult
 } from "../types";
 import { FSM, makeFSM, transMap } from "../fsm/fsm";
-import { PDA } from "../pda/pda";
+import { Machine } from "../machine/machine";
 
 /**
  * Generatív nyelvtan. A szabályok jobb oldalán "" jelenti az ε-t.
@@ -359,7 +359,7 @@ export function fsmToGrammar(f: FSM): OpResult<Grammar> {
 }
 
 /** Környezetfüggetlen nyelvtan → veremautomata (felülről lefelé elemző). */
-export function grammarToPDA(g: Grammar): OpResult<PDA> {
+export function grammarToPDA(g: Grammar): OpResult<Machine> {
   const cls = classify(g);
   if (!cls.reasons.type2.holds) {
     return failResult([
@@ -371,26 +371,27 @@ export function grammarToPDA(g: Grammar): OpResult<PDA> {
   }
 
   const q = "q";
-  const transitions = [];
+  const transitions: Machine["transitions"] = [];
   // nemterminális a verem tetején: szabály alkalmazása
   for (const r of g.rules) {
-    transitions.push({ from: q, input: EPS, pop: r.left, push: r.right, to: q });
+    transitions.push({ from: q, input: EPS, to: q, ops: [{ type: "stack", pop: r.left, push: r.right }] });
   }
   // terminális a verem tetején: illesztés a bemenettel
   for (const a of g.terminals) {
-    transitions.push({ from: q, input: a, pop: a, push: "", to: q });
+    transitions.push({ from: q, input: a, to: q, ops: [{ type: "stack", pop: a, push: "" }] });
   }
 
-  const pda: PDA = {
-    kind: "pda",
+  const pda: Machine = {
+    kind: "machine",
     name: g.name,
+    preset: "pda",
     alphabet: [...g.terminals],
-    stackAlphabet: [...g.nonterminals, ...g.terminals],
     states: [q],
     start: q,
-    startStack: g.start,
     accept: [],
-    acceptMode: "emptyStack",
+    acceptMode: "emptyStorages",
+    input: "head",
+    storages: [{ id: "verem", type: "stack", init: g.start }],
     transitions
   };
 

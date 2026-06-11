@@ -1340,6 +1340,46 @@ details.card[open] > summary .chev {
   border-color: var(--success);
 }
 
+.config-item.clickable {
+  cursor: pointer;
+}
+
+.config-item.selected {
+  border-color: var(--accent);
+}
+
+/* általános gép: tárolók megjelenítése */
+.storages {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-top: 8px;
+}
+
+.storage-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.storage-name {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--muted);
+  min-width: 72px;
+  text-align: right;
+  flex-shrink: 0;
+}
+
+.tape-cell.empty {
+  color: var(--muted);
+  border-style: dashed;
+}
+
+.ef-grid label.invalid input {
+  border-color: var(--danger);
+}
+
 /* ====== Tables ====== */
 
 .t-wrap {

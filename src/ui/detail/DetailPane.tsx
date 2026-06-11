@@ -3,9 +3,9 @@ import { CellResult } from "../../core/workspace";
 import { useAppStore, activeWorkspace } from "../../state/store";
 import { serializeEntityDraft } from "../editor/EntityForm";
 import { FSMView } from "./FSMView";
-import { PDAView } from "./PDAView";
-import { TMView } from "./TMView";
+import { MachineView } from "./MachineView";
 import { GrammarView } from "./GrammarView";
+import { machineToFSM } from "../../core/machine/machine";
 import { RegexView } from "./RegexView";
 import { VerdictView } from "./VerdictView";
 import { StepsPanel } from "./StepsPanel";
@@ -37,13 +37,15 @@ const EmptyCanvas: React.FC = () => {
       activeCellId,
       serializeEntityDraft({
         kind: "fsm",
+        yamlKey: "StateMachine",
         name,
         charset: "a, b",
         states: "S",
         init: "S",
         accept: "",
-        initStack: "",
         acceptMode: "finalState",
+        input: "head",
+        storages: "",
         rows: []
       })
     );
@@ -95,8 +97,12 @@ export const DetailPane: React.FC<{ result: CellResult | null }> = ({ result }) 
 
   // gépek: canvas-first elrendezés (a lépés-panel a lebegő panelek közé kerül)
   if (v.kind === "fsm") return <FSMView fsm={v} stepGroups={result.stepGroups} />;
-  if (v.kind === "pda") return <PDAView pda={v} stepGroups={result.stepGroups} />;
-  if (v.kind === "tm") return <TMView tm={v} stepGroups={result.stepGroups} />;
+  if (v.kind === "machine") {
+    // tárolómentes gép: a teljes automata-nézetet kapja (analízis, szavak, idővonal)
+    const f = machineToFSM(v);
+    if (f) return <FSMView fsm={f} stepGroups={result.stepGroups} />;
+    return <MachineView machine={v} stepGroups={result.stepGroups} />;
+  }
 
   return (
     <>

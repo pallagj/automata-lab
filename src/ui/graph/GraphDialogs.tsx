@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { Plus, Trash2, X } from "lucide-react";
-import { EdgeMiddle, GraphEditing, StatePatch } from "./editing";
+import { EdgeField, EdgeMiddle, StatePatch } from "./editing";
 
 /** Kidolgozott szerkesztő-dialógusok a gráfhoz (állapot / átmenet). */
 
@@ -116,22 +116,9 @@ export const StateDialog: React.FC<StateDialogProps> = ({ mode, initial, onSave,
 
 /* ----------------------------- átmenet ----------------------------- */
 
-const FIELDS: Record<GraphEditing["kind"], { label: string; placeholder: string }[]> = {
-  fsm: [{ label: "jel (ε: $)", placeholder: "a" }],
-  pda: [
-    { label: "olvasott jel (ε: $)", placeholder: "a" },
-    { label: "verem tetejéről le", placeholder: "Z" },
-    { label: "verembe fel", placeholder: "AZ" }
-  ],
-  tm: [
-    { label: "olvas", placeholder: "a" },
-    { label: "ír", placeholder: "b" },
-    { label: "mozgás", placeholder: ">" }
-  ]
-};
-
 interface EdgeDialogProps {
-  kind: GraphEditing["kind"];
+  /** a gép tárolóiból generált mezők (l. editing.edgeFieldsFor) */
+  fields: EdgeField[];
   from: string;
   to: string;
   initial: EdgeMiddle[];
@@ -139,9 +126,8 @@ interface EdgeDialogProps {
   onClose: () => void;
 }
 
-export const EdgeDialog: React.FC<EdgeDialogProps> = ({ kind, from, to, initial, onSave, onClose }) => {
-  const fields = FIELDS[kind];
-  const empty = () => fields.map((_, i) => (kind === "tm" && i === 2 ? ">" : ""));
+export const EdgeDialog: React.FC<EdgeDialogProps> = ({ fields, from, to, initial, onSave, onClose }) => {
+  const empty = () => fields.map((f) => (f.widget === "move" ? ">" : ""));
   const [rows, setRows] = useState<EdgeMiddle[]>(initial.length > 0 ? initial : [empty()]);
 
   const setCell = (i: number, j: number, v: string) =>
@@ -165,7 +151,7 @@ export const EdgeDialog: React.FC<EdgeDialogProps> = ({ kind, from, to, initial,
           {rows.map((row, i) => (
             <React.Fragment key={i}>
               {row.map((val, j) =>
-                kind === "tm" && j === 2 ? (
+                fields[j]?.widget === "move" ? (
                   <select key={j} value={val} onChange={(e) => setCell(i, j, e.target.value)}>
                     {![">", "<", "="].includes(val) && <option value={val} hidden />}
                     <option value=">">→ jobbra</option>

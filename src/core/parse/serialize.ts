@@ -1,8 +1,6 @@
 import { EPS } from "../types";
 import { FSM } from "../fsm/fsm";
-import { PDA } from "../pda/pda";
-import { TM } from "../tm/tm";
-import { Machine, StorageOp } from "../machine/machine";
+import { Machine, machineCaps, StorageOp } from "../machine/machine";
 import { Grammar } from "../grammar/grammar";
 import { Definition } from "./definitionParser";
 
@@ -11,10 +9,8 @@ export function serializeDefinition(d: Definition): string {
   switch (d.kind) {
     case "fsm":
       return serializeFSM(d);
-    case "pda":
-      return serializePDA(d);
-    case "tm":
-      return serializeTM(d);
+    case "machine":
+      return serializeMachine(d);
     case "grammar":
       return serializeGrammar(d);
   }
@@ -41,43 +37,6 @@ function serializeFSM(f: FSM): string {
   return lines.join("\n");
 }
 
-function serializePDA(p: PDA): string {
-  const lines = [
-    "PushdownMachine:",
-    `  name: ${scalar(p.name)}`,
-    `  charset: ${listLine(p.alphabet)}`,
-    `  states: ${listLine(p.states)}`,
-    `  init: ${scalar(p.start)}`,
-    `  initStack: ${scalar(p.startStack)}`,
-    `  acceptMode: ${p.acceptMode}`,
-    `  accept: ${listLine(p.accept)}`,
-    "  transitions:"
-  ];
-  for (const t of p.transitions) {
-    const pop = t.pop === EPS ? "$" : t.pop;
-    const push = t.push === "" ? "$" : t.push;
-    lines.push(`    - ${scalar(`${t.from} ${t.input === EPS ? "$" : t.input} ${pop}/${push} ${t.to}`)}`);
-  }
-  return lines.join("\n");
-}
-
-function serializeTM(t: TM): string {
-  const moveMap = { R: ">", L: "<", S: "=" } as const;
-  const lines = [
-    "TuringMachine:",
-    `  name: ${scalar(t.name)}`,
-    `  charset: ${listLine(t.alphabet)}`,
-    `  states: ${listLine(t.states)}`,
-    `  init: ${scalar(t.start)}`,
-    `  accept: ${listLine(t.accept)}`,
-    "  transitions:"
-  ];
-  for (const tr of t.transitions) {
-    lines.push(`    - ${scalar(`${tr.from} ${tr.read}/${tr.write} ${moveMap[tr.move]} ${tr.to}`)}`);
-  }
-  return lines.join("\n");
-}
-
 const MOVE_CHAR = { R: ">", L: "<", S: "=" } as const;
 
 function storageOpToken(op: StorageOp): string {
@@ -92,6 +51,10 @@ function storageOpToken(op: StorageOp): string {
 }
 
 export function serializeMachine(m: Machine): string {
+  // a preset gépek a tankönyvi, tömör formájukban íródnak vissza
+  const caps = machineCaps(m);
+  if (m.preset === "pda" && caps.isPDALike) return serializePDAMachine(m);
+  if (m.preset === "tm" && caps.isTMLike) return serializeTMMachine(m);
   const lines = [
     "Machine:",
     `  name: ${scalar(m.name)}`,
@@ -117,6 +80,44 @@ export function serializeMachine(m: Machine): string {
       t.to
     ];
     lines.push(`    - ${scalar(tokens.join(" "))}`);
+  }
+  return lines.join("\n");
+}
+
+function serializePDAMachine(m: Machine): string {
+  const lines = [
+    "PushdownMachine:",
+    `  name: ${scalar(m.name)}`,
+    `  charset: ${listLine(m.alphabet)}`,
+    `  states: ${listLine(m.states)}`,
+    `  init: ${scalar(m.start)}`,
+    `  initStack: ${scalar(m.storages[0].init)}`,
+    `  acceptMode: ${m.acceptMode === "emptyStorages" ? "emptyStack" : "finalState"}`,
+    `  accept: ${listLine(m.accept)}`,
+    "  transitions:"
+  ];
+  for (const t of m.transitions) {
+    const op = t.ops[0] as Extract<StorageOp, { type: "stack" }>;
+    const pop = op.pop === EPS ? "$" : op.pop;
+    const push = op.push === "" ? "$" : op.push;
+    lines.push(`    - ${scalar(`${t.from} ${t.input === EPS ? "$" : t.input} ${pop}/${push} ${t.to}`)}`);
+  }
+  return lines.join("\n");
+}
+
+function serializeTMMachine(m: Machine): string {
+  const lines = [
+    "TuringMachine:",
+    `  name: ${scalar(m.name)}`,
+    `  charset: ${listLine(m.alphabet)}`,
+    `  states: ${listLine(m.states)}`,
+    `  init: ${scalar(m.start)}`,
+    `  accept: ${listLine(m.accept)}`,
+    "  transitions:"
+  ];
+  for (const t of m.transitions) {
+    const op = t.ops[0] as Extract<StorageOp, { type: "tape" }>;
+    lines.push(`    - ${scalar(`${t.from} ${op.read}/${op.write} ${MOVE_CHAR[op.move]} ${t.to}`)}`);
   }
   return lines.join("\n");
 }

@@ -1,9 +1,8 @@
 import yaml from "js-yaml";
 import { Diagnostic, EPS, err, failResult, info, okResult, OpResult, warn } from "../types";
 import { FSM, makeFSM } from "../fsm/fsm";
-import { PDA, PDATransition } from "../pda/pda";
-import { TM, TMTransition, TM_BLANK } from "../tm/tm";
 import {
+  analyzeMachine,
   Machine,
   MachineTransition,
   StorageOp,
@@ -24,7 +23,7 @@ import { Grammar, GrammarRule } from "../grammar/grammar";
  *   - "$" vagy "ε" üres szó
  */
 
-export type Definition = FSM | PDA | TM | Grammar;
+export type Definition = FSM | Machine | Grammar;
 
 const EPS_ALIASES = new Set(["$", "ε", "eps", "epsilon"]);
 
@@ -219,7 +218,7 @@ export function parseFSM(source: string): OpResult<FSM> {
 /* PDA                                                                  */
 /* ------------------------------------------------------------------ */
 
-export function parsePDA(source: string): OpResult<PDA> {
+export function parsePDA(source: string): OpResult<Machine> {
   const base = parseYamlBody(source, ["PushdownMachine", "pda", "PDA"]);
   if (!base.ok) return failResult(base.diagnostics);
   const { name, body } = base.value!;
@@ -239,7 +238,6 @@ export function parsePDA(source: string): OpResult<PDA> {
   const accept = parseList(body["accept"], "accept", diags);
   const start = String(body["init"]).trim();
   const startStack = String(body["initStack"] ?? body["startStack"] ?? "Z").trim();
-  const stackAlphabet = parseList(body["stackCharset"] ?? body["stackAlphabet"], "stackCharset", diags);
   const acceptModeRaw = String(body["acceptMode"] ?? (accept.length > 0 ? "finalState" : "emptyStack")).trim();
   const acceptMode = acceptModeRaw === "emptyStack" ? "emptyStack" : "finalState";
 
@@ -257,8 +255,7 @@ export function parsePDA(source: string): OpResult<PDA> {
       )
     );
 
-  const transitions: PDATransition[] = [];
-  const stackSyms = new Set<string>([startStack, ...stackAlphabet]);
+  const transitions: MachineTransition[] = [];
   const lines = parseList(body["transitions"], "transitions", diags, false);
   for (const line of lines) {
     const parts = line.split(/\s+/).filter((p) => p !== "");
@@ -283,39 +280,37 @@ export function parsePDA(source: string): OpResult<PDA> {
     if (input !== EPS && parts[1] !== "." && !alphabet.includes(input))
       return failResult([err(`Ismeretlen bemeneti szimbólum: „${parts[1]}”`, `Sor: „${line}”. Ábécé: ${alphabet.join(", ")}`)]);
 
-    for (const c of pop === EPS ? [] : [pop]) stackSyms.add(c);
-    for (const c of push) stackSyms.add(c);
-
     expandWildcard(
       [parts[0], input, parts[3]],
       [states, alphabet, states],
       ([from, inp, to]) => {
         const target = to === "&" ? from : to;
-        transitions.push({ from, input: inp, pop, push, to: target });
+        transitions.push({ from, input: inp, to: target, ops: [{ type: "stack", pop, push }] });
       }
     );
   }
 
-  const pda: PDA = {
-    kind: "pda",
+  const machine: Machine = {
+    kind: "machine",
     name: name || "P",
+    preset: "pda",
     alphabet,
-    stackAlphabet: [...stackSyms],
     states,
     start,
-    startStack,
     accept,
-    acceptMode: accept.length === 0 ? "emptyStack" : acceptMode,
+    acceptMode: accept.length === 0 || acceptMode === "emptyStack" ? "emptyStorages" : "finalState",
+    input: "head",
+    storages: [{ id: "verem", type: "stack", init: startStack }],
     transitions
   };
-  return okResult(pda, diags);
+  return okResult(machine, diags);
 }
 
 /* ------------------------------------------------------------------ */
 /* TM                                                                   */
 /* ------------------------------------------------------------------ */
 
-export function parseTM(source: string): OpResult<TM> {
+export function parseTM(source: string): OpResult<Machine> {
   const base = parseYamlBody(source, ["TuringMachine", "tm", "TM"]);
   if (!base.ok) return failResult(base.diagnostics);
   const { name, body } = base.value!;
@@ -340,8 +335,8 @@ export function parseTM(source: string): OpResult<TM> {
   for (const a of accept)
     if (!stateSet.has(a)) return failResult([err(`Az elfogadó állapot (${a}) nincs az állapotok között`)]);
 
-  const tapeSyms = [...alphabet, TM_BLANK];
-  const transitions: TMTransition[] = [];
+  const tapeSyms = [...alphabet, TAPE_BLANK];
+  const transitions: MachineTransition[] = [];
   const lines = parseList(body["transitions"], "transitions", diags, false);
   for (const line of lines) {
     const parts = line.split(/\s+/).filter((p) => p !== "");
@@ -355,8 +350,7 @@ export function parseTM(source: string): OpResult<TM> {
       ]);
     }
     const [readRaw, writeRaw] = parts[1].split("/");
-    const moveMap: Record<string, "L" | "R" | "S"> = { ">": "R", "<": "L", "=": "S", R: "R", L: "L", S: "S" };
-    const move = moveMap[parts[2]];
+    const move = MOVE_MAP[parts[2]];
     if (!move)
       return failResult([err(`Ismeretlen mozgás: „${parts[2]}”`, `Sor: „${line}”. Használható: > < = (vagy R L S).`)]);
 
@@ -364,7 +358,7 @@ export function parseTM(source: string): OpResult<TM> {
       return failResult([err(`Ismeretlen állapot: „${parts[0]}”`, `Sor: „${line}”.`)]);
     if (parts[3] !== "." && parts[3] !== "&" && !stateSet.has(parts[3]))
       return failResult([err(`Ismeretlen célállapot: „${parts[3]}”`, `Sor: „${line}”.`)]);
-    if (readRaw !== "." && readRaw !== TM_BLANK && !alphabet.includes(readRaw))
+    if (readRaw !== "." && readRaw !== TAPE_BLANK && !alphabet.includes(readRaw))
       return failResult([
         err(`Ismeretlen szalagjel: „${readRaw}”`, `Sor: „${line}”. Szalagábécé: ${tapeSyms.join(", ")}`)
       ]);
@@ -377,29 +371,37 @@ export function parseTM(source: string): OpResult<TM> {
       ([from, read, to]) => {
         const write = writeRaw === "&" ? read : writeRaw;
         const target = to === "&" ? from : to;
-        transitions.push({ from, read, write, move, to: target });
+        transitions.push({ from, to: target, input: EPS, ops: [{ type: "tape", read, write, move }] });
       }
     );
   }
 
-  const tm: TM = { kind: "tm", name: name || "T", alphabet, states, start, accept, transitions };
+  const machine: Machine = {
+    kind: "machine",
+    name: name || "T",
+    preset: "tm",
+    alphabet,
+    states,
+    start,
+    accept,
+    acceptMode: "finalState",
+    input: "szalag",
+    storages: [{ id: "szalag", type: "tape", init: "" }],
+    transitions
+  };
 
-  const dupes = new Set<string>();
-  for (const tr of transitions) {
-    const key = `${tr.from}|${tr.read}`;
-    if (dupes.has(key)) {
-      diags.push(
-        warn(
-          `Nemdeterminisztikus Turing-gép: δ(${tr.from}, ${tr.read === TM_BLANK ? "␣" : tr.read}) többértékű`,
-          "A szimuláció az első illeszkedő átmenetet választja; a gráfon kattintással másik ág is választható."
-        )
-      );
-      break;
-    }
-    dupes.add(key);
+  const analysis = analyzeMachine(machine);
+  if (!analysis.isDeterministic) {
+    const n = analysis.nondeterministicAt[0];
+    diags.push(
+      warn(
+        `Nemdeterminisztikus Turing-gép: a(z) ${n.state} állapotban több átmenet is illeszkedhet`,
+        "A szimuláció minden ágat követ; a gráfon kattintással konkrét ág is választható."
+      )
+    );
   }
 
-  return okResult(tm, diags);
+  return okResult(machine, diags);
 }
 
 /* ------------------------------------------------------------------ */
@@ -737,6 +739,7 @@ const TYPE_KEYS: { keys: string[]; parse: (s: string) => OpResult<Definition> }[
   { keys: ["StateMachine", "fsm", "FSM", "automata"], parse: parseFSM as (s: string) => OpResult<Definition> },
   { keys: ["PushdownMachine", "pda", "PDA"], parse: parsePDA as (s: string) => OpResult<Definition> },
   { keys: ["TuringMachine", "tm", "TM"], parse: parseTM as (s: string) => OpResult<Definition> },
+  { keys: ["Machine", "machine", "gep", "gép"], parse: parseMachine as (s: string) => OpResult<Definition> },
   { keys: ["Grammar", "grammar", "nyelvtan"], parse: parseGrammar as (s: string) => OpResult<Definition> }
 ];
 
