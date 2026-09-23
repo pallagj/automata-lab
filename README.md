@@ -31,6 +31,10 @@ részletes, tanulást segítő magyarázatokkal.
   telepíthető és hálózat nélkül is teljes értékű. Export/import JSON-fájlba.
 - **Modern felület:** saját SVG-gráfrenderelő (dagre layout, pan/zoom, animált aktív állapotok),
   sötét/világos téma, teljes értékű mobilnézet.
+- **Többnyelvű (i18n):** magyar, angol és német nyelven, a böngésző nyelvét automatikusan
+  felismerve (`i18next` + `i18next-browser-languagedetector`), kézi váltóval a fejlécben. Minden
+  felületi szöveg és minden algoritmus-magyarázat (diagnosztika, „Hogyan készült?” lépések)
+  lefordítva — l. `src/i18n/`.
 
 ## Fejlesztés
 
@@ -48,7 +52,10 @@ npm run preview   # build helyi kipróbálása
 src/core/      — keretrendszer-független logika (FSM/PDA/TM/Grammar + parserek + kifejezésnyelv)
 src/state/     — zustand store, localStorage-perzisztencia, példák
 src/ui/        — React-felület (szerkesztő, gráf, szimulációk, panelek)
+src/i18n/      — i18next-beállítás + fordítások (en/de/hu, "ui" és "core" namespace)
 ```
 
 A `src/core` minden művelete `OpResult`-ot ad vissza: érték + diagnosztika (magyarázat, javítási
-javaslat) + rögzített algoritmus-lépések. A felület ezekből építi a tanulást segítő paneleket.
+javaslat) + rögzített algoritmus-lépések. Ezek szövege fordítási kulcs + paraméterek
+(`I18nText`), nem kész string — a felület a `tr()` segédfüggvénnyel (`src/i18n/translate.ts`)
+oldja fel az aktuális nyelven, így minden magyarázat mindhárom nyelven megjelenik.

@@ -8,6 +8,7 @@ import {
   okResult,
   OpResult,
   setName,
+  tx,
   warn
 } from "../types";
 import {
@@ -27,37 +28,40 @@ import {
 /* Előfeltétel-magyarázatok                                            */
 /* ------------------------------------------------------------------ */
 
-function explainEpsilon(f: FSM, opName: string, fixCode: string): Diagnostic {
+function explainEpsilon(f: FSM, opId: string, fixCode: string): Diagnostic {
   const a = analyzeFSM(f);
   const list = a.epsilonTransitions
     .slice(0, 4)
     .map((t) => `${t.from} →ε ${t.to}`)
     .join(", ");
   return err(
-    `A(z) ${opName} művelethez ε-mentes automata kell`,
-    `Az automata ${a.epsilonTransitions.length} ε-átmenetet tartalmaz (${list}${
-      a.epsilonTransitions.length > 4 ? ", …" : ""
-    }). Az ε-átmenet üres szó beolvasásával vált állapotot, ezért előbb az ε-mentesítést kell elvégezni: minden állapothoz kiszámoljuk az ε-lezárását, és az onnan induló átmeneteket „behúzzuk” az eredeti állapotba.`,
-    { label: "ε-mentesítés beszúrása", code: fixCode }
+    tx("ops.needsEpsilonFree.title", { opKey: `opNames.${opId}` }),
+    tx("ops.needsEpsilonFree.detail", {
+      count: a.epsilonTransitions.length,
+      list,
+      ellipsis: a.epsilonTransitions.length > 4 ? ", …" : ""
+    }),
+    { label: tx("ops.fix.insertEpsfree"), code: fixCode }
   );
 }
 
-function explainNondeterministic(f: FSM, opName: string, fixCode: string): Diagnostic {
+function explainNondeterministic(f: FSM, opId: string, fixCode: string): Diagnostic {
   const a = analyzeFSM(f);
   const spots = a.nondeterministicAt
     .slice(0, 3)
     .map((n) => `δ(${n.state}, ${n.symbol}) = {${n.targets.join(", ")}}`)
     .join("; ");
   return err(
-    `A(z) ${opName} művelethez determinisztikus automata kell`,
-    `Nemdeterminizmus található: ${spots}${
-      a.nondeterministicAt.length > 3 ? "; …" : ""
-    }. Determinisztikus automatában minden (állapot, szimbólum) párhoz pontosan egy következő állapot tartozhat. A hatványhalmaz-konstrukcióval (determinizálás) ekvivalens DFA készíthető.`,
-    { label: "determinizálás beszúrása", code: fixCode }
+    tx("ops.needsDeterministic.title", { opKey: `opNames.${opId}` }),
+    tx("ops.needsDeterministic.detail", {
+      spots,
+      ellipsis: a.nondeterministicAt.length > 3 ? "; …" : ""
+    }),
+    { label: tx("ops.fix.insertDet"), code: fixCode }
   );
 }
 
-function explainIncomplete(f: FSM, opName: string, fixCode: string, level: "error" | "warning" = "error"): Diagnostic {
+function explainIncomplete(f: FSM, opId: string, fixCode: string, level: "error" | "warning" = "error"): Diagnostic {
   const a = analyzeFSM(f);
   const spots = a.missing
     .slice(0, 4)
@@ -65,11 +69,13 @@ function explainIncomplete(f: FSM, opName: string, fixCode: string, level: "erro
     .join(", ");
   const make = level === "error" ? err : warn;
   return make(
-    `A(z) ${opName} művelethez teljes automata kell`,
-    `Hiányzó átmenetek: ${spots}${
-      a.missing.length > 4 ? ", …" : ""
-    } — összesen ${a.missing.length} (állapot, szimbólum) párnál nincs definiálva átmenet. Teljessé tételhez bevezetünk egy új „csapda” (elutasító) állapotot, és minden hiányzó átmenetet oda irányítunk.`,
-    { label: "teljessé tétel beszúrása", code: fixCode }
+    tx("ops.needsComplete.title", { opKey: `opNames.${opId}` }),
+    tx("ops.needsComplete.detail", {
+      spots,
+      ellipsis: a.missing.length > 4 ? ", …" : "",
+      count: a.missing.length
+    }),
+    { label: tx("ops.fix.insertComplete"), code: fixCode }
   );
 }
 
@@ -83,7 +89,7 @@ export function removeEpsilon(f: FSM): OpResult<FSM> {
   const diags: Diagnostic[] = [];
 
   if (!a.hasEpsilon) {
-    diags.push(info("Az automata már ε-mentes", "Nincs ε-átmenet, a művelet az automatát változatlanul adja vissza."));
+    diags.push(info(tx("ops.epsfree.alreadyFree.title"), tx("ops.epsfree.alreadyFree.detail")));
     return okResult(cloneFSM(f), diags, steps);
   }
 
@@ -96,9 +102,9 @@ export function removeEpsilon(f: FSM): OpResult<FSM> {
     closureRows.push([s, setName(cl)]);
   }
   steps.push({
-    title: "1. ε-lezárások kiszámítása",
-    detail: "Minden q állapotra: E(q) = a q-ból csak ε-átmenetekkel elérhető állapotok halmaza (q-t is beleértve).",
-    table: { headers: ["állapot", "E(q)"], rows: closureRows }
+    title: tx("ops.epsfree.step1.title"),
+    detail: tx("ops.epsfree.step1.detail"),
+    table: { headers: [tx("ops.table.state"), "E(q)"], rows: closureRows }
   });
 
   const out = makeFSM({
@@ -123,7 +129,10 @@ export function removeEpsilon(f: FSM): OpResult<FSM> {
             if (!out.transitions.some((x) => x.from === q && x.symbol === sym && x.to === t2)) {
               addTransition(out, q, sym, t2);
               if (p !== q || t2 !== t)
-                newTransRows.push([`δ'(${q}, ${sym}) ∋ ${t2}`, `mert ${p} ∈ E(${q}) és δ(${p},${sym}) ∋ ${t}, ${t2} ∈ E(${t})`]);
+                newTransRows.push([
+                  `δ'(${q}, ${sym}) ∋ ${t2}`,
+                  `${p} ∈ E(${q}), δ(${p},${sym}) ∋ ${t}, ${t2} ∈ E(${t})`
+                ]);
             }
           }
         }
@@ -132,9 +141,9 @@ export function removeEpsilon(f: FSM): OpResult<FSM> {
   }
   if (newTransRows.length)
     steps.push({
-      title: "2. Új átmenetek bevezetése",
-      detail: "δ'(q, a) = E(δ(E(q), a)) — az ε-lezáráson keresztül elérhető átmeneteket közvetlenné tesszük.",
-      table: { headers: ["új átmenet", "indoklás"], rows: newTransRows.slice(0, 25) }
+      title: tx("ops.epsfree.step2.title"),
+      detail: tx("ops.epsfree.step2.detail"),
+      table: { headers: [tx("ops.table.newTransition"), tx("ops.table.reason")], rows: newTransRows.slice(0, 25) }
     });
 
   const newAccept: string[] = [];
@@ -144,11 +153,11 @@ export function removeEpsilon(f: FSM): OpResult<FSM> {
   const becameAccepting = newAccept.filter((s) => !f.accept.includes(s));
   out.accept = newAccept;
   steps.push({
-    title: "3. Elfogadó állapotok bővítése",
+    title: tx("ops.epsfree.step3.title"),
     detail:
       becameAccepting.length > 0
-        ? `Ha E(q) tartalmaz elfogadó állapotot, q is elfogadó lesz. Új elfogadó állapotok: ${becameAccepting.join(", ")}.`
-        : "Egyetlen állapot ε-lezárása sem tartalmaz új elfogadó állapotot, így az elfogadó halmaz változatlan."
+        ? tx("ops.epsfree.step3.detailChanged", { list: becameAccepting.join(", ") })
+        : tx("ops.epsfree.step3.detailUnchanged")
   });
 
   return okResult(out, diags, steps);
@@ -164,24 +173,14 @@ export function determinize(f: FSM): OpResult<FSM> {
   const steps: AlgoStep[] = [];
 
   if (a.hasEpsilon) {
-    return failResult([explainEpsilon(f, "determinizálás", `det(epsfree(${f.name}))`)]);
+    return failResult([explainEpsilon(f, "det", `det(epsfree(${f.name}))`)]);
   }
 
   if (a.isDeterministic) {
-    diags.push(
-      info(
-        "Az automata már determinisztikus",
-        "Minden (állapot, szimbólum) párhoz legfeljebb egy átmenet tartozik és nincs ε-átmenet — a hatványhalmaz-konstrukció csak az elérhető egyelemű halmazokat hozza létre."
-      )
-    );
+    diags.push(info(tx("ops.det.alreadyDeterministic.title"), tx("ops.det.alreadyDeterministic.detail")));
   }
   if (!a.isComplete) {
-    diags.push(
-      info(
-        "Az automata nem teljes — a ∅ állapot megjelenhet",
-        "Ahol nincs átmenet, ott a hatványhalmaz-konstrukcióban az üres halmazba (∅) jutunk, amely csapdaállapotként viselkedik. Ettől az eredmény teljes DFA lesz."
-      )
-    );
+    diags.push(info(tx("ops.det.notComplete.title"), tx("ops.det.notComplete.detail")));
   }
 
   const tm = transMap(f);
@@ -236,16 +235,18 @@ export function determinize(f: FSM): OpResult<FSM> {
   }
 
   steps.push({
-    title: "Hatványhalmaz-konstrukció",
-    detail:
-      "A kezdőállapotból indulva minden elért állapothalmazra és minden szimbólumra kiszámoljuk az elérhető állapotok halmazát. Csak az elérhető halmazokat vesszük fel. Egy halmaz akkor elfogadó, ha tartalmaz eredeti elfogadó állapotot.",
-    table: { headers: ["állapothalmaz", ...f.alphabet], rows: tableRows }
+    title: tx("ops.det.step.title"),
+    detail: tx("ops.det.step.detail"),
+    table: { headers: [tx("ops.table.stateSet"), ...f.alphabet], rows: tableRows }
   });
   steps.push({
-    title: "Eredmény",
-    detail: `${out.states.length} állapot keletkezett a lehetséges 2^${f.states.length} = ${
-      2 ** f.states.length
-    } részhalmazból. Elfogadó: ${out.accept.length ? out.accept.join(", ") : "—"}.`
+    title: tx("ops.det.result.title"),
+    detail: tx("ops.det.result.detail", {
+      count: out.states.length,
+      possible: 2 ** f.states.length,
+      exponent: f.states.length,
+      accept: out.accept.length ? out.accept.join(", ") : "—"
+    })
   });
 
   return okResult(out, diags, steps);
@@ -261,7 +262,7 @@ export function complete(f: FSM, trapName?: string): OpResult<FSM> {
   const diags: Diagnostic[] = [];
 
   if (a.isComplete) {
-    diags.push(info("Az automata már teljes", "Minden (állapot, szimbólum) párhoz van átmenet — nincs teendő."));
+    diags.push(info(tx("ops.complete.alreadyComplete.title"), tx("ops.complete.alreadyComplete.detail")));
     return okResult(cloneFSM(f), diags, steps);
   }
 
@@ -270,9 +271,9 @@ export function complete(f: FSM, trapName?: string): OpResult<FSM> {
   if (out.states.includes(trap)) {
     return failResult([
       err(
-        `A(z) „${trap}” állapotnév már létezik`,
-        "A teljessé tételhez egy új, eddig nem használt csapdaállapot-név kell.",
-        { label: "automatikus név használata", code: `complete(${f.name})` }
+        tx("ops.complete.nameTaken.title", { trap }),
+        tx("ops.complete.nameTaken.detail"),
+        { label: tx("ops.complete.nameTaken.fixLabel"), code: `complete(${f.name})` }
       )
     ]);
   }
@@ -286,9 +287,9 @@ export function complete(f: FSM, trapName?: string): OpResult<FSM> {
   for (const sym of out.alphabet) addTransition(out, trap, sym, trap);
 
   steps.push({
-    title: `Csapdaállapot bevezetése: ${trap}`,
-    detail: `Az új ${trap} állapot nem elfogadó, és minden szimbólumra önmagába megy — innen már nem lehet elfogadni. A hiányzó átmenetek ide kerülnek.`,
-    table: { headers: ["hiányzó átmenet", "új cél"], rows: added }
+    title: tx("ops.complete.step.title", { trap }),
+    detail: tx("ops.complete.step.detail", { trap }),
+    table: { headers: [tx("ops.table.missingTransition"), tx("ops.table.newTarget")], rows: added }
   });
 
   return okResult(out, diags, steps);
@@ -305,7 +306,7 @@ export function reachable(f: FSM): OpResult<FSM> {
   const steps: AlgoStep[] = [];
 
   if (removed.length === 0) {
-    diags.push(info("Minden állapot elérhető", "A kezdőállapotból minden állapot elérhető — nincs mit elhagyni."));
+    diags.push(info(tx("ops.reachable.allReachable.title"), tx("ops.reachable.allReachable.detail")));
     return okResult(cloneFSM(f), diags, steps);
   }
 
@@ -319,8 +320,8 @@ export function reachable(f: FSM): OpResult<FSM> {
   });
 
   steps.push({
-    title: "Elérhetetlen állapotok elhagyása",
-    detail: `A kezdőállapotból szélességi bejárással elérhető állapotok maradnak. Elhagyva: ${removed.join(", ")}.`
+    title: tx("ops.reachable.step.title"),
+    detail: tx("ops.reachable.step.detail", { removed: removed.join(", ") })
   });
 
   return okResult(out, diags, steps);
@@ -336,13 +337,13 @@ export function minimize(f: FSM): OpResult<FSM> {
 
   // Előfeltételek pontos magyarázattal és javítási lánccal
   if (a.hasEpsilon) {
-    return failResult([explainEpsilon(f, "minimalizálás", `min(det(epsfree(${f.name})))`)]);
+    return failResult([explainEpsilon(f, "min", `min(det(epsfree(${f.name})))`)]);
   }
   if (!a.isDeterministic) {
-    return failResult([explainNondeterministic(f, "minimalizálás", `min(det(${f.name}))`)]);
+    return failResult([explainNondeterministic(f, "min", `min(det(${f.name}))`)]);
   }
   if (!a.isComplete) {
-    return failResult([explainIncomplete(f, "minimalizálás", `min(complete(${f.name}))`)]);
+    return failResult([explainIncomplete(f, "min", `min(complete(${f.name}))`)]);
   }
 
   let work = f;
@@ -350,14 +351,14 @@ export function minimize(f: FSM): OpResult<FSM> {
   if (a.unreachableStates.length > 0) {
     diags.push(
       warn(
-        "Elérhetetlen állapotok",
-        `A(z) ${a.unreachableStates.join(", ")} állapot(ok) nem érhető(k) el a kezdőállapotból — a minimalizálás első lépéseként elhagyjuk őket, különben hamis ekvivalenciaosztályok keletkezhetnének.`
+        tx("ops.min.unreachableStates.title"),
+        tx("ops.min.unreachableStates.detail", { states: a.unreachableStates.join(", ") })
       )
     );
     work = reachable(f).value!;
     steps.push({
-      title: "0. Elérhetetlen állapotok elhagyása",
-      detail: `Elhagyva: ${a.unreachableStates.join(", ")}.`
+      title: tx("ops.min.step0.title"),
+      detail: tx("ops.min.step0.detail", { removed: a.unreachableStates.join(", ") })
     });
   }
 
@@ -373,8 +374,8 @@ export function minimize(f: FSM): OpResult<FSM> {
 
   const partName = (p: string[][]) => p.map((g) => setName(g)).join("  ");
   steps.push({
-    title: "1. Kezdő partíció",
-    detail: `Elfogadó és nem elfogadó állapotok szétválasztása: ${partName(partition)}`
+    title: tx("ops.min.step1.title"),
+    detail: tx("ops.min.step1.detail", { partition: partName(partition) })
   });
 
   let round = 2;
@@ -401,15 +402,15 @@ export function minimize(f: FSM): OpResult<FSM> {
 
     if (changed) {
       steps.push({
-        title: `${round}. Finomítás`,
-        detail: `Egy csoport szétválik, ha két állapota valamely szimbólumra különböző csoportba vezet. Új partíció: ${partName(next)}`,
-        table: { headers: ["állapot", ...work.alphabet.map((c) => `δ(·, ${c})`)], rows }
+        title: tx("ops.min.refine.title", { round }),
+        detail: tx("ops.min.refine.detail", { partition: partName(next) }),
+        table: { headers: [tx("ops.table.state"), ...work.alphabet.map((c) => `δ(·, ${c})`)], rows }
       });
       round++;
     } else {
       steps.push({
-        title: `${round}. Fixpont`,
-        detail: `Nincs több szétválás — a partíció stabil: ${partName(partition)}. A csoportok az ekvivalenciaosztályok.`
+        title: tx("ops.min.fixpoint.title", { round }),
+        detail: tx("ops.min.fixpoint.detail", { partition: partName(partition) })
       });
     }
     partition = next;
@@ -438,12 +439,12 @@ export function minimize(f: FSM): OpResult<FSM> {
   }
 
   if (out.states.length === work.states.length) {
-    diags.push(info("Az automata már minimális volt", "Minden állapot külön ekvivalenciaosztályba került."));
+    diags.push(info(tx("ops.min.alreadyMinimal.title"), tx("ops.min.alreadyMinimal.detail")));
   } else {
     diags.push(
       info(
-        `Minimalizálva: ${work.states.length} → ${out.states.length} állapot`,
-        "Az egy osztályba került állapotok nyelvileg megkülönböztethetetlenek: minden szóra ugyanúgy fogadnak el / utasítanak el."
+        tx("ops.min.minimized.title", { before: work.states.length, after: out.states.length }),
+        tx("ops.min.minimized.detail")
       )
     );
   }
@@ -457,32 +458,24 @@ export function minimize(f: FSM): OpResult<FSM> {
 
 export function complement(f: FSM): OpResult<FSM> {
   const a = analyzeFSM(f);
-  if (a.hasEpsilon) return failResult([explainEpsilon(f, "komplementer", `complement(det(epsfree(${f.name})))`)]);
+  if (a.hasEpsilon) return failResult([explainEpsilon(f, "complement", `complement(det(epsfree(${f.name})))`)]);
   if (!a.isDeterministic)
     return failResult([
-      explainNondeterministic(f, "komplementer", `complement(det(${f.name}))`),
-      info(
-        "Miért kell DFA?",
-        "NFA-nál az elfogadó állapotok átfordítása NEM a komplementer nyelvet adja: egy szót akkor fogad el az NFA, ha LÉTEZIK elfogadó út — az átfordítás után attól még létezhet elutasító út is elfogadóvá válva."
-      )
+      explainNondeterministic(f, "complement", `complement(det(${f.name}))`),
+      info(tx("ops.complement.whyDfa.title"), tx("ops.complement.whyDfa.detail"))
     ]);
   if (!a.isComplete)
     return failResult([
-      explainIncomplete(f, "komplementer", `complement(complete(${f.name}))`),
-      info(
-        "Miért kell teljesség?",
-        "Ha valahol nincs átmenet, az automata „elakad” és elutasít. Ezeket a szavakat a komplementernek el kellene fogadnia — ehhez előbb csapdaállapottal teljessé kell tenni."
-      )
+      explainIncomplete(f, "complement", `complement(complete(${f.name}))`),
+      info(tx("ops.complement.whyComplete.title"), tx("ops.complement.whyComplete.detail"))
     ]);
 
   const out = cloneFSM(f);
   out.accept = f.states.filter((s) => !f.accept.includes(s));
   return okResult(out, [], [
     {
-      title: "Elfogadó állapotok átfordítása",
-      detail: `Teljes DFA-ban minden szó pontosan egy úton fut végig, így az elfogadó/elutasító állapotok cseréje pontosan a komplementer nyelvet adja. Új elfogadó halmaz: ${
-        out.accept.length ? out.accept.join(", ") : "∅"
-      }.`
+      title: tx("ops.complement.step.title"),
+      detail: tx("ops.complement.step.detail", { accept: out.accept.length ? out.accept.join(", ") : "∅" })
     }
   ]);
 }
@@ -493,19 +486,13 @@ export function complement(f: FSM): OpResult<FSM> {
 
 export type ProductMode = "union" | "intersect" | "difference";
 
-const productModeName: Record<ProductMode, string> = {
-  union: "unió",
-  intersect: "metszet",
-  difference: "különbség"
-};
-
 export function product(m1: FSM, m2: FSM, mode: ProductMode): OpResult<FSM> {
   const diags: Diagnostic[] = [];
   const fixes: Diagnostic[] = [];
 
-  for (const [m, label] of [
-    [m1, "első"],
-    [m2, "második"]
+  for (const [m, labelKey] of [
+    [m1, "ops.product.first"],
+    [m2, "ops.product.second"]
   ] as const) {
     const a = analyzeFSM(m);
     const chain = (inner: string) => {
@@ -517,27 +504,27 @@ export function product(m1: FSM, m2: FSM, mode: ProductMode): OpResult<FSM> {
     if (a.hasEpsilon)
       fixes.push(
         err(
-          `A(z) ${label} automata ε-átmenetet tartalmaz`,
-          `A szorzat-konstrukció (párhuzamos futtatás) determinisztikus, teljes automatákat vár, mert a két automatának szinkronban, szimbólumonként kell lépnie. Az ε-átmenet ezt elrontaná.`,
-          { label: "javítási lánc beszúrása", code: chain(`complete(det(epsfree(${m.name})))`) }
+          tx("ops.product.hasEpsilon.title", { partKey: labelKey }),
+          tx("ops.product.hasEpsilon.detail"),
+          { label: tx("ops.fix.insertChain"), code: chain(`complete(det(epsfree(${m.name})))`) }
         )
       );
     else if (!a.isDeterministic)
       fixes.push(
         err(
-          `A(z) ${label} automata nemdeterminisztikus`,
-          `A szorzatautomata állapotai (p, q) párok, és δ((p,q),a) = (δ₁(p,a), δ₂(q,a)) — ehhez mindkét δ-nak egyértékűnek kell lennie.`,
-          { label: "determinizálás beszúrása", code: chain(`complete(det(${m.name}))`) }
+          tx("ops.product.nondeterministic.title", { partKey: labelKey }),
+          tx("ops.product.nondeterministic.detail"),
+          { label: tx("ops.fix.insertDet"), code: chain(`complete(det(${m.name}))`) }
         )
       );
     else if (!a.isComplete)
       fixes.push(
         err(
-          `A(z) ${label} automata nem teljes`,
-          `Ha az egyik automata elakad, a pár nem tud tovább lépni, pedig a másik még futna — ${
-            mode === "union" ? "az unióhoz a másik automata elfogadása is számít" : "az eredmény hibás lenne"
-          }. Teljessé tétellel (csapdaállapot) ez megoldható.`,
-          { label: "teljessé tétel beszúrása", code: chain(`complete(${m.name})`) }
+          tx("ops.product.incomplete.title", { partKey: labelKey }),
+          mode === "union"
+            ? tx("ops.product.incomplete.detailUnion")
+            : tx("ops.product.incomplete.detailOther"),
+          { label: tx("ops.fix.insertComplete"), code: chain(`complete(${m.name})`) }
         )
       );
   }
@@ -550,10 +537,12 @@ export function product(m1: FSM, m2: FSM, mode: ProductMode): OpResult<FSM> {
   if (missing1.length || missing2.length) {
     return failResult([
       err(
-        "A két automata ábécéje különbözik",
-        `${missing1.length ? `Az első automatából hiányzik: ${missing1.join(", ")}. ` : ""}${
-          missing2.length ? `A másodikból hiányzik: ${missing2.join(", ")}.` : ""
-        } A ${productModeName[mode]} csak közös ábécé fölött értelmes — bővítsd az ábécéket és tedd teljessé az automatákat.`
+        tx("ops.product.differentAlphabets.title"),
+        tx("ops.product.differentAlphabets.detail", {
+          missing1: missing1.length ? missing1.join(", ") : "—",
+          missing2: missing2.length ? missing2.join(", ") : "—",
+          modeKey: `opNames.${mode}`
+        })
       )
     ]);
   }
@@ -605,18 +594,18 @@ export function product(m1: FSM, m2: FSM, mode: ProductMode): OpResult<FSM> {
     rows.push(row);
   }
 
-  const acceptDetail =
+  const acceptDetailKey =
     mode === "union"
-      ? "(p,q) elfogadó, ha p VAGY q elfogadó"
+      ? "ops.product.acceptRule.union"
       : mode === "intersect"
-        ? "(p,q) elfogadó, ha p ÉS q is elfogadó"
-        : "(p,q) elfogadó, ha p elfogadó, de q NEM (L₁ \\ L₂)";
+        ? "ops.product.acceptRule.intersect"
+        : "ops.product.acceptRule.difference";
 
   const steps: AlgoStep[] = [
     {
-      title: `Szorzat-konstrukció (${productModeName[mode]})`,
-      detail: `A két automatát párhuzamosan futtatjuk: az állapotok (p,q) párok, δ((p,q),a) = (δ₁(p,a), δ₂(q,a)). Elfogadás: ${acceptDetail}. Csak az elérhető párokat építjük fel.`,
-      table: { headers: ["állapotpár", ...alphabet], rows }
+      title: tx("ops.product.step.title", { modeKey: `opNames.${mode}` }),
+      detail: tx("ops.product.step.detail", { acceptRuleKey: acceptDetailKey }),
+      table: { headers: [tx("ops.table.statePair"), ...alphabet], rows }
     }
   ];
 
@@ -641,14 +630,11 @@ export function unionEpsilon(m1: FSM, m2: FSM): OpResult<FSM> {
     ]
   });
   return okResult(out, [
-    info(
-      "ε-konstrukcióval készült unió",
-      "Új kezdőállapotból ε-átmenet vezet mindkét automata kezdőállapotába. Az eredmény ε-NFA — determinizálható a det(epsfree(·)) lánccal. (Teljes DFA-k uniója a szorzat-konstrukcióval is elvégezhető.)"
-    )
+    info(tx("ops.unionEpsilon.info.title"), tx("ops.unionEpsilon.info.detail"))
   ], [
     {
-      title: "Unió ε-átmenetekkel",
-      detail: `Új ${start} kezdőállapot, ε-átmenetek: ${start} → ${m1.start}, ${start} → ${b.start}. Elfogadó állapotok: a két automata elfogadó állapotainak uniója.`
+      title: tx("ops.unionEpsilon.step.title"),
+      detail: tx("ops.unionEpsilon.step.detail", { start, m1start: m1.start, bstart: b.start })
     }
   ]);
 }
@@ -673,8 +659,8 @@ export function concatFSM(m1: FSM, m2: FSM): OpResult<FSM> {
   });
   return okResult(out, [], [
     {
-      title: "Konkatenáció",
-      detail: `Az első automata minden elfogadó állapotából ε-átmenet vezet a második kezdőállapotába (${b.start}). Elfogadók: csak a második automata elfogadó állapotai. Az eredmény ε-NFA.`
+      title: tx("ops.concat.step.title"),
+      detail: tx("ops.concat.step.detail", { start: b.start })
     }
   ]);
 }
@@ -695,8 +681,8 @@ export function starFSM(f: FSM): OpResult<FSM> {
   });
   return okResult(out, [], [
     {
-      title: "Kleene-lezárás (csillag)",
-      detail: `Új ${start} kezdőállapot (egyben elfogadó — így az üres szó is a nyelvben van), ε-átmenet az eredeti kezdőállapotba, és minden elfogadó állapotból ε-átmenet vissza ${start}-ba az ismétléshez.`
+      title: tx("ops.star.step.title"),
+      detail: tx("ops.star.step.detail", { start })
     }
   ]);
 }
@@ -720,8 +706,8 @@ export function reverseFSM(f: FSM): OpResult<FSM> {
   });
   return okResult(out, [], [
     {
-      title: "Megfordítás",
-      detail: `Minden átmenet irányát megfordítjuk, az új kezdőállapotból (${start}) ε-átmenet vezet az eredeti elfogadó állapotokba, és az eredeti kezdőállapot lesz az egyetlen elfogadó. L(Mᴿ) = { wᴿ : w ∈ L(M) }.`
+      title: tx("ops.reverse.step.title"),
+      detail: tx("ops.reverse.step.detail", { start })
     }
   ]);
 }
@@ -766,9 +752,9 @@ export function cleanFSM(f: FSM): OpResult<FSM> {
 
   return okResult(out, [], [
     {
-      title: "Állapotok átnevezése",
-      detail: "A kezdőállapotból induló bejárási sorrendben A, B, C… neveket kapnak az állapotok. A nyelv nem változik.",
-      table: { headers: ["régi név", "új név"], rows: order.map((s) => [s, names.get(s)!]) }
+      title: tx("ops.clean.step.title"),
+      detail: tx("ops.clean.step.detail"),
+      table: { headers: [tx("ops.table.oldName"), tx("ops.table.newName")], rows: order.map((s) => [s, names.get(s)!]) }
     }
   ]);
 }
@@ -830,10 +816,8 @@ export function checkEquivalence(a: FSM, b: FSM): OpResult<EquivalenceVerdict> {
       };
       return okResult(verdict, [], [
         {
-          title: "Ellenpélda keresése a szorzatautomatában",
-          detail: `A két (teljessé és determinisztikussá alakított) automatát párhuzamosan futtatjuk, és a legrövidebb olyan szót keressük, amelynél pontosan az egyik fogad el. Találat: „${
-            word === "" ? "ε" : word
-          }”.`
+          title: tx("ops.equal.counterexampleSearch.title"),
+          detail: tx("ops.equal.counterexampleSearch.detail", { word: word === "" ? "ε" : word })
         }
       ]);
     }
@@ -854,9 +838,8 @@ export function checkEquivalence(a: FSM, b: FSM): OpResult<EquivalenceVerdict> {
     [],
     [
       {
-        title: "Ekvivalencia igazolása",
-        detail:
-          "A szorzatautomata minden elérhető (p,q) állapotpárjában p és q elfogadási státusza megegyezik, tehát nincs megkülönböztető szó — a két automata ugyanazt a nyelvet ismeri fel."
+        title: tx("ops.equal.proof.title"),
+        detail: tx("ops.equal.proof.detail")
       }
     ]
   );

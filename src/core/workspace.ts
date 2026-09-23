@@ -1,4 +1,4 @@
-import { Diagnostic, err, warn } from "./types";
+import { Diagnostic, err, tx, warn } from "./types";
 import { Definition, parseDefinition } from "./parse/definitionParser";
 import {
   collectDependencies,
@@ -79,8 +79,8 @@ export function evaluateCells(sources: string[]): CellResult[] {
 
     results[i].diagnostics.push(
       err(
-        "Értelmezhetetlen cella",
-        "A cella vagy YAML-definíció (Machine / Grammar kulccsal), vagy kifejezés („név = kifejezés” alakban) lehet."
+        tx("workspace.unparseableCell.title"),
+        tx("workspace.unparseableCell.detail")
       )
     );
   });
@@ -89,8 +89,8 @@ export function evaluateCells(sources: string[]): CellResult[] {
     if (definedAt.has(name)) {
       const other = definedAt.get(name)!;
       const d = warn(
-        `Többszörös definíció: „${name}”`,
-        `A nevet a(z) ${other + 1}. és a(z) ${index + 1}. cella is definiálja — az első definíció él, a többit hagyd ki vagy nevezd át.`
+        tx("workspace.duplicateDefinition.title", { name }),
+        tx("workspace.duplicateDefinition.detail", { other: other + 1, index: index + 1 })
       );
       results[index].diagnostics.push(d);
       return;
@@ -139,8 +139,8 @@ export function evaluateCells(sources: string[]): CellResult[] {
     if (cyclic.has(cell.name)) {
       r.diagnostics.push(
         err(
-          "Körkörös függőség",
-          `A(z) „${cell.name}” definíciója (közvetve) önmagára hivatkozik: ${[...cyclic].join(" → ")}. Bontsd fel a kört.`
+          tx("workspace.circularDependency.title"),
+          tx("workspace.circularDependency.detail", { name: cell.name, chain: [...cyclic].join(" → ") })
         )
       );
       continue;
@@ -149,8 +149,8 @@ export function evaluateCells(sources: string[]): CellResult[] {
     if (missing.length > 0) {
       r.diagnostics.push(
         err(
-          `Hibás függőség: ${missing.join(", ")}`,
-          "A hivatkozott cella hibás vagy még nem értékelhető ki — előbb azt javítsd."
+          tx("workspace.brokenDependency.title", { missing: missing.join(", ") }),
+          tx("workspace.brokenDependency.detail")
         )
       );
       continue;
@@ -169,10 +169,12 @@ export function evaluateCells(sources: string[]): CellResult[] {
   }
 
   // dedup diagnosztika
+  const i18nKey = (x?: { key: string; params?: Record<string, string | number> }) =>
+    x ? `${x.key}|${JSON.stringify(x.params ?? {})}` : "";
   for (const r of results) {
     const seen = new Set<string>();
     r.diagnostics = r.diagnostics.filter((d) => {
-      const key = `${d.level}|${d.title}|${d.detail ?? ""}`;
+      const key = `${d.level}|${i18nKey(d.title)}|${i18nKey(d.detail)}`;
       if (seen.has(key)) return false;
       seen.add(key);
       return true;

@@ -1,4 +1,5 @@
 import React, { useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   activeWorkspace,
   exportWorkspaceJSON,
@@ -18,9 +19,11 @@ import {
   Upload
 } from "lucide-react";
 import { HelpModal } from "./HelpModal";
-import { EXAMPLE_WORKSHEETS } from "../state/examples";
+import { LanguageSwitcher } from "./LanguageSwitcher";
+import { EXAMPLE_WORKSHEETS, exampleWorksheetName } from "../state/examples";
 
 export const TopBar: React.FC = () => {
+  const { t } = useTranslation();
   const theme = useAppStore((s) => s.theme);
   const setTheme = useAppStore((s) => s.setTheme);
   const workspaces = useAppStore((s) => s.workspaces);
@@ -58,25 +61,22 @@ export const TopBar: React.FC = () => {
       const data = JSON.parse(await file.text()) as Workspace;
       importWorkspace(data);
     } catch {
-      alert("Nem sikerült beolvasni a fájlt — érvényes .automata.json kell.");
+      alert(t("topbar.importFailed"));
     }
   };
 
   const onRename = () => {
-    const name = prompt("Munkalap új neve:", ws.name);
+    const name = prompt(t("topbar.renamePrompt"), ws.name);
     if (name && name.trim()) renameWorkspace(ws.id, name.trim());
   };
 
   const onSetFolder = () => {
-    const folder = prompt(
-      "Melyik mappába kerüljön a munkalap? (üresen hagyva: mappán kívül)",
-      ws.folder ?? ""
-    );
+    const folder = prompt(t("topbar.folderPrompt"), ws.folder ?? "");
     if (folder !== null) setWorkspaceFolder(ws.id, folder);
   };
 
   const onDelete = () => {
-    if (confirm(`Biztosan törlöd a(z) „${ws.name}” munkalapot?`)) deleteWorkspace(ws.id);
+    if (confirm(t("topbar.deleteConfirm", { name: ws.name }))) deleteWorkspace(ws.id);
   };
 
   return (
@@ -88,7 +88,7 @@ export const TopBar: React.FC = () => {
         </span>
       </div>
 
-      <select value={ws.id} onChange={(e) => setActiveWorkspace(e.target.value)} title="Munkalap választása">
+      <select value={ws.id} onChange={(e) => setActiveWorkspace(e.target.value)} title={t("topbar.selectWorksheet")}>
         {workspaces
           .filter((w) => !w.folder)
           .map((w) => (
@@ -109,16 +109,16 @@ export const TopBar: React.FC = () => {
         ))}
       </select>
 
-      <button className="icon-btn" onClick={() => addWorkspace()} title="Új munkalap">
+      <button className="icon-btn" onClick={() => addWorkspace()} title={t("topbar.newWorksheet")}>
         <Plus size={15} />
       </button>
-      <button className="icon-btn" onClick={onRename} title="Munkalap átnevezése">
+      <button className="icon-btn" onClick={onRename} title={t("topbar.renameWorksheet")}>
         <Pencil size={15} />
       </button>
-      <button className="icon-btn" onClick={onSetFolder} title="Munkalap mappába rendezése">
+      <button className="icon-btn" onClick={onSetFolder} title={t("topbar.setFolder")}>
         <FolderOpen size={15} />
       </button>
-      <button className="icon-btn danger" onClick={onDelete} title="Munkalap törlése">
+      <button className="icon-btn danger" onClick={onDelete} title={t("topbar.deleteWorksheet")}>
         <Trash2 size={15} />
       </button>
 
@@ -126,17 +126,17 @@ export const TopBar: React.FC = () => {
         <button
           className="icon-btn"
           onClick={() => setExamplesOpen((o) => !o)}
-          title="Beépített példa-munkalap betöltése"
+          title={t("topbar.loadExample")}
         >
           <Sparkles size={15} />
-          <span className="hide-sm">Példák</span>
+          <span className="hide-sm">{t("topbar.examples")}</span>
         </button>
         {examplesOpen && (
           <div className="menu insert-menu" onMouseLeave={() => setExamplesOpen(false)}>
-            <div className="menu-group">Példa-munkalapok</div>
+            <div className="menu-group">{t("topbar.exampleWorksheets")}</div>
             {EXAMPLE_WORKSHEETS.map((e) => (
-              <button key={e.name} onClick={() => loadExample(e.name, e.cells)}>
-                {e.name}
+              <button key={e.key} onClick={() => loadExample(exampleWorksheetName(t, e), e.cells)}>
+                {exampleWorksheetName(t, e)}
               </button>
             ))}
           </div>
@@ -145,13 +145,13 @@ export const TopBar: React.FC = () => {
 
       <div className="spacer" />
 
-      <button className="icon-btn" onClick={onExport} title="Munkalap mentése fájlba">
+      <button className="icon-btn" onClick={onExport} title={t("topbar.exportWorksheet")}>
         <Download size={15} />
-        <span className="hide-sm">Export</span>
+        <span className="hide-sm">{t("topbar.export")}</span>
       </button>
-      <button className="icon-btn" onClick={() => fileRef.current?.click()} title="Munkalap betöltése fájlból">
+      <button className="icon-btn" onClick={() => fileRef.current?.click()} title={t("topbar.importWorksheet")}>
         <Upload size={15} />
-        <span className="hide-sm">Import</span>
+        <span className="hide-sm">{t("topbar.import")}</span>
       </button>
       <input
         ref={fileRef}
@@ -165,14 +165,16 @@ export const TopBar: React.FC = () => {
         }}
       />
 
+      <LanguageSwitcher />
+
       <button
         className="icon-btn"
         onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-        title={theme === "dark" ? "Világos téma" : "Sötét téma"}
+        title={theme === "dark" ? t("topbar.lightTheme") : t("topbar.darkTheme")}
       >
         {theme === "dark" ? <Sun size={15} /> : <Moon size={15} />}
       </button>
-      <button className="icon-btn" onClick={() => setHelpOpen(true)} title="Súgó">
+      <button className="icon-btn" onClick={() => setHelpOpen(true)} title={t("topbar.help")}>
         <HelpCircle size={15} />
       </button>
 

@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { EPS } from "../../core/types";
 import {
   analyzeMachine,
@@ -26,8 +27,8 @@ import { StepsContent } from "./StepsPanel";
 import { TapeInput } from "./TapeInput";
 import { StepGroup } from "../../core/expr/expression";
 import { Check, Layers, ListTree, Play, RotateCcw, StepForward, Table2, Undo2, X } from "lucide-react";
+import { machineKindLabel } from "../machineLabels";
 
-const TYPE_HU = { stack: "verem", queue: "sor", tape: "szalag" } as const;
 const MAX_RUN_LEVELS = 300;
 
 /** Egy tároló tartalmának tömör szövege a konfiguráció-listához. */
@@ -39,6 +40,7 @@ function storageText(st: StorageState): string {
 
 /** Egy tároló cellasoros megjelenítése (verem: tető balra, sor: eleje balra). */
 const StorageCells: React.FC<{ type: "stack" | "queue" | "tape"; st: StorageState }> = ({ type, st }) => {
+  const { t } = useTranslation();
   if (type === "tape") {
     const w = tapeWindow(st as TapeState, 12);
     return (
@@ -56,7 +58,11 @@ const StorageCells: React.FC<{ type: "stack" | "queue" | "tape"; st: StorageStat
     <div className="tape">
       {content.length === 0 && <span className="tape-cell empty">ε</span>}
       {[...content].map((c, i) => (
-        <span key={i} className={`tape-cell ${i === 0 ? "head" : ""}`} title={i === 0 ? (type === "stack" ? "tető" : "eleje") : undefined}>
+        <span
+          key={i}
+          className={`tape-cell ${i === 0 ? "head" : ""}`}
+          title={i === 0 ? (type === "stack" ? t("detail.machine.top") : t("detail.machine.front")) : undefined}
+        >
           {c}
         </span>
       ))}
@@ -68,6 +74,7 @@ export const MachineView: React.FC<{ machine: Machine; stepGroups?: StepGroup[] 
   machine: m,
   stepGroups
 }) => {
+  const { t } = useTranslation();
   const { cellId, editing } = useGraphEditing();
   const caps = useMemo(() => machineCaps(m), [m]);
   const analysis = useMemo(() => analyzeMachine(m), [m]);
@@ -184,44 +191,46 @@ export const MachineView: React.FC<{ machine: Machine; stepGroups?: StepGroup[] 
   const chips = (
     <>
       <span className="stage-title">
-        {caps.label} — {m.name}
+        {machineKindLabel(t, caps)} — {m.name}
       </span>
-      <span className="badge accent">{m.states.length} állapot</span>
+      <span className="badge accent">{t("detail.fsm.stateCount", { count: m.states.length })}</span>
       {m.storages
         .filter((s) => s.init !== "")
         .map((s) => (
-          <span key={s.id} className="badge accent" title={`A(z) ${s.id} tároló kezdőtartalma`}>
-            kezdő {s.id}: {s.init}
+          <span key={s.id} className="badge accent" title={t("detail.machine.initialContentHint", { id: s.id })}>
+            {t("detail.machine.initial")} {s.id}: {s.init}
           </span>
         ))}
       <span
         className={`badge ${analysis.isDeterministic ? "ok" : "no"}`}
         title={
           analysis.isDeterministic
-            ? "Egyetlen helyzetben sem alkalmazható egyszerre több átmenet."
-            : `Ütköző átmenetek: ${analysis.nondeterministicAt
-                .slice(0, 2)
-                .map((n) => `${n.state}: ${n.detail}`)
-                .join(" · ")}`
+            ? t("detail.machine.deterministicHint")
+            : t("detail.machine.conflictingTransitions", {
+                spots: analysis.nondeterministicAt
+                  .slice(0, 2)
+                  .map((n) => `${n.state}: ${n.detail}`)
+                  .join(" · ")
+              })
         }
       >
-        {analysis.isDeterministic ? "determinisztikus" : "nemdeterminisztikus"}
+        {analysis.isDeterministic ? t("detail.fsm.deterministic") : t("detail.fsm.nondeterministic")}
       </span>
       {head && (
         <span
           className="badge ok"
           title={
             m.acceptMode === "emptyStorages"
-              ? "A szó akkor elfogadott, ha a bemenet elfogyott és minden tároló kiürült."
-              : "A szó akkor elfogadott, ha a bemenet elfogyott és a gép elfogadó állapotban van."
+              ? t("detail.machine.acceptEmptyStorageHint")
+              : t("detail.machine.acceptAcceptStateHint")
           }
         >
-          {m.acceptMode === "emptyStorages" ? "üres tárolóval fogad el" : "elfogadó állapottal fogad el"}
+          {m.acceptMode === "emptyStorages" ? t("detail.machine.acceptEmptyStorage") : t("detail.machine.acceptAcceptState")}
         </span>
       )}
       {!head && (
-        <span className="badge accent" title="A gép megálláskor dönt: elfogadó állapotban megállva elfogad.">
-          megálláskor dönt
+        <span className="badge accent" title={t("detail.machine.decidesOnHaltHint")}>
+          {t("detail.machine.decidesOnHalt")}
         </span>
       )}
     </>
@@ -232,7 +241,7 @@ export const MachineView: React.FC<{ machine: Machine; stepGroups?: StepGroup[] 
       key: "table",
       title: (
         <>
-          <Table2 size={14} /> Átmenetek
+          <Table2 size={14} /> {t("detail.machine.transitions")}
         </>
       ),
       content: (
@@ -240,14 +249,14 @@ export const MachineView: React.FC<{ machine: Machine; stepGroups?: StepGroup[] 
           <table className="t">
             <thead>
               <tr>
-                <th>honnan</th>
-                {head && <th>bemenet</th>}
+                <th>{t("detail.machine.from")}</th>
+                {head && <th>{t("detail.machine.input")}</th>}
                 {m.storages.map((s) => (
                   <th key={s.id}>
-                    {s.id} ({TYPE_HU[s.type]})
+                    {s.id} ({t(`detail.machine.storageType.${s.type}`)})
                   </th>
                 ))}
-                <th>hova</th>
+                <th>{t("detail.machine.to")}</th>
               </tr>
             </thead>
             <tbody>
@@ -272,7 +281,7 @@ export const MachineView: React.FC<{ machine: Machine; stepGroups?: StepGroup[] 
       key: "steps",
       title: (
         <>
-          <ListTree size={14} /> Hogyan készült?
+          <ListTree size={14} /> {t("detail.fsm.howWasThisBuilt")}
         </>
       ),
       content: <StepsContent stepGroups={stepGroups} />
@@ -294,18 +303,18 @@ export const MachineView: React.FC<{ machine: Machine; stepGroups?: StepGroup[] 
             resetWith(v);
           }}
           pos={head && input.length > 0 ? featuredPos : undefined}
-          placeholder={head ? "bemeneti szó — kattints és gépelj" : "a szalag kezdete — kattints és gépelj"}
+          placeholder={head ? t("detail.fsm.inputPlaceholder") : t("detail.machine.tapeStartPlaceholder")}
         />
-        <button className="sim-btn" onClick={() => resetWith(input)} title="Újraindítás">
+        <button className="sim-btn" onClick={() => resetWith(input)} title={t("detail.fsm.restart")}>
           <RotateCcw size={16} />
         </button>
-        <button className="sim-btn" onClick={stepBack} disabled={history.length <= 1} title="Visszalépés">
+        <button className="sim-btn" onClick={stepBack} disabled={history.length <= 1} title={t("detail.fsm.stepBack")}>
           <Undo2 size={16} />
         </button>
-        <button className="sim-btn" onClick={step} disabled={status !== "working"} title="Egy lépés (minden ág)">
+        <button className="sim-btn" onClick={step} disabled={status !== "working"} title={t("detail.machine.oneStepAllBranches")}>
           <StepForward size={16} />
         </button>
-        <button className="sim-btn" onClick={runToEnd} disabled={status !== "working"} title="Futtatás">
+        <button className="sim-btn" onClick={runToEnd} disabled={status !== "working"} title={t("detail.fsm.runAll")}>
           <Play size={16} />
         </button>
         <span
@@ -313,15 +322,15 @@ export const MachineView: React.FC<{ machine: Machine; stepGroups?: StepGroup[] 
         >
           {overall.verdict === "accepted" && (
             <>
-              <Check size={15} /> elfogadja
+              <Check size={15} /> {t("detail.fsm.accepts")}
             </>
           )}
           {overall.verdict === "rejected" && (
             <>
-              <X size={15} /> elutasítja
+              <X size={15} /> {t("detail.fsm.rejects")}
             </>
           )}
-          {overall.verdict === "limit" && <>korlátba ütközött</>}
+          {overall.verdict === "limit" && <>{t("detail.machine.hitLimit")}</>}
         </span>
       </div>
 
@@ -329,7 +338,7 @@ export const MachineView: React.FC<{ machine: Machine; stepGroups?: StepGroup[] 
         <div className="storages">
           {m.storages.map((s, i) => (
             <div className="storage-row" key={s.id}>
-              <span className="storage-name" title={TYPE_HU[s.type]}>
+              <span className="storage-name" title={t(`detail.machine.storageType.${s.type}`)}>
                 {s.id}
                 {s.type === "stack" ? " ⊓" : s.type === "queue" ? " ⇉" : ""}
               </span>
@@ -341,14 +350,14 @@ export const MachineView: React.FC<{ machine: Machine; stepGroups?: StepGroup[] 
 
       <div style={{ marginTop: 8, fontSize: 12.5, color: "var(--muted)" }}>
         {analysis.isDeterministic
-          ? `Lépés: ${history.length - 1}`
-          : `A gép nemdeterminisztikus: egyszerre minden lehetséges ágat követünk. Lépés: ${history.length - 1} · aktív konfigurációk: ${configs.length}`}
-        {status === "working" && spec.edges.some((e) => e.clickable) && " · a kiemelt élekre kattintva ágat választhatsz"}
+          ? t("detail.machine.step", { n: history.length - 1 })
+          : t("detail.machine.nondeterministicStepInfo", { n: history.length - 1, count: configs.length })}
+        {status === "working" && spec.edges.some((e) => e.clickable) && ` · ${t("detail.fsm.branchTip")}`}
       </div>
 
       <div className="config-list">
         {configs.length === 0 && (
-          <div style={{ color: "var(--danger)" }}>Nincs több folytatható ág — a szó elutasítva.</div>
+          <div style={{ color: "var(--danger)" }}>{t("detail.machine.noMoreBranches")}</div>
         )}
         {configs.slice(0, 40).map((c, i) => (
           <div
@@ -357,15 +366,15 @@ export const MachineView: React.FC<{ machine: Machine; stepGroups?: StepGroup[] 
               configs.length > 1 && i === Math.min(selected, configs.length - 1) ? "selected" : ""
             }`}
             onClick={() => setSelected(i)}
-            title="Kattints: ennek a konfigurációnak a tárolóit mutatom"
+            title={t("detail.machine.showConfigStorages")}
           >
             <span>
-              <span className="cfg-label">állapot </span>
+              <span className="cfg-label">{t("detail.fsm.state")} </span>
               <span className="cfg-state">{c.state}</span>
             </span>
             {head && (
               <span>
-                <span className="cfg-label">hátralévő bemenet </span>
+                <span className="cfg-label">{t("detail.machine.remainingInput")} </span>
                 {input.slice(c.pos) || EPS}
               </span>
             )}
@@ -373,7 +382,7 @@ export const MachineView: React.FC<{ machine: Machine; stepGroups?: StepGroup[] 
               <span key={s.id}>
                 <span className="cfg-label">
                   {s.id}
-                  {s.type === "stack" ? " (tető balra) " : s.type === "queue" ? " (eleje balra) " : " "}
+                  {s.type === "stack" ? ` (${t("detail.machine.topLeft")}) ` : s.type === "queue" ? ` (${t("detail.machine.frontLeft")}) ` : " "}
                 </span>
                 {storageText(c.storages[j])}
               </span>
@@ -381,7 +390,7 @@ export const MachineView: React.FC<{ machine: Machine; stepGroups?: StepGroup[] 
           </div>
         ))}
         {configs.length > 40 && (
-          <div style={{ color: "var(--muted)", fontSize: 12.5 }}>… és még {configs.length - 40} konfiguráció</div>
+          <div style={{ color: "var(--muted)", fontSize: 12.5 }}>{t("detail.machine.moreConfigs", { count: configs.length - 40 })}</div>
         )}
       </div>
     </>

@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { useTranslation } from "react-i18next";
 import { Plus, Trash2, X } from "lucide-react";
 import { EdgeField, EdgeMiddle, StatePatch } from "./editing";
 import { MoveSelect } from "../editor/EntityForm";
@@ -44,6 +45,7 @@ interface StateDialogProps {
 }
 
 export const StateDialog: React.FC<StateDialogProps> = ({ mode, initial, onSave, onDelete, onClose }) => {
+  const { t } = useTranslation();
   const [name, setName] = useState(initial.name);
   const [isInit, setIsInit] = useState(initial.isInit);
   const [isAccept, setIsAccept] = useState(initial.isAccept);
@@ -62,10 +64,13 @@ export const StateDialog: React.FC<StateDialogProps> = ({ mode, initial, onSave,
   };
 
   return (
-    <Modal title={mode === "new" ? "Új állapot" : `Állapot — ${initial.name}`} onClose={onClose}>
+    <Modal
+      title={mode === "new" ? t("graph.stateDialog.newTitle") : t("graph.stateDialog.editTitle", { name: initial.name })}
+      onClose={onClose}
+    >
       <div className="gd-body">
         <label className="gd-field">
-          <span>Név</span>
+          <span>{t("editor.form.name")}</span>
           <input
             ref={nameRef}
             value={name}
@@ -77,15 +82,15 @@ export const StateDialog: React.FC<StateDialogProps> = ({ mode, initial, onSave,
         <label className="gd-check">
           <input type="checkbox" checked={isInit} onChange={(e) => setIsInit(e.target.checked)} />
           <span>
-            Kezdőállapot
+            {t("graph.stateDialog.startState")}
             {initial.isInit && !isInit && (
-              <em className="gd-note"> — a kezdőállapot máshova jelöléssel vihető át</em>
+              <em className="gd-note"> {t("graph.stateDialog.startStateNote")}</em>
             )}
           </span>
         </label>
         <label className="gd-check">
           <input type="checkbox" checked={isAccept} onChange={(e) => setIsAccept(e.target.checked)} />
-          <span>Elfogadó állapot</span>
+          <span>{t("graph.stateDialog.acceptState")}</span>
         </label>
         {error && <div className="gd-error">{error}</div>}
       </div>
@@ -94,21 +99,21 @@ export const StateDialog: React.FC<StateDialogProps> = ({ mode, initial, onSave,
           <button
             className="gd-btn danger"
             onClick={() => {
-              if (confirm(`Törlöd a(z) „${initial.name}” állapotot az átmeneteivel együtt?`)) {
+              if (confirm(t("graph.stateDialog.deleteConfirm", { name: initial.name }))) {
                 onDelete();
                 onClose();
               }
             }}
           >
-            <Trash2 size={14} /> Törlés
+            <Trash2 size={14} /> {t("graph.stateDialog.delete")}
           </button>
         )}
         <span className="spacer" />
         <button className="gd-btn" onClick={onClose}>
-          Mégse
+          {t("graph.cancel")}
         </button>
         <button className="gd-btn primary" onClick={save}>
-          Mentés
+          {t("graph.save")}
         </button>
       </div>
     </Modal>
@@ -128,6 +133,7 @@ interface EdgeDialogProps {
 }
 
 export const EdgeDialog: React.FC<EdgeDialogProps> = ({ fields, from, to, initial, onSave, onClose }) => {
+  const { t } = useTranslation();
   const empty = () => fields.map((f) => (f.widget === "move" ? ">" : ""));
   const [rows, setRows] = useState<EdgeMiddle[]>(initial.length > 0 ? initial : [empty()]);
 
@@ -140,7 +146,7 @@ export const EdgeDialog: React.FC<EdgeDialogProps> = ({ fields, from, to, initia
   };
 
   return (
-    <Modal title={`Átmenet — ${from} → ${to}`} onClose={onClose}>
+    <Modal title={t("graph.edgeDialog.title", { from, to })} onClose={onClose}>
       <div className="gd-body">
         <div className="gd-edge-grid" style={{ gridTemplateColumns: `repeat(${fields.length}, 1fr) 28px` }}>
           {fields.map((f) => (
@@ -167,7 +173,7 @@ export const EdgeDialog: React.FC<EdgeDialogProps> = ({ fields, from, to, initia
               )}
               <button
                 className="ef-remove"
-                title="Sor törlése"
+                title={t("graph.removeRow")}
                 onClick={() => setRows((rs) => rs.filter((_, k) => k !== i))}
               >
                 <X size={13} />
@@ -176,19 +182,19 @@ export const EdgeDialog: React.FC<EdgeDialogProps> = ({ fields, from, to, initia
           ))}
         </div>
         <button className="ef-add" onClick={() => setRows((rs) => [...rs, empty()])}>
-          <Plus size={13} /> új átmenet ezen az élen
+          <Plus size={13} /> {t("graph.edgeDialog.addRow")}
         </button>
         {rows.length === 0 && (
-          <div className="gd-note-row">Nincs sor — a mentés törli az él összes átmenetét.</div>
+          <div className="gd-note-row">{t("graph.edgeDialog.emptyNote")}</div>
         )}
       </div>
       <div className="gd-actions">
         <span className="spacer" />
         <button className="gd-btn" onClick={onClose}>
-          Mégse
+          {t("graph.cancel")}
         </button>
         <button className="gd-btn primary" onClick={save}>
-          Mentés
+          {t("graph.save")}
         </button>
       </div>
     </Modal>

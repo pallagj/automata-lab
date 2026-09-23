@@ -1,4 +1,5 @@
 import React, { useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Pencil } from "lucide-react";
 
 /**
@@ -16,6 +17,7 @@ interface Props {
 }
 
 export const TapeInput: React.FC<Props> = ({ value, onChange, pos, placeholder }) => {
+  const { t } = useTranslation();
   const inputRef = useRef<HTMLInputElement>(null);
   const [focused, setFocused] = useState(false);
   const [caret, setCaret] = useState(0);
@@ -36,7 +38,7 @@ export const TapeInput: React.FC<Props> = ({ value, onChange, pos, placeholder }
     <div
       className={`tape tape-input ${focused ? "editing" : ""}`}
       onMouseDown={focusAt(value.length)}
-      title="Kattints a szalagra és gépelj"
+      title={t("detail.tapeInput.hint")}
     >
       <input
         ref={inputRef}
@@ -54,7 +56,7 @@ export const TapeInput: React.FC<Props> = ({ value, onChange, pos, placeholder }
         onBlur={() => setFocused(false)}
         spellCheck={false}
         autoComplete="off"
-        aria-label={placeholder ?? "bemenet"}
+        aria-label={placeholder ?? t("detail.tapeInput.input")}
       />
       {value.length === 0 && !focused && (
         <span className="tape-cell empty tape-placeholder">{placeholder ?? "ε"}</span>

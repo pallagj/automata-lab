@@ -1,4 +1,5 @@
 import React from "react";
+import { useTranslation } from "react-i18next";
 import { CellResult } from "../../core/workspace";
 import { useAppStore, activeWorkspace } from "../../state/store";
 import { serializeEntityDraft } from "../editor/EntityForm";
@@ -13,6 +14,7 @@ import { DiagnosticsList } from "./DiagnosticsList";
 
 /** Üres cella: teljes vászon — dupla kattintásra megszületik az első állapot. */
 const EmptyCanvas: React.FC = () => {
+  const { t } = useTranslation();
   const activeCellId = useAppStore((s) => s.activeCellId);
   const setCellSource = useAppStore((s) => s.setCellSource);
   const setNodePos = useAppStore((s) => s.setNodePos);
@@ -55,12 +57,12 @@ const EmptyCanvas: React.FC = () => {
       <div className="stage-canvas empty-canvas" onDoubleClick={onDoubleClick}>
         <div className="empty-canvas-hint">
           <div className="big">⟿</div>
-          <b>Dupla kattintás</b> ide: véges automata első állapota —
+          <b>{t("detail.emptyCanvas.doubleClick")}</b> {t("detail.emptyCanvas.hereText")}
           <br />
-          vagy válassz a bal oldali <b>+ Beszúrás</b> menüből (regex, veremautomata, Turing-gép,
-          nyelvtan…).
+          {t("detail.emptyCanvas.orChoose1")} <b>{t("detail.emptyCanvas.insertMenu")}</b>
+          {t("detail.emptyCanvas.orChoose2")}
           <br />
-          <span className="soft">Minden munkád automatikusan, offline mentődik.</span>
+          <span className="soft">{t("detail.emptyCanvas.autosave")}</span>
         </div>
       </div>
     </div>
@@ -68,6 +70,7 @@ const EmptyCanvas: React.FC = () => {
 };
 
 export const DetailPane: React.FC<{ result: CellResult | null }> = ({ result }) => {
+  const { t } = useTranslation();
   const activeCellId = useAppStore((s) => s.activeCellId);
   const setCellSource = useAppStore((s) => s.setCellSource);
   const ws = useAppStore(activeWorkspace);
@@ -85,7 +88,7 @@ export const DetailPane: React.FC<{ result: CellResult | null }> = ({ result }) 
       .trim();
     return (
       <div className="card">
-        <div className="card-title">Jegyzet</div>
+        <div className="card-title">{t("detail.note")}</div>
         <p style={{ whiteSpace: "pre-wrap", margin: 0 }}>{text}</p>
       </div>
     );
@@ -101,7 +104,7 @@ export const DetailPane: React.FC<{ result: CellResult | null }> = ({ result }) 
     };
     return (
       <div className="card">
-        <div className="card-title">Miért nem értékelhető ki a cella?</div>
+        <div className="card-title">{t("detail.whyNotEvaluable")}</div>
         <DiagnosticsList diagnostics={result.diagnostics} onApplyFix={applyFix} />
       </div>
     );

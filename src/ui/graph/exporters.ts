@@ -2,6 +2,7 @@
  * Gráf-export: önálló SVG, PNG és LaTeX (TikZ) — pl. dolgozatba,
  * jegyzetbe illesztéshez.
  */
+import i18n from "../../i18n";
 
 export interface ExportNode {
   id: string;
@@ -112,11 +113,11 @@ export function svgToPng(svgText: string, width: number, height: number, scale =
       const ctx = canvas.getContext("2d")!;
       ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
       URL.revokeObjectURL(url);
-      canvas.toBlob((b) => (b ? resolve(b) : reject(new Error("PNG-konvertálás sikertelen"))), "image/png");
+      canvas.toBlob((b) => (b ? resolve(b) : reject(new Error(i18n.t("graph.export.pngFailed")))), "image/png");
     };
     img.onerror = () => {
       URL.revokeObjectURL(url);
-      reject(new Error("SVG betöltése sikertelen"));
+      reject(new Error(i18n.t("graph.export.svgLoadFailed")));
     };
     img.src = url;
   });
@@ -149,7 +150,7 @@ export function toTikz(nodes: ExportNode[], edges: ExportEdge[]): string {
   const fmt = (v: number) => (Math.round(v * 100) / 100).toString();
 
   const lines: string[] = [
-    "% AutomataLab-export — szükséges csomagok:",
+    `% ${i18n.t("graph.export.tikzComment")}`,
     "%   \\usepackage{tikz}",
     "%   \\usetikzlibrary{automata, positioning, arrows.meta}",
     "\\begin{tikzpicture}[->, >={Stealth[round]}, auto, semithick,",

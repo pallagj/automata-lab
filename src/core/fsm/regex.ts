@@ -1,5 +1,11 @@
-import { EPS, err, failResult, okResult, OpResult } from "../types";
+import { EPS, err, failResult, I18nText, okResult, OpResult, tx } from "../types";
 import { FSM, makeFSM } from "./fsm";
+
+class RegexSyntaxError extends Error {
+  constructor(public i18n: I18nText) {
+    super(i18n.key);
+  }
+}
 
 /**
  * Reguláris kifejezés → ε-NFA (Thompson-konstrukció).
@@ -30,7 +36,7 @@ class Parser {
   parse(): Node {
     const node = this.parseAlt();
     if (this.pos < this.src.length) {
-      throw new Error(`Váratlan karakter a(z) ${this.pos + 1}. pozíción: „${this.peek()}”`);
+      throw new RegexSyntaxError(tx("regex.error.unexpectedChar", { pos: this.pos + 1, char: this.peek() ?? "" }));
     }
     return node;
   }
@@ -72,16 +78,17 @@ class Parser {
 
   parseAtom(): Node {
     const c = this.peek();
-    if (c === undefined) throw new Error("A kifejezés váratlanul véget ért.");
+    if (c === undefined) throw new RegexSyntaxError(tx("regex.error.unexpectedEnd"));
     if (c === "(") {
       this.eat();
       const node = this.parseAlt();
-      if (this.peek() !== ")") throw new Error(`Hiányzó záró zárójel a(z) ${this.pos + 1}. pozíción.`);
+      if (this.peek() !== ")") throw new RegexSyntaxError(tx("regex.error.missingCloseParen", { pos: this.pos + 1 }));
       this.eat();
       return node;
     }
-    if (c === ")") throw new Error(`Pár nélküli záró zárójel a(z) ${this.pos + 1}. pozíción.`);
-    if (c === "*" || c === "?") throw new Error(`A(z) „${c}” operátor előtt kifejezésnek kell állnia (${this.pos + 1}. pozíció).`);
+    if (c === ")") throw new RegexSyntaxError(tx("regex.error.unmatchedCloseParen", { pos: this.pos + 1 }));
+    if (c === "*" || c === "?")
+      throw new RegexSyntaxError(tx("regex.error.operatorNeedsExpr", { op: c, pos: this.pos + 1 }));
     if (c === "ε" || c === "$") {
       this.eat();
       return { t: "eps" };
@@ -183,14 +190,12 @@ export interface RegexDef {
   pattern: string;
 }
 
-function parseOrFail(pattern: string): { ast?: Node; error?: string } {
+function parseOrFail(pattern: string): { ast?: Node; error?: I18nText } {
   try {
     return { ast: new Parser(pattern).parse() };
   } catch (e) {
     return {
-      error:
-        (e as Error).message +
-        " — Támogatott jelölés: literálok, ε, összefűzés, | vagy + (unió), * (ismétlés), ? (opcionális), zárójelek."
+      error: e instanceof RegexSyntaxError ? e.i18n : tx("regex.error.unknown", { message: String((e as Error).message ?? e) })
     };
   }
 }
@@ -199,32 +204,32 @@ function parseOrFail(pattern: string): { ast?: Node; error?: string } {
 export function regexValue(pattern: string, name = "R"): OpResult<RegexDef> {
   const cleaned = pattern.replaceAll(" ", "");
   const p = parseOrFail(cleaned);
-  if (p.error) return failResult([err("Hibás reguláris kifejezés", p.error)]);
+  if (p.error) return failResult([err(tx("regex.error.invalid"), p.error)]);
   return okResult({ kind: "regex", name, pattern: cleaned });
 }
 
 /** A kifejezés szerkezeti fája az elemző-nézethez. */
 export interface RegexNodeInfo {
-  label: string;
+  label: I18nText;
   children: RegexNodeInfo[];
 }
 
 function nodeInfo(n: Node): RegexNodeInfo {
   switch (n.t) {
     case "empty":
-      return { label: "∅ — üres nyelv", children: [] };
+      return { label: tx("regex.node.empty"), children: [] };
     case "eps":
-      return { label: "ε — üres szó", children: [] };
+      return { label: tx("regex.node.eps"), children: [] };
     case "lit":
-      return { label: `„${n.c}” betű`, children: [] };
+      return { label: tx("regex.node.lit", { char: n.c }), children: [] };
     case "cat":
-      return { label: "összefűzés", children: [nodeInfo(n.a), nodeInfo(n.b)] };
+      return { label: tx("regex.node.cat"), children: [nodeInfo(n.a), nodeInfo(n.b)] };
     case "alt":
-      return { label: "unió ( | )", children: [nodeInfo(n.a), nodeInfo(n.b)] };
+      return { label: tx("regex.node.alt"), children: [nodeInfo(n.a), nodeInfo(n.b)] };
     case "star":
-      return { label: "lezárás ( * )", children: [nodeInfo(n.a)] };
+      return { label: tx("regex.node.star"), children: [nodeInfo(n.a)] };
     case "opt":
-      return { label: "opcionális ( ? )", children: [nodeInfo(n.a)] };
+      return { label: tx("regex.node.opt"), children: [nodeInfo(n.a)] };
   }
 }
 
@@ -236,7 +241,7 @@ export function regexTree(pattern: string): RegexNodeInfo | null {
 export function regexToNFA(pattern: string, name = "R"): OpResult<FSM> {
   const cleaned = pattern.replaceAll(" ", "");
   const p = parseOrFail(cleaned);
-  if (p.error) return failResult([err("Hibás reguláris kifejezés", p.error)]);
+  if (p.error) return failResult([err(tx("regex.error.invalid"), p.error)]);
   const ast = p.ast!;
   const b = new Builder();
   const frag = b.build(ast);
@@ -250,8 +255,8 @@ export function regexToNFA(pattern: string, name = "R"): OpResult<FSM> {
   });
   return okResult(fsm, [], [
     {
-      title: "Thompson-konstrukció",
-      detail: `A reguláris kifejezés szerkezeti felépítését követve minden részkifejezéshez kis ε-NFA-darabot építünk (literál, unió, összefűzés, csillag), majd ezeket ε-átmenetekkel kapcsoljuk össze. Eredmény: ${b.states.length} állapot. A det(epsfree(·)) lánccal DFA-vá alakítható.`
+      title: tx("regex.step.thompson.title"),
+      detail: tx("regex.step.thompson.detail", { count: b.states.length })
     }
   ]);
 }

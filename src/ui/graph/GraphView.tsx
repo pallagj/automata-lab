@@ -1,5 +1,6 @@
 import dagre from "@dagrejs/dagre";
 import React, { useLayoutEffect, useMemo, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Check, Copy, Download, FileImage, FileType } from "lucide-react";
 import { useAppStore } from "../../state/store";
 import { GraphEditing, suggestStateName } from "./editing";
@@ -153,6 +154,7 @@ function layout(
 }
 
 export const GraphView: React.FC<Props> = ({ spec, onEdgeClick, className, cellId, editing, exportName }) => {
+  const { t } = useTranslation();
   const savedPos = useAppStore((s) => (cellId ? s.layouts[cellId] : undefined));
   const setNodePos = useAppStore((s) => s.setNodePos);
 
@@ -484,7 +486,7 @@ export const GraphView: React.FC<Props> = ({ spec, onEdgeClick, className, cellI
                   className="graph-ring-hit"
                   onPointerDown={(e) => onPortPointerDown(e, n)}
                 >
-                  <title>Húzd egy másik állapotra új átmenethez</title>
+                  <title>{t("graph.dragToConnect")}</title>
                 </circle>
                 <g
                   className="graph-port-dot"
@@ -493,7 +495,7 @@ export const GraphView: React.FC<Props> = ({ spec, onEdgeClick, className, cellI
                 >
                   <circle r={7.5} className="port-dot-bg" />
                   <path d="M -2.6 -3.4 L 2.6 0 L -2.6 3.4" className="port-dot-arrow" fill="none" />
-                  <title>Húzd egy másik állapotra új átmenethez</title>
+                  <title>{t("graph.dragToConnect")}</title>
                 </g>
               </>
             )}
@@ -505,7 +507,7 @@ export const GraphView: React.FC<Props> = ({ spec, onEdgeClick, className, cellI
         <div className="menu-anchor">
           <button
             className="graph-fit"
-            title="Exportálás — SVG / PNG / LaTeX (TikZ)"
+            title={t("graph.export.buttonTitle")}
             onClick={() => setExportOpen((o) => !o)}
           >
             <Download size={15} />
@@ -513,30 +515,29 @@ export const GraphView: React.FC<Props> = ({ spec, onEdgeClick, className, cellI
           {exportOpen && (
             <div className="graph-export-menu" onMouseLeave={() => setExportOpen(false)}>
               <button onClick={onExportSVG}>
-                <FileImage size={14} /> SVG letöltése
+                <FileImage size={14} /> {t("graph.export.svg")}
               </button>
               <button onClick={onExportPNG}>
-                <FileImage size={14} /> PNG letöltése
+                <FileImage size={14} /> {t("graph.export.png")}
               </button>
               <button onClick={onExportTikz}>
-                <FileType size={14} /> LaTeX (TikZ) letöltése
+                <FileType size={14} /> {t("graph.export.tikz")}
               </button>
               <button onClick={onCopyTikz}>
                 {copied ? <Check size={14} /> : <Copy size={14} />}
-                {copied ? "Másolva ✓" : "LaTeX (TikZ) másolása"}
+                {copied ? t("graph.export.copied") : t("graph.export.copyTikz")}
               </button>
             </div>
           )}
         </div>
-        <button className="graph-fit" title="Nézet visszaállítása" onClick={() => setView(null)}>
+        <button className="graph-fit" title={t("graph.resetView")} onClick={() => setView(null)}>
           ⤢
         </button>
       </div>
 
       {editing && (
         <div className="graph-hint">
-          dupla katt: új állapot · kattintás: állapot szerkesztése · húzás: áthelyezés · a széléről
-          (gyűrű / ▸ pont) húzva: átmenet · él címkéjére katt: átmenetek szerkesztése
+          {t("graph.editingHint")}
         </div>
       )}
 

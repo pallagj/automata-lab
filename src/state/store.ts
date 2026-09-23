@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
+import i18n from "../i18n";
 import { STARTER_CELLS } from "./examples";
 
 /**
@@ -74,7 +75,7 @@ function newWorkspace(name: string, sources: string[] = [""]): Workspace {
   };
 }
 
-const starter = newWorkspace("Bemutató munkalap", STARTER_CELLS);
+const starter = newWorkspace(i18n.t("workspace.starterName", { ns: "ui" }), STARTER_CELLS);
 
 export const useAppStore = create<AppState>()(
   persist(
@@ -109,7 +110,9 @@ export const useAppStore = create<AppState>()(
       setActiveCell: (id) => set({ activeCellId: id }),
 
       addWorkspace: (name) => {
-        const ws = newWorkspace(name ?? `Munkalap ${get().workspaces.length + 1}`);
+        const ws = newWorkspace(
+          name ?? i18n.t("workspace.defaultName", { ns: "ui", index: get().workspaces.length + 1 })
+        );
         set((s) => ({
           workspaces: [...s.workspaces, ws],
           activeWorkspaceId: ws.id,
@@ -128,7 +131,7 @@ export const useAppStore = create<AppState>()(
         })),
       deleteWorkspace: (id) => {
         const rest = get().workspaces.filter((w) => w.id !== id);
-        const list = rest.length > 0 ? rest : [newWorkspace("Munkalap 1")];
+        const list = rest.length > 0 ? rest : [newWorkspace(i18n.t("workspace.defaultName", { ns: "ui", index: 1 }))];
         set({
           workspaces: list,
           activeWorkspaceId: list[0].id,
@@ -138,7 +141,7 @@ export const useAppStore = create<AppState>()(
       importWorkspace: (ws) => {
         const safe: Workspace = {
           id: uid(),
-          name: ws.name || "Importált munkalap",
+          name: ws.name || i18n.t("workspace.importedName", { ns: "ui" }),
           cells: (ws.cells ?? []).map((c) => ({ id: uid(), source: String(c.source ?? "") })),
           createdAt: Date.now(),
           updatedAt: Date.now()

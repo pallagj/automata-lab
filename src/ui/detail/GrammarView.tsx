@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   classify,
   generateWords,
@@ -7,16 +8,18 @@ import {
   ruleToString
 } from "../../core/grammar/grammar";
 import { useAppStore } from "../../state/store";
+import { tr } from "../../i18n/translate";
 import { Check, ChevronRight, HelpCircle, ListOrdered, Wand2, X } from "lucide-react";
 
-const TYPE_NAMES: Record<number, string> = {
-  3: "3. típusú — reguláris",
-  2: "2. típusú — környezetfüggetlen",
-  1: "1. típusú — környezetfüggő",
-  0: "0. típusú — általános (mondatszerkezetű)"
+const TYPE_KEYS: Record<number, string> = {
+  3: "detail.grammar.type3",
+  2: "detail.grammar.type2",
+  1: "detail.grammar.type1",
+  0: "detail.grammar.type0"
 };
 
 export const GrammarView: React.FC<{ grammar: Grammar }> = ({ grammar }) => {
+  const { t } = useTranslation();
   const cls = useMemo(() => classify(grammar), [grammar]);
   const gen = useMemo(() => generateWords(grammar, 8, 36), [grammar]);
   const addCell = useAppStore((s) => s.addCell);
@@ -40,54 +43,57 @@ export const GrammarView: React.FC<{ grammar: Grammar }> = ({ grammar }) => {
   return (
     <>
       <div className="card">
-        <div className="card-title">Nyelvtan — {grammar.name}</div>
+        <div className="card-title">{t("detail.grammar.title")} — {grammar.name}</div>
         <div className="card-body">
           <div className="class-hero">
-            <span className="big">{TYPE_NAMES[cls.type]}</span>
-            <span className={`badge ${cls.epsilonFree ? "ok" : "warn"}`} title={cls.epsilonIssues.join("; ") || "Az ε legfeljebb S → ε alakban szerepel, és S nem áll jobb oldalon."}>
-              {cls.epsilonFree ? "ε-mentes alak" : "ε-szabályos"}
+            <span className="big">{t(TYPE_KEYS[cls.type])}</span>
+            <span
+              className={`badge ${cls.epsilonFree ? "ok" : "warn"}`}
+              title={cls.epsilonIssues.length > 0 ? cls.epsilonIssues.map((i) => tr(t, i)).join("; ") : t("detail.grammar.epsilonFreeHint")}
+            >
+              {cls.epsilonFree ? t("detail.grammar.epsilonFreeForm") : t("detail.grammar.epsilonRuled")}
             </span>
             {cls.type === 3 && (
-              <span className="badge accent">{cls.direction === "right" ? "jobblineáris" : "ballineáris"}</span>
+              <span className="badge accent">{cls.direction === "right" ? t("detail.grammar.rightLinear") : t("detail.grammar.leftLinear")}</span>
             )}
           </div>
 
           <div className="class-grid">
             <span className="lvl" style={{ color: cls.reasons.type3.holds ? "var(--success)" : "var(--muted)" }}>
-              {cls.reasons.type3.holds ? "✓" : "✗"} 3. típus
+              {cls.reasons.type3.holds ? "✓" : "✗"} {t("detail.grammar.type3Short")}
             </span>
             <span className="why">
               {cls.reasons.type3.holds
-                ? "Minden szabály A → uB vagy A → u alakú (u terminális szó)."
-                : cls.reasons.type3.violations[0] ?? "nem lineáris alak"}
+                ? t("detail.grammar.type3Holds")
+                : cls.reasons.type3.violations[0] ? tr(t, cls.reasons.type3.violations[0]) : t("detail.grammar.notLinear")}
             </span>
             <span className="lvl" style={{ color: cls.reasons.type2.holds ? "var(--success)" : "var(--muted)" }}>
-              {cls.reasons.type2.holds ? "✓" : "✗"} 2. típus
+              {cls.reasons.type2.holds ? "✓" : "✗"} {t("detail.grammar.type2Short")}
             </span>
             <span className="why">
               {cls.reasons.type2.holds
-                ? "Minden szabály bal oldala egyetlen nemterminális."
-                : cls.reasons.type2.violations[0]}
+                ? t("detail.grammar.type2Holds")
+                : tr(t, cls.reasons.type2.violations[0])}
             </span>
             <span className="lvl" style={{ color: cls.reasons.type1.holds ? "var(--success)" : "var(--muted)" }}>
-              {cls.reasons.type1.holds ? "✓" : "✗"} 1. típus
+              {cls.reasons.type1.holds ? "✓" : "✗"} {t("detail.grammar.type1Short")}
             </span>
             <span className="why">
               {cls.reasons.type1.holds
-                ? "Egyik szabály sem rövidít (a megengedett S → ε kivétellel)."
-                : cls.reasons.type1.violations[0]}
+                ? t("detail.grammar.type1Holds")
+                : tr(t, cls.reasons.type1.violations[0])}
             </span>
           </div>
 
           <div className="badges" style={{ marginTop: 14 }}>
             {cls.type === 3 && cls.direction === "right" && (
               <button className="icon-btn" onClick={() => addCell(`M_${grammar.name} = toFsm(${grammar.name})`)}>
-                <Wand2 size={14} /> Véges automatává
+                <Wand2 size={14} /> {t("detail.grammar.toFsm")}
               </button>
             )}
             {cls.reasons.type2.holds && (
               <button className="icon-btn" onClick={() => addCell(`P_${grammar.name} = toPda(${grammar.name})`)}>
-                <Wand2 size={14} /> Veremautomatává
+                <Wand2 size={14} /> {t("detail.grammar.toPda")}
               </button>
             )}
           </div>
@@ -95,7 +101,7 @@ export const GrammarView: React.FC<{ grammar: Grammar }> = ({ grammar }) => {
       </div>
 
       <div className="card">
-        <div className="card-title">Szabályok</div>
+        <div className="card-title">{t("detail.grammar.rules")}</div>
         <div className="card-body rule-list">
           {[...byLeft.entries()].map(([left, rights]) => (
             <div key={left}>
@@ -103,7 +109,7 @@ export const GrammarView: React.FC<{ grammar: Grammar }> = ({ grammar }) => {
             </div>
           ))}
           <div style={{ marginTop: 6, fontSize: 12.5, color: "var(--muted)", fontFamily: "var(--font-sans)" }}>
-            kezdőszimbólum: {grammar.start} · terminálisok: {grammar.terminals.join(", ")} · nemterminálisok:{" "}
+            {t("detail.grammar.startSymbol")}: {grammar.start} · {t("detail.grammar.terminals")}: {grammar.terminals.join(", ")} · {t("detail.grammar.nonterminals")}:{" "}
             {grammar.nonterminals.join(", ")}
           </div>
         </div>
@@ -112,14 +118,14 @@ export const GrammarView: React.FC<{ grammar: Grammar }> = ({ grammar }) => {
       <div className="card">
         <div className="card-title">
           <HelpCircle size={15} />
-          Levezethető-e egy szó?
+          {t("detail.grammar.isDerivable")}
         </div>
         <div className="card-body">
           <div className="sim-row">
             <input
               className="sim-input"
               value={test}
-              placeholder="írj be egy szót, pl. aabb"
+              placeholder={t("detail.grammar.testPlaceholder")}
               onChange={(e) => setTest(e.target.value)}
               spellCheck={false}
             />
@@ -131,15 +137,15 @@ export const GrammarView: React.FC<{ grammar: Grammar }> = ({ grammar }) => {
               >
                 {testResult.verdict === "yes" && (
                   <>
-                    <Check size={15} /> levezethető
+                    <Check size={15} /> {t("detail.grammar.derivable")}
                   </>
                 )}
                 {testResult.verdict === "no" && (
                   <>
-                    <X size={15} /> nem vezethető le
+                    <X size={15} /> {t("detail.grammar.notDerivable")}
                   </>
                 )}
-                {testResult.verdict === "unknown" && <>a korláton belül nem dönthető el</>}
+                {testResult.verdict === "unknown" && <>{t("detail.grammar.undecidedWithinLimit")}</>}
               </span>
             )}
           </div>
@@ -159,8 +165,7 @@ export const GrammarView: React.FC<{ grammar: Grammar }> = ({ grammar }) => {
       <details className="card" open>
         <summary className="card-title">
           <ListOrdered size={15} />
-          Generált szavak ({gen.words.length}
-          {gen.exhaustive ? "" : "+"})
+          {t("detail.grammar.generatedWords", { count: gen.words.length, plus: gen.exhaustive ? "" : "+" })}
           <ChevronRight size={15} className="chev" />
         </summary>
         <div className="card-body">
@@ -169,14 +174,14 @@ export const GrammarView: React.FC<{ grammar: Grammar }> = ({ grammar }) => {
               <button
                 key={w.word}
                 className="word-chip"
-                title="Kattints a levezetéshez"
+                title={t("detail.grammar.clickForDerivation")}
                 onClick={() => setOpenDerivation(openDerivation === w.word ? null : w.word)}
               >
                 {w.word === "" ? "ε" : w.word}
               </button>
             ))}
             {gen.words.length === 0 && (
-              <span style={{ color: "var(--muted)" }}>Nem található levezethető szó 8 hosszig.</span>
+              <span style={{ color: "var(--muted)" }}>{t("detail.grammar.noDerivableWords")}</span>
             )}
           </div>
           {openDerivation !== null &&
@@ -196,7 +201,7 @@ export const GrammarView: React.FC<{ grammar: Grammar }> = ({ grammar }) => {
             })()}
           {!gen.exhaustive && (
             <div style={{ marginTop: 8, fontSize: 12.5, color: "var(--muted)" }}>
-              …a nyelv ennél bővebb lehet (a felsorolás 8 hosszig terjed).
+              {t("detail.grammar.moreWordsPossible")}
             </div>
           )}
         </div>

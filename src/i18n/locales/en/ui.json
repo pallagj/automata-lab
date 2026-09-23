@@ -1,0 +1,470 @@
+{
+  "workspace": {
+    "starterName": "Demo worksheet",
+    "defaultName": "Worksheet {{index}}",
+    "importedName": "Imported worksheet"
+  },
+  "app": {
+    "title": "AutomataLab — Languages and Automata",
+    "resizePane": "Drag to resize the panel",
+    "code": "Code",
+    "visualization": "Visualization"
+  },
+  "topbar": {
+    "selectWorksheet": "Select worksheet",
+    "newWorksheet": "New worksheet",
+    "renameWorksheet": "Rename worksheet",
+    "setFolder": "Move worksheet to folder",
+    "deleteWorksheet": "Delete worksheet",
+    "loadExample": "Load a built-in example worksheet",
+    "examples": "Examples",
+    "exampleWorksheets": "Example worksheets",
+    "exportWorksheet": "Save worksheet to file",
+    "export": "Export",
+    "importWorksheet": "Load worksheet from file",
+    "import": "Import",
+    "lightTheme": "Light theme",
+    "darkTheme": "Dark theme",
+    "help": "Help",
+    "language": "Language",
+    "importFailed": "Couldn't read the file — a valid .automata.json is required.",
+    "renamePrompt": "New name for the worksheet:",
+    "folderPrompt": "Which folder should the worksheet go in? (leave empty for no folder)",
+    "deleteConfirm": "Really delete the worksheet \"{{name}}\"?"
+  },
+  "examples": {
+    "intro": {
+      "name": "Intro — determinization and minimization"
+    },
+    "epsilonFree": {
+      "name": "ε-removal step by step"
+    },
+    "regex": {
+      "name": "Regular expressions and automata"
+    },
+    "setOps": {
+      "name": "Set operations on languages"
+    },
+    "pda": {
+      "name": "Pushdown automata"
+    },
+    "turing": {
+      "name": "Turing machines"
+    },
+    "customMachines": {
+      "name": "Custom machines — two stacks, a queue"
+    },
+    "grammars": {
+      "name": "Grammars and conversions"
+    }
+  },
+  "help": {
+    "title": "Help",
+    "whatIsThis": {
+      "heading": "What is this?",
+      "body1": "AutomataLab is an interactive workshop for",
+      "subject": "Formal Languages and Automata Theory",
+      "body2": ": finite automata, pushdown automata, Turing machines and generative grammars can be defined, simulated and transformed. Everything works offline, worksheets are saved to the browser automatically."
+    },
+    "machines": {
+      "heading": "Machines — a single model",
+      "body1": "Every machine is built with the same",
+      "body2": "key: a finite control plus any number of storages.",
+      "emphasis": "Its kind is decided by the configuration",
+      "body3": "— no storage means a finite automaton, one stack means a pushdown automaton, one tape (holding the input) means a Turing machine, another combination means a general machine. The interface recognizes it and names it accordingly.",
+      "example": "Machine:               # finite automaton: no storage\n  name: M1\n  charset: a, b\n  states: S, A, F\n  init: S\n  accept: F\n  transitions:\n    - S . S      # \".\" = every letter of the alphabet\n    - S a A\n    - A b F      # for an ε-transition: S $ A"
+    },
+    "expressions": {
+      "heading": "Expressions",
+      "body1": "In a new cell you can reference machines and perform operations in the form",
+      "body2": ". If an operation's precondition is missing (e.g. ε-freedom for determinization), the app explains why and inserts the fix chain with one click.",
+      "ops": {
+        "det": "determinization (powerset construction, with steps)",
+        "min": "minimization (partition refinement, with steps)",
+        "epsfree": "ε-removal",
+        "completeReachable": "completion with a trap state / removing unreachable states",
+        "setOps": "set operations (product construction)",
+        "langOps": "language operations",
+        "regex": "a regular expression as a value — toFsm() turns it into an automaton",
+        "equal": "equivalence check, with a counterexample",
+        "conversions": "conversions between automaton ↔ grammar, grammar → pushdown automaton",
+        "namedOps": "operations between named automata: concatenation, union, closure — letter literals only inside regex(…)"
+      }
+    },
+    "storages": {
+      "heading": "Storages: stack, queue, tape",
+      "example": "Machine:               # pushdown automaton: one stack\n  name: AnBn\n  charset: a, b\n  states: q0, q1, q2\n  init: q0\n  accept: q2           # or acceptMode: emptyStorages\n  storages:\n    stack: stack       # the stack starts with Z by default; otherwise:\n  transitions:         #   stack: { type: stack, init: X }\n    - q0 a Z/AZ q0     # reading a: push AZ instead of Z\n    - q0 b A/$ q1      # $ = write nothing (ε)\n    - q1 $ Z/Z q2      # ε-step\n\nMachine:               # Turing machine: one tape, holding the input\n  name: T\n  charset: a, b\n  states: s, ok\n  init: s\n  accept: ok\n  input: tape          # the input is placed on this storage\n  storages:\n    tape: tape\n  transitions:\n    - s a/b > s        # read a, write b, move right\n    - s _/& = ok       # _ = blank symbol, & = write the same symbol back",
+      "transitionSyntax": "FROM [INPUT] per-storage-operation… TO",
+      "body2": "— a stack/queue takes one element (POP/PUSH), a tape takes two (read/write move). Any number of storages can be combined: two stacks already build a Turing-power machine (e.g. aⁿbⁿcⁿ, which is impossible with a pushdown automaton), a queue gives a queue automaton. The automaton operations (det, min…) only apply to storage-free machines — the app explains why."
+    },
+    "grammar": {
+      "heading": "Grammar",
+      "example": "Grammar:\n  name: G\n  charset: a, b\n  variables: S\n  init: S\n  rules:\n    - S -> aSb | $   # $ = ε",
+      "body": "The grammar view automatically determines the class according to the Chomsky hierarchy, and for every level shows which rule violates it and why."
+    },
+    "tips": {
+      "heading": "Tips",
+      "drag": "The graph can be dragged to move, scrolled to zoom, and double-click resets the view.",
+      "nfaBranch": "During simulation, click a highlighted edge to choose an NFA branch.",
+      "yaml": "The result of an expression cell can be expanded into editable YAML using the header icon.",
+      "acceptedWords": "Click a chip under \"Accepted words\" to simulate it immediately."
+    }
+  },
+  "detail": {
+    "stepsPanel": {
+      "title": "How was this built? — the algorithm's steps"
+    },
+    "note": "Note",
+    "whyNotEvaluable": "Why can't this cell be evaluated?",
+    "emptyCanvas": {
+      "doubleClick": "Double-click",
+      "hereText": "here for the first state of a finite automaton —",
+      "orChoose1": "or pick from the",
+      "insertMenu": "+ Insert",
+      "orChoose2": "menu on the left (regex, pushdown automaton, Turing machine, grammar…).",
+      "autosave": "All your work is saved automatically, offline."
+    },
+    "tapeInput": {
+      "hint": "Click the tape and type",
+      "input": "input"
+    },
+    "verdict": {
+      "title": "Equivalence check",
+      "equalBody1": "The two automata recognize",
+      "equalEmphasis": "the same language",
+      "equalBody2": ": acceptance never differs at any reachable state pair of the product automaton.",
+      "notEqualBody1": "The two automata are",
+      "notEqualEmphasis": "not equivalent",
+      "notEqualBody2": ". The shortest distinguishing word:",
+      "counterexample1": "This word is accepted by",
+      "counterexample2": ", but rejected by",
+      "counterexample3": "."
+    },
+    "regex": {
+      "title": "Regular expression",
+      "or": "or",
+      "union": "union",
+      "closure": "closure",
+      "optional": "optional",
+      "emptyWord": "empty word",
+      "parens": "parenthesization",
+      "toFsmHint": "New cell: automaton via Thompson's construction",
+      "toFsmLabel": "convert to ε-NFA",
+      "structure": "Structure of the expression",
+      "wordTest": "Word test",
+      "wordTestPlaceholder": "does the word match? e.g. abb",
+      "matches": "matches",
+      "noMatch": "no match",
+      "sampleWords": "Matching words (sample)"
+    },
+    "fsm": {
+      "title": "Automaton",
+      "stateCount": "{{count}} states",
+      "deterministicHint": "Every (state, symbol) pair has at most one transition, and there are no ε-transitions.",
+      "nondeterministicHint": "Nondeterministic points: {{spots}}{{epsilonNote}}",
+      "andHasEpsilon": " — and there are also ε-transitions",
+      "deterministic": "deterministic",
+      "nondeterministic": "nondeterministic",
+      "completeHint": "Every (state, symbol) pair has a transition.",
+      "incompleteHint": "Missing transitions: {{missing}}{{ellipsis}}",
+      "complete": "complete",
+      "incomplete": "incomplete",
+      "epsilonListHint": "ε-transitions: {{list}}",
+      "noEpsilonHint": "No ε-transitions.",
+      "hasEpsilon": "has ε-transitions",
+      "epsilonFree": "ε-free",
+      "unreachableHint": "States unreachable from the start state — can be removed with reachable().",
+      "unreachableLabel": "unreachable",
+      "transitionTable": "Transition table",
+      "state": "state",
+      "acceptedWords": "Accepted words",
+      "noAcceptedWords": "No accepted word found up to length 7 — the recognized language might be empty.",
+      "loadIntoSimulation": "Click to load into the simulation",
+      "wordsNotExhaustive": "…and the language is larger than this (the list covers length 7 / 24 words).",
+      "howWasThisBuilt": "How was this built?",
+      "inputPlaceholder": "input word — click and type",
+      "restart": "Restart",
+      "stepBack": "Step back",
+      "oneStep": "One step",
+      "runAll": "Run to completion",
+      "accepts": "accepts",
+      "rejects": "rejects",
+      "running": "running…",
+      "initialStatesHint": "initial states (with ε-closure)",
+      "afterReadingHint": "after reading \"{{symbol}}\"",
+      "branchTip": "click a highlighted edge in the graph to choose a branch"
+    },
+    "grammar": {
+      "title": "Grammar",
+      "type3": "Type 3 — regular",
+      "type2": "Type 2 — context-free",
+      "type1": "Type 1 — context-sensitive",
+      "type0": "Type 0 — unrestricted (phrase-structure)",
+      "epsilonFreeHint": "ε occurs at most as S → ε, and S never appears on a right-hand side.",
+      "epsilonFreeForm": "ε-free form",
+      "epsilonRuled": "has ε-rules",
+      "rightLinear": "right-linear",
+      "leftLinear": "left-linear",
+      "type3Short": "Type 3",
+      "type3Holds": "Every rule has the form A → uB or A → u (u a terminal string).",
+      "notLinear": "not a linear form",
+      "type2Short": "Type 2",
+      "type2Holds": "Every rule's left-hand side is a single nonterminal.",
+      "type1Short": "Type 1",
+      "type1Holds": "No rule shortens the string (except the allowed S → ε).",
+      "toFsm": "To finite automaton",
+      "toPda": "To pushdown automaton",
+      "rules": "Rules",
+      "startSymbol": "start symbol",
+      "terminals": "terminals",
+      "nonterminals": "nonterminals",
+      "isDerivable": "Is a word derivable?",
+      "testPlaceholder": "type a word, e.g. aabb",
+      "derivable": "derivable",
+      "notDerivable": "not derivable",
+      "undecidedWithinLimit": "undecided within the search limit",
+      "generatedWords": "Generated words ({{count}}{{plus}})",
+      "clickForDerivation": "Click to see the derivation",
+      "noDerivableWords": "No derivable word found up to length 8.",
+      "moreWordsPossible": "…the language may be larger than this (the enumeration covers length 8)."
+    },
+    "machine": {
+      "kind": {
+        "fsm": "Automaton",
+        "pda": "Pushdown automaton",
+        "tm": "Turing machine",
+        "general": "General machine",
+        "generalWith": "General machine ({{parts}})"
+      },
+      "kindLower": {
+        "fsm": "finite automaton",
+        "pda": "pushdown automaton",
+        "tm": "Turing machine",
+        "general": "general machine",
+        "generalWith": "general machine ({{parts}})"
+      },
+      "storageCount": {
+        "stack": "{{count}} stack",
+        "queue": "{{count}} queue",
+        "tape": "{{count}} tape"
+      },
+      "top": "top",
+      "front": "front",
+      "initialContentHint": "Initial content of storage {{id}}",
+      "initial": "initial",
+      "deterministicHint": "No situation allows more than one transition at once.",
+      "conflictingTransitions": "Conflicting transitions: {{spots}}",
+      "acceptEmptyStorageHint": "The word is accepted if the input is exhausted and every storage is empty.",
+      "acceptAcceptStateHint": "The word is accepted if the input is exhausted and the machine is in an accepting state.",
+      "acceptEmptyStorage": "accepts with empty storage",
+      "acceptAcceptState": "accepts with an accepting state",
+      "decidesOnHaltHint": "The machine decides on halting: it accepts if it halts in an accepting state.",
+      "decidesOnHalt": "decides on halting",
+      "transitions": "Transitions",
+      "from": "from",
+      "input": "input",
+      "to": "to",
+      "storageType": {
+        "stack": "stack",
+        "queue": "queue",
+        "tape": "tape"
+      },
+      "tapeStartPlaceholder": "start of the tape — click and type",
+      "oneStepAllBranches": "One step (all branches)",
+      "hitLimit": "hit the step limit",
+      "step": "Step: {{n}}",
+      "nondeterministicStepInfo": "The machine is nondeterministic: every possible branch is followed at once. Step: {{n}} · active configurations: {{count}}",
+      "noMoreBranches": "No branch left to continue — the word is rejected.",
+      "showConfigStorages": "Click to show this configuration's storages",
+      "remainingInput": "remaining input",
+      "topLeft": "top on the left",
+      "frontLeft": "front on the left",
+      "moreConfigs": "… and {{count}} more configurations"
+    }
+  },
+  "editor": {
+    "ops": {
+      "groups": {
+        "normalize": "Normalization",
+        "language": "Language operations",
+        "conversion": "Conversion",
+        "inspection": "Inspection"
+      },
+      "epsfree": "ε-removal",
+      "det": "determinization (powerset construction)",
+      "complete": "completion with a trap state",
+      "reachable": "removing unreachable states",
+      "min": "minimization (partition refinement)",
+      "clean": "renaming states (A, B, C…)",
+      "complement": "complement language",
+      "union": "union (two automata)",
+      "intersect": "intersection (two automata)",
+      "difference": "difference (two automata)",
+      "concat": "concatenation (two automata)",
+      "star": "closure (Kleene star)",
+      "reverse": "reversal",
+      "toGrammar": "automaton → regular grammar",
+      "toFsm": "grammar / regex → finite automaton",
+      "toPda": "grammar → pushdown automaton",
+      "equal": "equivalence check with a counterexample",
+      "kind": {
+        "fsm": "finite automaton",
+        "pda": "pushdown automaton",
+        "tm": "Turing machine",
+        "generalMachine": "general machine",
+        "grammar": "grammar",
+        "regex": "regular expression",
+        "verdict": "comparison result",
+        "unknown": "unknown"
+      },
+      "reason": {
+        "notApplicableToVerdict": "not applicable to a comparison result",
+        "expectsGrammarIsRegex": "expects a grammar — this cell is: a regular expression",
+        "invalidRegex": "invalid regular expression",
+        "expectsGrammar": "expects a grammar — this cell is: {{kind}}",
+        "expectsFsmNotRightLinear": "expects a finite automaton — this grammar is not right-linear",
+        "hasStorage": "this machine has storage ({{types}}) — the language it recognizes usually isn't regular, so automaton operations don't apply",
+        "expectsFsm": "expects a finite automaton — this cell is: {{kind}}",
+        "unknown": "the operation's precondition is not met"
+      }
+    },
+    "cell": {
+      "kind": {
+        "grammar": "grammar",
+        "regex": "regular expression",
+        "verdict": "comparison",
+        "fsm": "finite automaton",
+        "pda": "pushdown automaton",
+        "tm": "Turing machine",
+        "note": "note"
+      },
+      "notApplicable": "Not applicable to this cell: {{reason}}",
+      "workingChain": "working chain",
+      "dragToReorder": "Grab and drag to reorder the cell",
+      "operationsHint": "Operations — wraps the cell with the chosen operation",
+      "editYaml": "Edit YAML code",
+      "backToForm": "Back to form editing",
+      "expandToDefinition": "Expand into an editable definition",
+      "deleteCell": "Delete cell",
+      "resultingAutomatonName": "Name of the resulting automaton",
+      "regexHint": "Regular expression — operators: | (or), * (closure), parentheses, $ (ε)"
+    },
+    "form": {
+      "col": {
+        "leftSide": "left-hand side",
+        "rightSide": "right-hand side (| separates)",
+        "from": "from",
+        "symbol": "symbol",
+        "readWrite": "{{id}} read/write",
+        "move": "move",
+        "pushPop": "{{id}} pop/push",
+        "enqueueDequeue": "{{id}} out/in",
+        "to": "to"
+      },
+      "moveHint": "move: → right · ← left · • stay",
+      "kindChangeTitle": "The machine's kind will change",
+      "kindChangeBody1": "This change turns the machine from a",
+      "kindChangeBody2": "into a",
+      "kindChangeBody3": " — the storages determine which languages it can recognize. Existing transitions are adjusted: a new storage gets a no-op that leaves it untouched, a removed storage's operations are discarded.",
+      "dontAskAgain": "Don't warn me again",
+      "cancel": "Cancel",
+      "confirmChange": "Change it",
+      "storageType": {
+        "stack": "stack (LIFO)",
+        "queue": "queue (FIFO)",
+        "tape": "tape"
+      },
+      "name": "Name",
+      "alphabet": "Alphabet",
+      "variables": "Variables",
+      "states": "States",
+      "startVariable": "Start variable",
+      "startState": "Start state",
+      "accepting": "Accepting",
+      "input": "Input",
+      "readHead": "read head",
+      "writtenToStorage": "written onto storage {{id}}",
+      "acceptance": "Acceptance",
+      "acceptFinalState": "with an accepting state",
+      "acceptEmptyStorages": "with empty storages",
+      "storage": "storage",
+      "type": "type",
+      "initialContent": "initial content",
+      "namePlaceholder": "name",
+      "tapeInitPlaceholder": "(the input may go here)",
+      "initialContentPlaceholder": "initial content",
+      "deleteStorage": "Delete storage",
+      "addStorageHint": "A stack makes a pushdown automaton, a tape a Turing machine, more makes a custom machine",
+      "addStorage": "add storage (stack / queue / tape)",
+      "newStorage": "new storage",
+      "deleteRow": "Delete row",
+      "newRule": "new rule",
+      "newTransition": "new transition"
+    },
+    "insertMenu": {
+      "buttonTitle": "Insert a new cell — choose what you want",
+      "insert": "Insert",
+      "fsm": "Finite automaton",
+      "pda": "Pushdown automaton",
+      "tm": "Turing machine",
+      "machine": "Custom machine (with storages)",
+      "grammar": "Grammar",
+      "regex": "Regular expression",
+      "expression": "Expression / operation",
+      "note": "Note",
+      "noteTemplate": "# Note\n# A cell starting with # is a comment — write your explanation here."
+    },
+    "column": {
+      "cellCount": "{{count}} cells",
+      "ghostCellTitle": "Click for a new cell (Alt+Enter also works)"
+    }
+  },
+  "graph": {
+    "edgeFields": {
+      "symbol": "symbol read (ε: $)",
+      "stackPop": "{{id}}: pop from top",
+      "stackPush": "{{id}}: push onto top",
+      "queuePop": "{{id}}: dequeue from front",
+      "queuePush": "{{id}}: enqueue at back",
+      "tapeRead": "{{id}}: read",
+      "tapeWrite": "{{id}}: write",
+      "move": "move"
+    },
+    "validation": {
+      "emptyName": "The state name can't be empty.",
+      "noSpaceComma": "The name must not contain spaces or commas.",
+      "duplicateName": "A state named \"{{name}}\" already exists."
+    },
+    "stateDialog": {
+      "newTitle": "New state",
+      "editTitle": "State — {{name}}",
+      "startState": "Start state",
+      "startStateNote": " — the start state can be moved elsewhere by checking it there",
+      "acceptState": "Accepting state",
+      "deleteConfirm": "Delete state \"{{name}}\" along with its transitions?",
+      "delete": "Delete"
+    },
+    "cancel": "Cancel",
+    "save": "Save",
+    "edgeDialog": {
+      "title": "Transition — {{from}} → {{to}}",
+      "addRow": "new transition on this edge",
+      "emptyNote": "No rows — saving will delete all transitions on this edge."
+    },
+    "removeRow": "Delete row",
+    "export": {
+      "buttonTitle": "Export — SVG / PNG / LaTeX (TikZ)",
+      "svg": "Download SVG",
+      "png": "Download PNG",
+      "tikz": "Download LaTeX (TikZ)",
+      "copyTikz": "Copy LaTeX (TikZ)",
+      "copied": "Copied ✓",
+      "pngFailed": "PNG conversion failed",
+      "svgLoadFailed": "Failed to load the SVG",
+      "tikzComment": "AutomataLab export — required packages:"
+    },
+    "resetView": "Reset view",
+    "editingHint": "double-click: new state · click: edit state · drag: move · drag from the edge (ring / ▸ dot): transition · click an edge label: edit transitions",
+    "dragToConnect": "Drag onto another state for a new transition"
+  }
+}

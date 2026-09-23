@@ -288,7 +288,8 @@ Machine:
     - S a X
 `);
     expect(r.ok).toBe(false);
-    expect(r.diagnostics[0].title).toContain("X");
+    expect(r.diagnostics[0].title.key).toBe("definitionParser.machine.unknownToState");
+    expect(r.diagnostics[0].title.params?.state).toBe("X");
   });
   it("hiányzó init hibát ad", () => {
     const r = parseMachine(`
@@ -298,7 +299,8 @@ Machine:
   states: S
 `);
     expect(r.ok).toBe(false);
-    expect(r.diagnostics[0].title).toContain("init");
+    expect(r.diagnostics[0].title.key).toBe("definitionParser.missingField.title");
+    expect(r.diagnostics[0].title.params?.field).toBe("init");
   });
 });
 
@@ -558,7 +560,7 @@ describe("munkalap-kiértékelés", () => {
 
   it("körkörös függőség jelzése", () => {
     const rs = evaluateCells(["A = det(B)", "B = det(A)"]);
-    expect(rs[0].diagnostics.some((d) => d.title.includes("Körkörös"))).toBe(true);
+    expect(rs[0].diagnostics.some((d) => d.title.key === "workspace.circularDependency.title")).toBe(true);
   });
 
   it("betű-literálok tiltása a kifejezésnyelvben", () => {
@@ -620,7 +622,11 @@ describe("munkalap-kiértékelés", () => {
     ];
     const rs = evaluateCells(cells);
     expect(rs[1].value).toBeNull();
-    expect(rs[1].diagnostics.some((d) => d.level === "error" && /tárol/i.test(d.detail ?? d.title))).toBe(true);
+    expect(
+      rs[1].diagnostics.some(
+        (d) => d.level === "error" && (d.detail?.key === "expression.error.machineNeedsFsm" || d.title.key === "expression.error.machineNeedsFsm")
+      )
+    ).toBe(true);
   });
 
   it("képesség-kapu: tárolómentes Machine automataként használható", () => {

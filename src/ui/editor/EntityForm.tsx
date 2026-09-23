@@ -1,10 +1,13 @@
 import React, { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import yaml from "js-yaml";
+import { useTranslation } from "react-i18next";
+import type { TFunction } from "i18next";
 import { Plus, TriangleAlert, X } from "lucide-react";
-import { Machine, machineCaps, StorageSpec, StorageType } from "../../core/machine/machine";
+import { Machine, machineCaps, MachineCaps, StorageSpec, StorageType } from "../../core/machine/machine";
 import { parseStorageEntry } from "../../core/parse/definitionParser";
 import { useAppStore } from "../../state/store";
+import { machineKindLabel } from "../machineLabels";
 
 /**
  * Interaktív entitás-szerkesztő: a YAML-definíció helyett űrlapon adható meg
@@ -182,27 +185,27 @@ export interface RowColumn {
   widget: "text" | "move";
 }
 
-export function rowColumns(d: EntityDraft): RowColumn[] {
+export function rowColumns(t: TFunction, d: EntityDraft): RowColumn[] {
   if (d.kind === "grammar")
     return [
-      { header: "bal oldal", placeholder: "S", widget: "text" },
-      { header: "jobb oldal (| választ el)", placeholder: "aS | b", widget: "text" }
+      { header: t("editor.form.col.leftSide"), placeholder: "S", widget: "text" },
+      { header: t("editor.form.col.rightSide"), placeholder: "aS | b", widget: "text" }
     ];
-  const cols: RowColumn[] = [{ header: "honnan", placeholder: "S", widget: "text" }];
-  if (d.input === "head") cols.push({ header: "jel", placeholder: "a", widget: "text" });
+  const cols: RowColumn[] = [{ header: t("editor.form.col.from"), placeholder: "S", widget: "text" }];
+  if (d.input === "head") cols.push({ header: t("editor.form.col.symbol"), placeholder: "a", widget: "text" });
   for (const s of d.storages) {
     if (s.type === "tape") {
-      cols.push({ header: `${s.id} olvas/ír`, placeholder: "a/b", widget: "text" });
-      cols.push({ header: "mozgás", placeholder: ">", widget: "move" });
+      cols.push({ header: t("editor.form.col.readWrite", { id: s.id }), placeholder: "a/b", widget: "text" });
+      cols.push({ header: t("editor.form.col.move"), placeholder: ">", widget: "move" });
     } else {
       cols.push({
-        header: s.type === "stack" ? `${s.id} le/fel` : `${s.id} ki/be`,
+        header: s.type === "stack" ? t("editor.form.col.pushPop", { id: s.id }) : t("editor.form.col.enqueueDequeue", { id: s.id }),
         placeholder: s.type === "stack" ? "Z/AZ" : "A/BA",
         widget: "text"
       });
     }
   }
-  cols.push({ header: "hová", placeholder: "A", widget: "text" });
+  cols.push({ header: t("editor.form.col.to"), placeholder: "A", widget: "text" });
   return cols;
 }
 
@@ -215,17 +218,20 @@ function emptyRow(cols: RowColumn[], isGrammar: boolean): string[] {
 export const MoveSelect: React.FC<{
   value: string;
   onChange: (v: string) => void;
-}> = ({ value, onChange }) => (
-  <select className="move-select" value={value} onChange={(e) => onChange(e.target.value)} title="mozgás: → jobbra · ← balra · • helyben">
-    {![">", "<", "="].includes(value) && <option value={value} hidden />}
-    <option value=">">→</option>
-    <option value="<">←</option>
-    <option value="=">•</option>
-  </select>
-);
+}> = ({ value, onChange }) => {
+  const { t } = useTranslation();
+  return (
+    <select className="move-select" value={value} onChange={(e) => onChange(e.target.value)} title={t("editor.form.moveHint")}>
+      {![">", "<", "="].includes(value) && <option value={value} hidden />}
+      <option value=">">→</option>
+      <option value="<">←</option>
+      <option value="=">•</option>
+    </select>
+  );
+};
 
 /** A felismert gépfajta — csak a bemenettől és a tárolóktól függ. */
-function draftKindLabel(d: EntityDraft): string {
+function draftKindCaps(d: EntityDraft): MachineCaps {
   const probe: Machine = {
     kind: "machine",
     name: "",
@@ -238,18 +244,19 @@ function draftKindLabel(d: EntityDraft): string {
     storages: d.storages,
     transitions: []
   };
-  return machineCaps(probe).label;
+  return machineCaps(probe);
 }
 
 /* ------------------- fajtaváltás-figyelmeztető dialógus ------------------- */
 
 interface KindChangeRequest {
-  fromLabel: string;
-  toLabel: string;
+  fromCaps: MachineCaps;
+  toCaps: MachineCaps;
   apply: () => void;
 }
 
 const KindChangeDialog: React.FC<{ req: KindChangeRequest; onClose: () => void }> = ({ req, onClose }) => {
+  const { t } = useTranslation();
   const setHide = useAppStore((s) => s.setHideKindChangeWarning);
   const [dontAskAgain, setDontAskAgain] = useState(false);
   useEffect(() => {
@@ -263,7 +270,7 @@ const KindChangeDialog: React.FC<{ req: KindChangeRequest; onClose: () => void }
         <div className="gd-head">
           <h2>
             <TriangleAlert size={16} style={{ verticalAlign: "-3px", marginRight: 6 }} />
-            A gép fajtája megváltozik
+            {t("editor.form.kindChangeTitle")}
           </h2>
           <button className="icon-btn" onClick={onClose}>
             <X size={15} />
@@ -271,10 +278,9 @@ const KindChangeDialog: React.FC<{ req: KindChangeRequest; onClose: () => void }
         </div>
         <div className="gd-body">
           <p style={{ margin: 0 }}>
-            Ez a módosítás a gépet <b>{req.fromLabel.toLowerCase()}</b> helyett{" "}
-            <b>{req.toLabel.toLowerCase()}</b> géppé alakítja — a tárolók határozzák meg, milyen
-            nyelveket képes felismerni. A meglévő átmenetek igazodnak: új tároló érintetlenül
-            hagyó művelettel egészül ki, törölt tároló műveletei elvesznek.
+            {t("editor.form.kindChangeBody1")} <b>{machineKindLabel(t, req.fromCaps, true)}</b>{" "}
+            {t("editor.form.kindChangeBody2")} <b>{machineKindLabel(t, req.toCaps, true)}</b>
+            {t("editor.form.kindChangeBody3")}
           </p>
           <label className="gd-check">
             <input
@@ -282,13 +288,13 @@ const KindChangeDialog: React.FC<{ req: KindChangeRequest; onClose: () => void }
               checked={dontAskAgain}
               onChange={(e) => setDontAskAgain(e.target.checked)}
             />
-            <span>Ne figyelmeztess többé</span>
+            <span>{t("editor.form.dontAskAgain")}</span>
           </label>
         </div>
         <div className="gd-actions">
           <span className="spacer" />
           <button className="gd-btn" onClick={onClose}>
-            Mégse
+            {t("editor.form.cancel")}
           </button>
           <button
             className="gd-btn primary"
@@ -298,7 +304,7 @@ const KindChangeDialog: React.FC<{ req: KindChangeRequest; onClose: () => void }
               onClose();
             }}
           >
-            Módosítom
+            {t("editor.form.confirmChange")}
           </button>
         </div>
       </div>
@@ -309,10 +315,10 @@ const KindChangeDialog: React.FC<{ req: KindChangeRequest; onClose: () => void }
 
 /* ----------------------------- tárolók ----------------------------- */
 
-const STORAGE_TYPE_LABEL: Record<StorageType, string> = {
-  stack: "verem (LIFO)",
-  queue: "sor (FIFO)",
-  tape: "szalag"
+const STORAGE_TYPE_KEY: Record<StorageType, string> = {
+  stack: "editor.form.storageType.stack",
+  queue: "editor.form.storageType.queue",
+  tape: "editor.form.storageType.tape"
 };
 
 function freshStorageId(used: Set<string>): string {
@@ -332,6 +338,7 @@ interface Props {
 }
 
 export const EntityForm: React.FC<Props> = ({ source, onChange }) => {
+  const { t } = useTranslation();
   const [draft, setDraft] = useState<EntityDraft | null>(() => parseEntityDraft(source));
   const lastSerialized = useRef(source);
   const hideKindWarning = useAppStore((s) => s.hideKindChangeWarning);
@@ -399,10 +406,11 @@ export const EntityForm: React.FC<Props> = ({ source, onChange }) => {
    */
   const commitStructural = (next: EntityDraft, renames?: Map<string, string>) => {
     const apply = () => update(reshapeRows(draft, next, renames));
-    const fromLabel = draftKindLabel(draft);
-    const toLabel = draftKindLabel(next);
-    if (fromLabel !== toLabel && !hideKindWarning) {
-      setKindChange({ fromLabel, toLabel, apply });
+    const fromCaps = draftKindCaps(draft);
+    const toCaps = draftKindCaps(next);
+    const sig = (c: MachineCaps) => `${c.kind}:${JSON.stringify(c.storageCounts ?? {})}`;
+    if (sig(fromCaps) !== sig(toCaps) && !hideKindWarning) {
+      setKindChange({ fromCaps, toCaps, apply });
     } else {
       apply();
     }
@@ -443,7 +451,7 @@ export const EntityForm: React.FC<Props> = ({ source, onChange }) => {
     const rows = draft.rows.map((r, k) => (k === i ? r.map((p, l) => (l === j ? value : p)) : r));
     update({ ...draft, rows });
   };
-  const cols = rowColumns(draft);
+  const cols = rowColumns(t, draft);
   const addRow = () => update({ ...draft, rows: [...draft.rows, emptyRow(cols, draft.kind === "grammar")] });
   const removeRow = (i: number) => update({ ...draft, rows: draft.rows.filter((_, k) => k !== i) });
 
@@ -453,46 +461,46 @@ export const EntityForm: React.FC<Props> = ({ source, onChange }) => {
     <div className="entity-form" onClick={(e) => e.stopPropagation()}>
       <div className="ef-grid">
         <label>
-          <span>Név</span>
+          <span>{t("editor.form.name")}</span>
           <input value={draft.name} onChange={(e) => setField("name", e.target.value)} placeholder="M" />
         </label>
         <label>
-          <span>Ábécé</span>
+          <span>{t("editor.form.alphabet")}</span>
           <input value={draft.charset} onChange={(e) => setField("charset", e.target.value)} placeholder="a, b" />
         </label>
         <label>
-          <span>{k === "grammar" ? "Változók" : "Állapotok"}</span>
+          <span>{k === "grammar" ? t("editor.form.variables") : t("editor.form.states")}</span>
           <input value={draft.states} onChange={(e) => setField("states", e.target.value)} placeholder="S, A" />
         </label>
         <label>
-          <span>{k === "grammar" ? "Kezdő változó" : "Kezdőállapot"}</span>
+          <span>{k === "grammar" ? t("editor.form.startVariable") : t("editor.form.startState")}</span>
           <input value={draft.init} onChange={(e) => setField("init", e.target.value)} placeholder="S" />
         </label>
         {k === "machine" && (
           <label>
-            <span>Elfogadó</span>
+            <span>{t("editor.form.accepting")}</span>
             <input value={draft.accept} onChange={(e) => setField("accept", e.target.value)} placeholder="A" />
           </label>
         )}
         {k === "machine" && draft.storages.length > 0 && (
           <>
             <label>
-              <span>Bemenet</span>
+              <span>{t("editor.form.input")}</span>
               <select value={draft.input} onChange={(e) => setField("input", e.target.value)}>
-                <option value="head">olvasófej</option>
+                <option value="head">{t("editor.form.readHead")}</option>
                 {draft.storages.map((s) => (
                   <option key={s.id} value={s.id}>
-                    a(z) {s.id} tárolóra írva
+                    {t("editor.form.writtenToStorage", { id: s.id })}
                   </option>
                 ))}
               </select>
             </label>
             {draft.input === "head" && (
               <label>
-                <span>Elfogadás</span>
+                <span>{t("editor.form.acceptance")}</span>
                 <select value={draft.acceptMode} onChange={(e) => setField("acceptMode", e.target.value)}>
-                  <option value="finalState">elfogadó állapottal</option>
-                  <option value="emptyStorages">üres tárolókkal</option>
+                  <option value="finalState">{t("editor.form.acceptFinalState")}</option>
+                  <option value="emptyStorages">{t("editor.form.acceptEmptyStorages")}</option>
                 </select>
               </label>
             )}
@@ -504,9 +512,9 @@ export const EntityForm: React.FC<Props> = ({ source, onChange }) => {
         <div className="ef-storages">
           {draft.storages.length > 0 && (
             <div className="ef-storage-row ef-storage-head">
-              <span>tároló</span>
-              <span>típus</span>
-              <span>kezdőtartalom</span>
+              <span>{t("editor.form.storage")}</span>
+              <span>{t("editor.form.type")}</span>
+              <span>{t("editor.form.initialContent")}</span>
               <span />
             </div>
           )}
@@ -515,33 +523,33 @@ export const EntityForm: React.FC<Props> = ({ source, onChange }) => {
               <input
                 value={s.id}
                 onChange={(e) => setStorage(i, { id: e.target.value.trim() })}
-                placeholder="név"
+                placeholder={t("editor.form.namePlaceholder")}
                 spellCheck={false}
               />
               <select value={s.type} onChange={(e) => setStorage(i, { type: e.target.value as StorageType })}>
-                {(Object.keys(STORAGE_TYPE_LABEL) as StorageType[]).map((t) => (
-                  <option key={t} value={t}>
-                    {STORAGE_TYPE_LABEL[t]}
+                {(Object.keys(STORAGE_TYPE_KEY) as StorageType[]).map((ty) => (
+                  <option key={ty} value={ty}>
+                    {t(STORAGE_TYPE_KEY[ty])}
                   </option>
                 ))}
               </select>
               <input
                 value={s.init}
                 onChange={(e) => setStorage(i, { init: e.target.value })}
-                placeholder={s.type === "tape" ? "(a bemenet kerülhet rá)" : "kezdőtartalom"}
+                placeholder={s.type === "tape" ? t("editor.form.tapeInitPlaceholder") : t("editor.form.initialContentPlaceholder")}
                 spellCheck={false}
               />
               <button
                 className="ef-remove"
-                title="Tároló törlése"
+                title={t("editor.form.deleteStorage")}
                 onClick={() => setStorages(draft.storages.filter((_, j) => j !== i))}
               >
                 <X size={13} />
               </button>
             </div>
           ))}
-          <button className="ef-add" onClick={addStorage} title="Veremmel veremautomata, szalaggal Turing-gép, többel egyedi gép">
-            <Plus size={13} /> {draft.storages.length === 0 ? "tároló hozzáadása (verem / sor / szalag)" : "új tároló"}
+          <button className="ef-add" onClick={addStorage} title={t("editor.form.addStorageHint")}>
+            <Plus size={13} /> {draft.storages.length === 0 ? t("editor.form.addStorage") : t("editor.form.newStorage")}
           </button>
         </div>
       )}
@@ -568,13 +576,13 @@ export const EntityForm: React.FC<Props> = ({ source, onChange }) => {
                 />
               )
             )}
-            <button className="ef-remove" title="Sor törlése" onClick={() => removeRow(i)}>
+            <button className="ef-remove" title={t("editor.form.deleteRow")} onClick={() => removeRow(i)}>
               <X size={13} />
             </button>
           </div>
         ))}
         <button className="ef-add" onClick={addRow}>
-          <Plus size={13} /> {k === "grammar" ? "új szabály" : "új átmenet"}
+          <Plus size={13} /> {k === "grammar" ? t("editor.form.newRule") : t("editor.form.newTransition")}
         </button>
       </div>
 

@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { EPS, setName } from "../../core/types";
 import {
   analyzeFSM,
@@ -28,6 +29,7 @@ import {
 } from "lucide-react";
 
 export const FSMView: React.FC<{ fsm: FSM; stepGroups?: StepGroup[] }> = ({ fsm, stepGroups }) => {
+  const { t } = useTranslation();
   const { cellId, editing } = useGraphEditing();
   const analysis = useMemo(() => analyzeFSM(fsm), [fsm]);
   const tm = useMemo(() => transMap(fsm), [fsm]);
@@ -127,47 +129,55 @@ export const FSMView: React.FC<{ fsm: FSM; stepGroups?: StepGroup[] }> = ({ fsm,
 
   const chips = (
     <>
-      <span className="stage-title">Automata — {fsm.name}</span>
-      <span className="badge accent">{fsm.states.length} állapot</span>
+      <span className="stage-title">{t("detail.fsm.title")} — {fsm.name}</span>
+      <span className="badge accent">{t("detail.fsm.stateCount", { count: fsm.states.length })}</span>
       <span
         className={`badge ${analysis.isDeterministic ? "ok" : "no"}`}
         title={
           analysis.isDeterministic
-            ? "Minden (állapot, szimbólum) párhoz legfeljebb egy átmenet tartozik, és nincs ε-átmenet."
-            : `Nemdeterminisztikus pontok: ${analysis.nondeterministicAt
-                .slice(0, 3)
-                .map((n) => `δ(${n.state},${n.symbol})={${n.targets.join(",")}}`)
-                .join("; ")}${analysis.hasEpsilon ? " — és ε-átmenetek is vannak" : ""}`
+            ? t("detail.fsm.deterministicHint")
+            : t("detail.fsm.nondeterministicHint", {
+                spots: analysis.nondeterministicAt
+                  .slice(0, 3)
+                  .map((n) => `δ(${n.state},${n.symbol})={${n.targets.join(",")}}`)
+                  .join("; "),
+                epsilonNote: analysis.hasEpsilon ? t("detail.fsm.andHasEpsilon") : ""
+              })
         }
       >
-        {analysis.isDeterministic ? "determinisztikus" : "nemdeterminisztikus"}
+        {analysis.isDeterministic ? t("detail.fsm.deterministic") : t("detail.fsm.nondeterministic")}
       </span>
       <span
         className={`badge ${analysis.isComplete ? "ok" : "no"}`}
         title={
           analysis.isComplete
-            ? "Minden (állapot, szimbólum) párhoz van átmenet."
-            : `Hiányzó átmenetek: ${analysis.missing
-                .slice(0, 4)
-                .map((m) => `δ(${m.state},${m.symbol})`)
-                .join(", ")}${analysis.missing.length > 4 ? ", …" : ""}`
+            ? t("detail.fsm.completeHint")
+            : t("detail.fsm.incompleteHint", {
+                missing: analysis.missing
+                  .slice(0, 4)
+                  .map((m) => `δ(${m.state},${m.symbol})`)
+                  .join(", "),
+                ellipsis: analysis.missing.length > 4 ? ", …" : ""
+              })
         }
       >
-        {analysis.isComplete ? "teljes" : "nem teljes"}
+        {analysis.isComplete ? t("detail.fsm.complete") : t("detail.fsm.incomplete")}
       </span>
       <span
         className={`badge ${analysis.hasEpsilon ? "warn" : "ok"}`}
         title={
           analysis.hasEpsilon
-            ? `ε-átmenetek: ${analysis.epsilonTransitions.map((t) => `${t.from}→${t.to}`).join(", ")}`
-            : "Nincs ε-átmenet."
+            ? t("detail.fsm.epsilonListHint", {
+                list: analysis.epsilonTransitions.map((tr) => `${tr.from}→${tr.to}`).join(", ")
+              })
+            : t("detail.fsm.noEpsilonHint")
         }
       >
-        {analysis.hasEpsilon ? "ε-átmenetes" : "ε-mentes"}
+        {analysis.hasEpsilon ? t("detail.fsm.hasEpsilon") : t("detail.fsm.epsilonFree")}
       </span>
       {analysis.unreachableStates.length > 0 && (
-        <span className="badge warn" title="A kezdőállapotból nem elérhető állapotok — a reachable() művelettel elhagyhatók.">
-          elérhetetlen: {analysis.unreachableStates.join(", ")}
+        <span className="badge warn" title={t("detail.fsm.unreachableHint")}>
+          {t("detail.fsm.unreachableLabel")}: {analysis.unreachableStates.join(", ")}
         </span>
       )}
     </>
@@ -178,7 +188,7 @@ export const FSMView: React.FC<{ fsm: FSM; stepGroups?: StepGroup[] }> = ({ fsm,
       key: "table",
       title: (
         <>
-          <Table2 size={14} /> Átmenet-táblázat
+          <Table2 size={14} /> {t("detail.fsm.transitionTable")}
         </>
       ),
       content: (
@@ -186,7 +196,7 @@ export const FSMView: React.FC<{ fsm: FSM; stepGroups?: StepGroup[] }> = ({ fsm,
           <table className="t">
             <thead>
               <tr>
-                <th>állapot</th>
+                <th>{t("detail.fsm.state")}</th>
                 {symbols.map((c) => (
                   <th key={c}>{c}</th>
                 ))}
@@ -214,13 +224,13 @@ export const FSMView: React.FC<{ fsm: FSM; stepGroups?: StepGroup[] }> = ({ fsm,
       key: "words",
       title: (
         <>
-          <ListOrdered size={14} /> Elfogadott szavak
+          <ListOrdered size={14} /> {t("detail.fsm.acceptedWords")}
         </>
       ),
       content:
         words.words.length === 0 ? (
           <div style={{ color: "var(--muted)" }}>
-            Nem találtam elfogadott szót 7 hosszig — lehet, hogy a felismerendő nyelv üres.
+            {t("detail.fsm.noAcceptedWords")}
           </div>
         ) : (
           <>
@@ -229,7 +239,7 @@ export const FSMView: React.FC<{ fsm: FSM; stepGroups?: StepGroup[] }> = ({ fsm,
                 <button
                   key={w}
                   className="word-chip"
-                  title="Kattints: betöltés a szimulációba"
+                  title={t("detail.fsm.loadIntoSimulation")}
                   onClick={() => {
                     setInput(w === EPS ? "" : w);
                     setHistory([initialStates(fsm)]);
@@ -241,7 +251,7 @@ export const FSMView: React.FC<{ fsm: FSM; stepGroups?: StepGroup[] }> = ({ fsm,
             </div>
             {!words.exhaustive && (
               <div style={{ marginTop: 8, fontSize: 12.5, color: "var(--muted)" }}>
-                …és a nyelv ennél bővebb (a lista 7 hosszig / 24 szóig terjed).
+                {t("detail.fsm.wordsNotExhaustive")}
               </div>
             )}
           </>
@@ -253,7 +263,7 @@ export const FSMView: React.FC<{ fsm: FSM; stepGroups?: StepGroup[] }> = ({ fsm,
       key: "steps",
       title: (
         <>
-          <ListTree size={14} /> Hogyan készült?
+          <ListTree size={14} /> {t("detail.fsm.howWasThisBuilt")}
         </>
       ),
       content: <StepsContent stepGroups={stepGroups} />
@@ -270,32 +280,32 @@ export const FSMView: React.FC<{ fsm: FSM; stepGroups?: StepGroup[] }> = ({ fsm,
             setHistory([initialStates(fsm)]);
           }}
           pos={input.length > 0 ? pos : undefined}
-          placeholder="bemeneti szó — kattints és gépelj"
+          placeholder={t("detail.fsm.inputPlaceholder")}
         />
-        <button className="sim-btn" onClick={reset} title="Újraindítás">
+        <button className="sim-btn" onClick={reset} title={t("detail.fsm.restart")}>
           <RotateCcw size={16} />
         </button>
-        <button className="sim-btn" onClick={stepBack} disabled={history.length <= 1} title="Visszalépés">
+        <button className="sim-btn" onClick={stepBack} disabled={history.length <= 1} title={t("detail.fsm.stepBack")}>
           <Undo2 size={16} />
         </button>
-        <button className="sim-btn" onClick={step} disabled={status !== "working"} title="Egy lépés">
+        <button className="sim-btn" onClick={step} disabled={status !== "working"} title={t("detail.fsm.oneStep")}>
           <StepForward size={16} />
         </button>
-        <button className="sim-btn" onClick={runAll} disabled={status !== "working"} title="Futtatás végig">
+        <button className="sim-btn" onClick={runAll} disabled={status !== "working"} title={t("detail.fsm.runAll")}>
           <Play size={16} />
         </button>
         <span className={`verdict-pill ${status}`}>
           {status === "accepted" && (
             <>
-              <Check size={15} /> elfogadja
+              <Check size={15} /> {t("detail.fsm.accepts")}
             </>
           )}
           {status === "rejected" && (
             <>
-              <X size={15} /> elutasítja
+              <X size={15} /> {t("detail.fsm.rejects")}
             </>
           )}
-          {status === "working" && <>fut…</>}
+          {status === "working" && <>{t("detail.fsm.running")}</>}
         </span>
       </div>
 
@@ -305,13 +315,13 @@ export const FSMView: React.FC<{ fsm: FSM; stepGroups?: StepGroup[] }> = ({ fsm,
             key={i}
             className={i === history.length - 1 ? "current" : ""}
             onClick={() => setHistory((h) => h.slice(0, i + 1))}
-            title={i === 0 ? "kezdőállapotok (ε-lezárással)" : `a(z) „${input[i - 1]}” beolvasása után`}
+            title={i === 0 ? t("detail.fsm.initialStatesHint") : t("detail.fsm.afterReadingHint", { symbol: input[i - 1] })}
           >
             {i === 0 ? "▶" : input[i - 1]} {setName(epsilonClosure(fsm, set, tm))}
           </button>
         ))}
         {nextChar !== null && status === "working" && (
-          <span className="sim-tip">a gráf kiemelt éleire kattintva ágat választhatsz</span>
+          <span className="sim-tip">{t("detail.fsm.branchTip")}</span>
         )}
       </div>
     </>

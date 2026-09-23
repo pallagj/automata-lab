@@ -1,4 +1,6 @@
 import { useMemo } from "react";
+import { useTranslation } from "react-i18next";
+import type { TFunction } from "i18next";
 import { activeWorkspace, useAppStore } from "../../state/store";
 import {
   draftStorages,
@@ -66,20 +68,20 @@ function suggestStateName(used: Set<string>): string {
 export { suggestStateName };
 
 /** A dialógus mezői: bemeneti jel + tárolónként a műveleteik részmezői. */
-export function edgeFieldsFor(hasHead: boolean, storages: StorageSpec[]): EdgeField[] {
+export function edgeFieldsFor(t: TFunction, hasHead: boolean, storages: StorageSpec[]): EdgeField[] {
   const fields: EdgeField[] = [];
-  if (hasHead) fields.push({ label: "olvasott jel (ε: $)", placeholder: "a", widget: "text" });
+  if (hasHead) fields.push({ label: t("graph.edgeFields.symbol"), placeholder: "a", widget: "text" });
   for (const s of storages) {
     if (s.type === "stack") {
-      fields.push({ label: `${s.id}: tetejéről le`, placeholder: "Z", widget: "text" });
-      fields.push({ label: `${s.id}: rá fel`, placeholder: "AZ", widget: "text" });
+      fields.push({ label: t("graph.edgeFields.stackPop", { id: s.id }), placeholder: "Z", widget: "text" });
+      fields.push({ label: t("graph.edgeFields.stackPush", { id: s.id }), placeholder: "AZ", widget: "text" });
     } else if (s.type === "queue") {
-      fields.push({ label: `${s.id}: elejéről ki`, placeholder: "A", widget: "text" });
-      fields.push({ label: `${s.id}: végére be`, placeholder: "B", widget: "text" });
+      fields.push({ label: t("graph.edgeFields.queuePop", { id: s.id }), placeholder: "A", widget: "text" });
+      fields.push({ label: t("graph.edgeFields.queuePush", { id: s.id }), placeholder: "B", widget: "text" });
     } else {
-      fields.push({ label: `${s.id}: olvas`, placeholder: "a", widget: "text" });
-      fields.push({ label: `${s.id}: ír`, placeholder: "b", widget: "text" });
-      fields.push({ label: "mozgás", placeholder: ">", widget: "move" });
+      fields.push({ label: t("graph.edgeFields.tapeRead", { id: s.id }), placeholder: "a", widget: "text" });
+      fields.push({ label: t("graph.edgeFields.tapeWrite", { id: s.id }), placeholder: "b", widget: "text" });
+      fields.push({ label: t("graph.edgeFields.move"), placeholder: ">", widget: "move" });
     }
   }
   return fields;
@@ -125,6 +127,7 @@ export function useGraphEditing(): {
   cellId: string | null;
   editing: GraphEditing | null;
 } {
+  const { t } = useTranslation();
   const activeCellId = useAppStore((s) => s.activeCellId);
   const ws = useAppStore(activeWorkspace);
   const setCellSource = useAppStore((s) => s.setCellSource);
@@ -166,9 +169,9 @@ export function useGraphEditing(): {
   });
 
   const validateName = (name: string, ignore?: string): string | null => {
-    if (name === "") return "Az állapot neve nem lehet üres.";
-    if (/[\s,]/.test(name)) return "A névben ne legyen szóköz vagy vessző.";
-    if (states.includes(name) && name !== ignore) return `Már létezik „${name}” nevű állapot.`;
+    if (name === "") return t("graph.validation.emptyName");
+    if (/[\s,]/.test(name)) return t("graph.validation.noSpaceComma");
+    if (states.includes(name) && name !== ignore) return t("graph.validation.duplicateName", { name });
     return null;
   };
 
@@ -176,7 +179,7 @@ export function useGraphEditing(): {
 
   const editing: GraphEditing = {
     states,
-    edgeFields: edgeFieldsFor(hasHead, storages),
+    edgeFields: edgeFieldsFor(t, hasHead, storages),
 
     getState: (name) => ({
       name,

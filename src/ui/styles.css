@@ -538,6 +538,26 @@ body.resizing {
   border-color: var(--danger);
 }
 
+.lang-switcher {
+  padding: 5px 8px;
+  cursor: default;
+}
+
+.lang-select {
+  background: transparent;
+  color: var(--text-soft);
+  border: none;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  padding: 0;
+}
+
+.lang-select:focus {
+  outline: none;
+}
+
 /* ====== Cards ====== */
 
 .card {

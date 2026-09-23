@@ -350,8 +350,10 @@ export interface MachineCaps {
   isPDALike: boolean;
   /** pontosan 1 szalag, a bemenet azon */
   isTMLike: boolean;
-  /** magyar megnevezés a felülethez */
-  label: string;
+  /** géptípus-azonosító a felületi felirathoz (i18n kulcs) */
+  kind: "fsm" | "pda" | "tm" | "general";
+  /** csak kind === "general" esetén: tárolók száma típusonként, a felirat összeállításához */
+  storageCounts?: Partial<Record<StorageType, number>>;
 }
 
 export function machineCaps(m: Machine): MachineCaps {
@@ -360,19 +362,16 @@ export function machineCaps(m: Machine): MachineCaps {
   const isFSMLike = head && types.length === 0;
   const isPDALike = head && types.length === 1 && types[0] === "stack";
   const isTMLike = !head && types.length === 1 && types[0] === "tape" && m.input === m.storages[0].id;
-  let label = "Általános gép";
-  if (isFSMLike) label = "Automata";
-  else if (isPDALike) label = "Veremautomata";
-  else if (isTMLike) label = "Turing-gép";
+  let kind: MachineCaps["kind"] = "general";
+  let storageCounts: Partial<Record<StorageType, number>> | undefined;
+  if (isFSMLike) kind = "fsm";
+  else if (isPDALike) kind = "pda";
+  else if (isTMLike) kind = "tm";
   else if (types.length > 0) {
     const cnt = (t: StorageType) => types.filter((x) => x === t).length;
-    const parts: string[] = [];
-    if (cnt("stack")) parts.push(`${cnt("stack")} verem`);
-    if (cnt("queue")) parts.push(`${cnt("queue")} sor`);
-    if (cnt("tape")) parts.push(`${cnt("tape")} szalag`);
-    label = `Általános gép (${parts.join(", ")})`;
+    storageCounts = { stack: cnt("stack"), queue: cnt("queue"), tape: cnt("tape") };
   }
-  return { isFSMLike, isPDALike, isTMLike, label };
+  return { isFSMLike, isPDALike, isTMLike, kind, storageCounts };
 }
 
 /** Tárolómentes gép átalakítása a véges-automata algoritmusok bemenetévé. */

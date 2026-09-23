@@ -1,0 +1,515 @@
+{
+  "machineKind": {
+    "fsm": "automaton",
+    "pda": "pushdown automaton",
+    "tm": "Turing machine",
+    "general": "general machine"
+  },
+  "opNames": {
+    "epsfree": "ε-removal",
+    "det": "determinization",
+    "complete": "completion",
+    "reachable": "unreachable-state removal",
+    "min": "minimization",
+    "clean": "renaming",
+    "complement": "complement",
+    "union": "union",
+    "intersect": "intersection",
+    "difference": "difference",
+    "concat": "concatenation",
+    "star": "Kleene star",
+    "reverse": "reversal",
+    "toGrammar": "conversion to grammar",
+    "toFsm": "conversion to automaton",
+    "toPda": "conversion to pushdown automaton",
+    "equal": "equivalence check"
+  },
+  "regex": {
+    "error": {
+      "unexpectedChar": "Unexpected character at position {{pos}}: \"{{char}}\"",
+      "unexpectedEnd": "The expression ended unexpectedly.",
+      "missingCloseParen": "Missing closing parenthesis at position {{pos}}.",
+      "unmatchedCloseParen": "Unmatched closing parenthesis at position {{pos}}.",
+      "operatorNeedsExpr": "The \"{{op}}\" operator must be preceded by an expression (position {{pos}}).",
+      "unknown": "{{message}}",
+      "invalid": "Invalid regular expression"
+    },
+    "node": {
+      "empty": "∅ — empty language",
+      "eps": "ε — empty word",
+      "lit": "letter \"{{char}}\"",
+      "cat": "concatenation",
+      "alt": "union ( | )",
+      "star": "closure ( * )",
+      "opt": "optional ( ? )"
+    },
+    "step": {
+      "thompson": {
+        "title": "Thompson's construction",
+        "detail": "Following the expression's structure, a small ε-NFA fragment is built for every subexpression (literal, union, concatenation, star), then these are wired together with ε-transitions. Result: {{count}} states. It can be turned into a DFA with the det(epsfree(·)) chain."
+      }
+    }
+  },
+  "workspace": {
+    "unparseableCell": {
+      "title": "Unparseable cell",
+      "detail": "A cell must be either a YAML definition (with a Machine / Grammar key) or an expression (in the form \"name = expression\")."
+    },
+    "duplicateDefinition": {
+      "title": "Duplicate definition: \"{{name}}\"",
+      "detail": "The name is defined by both cell {{other}} and cell {{index}} — the first definition wins; remove or rename the others."
+    },
+    "circularDependency": {
+      "title": "Circular dependency",
+      "detail": "The definition of \"{{name}}\" (indirectly) refers to itself: {{chain}}. Break the cycle."
+    },
+    "brokenDependency": {
+      "title": "Broken dependency: {{missing}}",
+      "detail": "The referenced cell is broken or can't be evaluated yet — fix that one first."
+    }
+  },
+  "definitionParser": {
+    "line": "Line: \"{{line}}\".",
+    "missingField": { "title": "Missing field: {{field}}" },
+    "machine": {
+      "fieldHints": {
+        "states": "The list of states",
+        "init": "The start state",
+        "charset": "The input alphabet"
+      },
+      "startNotInStates": "The start state ({{start}}) is not among the states",
+      "acceptNotInStates": "The accepting state ({{state}}) is not among the states",
+      "badStoragesField": {
+        "title": "The storages field expects key-value pairs",
+        "detail": "For example:\n  storages:\n    v1: stack\n    v2:\n      type: queue\n      init: A"
+      },
+      "duplicateStorageId": "Duplicate storage id: \"{{id}}\"",
+      "badInputField": {
+        "title": "The input field ({{input}}) is not the id of a storage",
+        "detail": "Use \"head\" (the read head), or the name of one of the storages: {{storages}}."
+      },
+      "noAcceptSuggestEmptyStorages": {
+        "title": "No accepting state — for acceptance by empty storages, use acceptMode: emptyStorages",
+        "detail": "Without an accepting state and in finalState mode, the machine recognizes the empty language."
+      },
+      "invalidTransition": {
+        "title": "Invalid transition: \"{{line}}\"",
+        "detail": "This machine needs {{count}} tokens per line: {{shape}}"
+      },
+      "unknownFromState": "Unknown state in the transition: \"{{state}}\"",
+      "unknownToState": "Unknown target state in the transition: \"{{state}}\"",
+      "unknownInputSymbol": "Unknown input symbol: \"{{symbol}}\"",
+      "alphabetHint": "Line: \"{{line}}\". Alphabet: {{alphabet}} (use $ for ε).",
+      "unknownWrittenTapeSymbol": "Unknown tape symbol being written: \"{{symbol}}\" ({{storageId}})",
+      "tapeAlphabetHint": "Tape alphabet: {{alphabet}}",
+      "noAcceptState": {
+        "title": "No accepting state",
+        "detail": "The machine therefore recognizes the empty language."
+      },
+      "nondeterministicMachine": {
+        "title": "Nondeterministic machine: more than one transition can match in state {{state}}",
+        "detail": "The simulation follows every branch; click a highlighted edge on the graph to pick a specific branch."
+      }
+    },
+    "grammar": {
+      "fieldHints": {
+        "variables": "The nonterminals, e.g. variables: S, A, B",
+        "init": "The start symbol, e.g. init: S",
+        "charset": "The terminals, e.g. charset: a, b",
+        "rules": "The rules, e.g. rules: [S -> aA | b]"
+      },
+      "startNotInNonterminals": "The start symbol ({{start}}) is not among the nonterminals",
+      "overlappingSymbols": {
+        "title": "Conflicting symbols: {{symbols}}",
+        "detail": "A symbol cannot be both a terminal and a nonterminal."
+      },
+      "invalidRule": {
+        "title": "Invalid rule: \"{{line}}\"",
+        "detail": "Form: LEFT -> RIGHT1 | RIGHT2 — e.g. \"S -> aA | b\". Write $ or ε for the empty word."
+      },
+      "unknownSymbolLeft": "Unknown symbol on the left side of the rule: \"{{symbol}}\"",
+      "ruleDetail": "Rule: \"{{line}}\". Every symbol must be listed in charset or variables.",
+      "leftMissingNonterminal": {
+        "title": "The left side of the rule contains no nonterminal: \"{{line}}\"",
+        "detail": "In a generative grammar, the left side must contain at least one nonterminal."
+      },
+      "unknownSymbolRight": "Unknown symbol on the right side of the rule: \"{{symbol}}\""
+    },
+    "yamlSyntaxError": {
+      "titleAtLine": "YAML syntax error (line {{line}})",
+      "title": "YAML syntax error",
+      "detail": "{{reason}}. Check the indentation and colons."
+    },
+    "emptyOrUnparseable": "Empty or unparseable definition",
+    "missingTypeKey": {
+      "title": "Missing type key",
+      "detail": "Expected keys: {{keys}}"
+    },
+    "emptyBody": {
+      "title": "{{key}} needs fields underneath it",
+      "detail": "For example: name, states, transitions…"
+    },
+    "reversedRange": {
+      "title": "Reversed range in the {{field}} field: \"{{range}}\"",
+      "detail": "Treating the range as empty."
+    },
+    "rangeTooLarge": { "title": "Range too large in the {{field}} field: \"{{range}}\"" },
+    "unknownStorageType": {
+      "title": "Unknown storage type for the \"{{id}}\" storage",
+      "detail": "Allowed: stack/verem, queue/sor, tape/szalag — with an initial content:\n  v1:\n    type: stack\n    init: Z"
+    },
+    "storageOp": {
+      "badTapeOp": {
+        "title": "Invalid tape operation: \"{{tokens}}\" ({{storageId}})",
+        "detail": "Line: \"{{line}}\". Form: READ/WRITE MOVE — e.g. \"a/b >\". Blank symbol: _, \"write the same back\": &."
+      },
+      "unknownMove": {
+        "title": "Unknown move: \"{{tokens}}\" ({{storageId}})",
+        "detail": "Line: \"{{line}}\". Allowed: > < = (or R L S)."
+      },
+      "unknownTapeSymbol": {
+        "title": "Unknown tape symbol: \"{{tokens}}\" ({{storageId}})",
+        "detail": "Line: \"{{line}}\". Tape alphabet: {{alphabet}}"
+      },
+      "badStackOp": {
+        "title": "Invalid storage operation: \"{{tokens}}\" ({{storageId}})",
+        "detail": "Line: \"{{line}}\". Stack form: POP/PUSH — e.g. \"Z/AZ\"; use $ for ε."
+      },
+      "badQueueOp": {
+        "title": "Invalid storage operation: \"{{tokens}}\" ({{storageId}})",
+        "detail": "Line: \"{{line}}\". Queue form: TAKE/PUT — e.g. \"A/BA\"; use $ for ε."
+      }
+    }
+  },
+  "ops": {
+    "needsEpsilonFree": {
+      "title": "The {{op}} operation requires an ε-free automaton",
+      "detail": "The automaton contains {{count}} ε-transitions ({{list}}{{ellipsis}}). An ε-transition changes state on reading the empty word, so ε-removal must be done first: for every state we compute its ε-closure, and fold the transitions leaving it back into the original state."
+    },
+    "needsDeterministic": {
+      "title": "The {{op}} operation requires a deterministic automaton",
+      "detail": "Nondeterminism found: {{spots}}{{ellipsis}}. In a deterministic automaton, every (state, symbol) pair may have at most one successor state. An equivalent DFA can be built with the powerset construction (determinization)."
+    },
+    "needsComplete": {
+      "title": "The {{op}} operation requires a complete automaton",
+      "detail": "Missing transitions: {{spots}}{{ellipsis}} — {{count}} (state, symbol) pairs have no transition defined in total. To complete it, we introduce a new \"trap\" (rejecting) state and route every missing transition there."
+    },
+    "fix": {
+      "insertEpsfree": "Insert ε-removal",
+      "insertDet": "Insert determinization",
+      "insertComplete": "Insert completion",
+      "insertChain": "Insert fix chain"
+    },
+    "table": {
+      "state": "state",
+      "newTransition": "new transition",
+      "reason": "reason",
+      "stateSet": "state set",
+      "missingTransition": "missing transition",
+      "newTarget": "new target",
+      "oldName": "old name",
+      "newName": "new name",
+      "statePair": "state pair"
+    },
+    "epsfree": {
+      "alreadyFree": {
+        "title": "The automaton is already ε-free",
+        "detail": "There is no ε-transition, so the operation returns the automaton unchanged."
+      },
+      "step1": {
+        "title": "1. Computing ε-closures",
+        "detail": "For every state q: E(q) = the set of states reachable from q using only ε-transitions (including q itself)."
+      },
+      "step2": {
+        "title": "2. Introducing new transitions",
+        "detail": "δ'(q, a) = E(δ(E(q), a)) — transitions reachable through the ε-closure are made direct."
+      },
+      "step3": {
+        "title": "3. Extending the accepting states",
+        "detailChanged": "If E(q) contains an accepting state, q becomes accepting too. New accepting states: {{list}}.",
+        "detailUnchanged": "No state's ε-closure contains a new accepting state, so the accepting set is unchanged."
+      }
+    },
+    "det": {
+      "alreadyDeterministic": {
+        "title": "The automaton is already deterministic",
+        "detail": "Every (state, symbol) pair has at most one transition and there is no ε-transition — the powerset construction only creates the reachable singleton sets."
+      },
+      "notComplete": {
+        "title": "The automaton is not complete — the ∅ state may appear",
+        "detail": "Wherever there is no transition, the powerset construction lands in the empty set (∅), which behaves as a trap state. This makes the result a complete DFA."
+      },
+      "step": {
+        "title": "Powerset construction",
+        "detail": "Starting from the start state, for every reached state set and every symbol we compute the set of reachable states. Only reachable sets are included. A set is accepting if it contains an original accepting state."
+      },
+      "result": {
+        "title": "Result",
+        "detail": "{{count}} states were produced out of the possible 2^{{exponent}} = {{possible}} subsets. Accepting: {{accept}}."
+      }
+    },
+    "complete": {
+      "alreadyComplete": {
+        "title": "The automaton is already complete",
+        "detail": "Every (state, symbol) pair has a transition — nothing to do."
+      },
+      "nameTaken": {
+        "title": "The state name \"{{trap}}\" already exists",
+        "detail": "Completion needs a new, not-yet-used trap-state name.",
+        "fixLabel": "Use an automatic name"
+      },
+      "step": {
+        "title": "Introducing the trap state: {{trap}}",
+        "detail": "The new state {{trap}} is not accepting, and every symbol maps it to itself — once there, it can no longer accept. The missing transitions are routed here."
+      }
+    },
+    "reachable": {
+      "allReachable": {
+        "title": "Every state is reachable",
+        "detail": "Every state is reachable from the start state — there is nothing to drop."
+      },
+      "step": {
+        "title": "Removing unreachable states",
+        "detail": "The states reachable from the start state by a breadth-first traversal remain. Removed: {{removed}}."
+      }
+    },
+    "min": {
+      "unreachableStates": {
+        "title": "Unreachable states",
+        "detail": "The state(s) {{states}} are not reachable from the start state — as the first step of minimization we drop them, otherwise spurious equivalence classes could arise."
+      },
+      "step0": {
+        "title": "0. Removing unreachable states",
+        "detail": "Removed: {{removed}}."
+      },
+      "step1": {
+        "title": "1. Initial partition",
+        "detail": "Splitting accepting and non-accepting states: {{partition}}"
+      },
+      "refine": {
+        "title": "{{round}}. Refinement",
+        "detail": "A group splits if two of its states lead to different groups on some symbol. New partition: {{partition}}"
+      },
+      "fixpoint": {
+        "title": "{{round}}. Fixed point",
+        "detail": "No more splits — the partition is stable: {{partition}}. The groups are the equivalence classes."
+      },
+      "alreadyMinimal": {
+        "title": "The automaton was already minimal",
+        "detail": "Every state ended up in its own equivalence class."
+      },
+      "minimized": {
+        "title": "Minimized: {{before}} → {{after}} states",
+        "detail": "States grouped into the same class are linguistically indistinguishable: they accept/reject every word the same way."
+      }
+    },
+    "complement": {
+      "whyDfa": {
+        "title": "Why is a DFA required?",
+        "detail": "For an NFA, flipping the accepting states does NOT yield the complement language: an NFA accepts a word if an accepting path EXISTS — after flipping, a rejecting path may still exist and become accepting too."
+      },
+      "whyComplete": {
+        "title": "Why is completeness required?",
+        "detail": "If a transition is missing somewhere, the automaton gets \"stuck\" and rejects. The complement should accept these words instead — this requires completing the automaton with a trap state first."
+      },
+      "step": {
+        "title": "Flipping the accepting states",
+        "detail": "In a complete DFA, every word runs along exactly one path, so swapping accepting/rejecting states yields exactly the complement language. New accepting set: {{accept}}."
+      }
+    },
+    "product": {
+      "first": "first",
+      "second": "second",
+      "hasEpsilon": {
+        "title": "The {{part}} automaton contains an ε-transition",
+        "detail": "The product construction (running both in parallel) expects deterministic, complete automata, because the two automata must step in sync, symbol by symbol. An ε-transition would break this."
+      },
+      "nondeterministic": {
+        "title": "The {{part}} automaton is nondeterministic",
+        "detail": "The states of the product automaton are (p, q) pairs, with δ((p,q),a) = (δ₁(p,a), δ₂(q,a)) — this requires both δ's to be single-valued."
+      },
+      "incomplete": {
+        "title": "The {{part}} automaton is not complete",
+        "detailUnion": "If one automaton gets stuck, the pair can no longer step even though the other could still run — for a union, the other automaton's acceptance still matters. Completion (a trap state) fixes this.",
+        "detailOther": "If one automaton gets stuck, the pair can no longer step even though the other could still run — the result would be incorrect. Completion (a trap state) fixes this."
+      },
+      "differentAlphabets": {
+        "title": "The two automata have different alphabets",
+        "detail": "Missing from the first automaton: {{missing1}}. Missing from the second: {{missing2}}. {{mode}} is only meaningful over a common alphabet — extend the alphabets and complete the automata."
+      },
+      "acceptRule": {
+        "union": "(p,q) is accepting if p OR q is accepting",
+        "intersect": "(p,q) is accepting if p AND q are both accepting",
+        "difference": "(p,q) is accepting if p is accepting but q is NOT (L₁ \\ L₂)"
+      },
+      "step": {
+        "title": "Product construction ({{mode}})",
+        "detail": "The two automata are run in parallel: the states are (p,q) pairs, δ((p,q),a) = (δ₁(p,a), δ₂(q,a)). Acceptance: {{acceptRule}}. Only reachable pairs are built."
+      }
+    },
+    "unionEpsilon": {
+      "info": {
+        "title": "Union built via ε-construction",
+        "detail": "An ε-transition leads from a new start state into both automata's start states. The result is an ε-NFA — it can be determinized with the det(epsfree(·)) chain. (A union of complete DFAs can also be done with the product construction.)"
+      },
+      "step": {
+        "title": "Union with ε-transitions",
+        "detail": "New start state {{start}}, ε-transitions: {{start}} → {{m1start}}, {{start}} → {{bstart}}. Accepting states: the union of both automata's accepting states."
+      }
+    },
+    "concat": {
+      "step": {
+        "title": "Concatenation",
+        "detail": "An ε-transition leads from every accepting state of the first automaton to the second automaton's start state ({{start}}). Accepting: only the second automaton's accepting states. The result is an ε-NFA."
+      }
+    },
+    "star": {
+      "step": {
+        "title": "Kleene closure (star)",
+        "detail": "New start state {{start}} (also accepting — so the empty word is in the language too), an ε-transition to the original start state, and from every accepting state an ε-transition back to {{start}} for repetition."
+      }
+    },
+    "reverse": {
+      "step": {
+        "title": "Reversal",
+        "detail": "Every transition's direction is reversed, an ε-transition leads from the new start state ({{start}}) to the original accepting states, and the original start state becomes the sole accepting state. L(Mᴿ) = { wᴿ : w ∈ L(M) }."
+      }
+    },
+    "clean": {
+      "step": {
+        "title": "Renaming the states",
+        "detail": "States get the names A, B, C… in the order they're visited starting from the start state. The language does not change."
+      }
+    },
+    "equal": {
+      "counterexampleSearch": {
+        "title": "Searching for a counterexample in the product automaton",
+        "detail": "The two automata (made complete and deterministic) are run in parallel, searching for the shortest word accepted by exactly one of them. Found: \"{{word}}\"."
+      },
+      "proof": {
+        "title": "Proving equivalence",
+        "detail": "In every reachable (p,q) state pair of the product automaton, p and q's acceptance status agree, so there is no distinguishing word — the two automata recognize the same language."
+      }
+    }
+  },
+  "grammar": {
+    "classify": {
+      "leftNotSingleNonterminal": "the left side of rule {{rule}} is not a single nonterminal",
+      "notRightLinear": "the right side of rule {{rule}} is not of the form \"terminals + at most one trailing nonterminal\"",
+      "notLeftLinear": "the right side of rule {{rule}} is not of the form \"at most one leading nonterminal + terminals\"",
+      "startEpsilonNotAllowed": "S → ε is only allowed if S does not occur on the right side of any rule — but it does here",
+      "deletingRule": "{{rule}} is a deleting rule (ε is only allowed as S → ε)",
+      "shortens": "rule {{rule}} shortens: |{{left}}| = {{leftLen}} > |{{right}}| = {{rightLen}}",
+      "epsilonNotOnStart": "{{rule}} — ε-rule not on the start symbol",
+      "startOnRightWithEpsilon": "alongside S → ε, S also occurs on a right side — so the grammar is not in ε-free form"
+    },
+    "table": {
+      "rule": "rule",
+      "transition": "transition",
+      "newRules": "new rules"
+    },
+    "toFsm": {
+      "needsRightLinear": {
+        "title": "Only a right-linear (type 3) grammar can be turned into a finite automaton",
+        "detail": "The construction: every nonterminal becomes a state; a rule A → aB becomes the transition A →a B; a rule A → a becomes a transition into a new accepting state; a rule A → ε makes A accepting. See the Chomsky classification panel for the exact reason this grammar doesn't qualify."
+      },
+      "step": {
+        "title": "Right-linear grammar → NFA",
+        "detail": "Every nonterminal becomes a state, the start symbol is the start state. From A → aB: an a-transition from A to B; from A → a: a transition to the new ✓ accepting state; for A → ε: A becomes accepting."
+      }
+    },
+    "fsmToGrammar": {
+      "tooManyStates": {
+        "title": "Too many states to convert into a grammar",
+        "detail": "The automaton has {{count}} states; the single-character nonterminal notation allows at most {{max}} states. Minimization can reduce the number of states."
+      },
+      "renamed": {
+        "title": "The states were given nonterminal letters",
+        "detail": "{{mapping}}"
+      },
+      "step": {
+        "title": "NFA → right-linear grammar",
+        "detail": "Every transition q →a p becomes the rule Q → aP, and every accepting state q gives the rule Q → ε. The resulting grammar is type 3 and generates the same language."
+      }
+    },
+    "toPda": {
+      "needsContextFree": {
+        "title": "Only a context-free (type 2) grammar can be turned into a pushdown automaton",
+        "detail": "In the construction, the stack stores the sentential form, so the left side must be a single nonterminal. See the Chomsky classification panel for the exact reason this grammar doesn't qualify."
+      },
+      "emptyStackInfo": {
+        "title": "Built a PDA that accepts by empty stack",
+        "detail": "The stack holds the derivation's current sentential form. If a nonterminal is on top of the stack, a rule is applied (an ε-step); if a terminal, it's matched against the next input letter. A word is accepted exactly when the input is exhausted and the stack is empty."
+      },
+      "step": {
+        "title": "CF grammar → PDA (top-down parser)",
+        "detail": "A single state {{q}}. Initial stack content: {{start}}. Rule steps: {{ruleCount}} (ε, A / α), matching steps: {{terminalCount}} (a, a / ε)."
+      }
+    },
+    "epsfree": {
+      "needsContextFree": {
+        "title": "ε-removal is defined for context-free grammars",
+        "detail": "See the Chomsky classification panel for the exact reason this grammar doesn't qualify."
+      },
+      "step1": {
+        "title": "1. Nullable nonterminals",
+        "detailNone": "No nullable nonterminal — the grammar is already ε-free.",
+        "detailSome": "Nullable (derivable to ε): {{nullable}}. A is nullable if A → ε, or A → α and every letter of α is nullable."
+      },
+      "step2": {
+        "title": "2. Extending the rules",
+        "detail": "For every rule, we build every variant where some subset of its nullable nonterminals is dropped (unless the whole right side would vanish). The ε-rules are then discarded."
+      },
+      "step3": {
+        "title": "3. New start symbol because of ε",
+        "detail": "The original language contains ε (the start symbol is nullable), so we introduce a new start symbol {{s2}}: {{s2}} → {{start}} | ε. This way the ε-rule remains only on the start symbol."
+      }
+    }
+  },
+  "expression": {
+    "kind": {
+      "fsm": "a finite automaton",
+      "grammar": "a grammar",
+      "regex": "a regular expression",
+      "verdict": "a comparison result"
+    },
+    "error": {
+      "unexpectedChar": "Unexpected character: \"{{char}}\" (position {{pos}})",
+      "missingExpression": "Missing expression (position {{pos}})",
+      "unexpectedEnd": "The expression ended unexpectedly (position {{pos}})",
+      "missingCloseParen": "Missing closing parenthesis (position {{pos}})",
+      "missingCloseParenRegex": "Missing closing parenthesis in the regex() call (position {{pos}})",
+      "missingCommaOrParen": "Missing \",\" or \")\" in the function call (position {{pos}})",
+      "functionNeedsParen": "The function name \"{{word}}\" must be followed by parentheses (position {{pos}})",
+      "unknownName": "Unknown name: \"{{word}}\" — refer to machines by their name; a letter sequence can only be used inside regex(…) (position {{pos}})",
+      "unparseableChar": "Unparseable character: \"{{char}}\" (position {{pos}})",
+      "wrongArgCount": {
+        "exact": "The function {{fn}} expects {{n}} argument(s), but {{count}} were given",
+        "range": "The function {{fn}} expects {{n}} or {{alsoOk}} arguments, but {{count}} were given"
+      },
+      "needsFsm": "{{ctx}}: expects a finite automaton, but got {{kind}}",
+      "machineNeedsFsm": "{{ctx}}: expects a finite automaton, but {{name}} is {{machineKind}} (storages: {{storages}}). The language recognized by a machine with storage is generally not regular, so there is no automatic conversion — automaton operations only apply to storage-free machines.",
+      "machineHasStorage": "{{name}} cannot be converted to a finite automaton because it has storage ({{storages}}) — only a storage-free machine has an equivalent automaton",
+      "toFsmExpects": "toFsm() expects a grammar, a regular expression, or a storage-free machine",
+      "toPdaExpects": "toPda() expects a grammar",
+      "invalidExpression": "Invalid expression",
+      "parseGeneric": "{{message}}. Examples: detM = det(M) · u = union(M1, M2) · r = regex((ab)*+ba) · e = equal(M1, M2)",
+      "evaluationError": "Evaluation error",
+      "evalGeneric": "{{message}}"
+    },
+    "eval": {
+      "unknownName": "Unknown name: \"{{name}}\"",
+      "literalsOnlyInRegex": "Letter literals can only be used inside regex(…)"
+    },
+    "autoConvert": {
+      "regex": {
+        "title": "Automatically converted the regex {{name}} to an ε-NFA",
+        "detail": "The operation expects a finite automaton; the regular expression can be converted to an automaton via Thompson's construction — explicitly: toFsm({{name}})."
+      },
+      "grammar": {
+        "title": "Automatically converted the grammar {{name}} to a finite automaton",
+        "detail": "The operation expects a finite automaton; the right-linear grammar can be converted."
+      }
+    }
+  }
+}

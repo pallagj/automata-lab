@@ -1,0 +1,515 @@
+{
+  "machineKind": {
+    "fsm": "ein Automat",
+    "pda": "ein Kellerautomat",
+    "tm": "eine Turingmaschine",
+    "general": "eine allgemeine Maschine"
+  },
+  "opNames": {
+    "epsfree": "ε-Elimination",
+    "det": "Determinisierung",
+    "complete": "Vervollständigung",
+    "reachable": "Entfernen unerreichbarer Zustände",
+    "min": "Minimierung",
+    "clean": "Umbenennung",
+    "complement": "Komplement",
+    "union": "Vereinigung",
+    "intersect": "Durchschnitt",
+    "difference": "Differenz",
+    "concat": "Verkettung",
+    "star": "Kleene-Stern",
+    "reverse": "Umkehrung",
+    "toGrammar": "Umwandlung in eine Grammatik",
+    "toFsm": "Umwandlung in einen Automaten",
+    "toPda": "Umwandlung in einen Kellerautomaten",
+    "equal": "Äquivalenzprüfung"
+  },
+  "regex": {
+    "error": {
+      "unexpectedChar": "Unerwartetes Zeichen an Position {{pos}}: „{{char}}“",
+      "unexpectedEnd": "Der Ausdruck endete unerwartet.",
+      "missingCloseParen": "Fehlende schließende Klammer an Position {{pos}}.",
+      "unmatchedCloseParen": "Schließende Klammer ohne Gegenstück an Position {{pos}}.",
+      "operatorNeedsExpr": "Vor dem Operator „{{op}}“ muss ein Ausdruck stehen (Position {{pos}}).",
+      "unknown": "{{message}}",
+      "invalid": "Ungültiger regulärer Ausdruck"
+    },
+    "node": {
+      "empty": "∅ — leere Sprache",
+      "eps": "ε — leeres Wort",
+      "lit": "Buchstabe „{{char}}“",
+      "cat": "Verkettung",
+      "alt": "Vereinigung ( | )",
+      "star": "Abschluss ( * )",
+      "opt": "optional ( ? )"
+    },
+    "step": {
+      "thompson": {
+        "title": "Thompson-Konstruktion",
+        "detail": "Der Struktur des Ausdrucks folgend wird für jeden Teilausdruck ein kleines ε-NFA-Fragment gebaut (Literal, Vereinigung, Verkettung, Stern), die anschließend mit ε-Übergängen verbunden werden. Ergebnis: {{count}} Zustände. Mit der Kette det(epsfree(·)) lässt sich daraus ein DFA machen."
+      }
+    }
+  },
+  "workspace": {
+    "unparseableCell": {
+      "title": "Nicht interpretierbare Zelle",
+      "detail": "Eine Zelle ist entweder eine YAML-Definition (mit dem Schlüssel Machine / Grammar) oder ein Ausdruck (in der Form „Name = Ausdruck“)."
+    },
+    "duplicateDefinition": {
+      "title": "Mehrfache Definition: „{{name}}“",
+      "detail": "Der Name wird sowohl von Zelle {{other}} als auch von Zelle {{index}} definiert — die erste Definition gilt; die anderen entfernen oder umbenennen."
+    },
+    "circularDependency": {
+      "title": "Zirkuläre Abhängigkeit",
+      "detail": "Die Definition von „{{name}}“ verweist (indirekt) auf sich selbst: {{chain}}. Löse den Zyklus auf."
+    },
+    "brokenDependency": {
+      "title": "Fehlerhafte Abhängigkeit: {{missing}}",
+      "detail": "Die referenzierte Zelle ist fehlerhaft oder noch nicht auswertbar — behebe zuerst diese."
+    }
+  },
+  "definitionParser": {
+    "line": "Zeile: „{{line}}“.",
+    "missingField": { "title": "Fehlendes Feld: {{field}}" },
+    "machine": {
+      "fieldHints": {
+        "states": "Die Liste der Zustände",
+        "init": "Der Startzustand",
+        "charset": "Das Eingabealphabet"
+      },
+      "startNotInStates": "Der Startzustand ({{start}}) ist nicht unter den Zuständen",
+      "acceptNotInStates": "Der akzeptierende Zustand ({{state}}) ist nicht unter den Zuständen",
+      "badStoragesField": {
+        "title": "Das Feld storages erwartet Schlüssel-Wert-Paare",
+        "detail": "Zum Beispiel:\n  storages:\n    v1: stack\n    v2:\n      type: queue\n      init: A"
+      },
+      "duplicateStorageId": "Doppelte Speicher-ID: „{{id}}“",
+      "badInputField": {
+        "title": "Das Feld input ({{input}}) ist keine Speicher-ID",
+        "detail": "Verwende „head“ (den Lesekopf) oder den Namen eines Speichers: {{storages}}."
+      },
+      "noAcceptSuggestEmptyStorages": {
+        "title": "Kein akzeptierender Zustand — für Akzeptanz bei leeren Speichern acceptMode: emptyStorages verwenden",
+        "detail": "Ohne akzeptierenden Zustand und im Modus finalState erkennt die Maschine die leere Sprache."
+      },
+      "invalidTransition": {
+        "title": "Ungültiger Übergang: „{{line}}“",
+        "detail": "Diese Maschine benötigt {{count}} Elemente pro Zeile: {{shape}}"
+      },
+      "unknownFromState": "Unbekannter Zustand im Übergang: „{{state}}“",
+      "unknownToState": "Unbekannter Zielzustand im Übergang: „{{state}}“",
+      "unknownInputSymbol": "Unbekanntes Eingabesymbol: „{{symbol}}“",
+      "alphabetHint": "Zeile: „{{line}}“. Alphabet: {{alphabet}} ($ für ε).",
+      "unknownWrittenTapeSymbol": "Unbekanntes geschriebenes Bandsymbol: „{{symbol}}“ ({{storageId}})",
+      "tapeAlphabetHint": "Bandalphabet: {{alphabet}}",
+      "noAcceptState": {
+        "title": "Kein akzeptierender Zustand",
+        "detail": "Die Maschine erkennt damit die leere Sprache."
+      },
+      "nondeterministicMachine": {
+        "title": "Nichtdeterministische Maschine: im Zustand {{state}} können mehrere Übergänge zutreffen",
+        "detail": "Die Simulation verfolgt jeden Zweig; klicke im Graphen auf eine hervorgehobene Kante, um einen bestimmten Zweig zu wählen."
+      }
+    },
+    "grammar": {
+      "fieldHints": {
+        "variables": "Die Nichtterminale, z. B. variables: S, A, B",
+        "init": "Das Startsymbol, z. B. init: S",
+        "charset": "Die Terminale, z. B. charset: a, b",
+        "rules": "Die Regeln, z. B. rules: [S -> aA | b]"
+      },
+      "startNotInNonterminals": "Das Startsymbol ({{start}}) ist nicht unter den Nichtterminalen",
+      "overlappingSymbols": {
+        "title": "Widersprüchliche Symbole: {{symbols}}",
+        "detail": "Ein Symbol kann nicht gleichzeitig Terminal und Nichtterminal sein."
+      },
+      "invalidRule": {
+        "title": "Ungültige Regel: „{{line}}“",
+        "detail": "Form: LINKS -> RECHTS1 | RECHTS2 — z. B. „S -> aA | b“. Für das leere Wort $ oder ε schreiben."
+      },
+      "unknownSymbolLeft": "Unbekanntes Symbol auf der linken Regelseite: „{{symbol}}“",
+      "ruleDetail": "Regel: „{{line}}“. Jedes Symbol muss in charset oder variables aufgenommen werden.",
+      "leftMissingNonterminal": {
+        "title": "Die linke Regelseite enthält kein Nichtterminal: „{{line}}“",
+        "detail": "In einer generativen Grammatik muss die linke Seite mindestens ein Nichtterminal enthalten."
+      },
+      "unknownSymbolRight": "Unbekanntes Symbol auf der rechten Regelseite: „{{symbol}}“"
+    },
+    "yamlSyntaxError": {
+      "titleAtLine": "YAML-Syntaxfehler (Zeile {{line}})",
+      "title": "YAML-Syntaxfehler",
+      "detail": "{{reason}}. Prüfe die Einrückungen und Doppelpunkte."
+    },
+    "emptyOrUnparseable": "Leere oder nicht interpretierbare Definition",
+    "missingTypeKey": {
+      "title": "Fehlender Typschlüssel",
+      "detail": "Erwartete Schlüssel: {{keys}}"
+    },
+    "emptyBody": {
+      "title": "Unter {{key}} werden Felder benötigt",
+      "detail": "Zum Beispiel: name, states, transitions…"
+    },
+    "reversedRange": {
+      "title": "Umgekehrter Bereich im Feld {{field}}: „{{range}}“",
+      "detail": "Der Bereich wird als leer behandelt."
+    },
+    "rangeTooLarge": { "title": "Zu großer Bereich im Feld {{field}}: „{{range}}“" },
+    "unknownStorageType": {
+      "title": "Unbekannter Speichertyp beim Speicher „{{id}}“",
+      "detail": "Erlaubt: stack/verem, queue/sor, tape/szalag — mit Anfangsinhalt:\n  v1:\n    type: stack\n    init: Z"
+    },
+    "storageOp": {
+      "badTapeOp": {
+        "title": "Ungültige Bandoperation: „{{tokens}}“ ({{storageId}})",
+        "detail": "Zeile: „{{line}}“. Form: LESEN/SCHREIBEN BEWEGUNG — z. B. „a/b >“. Leerzeichen: _, „dasselbe zurückschreiben“: &."
+      },
+      "unknownMove": {
+        "title": "Unbekannte Bewegung: „{{tokens}}“ ({{storageId}})",
+        "detail": "Zeile: „{{line}}“. Erlaubt: > < = (oder R L S)."
+      },
+      "unknownTapeSymbol": {
+        "title": "Unbekanntes Bandsymbol: „{{tokens}}“ ({{storageId}})",
+        "detail": "Zeile: „{{line}}“. Bandalphabet: {{alphabet}}"
+      },
+      "badStackOp": {
+        "title": "Ungültige Speicheroperation: „{{tokens}}“ ({{storageId}})",
+        "detail": "Zeile: „{{line}}“. Keller-Form: POP/PUSH — z. B. „Z/AZ“; $ für ε."
+      },
+      "badQueueOp": {
+        "title": "Ungültige Speicheroperation: „{{tokens}}“ ({{storageId}})",
+        "detail": "Zeile: „{{line}}“. Warteschlangen-Form: ENTNEHMEN/EINFÜGEN — z. B. „A/BA“; $ für ε."
+      }
+    }
+  },
+  "ops": {
+    "needsEpsilonFree": {
+      "title": "Die Operation {{op}} benötigt einen ε-freien Automaten",
+      "detail": "Der Automat enthält {{count}} ε-Übergänge ({{list}}{{ellipsis}}). Ein ε-Übergang wechselt beim Lesen des leeren Wortes den Zustand, daher muss zuerst die ε-Elimination erfolgen: Für jeden Zustand wird sein ε-Abschluss berechnet, und die von dort ausgehenden Übergänge werden in den ursprünglichen Zustand „hineingezogen“."
+    },
+    "needsDeterministic": {
+      "title": "Die Operation {{op}} benötigt einen deterministischen Automaten",
+      "detail": "Nichtdeterminismus gefunden: {{spots}}{{ellipsis}}. In einem deterministischen Automaten darf jedes (Zustand, Symbol)-Paar höchstens einen Folgezustand haben. Mit der Potenzmengenkonstruktion (Determinisierung) lässt sich ein äquivalenter DFA konstruieren."
+    },
+    "needsComplete": {
+      "title": "Die Operation {{op}} benötigt einen vollständigen Automaten",
+      "detail": "Fehlende Übergänge: {{spots}}{{ellipsis}} — insgesamt {{count}} (Zustand, Symbol)-Paare haben keinen definierten Übergang. Zur Vervollständigung führen wir einen neuen „Fang“-Zustand (verwerfend) ein und leiten jeden fehlenden Übergang dorthin."
+    },
+    "fix": {
+      "insertEpsfree": "ε-Elimination einfügen",
+      "insertDet": "Determinisierung einfügen",
+      "insertComplete": "Vervollständigung einfügen",
+      "insertChain": "Korrekturkette einfügen"
+    },
+    "table": {
+      "state": "Zustand",
+      "newTransition": "neuer Übergang",
+      "reason": "Begründung",
+      "stateSet": "Zustandsmenge",
+      "missingTransition": "fehlender Übergang",
+      "newTarget": "neues Ziel",
+      "oldName": "alter Name",
+      "newName": "neuer Name",
+      "statePair": "Zustandspaar"
+    },
+    "epsfree": {
+      "alreadyFree": {
+        "title": "Der Automat ist bereits ε-frei",
+        "detail": "Es gibt keinen ε-Übergang, die Operation gibt den Automaten unverändert zurück."
+      },
+      "step1": {
+        "title": "1. Berechnung der ε-Abschlüsse",
+        "detail": "Für jeden Zustand q: E(q) = die Menge der von q aus nur über ε-Übergänge erreichbaren Zustände (q selbst eingeschlossen)."
+      },
+      "step2": {
+        "title": "2. Einführen neuer Übergänge",
+        "detail": "δ'(q, a) = E(δ(E(q), a)) — über den ε-Abschluss erreichbare Übergänge werden direkt gemacht."
+      },
+      "step3": {
+        "title": "3. Erweiterung der akzeptierenden Zustände",
+        "detailChanged": "Enthält E(q) einen akzeptierenden Zustand, wird auch q akzeptierend. Neue akzeptierende Zustände: {{list}}.",
+        "detailUnchanged": "Der ε-Abschluss keines Zustands enthält einen neuen akzeptierenden Zustand, die Menge der akzeptierenden Zustände bleibt also unverändert."
+      }
+    },
+    "det": {
+      "alreadyDeterministic": {
+        "title": "Der Automat ist bereits deterministisch",
+        "detail": "Jedes (Zustand, Symbol)-Paar hat höchstens einen Übergang und es gibt keinen ε-Übergang — die Potenzmengenkonstruktion erzeugt nur die erreichbaren einelementigen Mengen."
+      },
+      "notComplete": {
+        "title": "Der Automat ist nicht vollständig — der Zustand ∅ kann auftreten",
+        "detail": "Wo kein Übergang existiert, gelangt man in der Potenzmengenkonstruktion in die leere Menge (∅), die sich wie ein Fangzustand verhält. Dadurch wird das Ergebnis ein vollständiger DFA."
+      },
+      "step": {
+        "title": "Potenzmengenkonstruktion",
+        "detail": "Ausgehend vom Startzustand wird für jede erreichte Zustandsmenge und jedes Symbol die Menge der erreichbaren Zustände berechnet. Nur erreichbare Mengen werden aufgenommen. Eine Menge ist akzeptierend, wenn sie einen ursprünglich akzeptierenden Zustand enthält."
+      },
+      "result": {
+        "title": "Ergebnis",
+        "detail": "{{count}} Zustände entstanden aus den möglichen 2^{{exponent}} = {{possible}} Teilmengen. Akzeptierend: {{accept}}."
+      }
+    },
+    "complete": {
+      "alreadyComplete": {
+        "title": "Der Automat ist bereits vollständig",
+        "detail": "Jedes (Zustand, Symbol)-Paar hat einen Übergang — nichts zu tun."
+      },
+      "nameTaken": {
+        "title": "Der Zustandsname „{{trap}}“ existiert bereits",
+        "detail": "Für die Vervollständigung wird ein neuer, bisher nicht verwendeter Fangzustandsname benötigt.",
+        "fixLabel": "Automatischen Namen verwenden"
+      },
+      "step": {
+        "title": "Einführen des Fangzustands: {{trap}}",
+        "detail": "Der neue Zustand {{trap}} ist nicht akzeptierend, und bei jedem Symbol geht er in sich selbst über — von hier aus kann nicht mehr akzeptiert werden. Die fehlenden Übergänge werden hierher geleitet."
+      }
+    },
+    "reachable": {
+      "allReachable": {
+        "title": "Alle Zustände sind erreichbar",
+        "detail": "Vom Startzustand aus ist jeder Zustand erreichbar — es gibt nichts zu entfernen."
+      },
+      "step": {
+        "title": "Entfernen unerreichbarer Zustände",
+        "detail": "Die vom Startzustand aus per Breitensuche erreichbaren Zustände bleiben erhalten. Entfernt: {{removed}}."
+      }
+    },
+    "min": {
+      "unreachableStates": {
+        "title": "Unerreichbare Zustände",
+        "detail": "Der/die Zustand(e) {{states}} sind vom Startzustand aus nicht erreichbar — als ersten Schritt der Minimierung entfernen wir sie, sonst könnten falsche Äquivalenzklassen entstehen."
+      },
+      "step0": {
+        "title": "0. Entfernen unerreichbarer Zustände",
+        "detail": "Entfernt: {{removed}}."
+      },
+      "step1": {
+        "title": "1. Anfangspartition",
+        "detail": "Trennung von akzeptierenden und nicht akzeptierenden Zuständen: {{partition}}"
+      },
+      "refine": {
+        "title": "{{round}}. Verfeinerung",
+        "detail": "Eine Gruppe teilt sich, wenn zwei ihrer Zustände bei einem Symbol in unterschiedliche Gruppen führen. Neue Partition: {{partition}}"
+      },
+      "fixpoint": {
+        "title": "{{round}}. Fixpunkt",
+        "detail": "Keine weitere Teilung mehr — die Partition ist stabil: {{partition}}. Die Gruppen sind die Äquivalenzklassen."
+      },
+      "alreadyMinimal": {
+        "title": "Der Automat war bereits minimal",
+        "detail": "Jeder Zustand landete in einer eigenen Äquivalenzklasse."
+      },
+      "minimized": {
+        "title": "Minimiert: {{before}} → {{after}} Zustände",
+        "detail": "Zustände in derselben Klasse sind sprachlich nicht unterscheidbar: Sie akzeptieren/verwerfen jedes Wort gleich."
+      }
+    },
+    "complement": {
+      "whyDfa": {
+        "title": "Warum wird ein DFA benötigt?",
+        "detail": "Bei einem NFA ergibt das Umdrehen der akzeptierenden Zustände NICHT die Komplementsprache: Ein NFA akzeptiert ein Wort, wenn ein akzeptierender Pfad EXISTIERT — nach dem Umdrehen kann trotzdem noch ein verwerfender Pfad existieren, der dann akzeptierend wird."
+      },
+      "whyComplete": {
+        "title": "Warum wird Vollständigkeit benötigt?",
+        "detail": "Fehlt irgendwo ein Übergang, „hängt“ der Automat fest und verwirft. Diese Wörter müsste das Komplement eigentlich akzeptieren — dafür muss der Automat zuerst mit einem Fangzustand vervollständigt werden."
+      },
+      "step": {
+        "title": "Umdrehen der akzeptierenden Zustände",
+        "detail": "In einem vollständigen DFA durchläuft jedes Wort genau einen Pfad, daher ergibt das Vertauschen von akzeptierenden/verwerfenden Zuständen genau die Komplementsprache. Neue Menge akzeptierender Zustände: {{accept}}."
+      }
+    },
+    "product": {
+      "first": "ersten",
+      "second": "zweiten",
+      "hasEpsilon": {
+        "title": "Der {{part}} Automat enthält einen ε-Übergang",
+        "detail": "Die Produktkonstruktion (paralleler Lauf) erwartet deterministische, vollständige Automaten, da beide Automaten synchron, symbolweise schreiten müssen. Ein ε-Übergang würde das stören."
+      },
+      "nondeterministic": {
+        "title": "Der {{part}} Automat ist nichtdeterministisch",
+        "detail": "Die Zustände des Produktautomaten sind (p, q)-Paare mit δ((p,q),a) = (δ₁(p,a), δ₂(q,a)) — dafür müssen beide δ eindeutig sein."
+      },
+      "incomplete": {
+        "title": "Der {{part}} Automat ist nicht vollständig",
+        "detailUnion": "Bleibt ein Automat stecken, kann das Paar nicht weiterlaufen, obwohl der andere noch könnte — bei der Vereinigung zählt auch die Akzeptanz des anderen Automaten. Vervollständigung (ein Fangzustand) löst das.",
+        "detailOther": "Bleibt ein Automat stecken, kann das Paar nicht weiterlaufen, obwohl der andere noch könnte — das Ergebnis wäre falsch. Vervollständigung (ein Fangzustand) löst das."
+      },
+      "differentAlphabets": {
+        "title": "Die beiden Automaten haben unterschiedliche Alphabete",
+        "detail": "Im ersten Automaten fehlt: {{missing1}}. Im zweiten fehlt: {{missing2}}. {{mode}} ist nur über einem gemeinsamen Alphabet sinnvoll — erweitere die Alphabete und vervollständige die Automaten."
+      },
+      "acceptRule": {
+        "union": "(p,q) ist akzeptierend, wenn p ODER q akzeptierend ist",
+        "intersect": "(p,q) ist akzeptierend, wenn p UND q akzeptierend sind",
+        "difference": "(p,q) ist akzeptierend, wenn p akzeptierend ist, q aber NICHT (L₁ \\ L₂)"
+      },
+      "step": {
+        "title": "Produktkonstruktion ({{mode}})",
+        "detail": "Die beiden Automaten laufen parallel: Die Zustände sind (p,q)-Paare, δ((p,q),a) = (δ₁(p,a), δ₂(q,a)). Akzeptanz: {{acceptRule}}. Es werden nur erreichbare Paare aufgebaut."
+      }
+    },
+    "unionEpsilon": {
+      "info": {
+        "title": "Vereinigung über ε-Konstruktion",
+        "detail": "Von einem neuen Startzustand führt je ein ε-Übergang zu den Startzuständen beider Automaten. Das Ergebnis ist ein ε-NFA — mit der Kette det(epsfree(·)) determinisierbar. (Die Vereinigung vollständiger DFAs lässt sich auch mit der Produktkonstruktion bilden.)"
+      },
+      "step": {
+        "title": "Vereinigung mit ε-Übergängen",
+        "detail": "Neuer Startzustand {{start}}, ε-Übergänge: {{start}} → {{m1start}}, {{start}} → {{bstart}}. Akzeptierende Zustände: die Vereinigung der akzeptierenden Zustände beider Automaten."
+      }
+    },
+    "concat": {
+      "step": {
+        "title": "Verkettung",
+        "detail": "Von jedem akzeptierenden Zustand des ersten Automaten führt ein ε-Übergang zum Startzustand des zweiten ({{start}}). Akzeptierend: nur die akzeptierenden Zustände des zweiten Automaten. Das Ergebnis ist ein ε-NFA."
+      }
+    },
+    "star": {
+      "step": {
+        "title": "Kleene-Abschluss (Stern)",
+        "detail": "Neuer Startzustand {{start}} (zugleich akzeptierend — so ist auch das leere Wort in der Sprache), ein ε-Übergang zum ursprünglichen Startzustand, und von jedem akzeptierenden Zustand ein ε-Übergang zurück zu {{start}} für die Wiederholung."
+      }
+    },
+    "reverse": {
+      "step": {
+        "title": "Umkehrung",
+        "detail": "Die Richtung jedes Übergangs wird umgekehrt, vom neuen Startzustand ({{start}}) führt ein ε-Übergang zu den ursprünglichen akzeptierenden Zuständen, und der ursprüngliche Startzustand wird der einzige akzeptierende. L(Mᴿ) = { wᴿ : w ∈ L(M) }."
+      }
+    },
+    "clean": {
+      "step": {
+        "title": "Umbenennen der Zustände",
+        "detail": "Die Zustände erhalten in der vom Startzustand ausgehenden Besuchsreihenfolge die Namen A, B, C… Die Sprache ändert sich nicht."
+      }
+    },
+    "equal": {
+      "counterexampleSearch": {
+        "title": "Suche nach einem Gegenbeispiel im Produktautomaten",
+        "detail": "Die beiden (vervollständigten und determinisierten) Automaten laufen parallel; gesucht wird das kürzeste Wort, das genau von einem der beiden akzeptiert wird. Gefunden: „{{word}}“."
+      },
+      "proof": {
+        "title": "Nachweis der Äquivalenz",
+        "detail": "In jedem erreichbaren (p,q)-Zustandspaar des Produktautomaten stimmt der Akzeptanzstatus von p und q überein, es gibt also kein unterscheidendes Wort — die beiden Automaten erkennen dieselbe Sprache."
+      }
+    }
+  },
+  "grammar": {
+    "classify": {
+      "leftNotSingleNonterminal": "die linke Seite der Regel {{rule}} ist kein einzelnes Nichtterminal",
+      "notRightLinear": "die rechte Seite der Regel {{rule}} hat nicht die Form „Terminale + höchstens ein abschließendes Nichtterminal“",
+      "notLeftLinear": "die rechte Seite der Regel {{rule}} hat nicht die Form „höchstens ein führendes Nichtterminal + Terminale“",
+      "startEpsilonNotAllowed": "S → ε ist nur erlaubt, wenn S auf keiner rechten Regelseite vorkommt — hier kommt es aber vor",
+      "deletingRule": "{{rule}} ist eine löschende Regel (ε ist nur als S → ε erlaubt)",
+      "shortens": "Regel {{rule}} verkürzt: |{{left}}| = {{leftLen}} > |{{right}}| = {{rightLen}}",
+      "epsilonNotOnStart": "{{rule}} — ε-Regel nicht am Startsymbol",
+      "startOnRightWithEpsilon": "neben S → ε kommt S auch auf einer rechten Seite vor — die Grammatik ist damit nicht in ε-freier Form"
+    },
+    "table": {
+      "rule": "Regel",
+      "transition": "Übergang",
+      "newRules": "neue Regeln"
+    },
+    "toFsm": {
+      "needsRightLinear": {
+        "title": "Nur eine rechtslineare (Typ-3-)Grammatik lässt sich in einen endlichen Automaten umwandeln",
+        "detail": "Die Konstruktion: Jedes Nichtterminal wird ein Zustand; aus A → aB wird der Übergang A →a B; aus A → a wird ein Übergang in einen neuen akzeptierenden Zustand; A → ε macht A akzeptierend. Den genauen Grund, warum diese Grammatik nicht qualifiziert, zeigt das Chomsky-Klassifikationspanel."
+      },
+      "step": {
+        "title": "Rechtslineare Grammatik → NFA",
+        "detail": "Jedes Nichtterminal wird ein Zustand, das Startsymbol der Startzustand. Aus A → aB: ein a-Übergang von A nach B; aus A → a: ein Übergang in den neuen akzeptierenden Zustand ✓; bei A → ε wird A akzeptierend."
+      }
+    },
+    "fsmToGrammar": {
+      "tooManyStates": {
+        "title": "Zu viele Zustände für die Umwandlung in eine Grammatik",
+        "detail": "Der Automat hat {{count}} Zustände; die einbuchstabige Nichtterminal-Notation erlaubt höchstens {{max}} Zustände. Durch Minimierung lässt sich die Zustandsanzahl verringern."
+      },
+      "renamed": {
+        "title": "Die Zustände erhielten Nichtterminal-Buchstaben",
+        "detail": "{{mapping}}"
+      },
+      "step": {
+        "title": "NFA → rechtslineare Grammatik",
+        "detail": "Aus jedem Übergang q →a p wird die Regel Q → aP, aus jedem akzeptierenden Zustand q die Regel Q → ε. Die entstehende Grammatik ist vom Typ 3 und erzeugt dieselbe Sprache."
+      }
+    },
+    "toPda": {
+      "needsContextFree": {
+        "title": "Nur eine kontextfreie (Typ-2-)Grammatik lässt sich in einen Kellerautomaten umwandeln",
+        "detail": "In der Konstruktion speichert der Keller die Satzform, daher muss die linke Seite ein einzelnes Nichtterminal sein. Den genauen Grund, warum diese Grammatik nicht qualifiziert, zeigt das Chomsky-Klassifikationspanel."
+      },
+      "emptyStackInfo": {
+        "title": "PDA mit Akzeptanz durch leeren Keller erstellt",
+        "detail": "Der Keller speichert die aktuelle Satzform der Ableitung. Steht ein Nichtterminal oben auf dem Keller, wird eine Regel angewendet (ε-Schritt); steht ein Terminal oben, wird es mit dem nächsten Eingabebuchstaben abgeglichen. Ein Wort wird genau dann akzeptiert, wenn die Eingabe aufgebraucht und der Keller leer ist."
+      },
+      "step": {
+        "title": "KF-Grammatik → PDA (Top-down-Parser)",
+        "detail": "Ein einziger Zustand {{q}}. Anfänglicher Kellerinhalt: {{start}}. Regel-Schritte: {{ruleCount}} (ε, A / α), Abgleich-Schritte: {{terminalCount}} (a, a / ε)."
+      }
+    },
+    "epsfree": {
+      "needsContextFree": {
+        "title": "Die ε-Elimination ist für kontextfreie Grammatiken definiert",
+        "detail": "Den genauen Grund, warum diese Grammatik nicht qualifiziert, zeigt das Chomsky-Klassifikationspanel."
+      },
+      "step1": {
+        "title": "1. Löschbare Nichtterminale",
+        "detailNone": "Kein löschbares Nichtterminal — die Grammatik ist bereits ε-frei.",
+        "detailSome": "Löschbar (auf ε ableitbar): {{nullable}}. A ist löschbar, wenn A → ε, oder A → α und jeder Buchstabe von α löschbar ist."
+      },
+      "step2": {
+        "title": "2. Erweiterung der Regeln",
+        "detail": "Aus jeder Regel werden alle Varianten gebildet, bei denen eine Teilmenge ihrer löschbaren Nichtterminale weggelassen wird (außer wenn die gesamte rechte Seite verschwände). Die ε-Regeln werden anschließend verworfen."
+      },
+      "step3": {
+        "title": "3. Neues Startsymbol wegen ε",
+        "detail": "Die ursprüngliche Sprache enthält ε (das Startsymbol ist löschbar), daher führen wir ein neues Startsymbol {{s2}} ein: {{s2}} → {{start}} | ε. So bleibt die ε-Regel nur beim Startsymbol."
+      }
+    }
+  },
+  "expression": {
+    "kind": {
+      "fsm": "ein endlicher Automat",
+      "grammar": "eine Grammatik",
+      "regex": "ein regulärer Ausdruck",
+      "verdict": "ein Vergleichsergebnis"
+    },
+    "error": {
+      "unexpectedChar": "Unerwartetes Zeichen: „{{char}}“ (Position {{pos}})",
+      "missingExpression": "Fehlender Ausdruck (Position {{pos}})",
+      "unexpectedEnd": "Der Ausdruck endete unerwartet (Position {{pos}})",
+      "missingCloseParen": "Fehlende schließende Klammer (Position {{pos}})",
+      "missingCloseParenRegex": "Fehlende schließende Klammer im regex()-Aufruf (Position {{pos}})",
+      "missingCommaOrParen": "Fehlendes „,“ oder „)“ im Funktionsaufruf (Position {{pos}})",
+      "functionNeedsParen": "Auf den Funktionsnamen „{{word}}“ muss eine Klammer folgen (Position {{pos}})",
+      "unknownName": "Unbekannter Name: „{{word}}“ — verweise auf Maschinen mit ihrem Namen; eine Buchstabenfolge kann nur innerhalb von regex(…) verwendet werden (Position {{pos}})",
+      "unparseableChar": "Nicht interpretierbares Zeichen: „{{char}}“ (Position {{pos}})",
+      "wrongArgCount": {
+        "exact": "Die Funktion {{fn}} erwartet {{n}} Parameter, aber {{count}} wurden übergeben",
+        "range": "Die Funktion {{fn}} erwartet {{n}} oder {{alsoOk}} Parameter, aber {{count}} wurden übergeben"
+      },
+      "needsFsm": "{{ctx}}: erwartet einen endlichen Automaten, aber {{kind}} wurde übergeben",
+      "machineNeedsFsm": "{{ctx}}: erwartet einen endlichen Automaten, aber {{name}} ist {{machineKind}} (Speicher: {{storages}}). Die von einer Maschine mit Speicher erkannte Sprache ist im Allgemeinen nicht regulär, daher gibt es keine automatische Umwandlung — Automaten-Operationen gelten nur für speicherlose Maschinen.",
+      "machineHasStorage": "{{name}} lässt sich nicht in einen endlichen Automaten umwandeln, da es Speicher hat ({{storages}}) — nur eine speicherlose Maschine hat einen äquivalenten Automaten",
+      "toFsmExpects": "toFsm() erwartet eine Grammatik, einen regulären Ausdruck oder eine speicherlose Maschine",
+      "toPdaExpects": "toPda() erwartet eine Grammatik",
+      "invalidExpression": "Ungültiger Ausdruck",
+      "parseGeneric": "{{message}}. Beispiele: detM = det(M) · u = union(M1, M2) · r = regex((ab)*+ba) · e = equal(M1, M2)",
+      "evaluationError": "Auswertungsfehler",
+      "evalGeneric": "{{message}}"
+    },
+    "eval": {
+      "unknownName": "Unbekannter Name: „{{name}}“",
+      "literalsOnlyInRegex": "Buchstaben-Literale können nur innerhalb von regex(…) verwendet werden"
+    },
+    "autoConvert": {
+      "regex": {
+        "title": "Den regulären Ausdruck {{name}} automatisch in einen ε-NFA umgewandelt",
+        "detail": "Die Operation erwartet einen endlichen Automaten; der reguläre Ausdruck lässt sich mit der Thompson-Konstruktion in einen Automaten umwandeln — explizit: toFsm({{name}})."
+      },
+      "grammar": {
+        "title": "Die Grammatik {{name}} automatisch in einen endlichen Automaten umgewandelt",
+        "detail": "Die Operation erwartet einen endlichen Automaten; die rechtslineare Grammatik lässt sich umwandeln."
+      }
+    }
+  }
+}

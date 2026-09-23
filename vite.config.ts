@@ -9,15 +9,15 @@ export default defineConfig({
       registerType: "autoUpdate",
       includeAssets: ["icon.svg"],
       manifest: {
-        name: "AutomataLab — Nyelvek és automaták",
+        name: "AutomataLab — Languages and Automata",
         short_name: "AutomataLab",
         description:
-          "Interaktív műhely a Nyelvek és automaták tantárgyhoz: véges automaták, veremautomaták, Turing-gépek és nyelvtanok — teljesen offline.",
+          "An interactive workshop for formal languages and automata theory: finite automata, pushdown automata, Turing machines and grammars — fully offline. Available in English, German and Hungarian.",
         theme_color: "#0f1117",
         background_color: "#0f1117",
         display: "standalone",
         start_url: ".",
-        lang: "hu",
+        lang: "en",
         icons: [
           { src: "icon-192.png", sizes: "192x192", type: "image/png" },
           { src: "icon-512.png", sizes: "512x512", type: "image/png" },

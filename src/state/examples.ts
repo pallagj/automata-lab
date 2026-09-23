@@ -6,6 +6,9 @@
  * veremautomata vagy Turing-gép-e, azt a tárolói döntik el.
  */
 export interface ExampleWorksheet {
+  /** i18next key in the "ui" namespace, under examples.<key>.name */
+  key: string;
+  /** Hungarian fallback name (source language), used if a translation is missing. */
   name: string;
   cells: string[];
 }
@@ -59,10 +62,12 @@ const ENFA_A_VAGY_B = `Machine:
 
 export const EXAMPLE_WORKSHEETS: ExampleWorksheet[] = [
   {
+    key: "intro",
     name: "Bemutató — determinizálás és minimalizálás",
     cells: [NFA_M1, "D = det(M1)", "K = min(D)", "E = equal(M1, K)"]
   },
   {
+    key: "epsilonFree",
     name: "ε-mentesítés lépésről lépésre",
     cells: [
       ENFA_A_VAGY_B,
@@ -72,6 +77,7 @@ export const EXAMPLE_WORKSHEETS: ExampleWorksheet[] = [
     ]
   },
   {
+    key: "regex",
     name: "Reguláris kifejezések és automaták",
     cells: [
       "R = regex((a|b)*abb)",
@@ -82,6 +88,7 @@ export const EXAMPLE_WORKSHEETS: ExampleWorksheet[] = [
     ]
   },
   {
+    key: "setOps",
     name: "Halmazműveletek nyelveken",
     cells: [
       DFA_PAROS_A,
@@ -93,6 +100,7 @@ export const EXAMPLE_WORKSHEETS: ExampleWorksheet[] = [
     ]
   },
   {
+    key: "pda",
     name: "Veremautomaták",
     cells: [
       `Machine:
@@ -128,6 +136,7 @@ export const EXAMPLE_WORKSHEETS: ExampleWorksheet[] = [
     ]
   },
   {
+    key: "turing",
     name: "Turing-gépek",
     cells: [
       `Machine:
@@ -171,6 +180,7 @@ export const EXAMPLE_WORKSHEETS: ExampleWorksheet[] = [
     ]
   },
   {
+    key: "customMachines",
     name: "Egyedi gépek — két verem, sor",
     cells: [
       `Machine:
@@ -204,6 +214,7 @@ export const EXAMPLE_WORKSHEETS: ExampleWorksheet[] = [
     ]
   },
   {
+    key: "grammars",
     name: "Nyelvtanok és konverziók",
     cells: [
       `Grammar:
@@ -294,3 +305,10 @@ export const CELL_TEMPLATES: Record<string, string> = {
 };
 
 export const STARTER_CELLS: string[] = EXAMPLE_WORKSHEETS[0].cells;
+
+/** Resolves an example worksheet's translated display name, falling back to the Hungarian source name. */
+export function exampleWorksheetName(t: (key: string) => string, ws: ExampleWorksheet): string {
+  const key = `examples.${ws.key}.name`;
+  const translated = t(key);
+  return translated === key ? ws.name : translated;
+}

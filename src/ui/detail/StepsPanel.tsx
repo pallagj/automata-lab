@@ -1,19 +1,23 @@
 import React from "react";
+import { useTranslation } from "react-i18next";
 import { StepGroup } from "../../core/expr/expression";
 import { AlgoStep } from "../../core/types";
+import { tr } from "../../i18n/translate";
 import { ChevronRight, ListTree } from "lucide-react";
 
-const Step: React.FC<{ step: AlgoStep }> = ({ step }) => (
+const Step: React.FC<{ step: AlgoStep }> = ({ step }) => {
+  const { t } = useTranslation();
+  return (
   <div className="step">
-    <div className="step-title">{step.title}</div>
-    {step.detail && <div className="step-detail">{step.detail}</div>}
+    <div className="step-title">{tr(t, step.title)}</div>
+    {step.detail && <div className="step-detail">{tr(t, step.detail)}</div>}
     {step.table && (
       <div className="t-wrap">
         <table className="t">
           <thead>
             <tr>
               {step.table.headers.map((h, i) => (
-                <th key={i}>{h}</th>
+                <th key={i}>{tr(t, h)}</th>
               ))}
             </tr>
           </thead>
@@ -30,7 +34,8 @@ const Step: React.FC<{ step: AlgoStep }> = ({ step }) => (
       </div>
     )}
   </div>
-);
+  );
+};
 
 /** A lépéslista tartalma — kártyában és lebegő panelben is használható. */
 export const StepsContent: React.FC<{ stepGroups: StepGroup[] }> = ({ stepGroups }) => (
@@ -47,12 +52,13 @@ export const StepsContent: React.FC<{ stepGroups: StepGroup[] }> = ({ stepGroups
 );
 
 export const StepsPanel: React.FC<{ stepGroups: StepGroup[] }> = ({ stepGroups }) => {
+  const { t } = useTranslation();
   if (stepGroups.length === 0) return null;
   return (
     <details className="card" open={stepGroups.length === 1}>
       <summary className="card-title">
         <ListTree size={15} />
-        Hogyan készült? — az algoritmus lépései
+        {t("detail.stepsPanel.title")}
         <ChevronRight size={15} className="chev" />
       </summary>
       <div className="card-body">

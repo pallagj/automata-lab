@@ -5,23 +5,44 @@
 
 export type DiagLevel = "error" | "warning" | "info";
 
+/**
+ * Translatable text: an i18next key plus optional interpolation params.
+ * Resolved to a concrete string only at render time via `tr()` from
+ * `src/i18n/translate.ts`, so the same diagnostic/step works in any UI
+ * language. `ns` defaults to "core" (every value built by core algorithms
+ * lives there); UI-authored I18nText values — e.g. `Applicability.reason` in
+ * `src/ui/editor/ops.ts` — set `ns: "ui"` explicitly since they key into the
+ * "ui" namespace instead.
+ */
+export interface I18nText {
+  key: string;
+  params?: Record<string, string | number>;
+  ns?: "core" | "ui";
+}
+
+/** Shorthand constructor for I18nText. */
+export function tx(key: string, params?: Record<string, string | number>): I18nText {
+  return { key, params };
+}
+
 export interface Diagnostic {
   level: DiagLevel;
-  title: string;
+  title: I18nText;
   /** Részletes magyarázat — miért feltétel ez, mit jelent. */
-  detail?: string;
+  detail?: I18nText;
   /** Javasolt javítás: ezt a kifejezést beszúrva megoldódik. */
-  fix?: { label: string; code: string };
+  fix?: { label: I18nText; code: string };
 }
 
 export interface StepTable {
-  headers: string[];
+  /** Either a translatable label or a raw symbol/formula (e.g. "δ(·, a)", an alphabet letter) shown verbatim. */
+  headers: (string | I18nText)[];
   rows: string[][];
 }
 
 export interface AlgoStep {
-  title: string;
-  detail?: string;
+  title: I18nText;
+  detail?: I18nText;
   table?: StepTable;
 }
 
@@ -35,13 +56,13 @@ export interface OpResult<T> {
 export const EPS = "ε";
 export const BLANK = "␣";
 
-export function err(title: string, detail?: string, fix?: Diagnostic["fix"]): Diagnostic {
+export function err(title: I18nText, detail?: I18nText, fix?: Diagnostic["fix"]): Diagnostic {
   return { level: "error", title, detail, fix };
 }
-export function warn(title: string, detail?: string, fix?: Diagnostic["fix"]): Diagnostic {
+export function warn(title: I18nText, detail?: I18nText, fix?: Diagnostic["fix"]): Diagnostic {
   return { level: "warning", title, detail, fix };
 }
-export function info(title: string, detail?: string, fix?: Diagnostic["fix"]): Diagnostic {
+export function info(title: I18nText, detail?: I18nText, fix?: Diagnostic["fix"]): Diagnostic {
   return { level: "info", title, detail, fix };
 }
 

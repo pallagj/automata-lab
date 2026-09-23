@@ -2,6 +2,8 @@ import React, { useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import CodeMirror from "@uiw/react-codemirror";
 import { yaml } from "@codemirror/lang-yaml";
+import { useTranslation } from "react-i18next";
+import type { TFunction } from "i18next";
 import { Cell, useAppStore } from "../../state/store";
 import { CellResult } from "../../core/workspace";
 import { DiagnosticsList } from "../detail/DiagnosticsList";
@@ -10,6 +12,7 @@ import { serializeDefinition } from "../../core/parse/serialize";
 import { machineCaps } from "../../core/machine/machine";
 import { opApplicability, OpInfo, OPS } from "./ops";
 import { detectEntityKind, EntityForm, parseEntityDraft } from "./EntityForm";
+import { machineKindLabel } from "../machineLabels";
 
 interface Props {
   cell: Cell;
@@ -17,22 +20,22 @@ interface Props {
   result: CellResult | undefined;
 }
 
-const KIND_LABEL: Record<string, string> = {
-  grammar: "nyelvtan",
-  regex: "reguláris kifejezés",
-  verdict: "összehasonlítás"
+const KIND_KEY: Record<string, string> = {
+  grammar: "editor.cell.kind.grammar",
+  regex: "editor.cell.kind.regex",
+  verdict: "editor.cell.kind.verdict"
 };
 
 /** A felismert gépfajta neve a cella fejlécébe — a konfigurációból. */
-function valueKindLabel(value: { kind: string }): string | undefined {
+function valueKindLabel(t: TFunction, value: { kind: string }): string | undefined {
   if (value.kind === "machine") {
     const caps = machineCaps(value as never);
-    if (caps.isFSMLike) return "véges automata";
-    if (caps.isPDALike) return "veremautomata";
-    if (caps.isTMLike) return "Turing-gép";
-    return caps.label.replace("Általános", "általános");
+    if (caps.isFSMLike) return t("editor.cell.kind.fsm");
+    if (caps.isPDALike) return t("editor.cell.kind.pda");
+    if (caps.isTMLike) return t("editor.cell.kind.tm");
+    return machineKindLabel(t, caps, true);
   }
-  return KIND_LABEL[value.kind];
+  return KIND_KEY[value.kind] ? t(KIND_KEY[value.kind]) : undefined;
 }
 
 /** Cellák közti drag&drop: az éppen vonszolt cella azonosítója. */
@@ -67,6 +70,7 @@ const SeverityBadge: React.FC<{ level: "error" | "warning" | "info" }> = ({ leve
 const REGEX_CELL = /^\s*([A-Za-z][A-Za-z0-9_'′]*)\s*=\s*regex\(([\s\S]*)\)\s*$/;
 
 export const CellEditor: React.FC<Props> = ({ cell, index, result }) => {
+  const { t } = useTranslation();
   const theme = useAppStore((s) => s.theme);
   const activeCellId = useAppStore((s) => s.activeCellId);
   const setActiveCell = useAppStore((s) => s.setActiveCell);
@@ -202,34 +206,35 @@ export const CellEditor: React.FC<Props> = ({ cell, index, result }) => {
     const items: React.ReactNode[] = [];
     let lastGroup = "";
     for (const op of OPS) {
-      if (op.group !== lastGroup) {
-        lastGroup = op.group;
+      if (op.groupKey !== lastGroup) {
+        lastGroup = op.groupKey;
         items.push(
-          <div className="menu-group" key={`g-${op.group}`}>
-            {op.group}
+          <div className="menu-group" key={`g-${op.groupKey}`}>
+            {t(op.groupKey)}
           </div>
         );
       }
       const app = opApplicability(op, value);
+      const reasonText = app.reason ? t(app.reason.key, app.reason.params) : t("editor.ops.reason.unknown");
       items.push(
         <button
           key={op.name}
           className={app.ok ? "" : "not-applicable"}
           disabled={!app.ok}
-          title={app.ok ? op.desc : `Erre a cellára nem alkalmazható: ${app.reason}`}
+          title={app.ok ? t(op.descKey) : t("editor.cell.notApplicable", { reason: reasonText })}
           onClick={(e) => {
             e.stopPropagation();
             if (app.ok) applyOp(op);
           }}
         >
-          <code className="op-name">{op.name}(…)</code> {op.desc}
+          <code className="op-name">{op.name}(…)</code> {t(op.descKey)}
           {!app.ok && (
             <span className="op-reason">
-              {app.reason}
+              {reasonText}
               {app.fixChain ? (
                 <>
                   {" "}
-                  — működő lánc: <code>{app.fixChain}</code>
+                  — {t("editor.cell.workingChain")}: <code>{app.fixChain}</code>
                 </>
               ) : null}
             </span>
@@ -263,7 +268,7 @@ export const CellEditor: React.FC<Props> = ({ cell, index, result }) => {
     >
       <div
         className="cell-gutter"
-        title="Fogd meg és húzd a cella átrendezéséhez"
+        title={t("editor.cell.dragToReorder")}
         onMouseDown={() => setDragReady(true)}
         onMouseUp={() => setDragReady(false)}
       >
@@ -285,14 +290,14 @@ export const CellEditor: React.FC<Props> = ({ cell, index, result }) => {
       <div className="cell-main">
         <div className="cell-head">
           {result?.name && <span className="cell-name">{result.name}</span>}
-          {result?.value && <span className="cell-kind">{valueKindLabel(result.value)}</span>}
-          {result?.comment && <span className="cell-kind">jegyzet</span>}
-          {regexMatch && !result?.value && <span className="cell-kind">reguláris kifejezés</span>}
+          {result?.value && <span className="cell-kind">{valueKindLabel(t, result.value)}</span>}
+          {result?.comment && <span className="cell-kind">{t("editor.cell.kind.note")}</span>}
+          {regexMatch && !result?.value && <span className="cell-kind">{t("editor.cell.kind.regex")}</span>}
           <span className="spacer" />
           <button
             ref={opsBtnRef}
             className="cell-tool"
-            title="Műveletek — a kiválasztott művelettel körbeveszi a cellát"
+            title={t("editor.cell.operationsHint")}
             onClick={(e) => {
               e.stopPropagation();
               opsOpen ? setOpsOpen(false) : openOpsMenu();
@@ -303,7 +308,7 @@ export const CellEditor: React.FC<Props> = ({ cell, index, result }) => {
           {formAvailable && (
             <button
               className="cell-tool"
-              title={showForm ? "YAML-kód szerkesztése" : "Vissza az űrlapos szerkesztéshez"}
+              title={showForm ? t("editor.cell.editYaml") : t("editor.cell.backToForm")}
               onClick={(e) => {
                 e.stopPropagation();
                 setCodeView((v) => !v);
@@ -315,7 +320,7 @@ export const CellEditor: React.FC<Props> = ({ cell, index, result }) => {
           {expandable && (
             <button
               className="cell-tool"
-              title="Kibontás szerkeszthető definícióvá"
+              title={t("editor.cell.expandToDefinition")}
               onClick={(e) => {
                 e.stopPropagation();
                 setCellSource(cell.id, serializeDefinition(expandable));
@@ -326,7 +331,7 @@ export const CellEditor: React.FC<Props> = ({ cell, index, result }) => {
           )}
           <button
             className="cell-tool danger"
-            title="Cella törlése"
+            title={t("editor.cell.deleteCell")}
             onClick={(e) => {
               e.stopPropagation();
               removeCell(cell.id);
@@ -344,7 +349,7 @@ export const CellEditor: React.FC<Props> = ({ cell, index, result }) => {
               onChange={(e) =>
                 setCellSource(cell.id, `${e.target.value} = regex(${regexMatch[2]})`)
               }
-              title="A kapott automata neve"
+              title={t("editor.cell.resultingAutomatonName")}
             />
             <span className="rx-eq">=</span>
             <span className="rx-chip">regex</span>
@@ -355,7 +360,7 @@ export const CellEditor: React.FC<Props> = ({ cell, index, result }) => {
                 setCellSource(cell.id, `${regexMatch[1]} = regex(${e.target.value})`)
               }
               placeholder="(a|b)*abb"
-              title="Reguláris kifejezés — műveletek: | (vagy), * (lezárás), zárójelek, $ (ε)"
+              title={t("editor.cell.regexHint")}
             />
           </div>
         ) : showForm ? (

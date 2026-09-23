@@ -1,4 +1,6 @@
 import React, { useState } from "react";
+import { useTranslation } from "react-i18next";
+import type { TFunction } from "i18next";
 import { Workspace, useAppStore } from "../../state/store";
 import { CellResult } from "../../core/workspace";
 import { CellEditor } from "./CellEditor";
@@ -40,53 +42,54 @@ function uniqueName(base: string, used: Set<string>): string {
 }
 
 interface InsertOption {
-  label: string;
+  labelKey: string;
   icon: React.ReactNode;
   /** sablon a {NAME} helyére kerülő egyedi névvel */
-  make: (used: Set<string>) => string;
+  make: (used: Set<string>, t: TFunction) => string;
 }
 
 /** A gépek erősorrendben, utána nyelvtan, regex, végül a szabad kifejezés. */
 const INSERT_OPTIONS: InsertOption[] = [
   {
-    label: "Véges automata",
+    labelKey: "editor.insertMenu.fsm",
     icon: <CircleDot size={15} />,
     make: (used) => CELL_TEMPLATES.fsm.replace("name: M", `name: ${uniqueName("M", used)}`)
   },
   {
-    label: "Veremautomata",
+    labelKey: "editor.insertMenu.pda",
     icon: <Layers size={15} />,
     make: (used) => CELL_TEMPLATES.pda.replace("name: P", `name: ${uniqueName("P", used)}`)
   },
   {
-    label: "Turing-gép",
+    labelKey: "editor.insertMenu.tm",
     icon: <SquareStack size={15} />,
     make: (used) => CELL_TEMPLATES.tm.replace("name: T", `name: ${uniqueName("T", used)}`)
   },
   {
-    label: "Egyedi gép (tárolókkal)",
+    labelKey: "editor.insertMenu.machine",
     icon: <Boxes size={15} />,
     make: (used) => CELL_TEMPLATES.machine.replace("name: Gep", `name: ${uniqueName("Gep", used)}`)
   },
   {
-    label: "Nyelvtan",
+    labelKey: "editor.insertMenu.grammar",
     icon: <Braces size={15} />,
     make: (used) => CELL_TEMPLATES.grammar.replace("name: G", `name: ${uniqueName("G", used)}`)
   },
   {
-    label: "Reguláris kifejezés",
+    labelKey: "editor.insertMenu.regex",
     icon: <Regex size={15} />,
     make: (used) => `${uniqueName("R", used)} = regex()`
   },
-  { label: "Kifejezés / művelet", icon: <FunctionSquare size={15} />, make: () => "" },
+  { labelKey: "editor.insertMenu.expression", icon: <FunctionSquare size={15} />, make: () => "" },
   {
-    label: "Jegyzet",
+    labelKey: "editor.insertMenu.note",
     icon: <StickyNote size={15} />,
-    make: () => "# Jegyzet\n# A #-tal kezdődő cella megjegyzés — ide írhatsz magyarázatot."
+    make: (_used, t) => t("editor.insertMenu.noteTemplate")
   }
 ];
 
 export const EditorColumn: React.FC<Props> = ({ workspace, results }) => {
+  const { t } = useTranslation();
   const addCell = useAppStore((s) => s.addCell);
   const setCellSource = useAppStore((s) => s.setCellSource);
   const setActiveCell = useAppStore((s) => s.setActiveCell);
@@ -108,27 +111,27 @@ export const EditorColumn: React.FC<Props> = ({ workspace, results }) => {
     <>
       <div className="pane-head">
         <span className="pane-title">{workspace.name}</span>
-        <span className="pane-count">{workspace.cells.length} cella</span>
+        <span className="pane-count">{t("editor.column.cellCount", { count: workspace.cells.length })}</span>
         <span className="spacer" />
         <div className="menu-anchor">
           <button
             className="icon-btn primary"
-            title="Új cella beszúrása — válaszd ki, mit szeretnél"
+            title={t("editor.insertMenu.buttonTitle")}
             onClick={() => setMenuOpen((o) => !o)}
           >
-            <Plus size={15} /> Beszúrás
+            <Plus size={15} /> {t("editor.insertMenu.insert")}
           </button>
           {menuOpen && (
             <div className="menu insert-menu" onMouseLeave={() => setMenuOpen(false)}>
               {INSERT_OPTIONS.map((opt) => (
                 <button
-                  key={opt.label}
+                  key={opt.labelKey}
                   onClick={() => {
-                    insert(opt.make(usedNames(workspace)));
+                    insert(opt.make(usedNames(workspace), t));
                     setMenuOpen(false);
                   }}
                 >
-                  <span className="ins-icon">{opt.icon}</span> {opt.label}
+                  <span className="ins-icon">{opt.icon}</span> {t(opt.labelKey)}
                 </button>
               ))}
             </div>
@@ -143,7 +146,7 @@ export const EditorColumn: React.FC<Props> = ({ workspace, results }) => {
 
         <div
           className="cell ghost"
-          title="Kattints új cellához (Alt+Enter is működik)"
+          title={t("editor.column.ghostCellTitle")}
           onClick={() => addCell("")}
         >
           <div className="cell-gutter">

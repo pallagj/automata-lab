@@ -40,7 +40,8 @@ describe("általános gép — kétvermes", () => {
     expect(m.storages.map((s) => s.type)).toEqual(["stack", "stack"]);
     expect(m.input).toBe("head");
     expect(machineCaps(m).isFSMLike).toBe(false);
-    expect(machineCaps(m).label).toContain("2 verem");
+    expect(machineCaps(m).kind).toBe("general");
+    expect(machineCaps(m).storageCounts?.stack).toBe(2);
   });
 
   it("a^n b^n c^n felismerése (nem környezetfüggetlen!)", () => {
@@ -252,8 +253,8 @@ Machine:
     - q a q
 `);
     expect(r.ok).toBe(false);
-    expect(r.diagnostics[0].title).toContain("Hibás átmenet");
-    expect(r.diagnostics[0].detail).toContain("4 elem");
+    expect(r.diagnostics[0].title.key).toBe("definitionParser.machine.invalidTransition.title");
+    expect(r.diagnostics[0].detail?.params?.count).toBe(4);
   });
 
   it("ismeretlen tárolótípus", () => {
@@ -269,7 +270,7 @@ Machine:
   transitions: []
 `);
     expect(r.ok).toBe(false);
-    expect(r.diagnostics[0].title).toContain("Ismeretlen tárolótípus");
+    expect(r.diagnostics[0].title.key).toBe("definitionParser.unknownStorageType.title");
   });
 
   it("input mező csak head vagy tároló-id lehet", () => {
@@ -284,7 +285,7 @@ Machine:
   transitions: []
 `);
     expect(r.ok).toBe(false);
-    expect(r.diagnostics[0].title).toContain("input");
+    expect(r.diagnostics[0].title.key).toBe("definitionParser.machine.badInputField.title");
   });
 });
 

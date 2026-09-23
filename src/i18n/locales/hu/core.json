@@ -1,0 +1,515 @@
+{
+  "machineKind": {
+    "fsm": "automata",
+    "pda": "veremautomata",
+    "tm": "Turing-gép",
+    "general": "általános gép"
+  },
+  "opNames": {
+    "epsfree": "ε-mentesítés",
+    "det": "determinizálás",
+    "complete": "teljessé tétel",
+    "reachable": "elérhetetlen állapotok elhagyása",
+    "min": "minimalizálás",
+    "clean": "átnevezés",
+    "complement": "komplementer",
+    "union": "unió",
+    "intersect": "metszet",
+    "difference": "különbség",
+    "concat": "összefűzés",
+    "star": "Kleene-csillag",
+    "reverse": "megfordítás",
+    "toGrammar": "nyelvtanná alakítás",
+    "toFsm": "automatává alakítás",
+    "toPda": "veremautomatává alakítás",
+    "equal": "ekvivalencia-vizsgálat"
+  },
+  "regex": {
+    "error": {
+      "unexpectedChar": "Váratlan karakter a(z) {{pos}}. pozíción: „{{char}}”",
+      "unexpectedEnd": "A kifejezés váratlanul véget ért.",
+      "missingCloseParen": "Hiányzó záró zárójel a(z) {{pos}}. pozíción.",
+      "unmatchedCloseParen": "Pár nélküli záró zárójel a(z) {{pos}}. pozíción.",
+      "operatorNeedsExpr": "A(z) „{{op}}” operátor előtt kifejezésnek kell állnia ({{pos}}. pozíció).",
+      "unknown": "{{message}}",
+      "invalid": "Hibás reguláris kifejezés"
+    },
+    "node": {
+      "empty": "∅ — üres nyelv",
+      "eps": "ε — üres szó",
+      "lit": "„{{char}}” betű",
+      "cat": "összefűzés",
+      "alt": "unió ( | )",
+      "star": "lezárás ( * )",
+      "opt": "opcionális ( ? )"
+    },
+    "step": {
+      "thompson": {
+        "title": "Thompson-konstrukció",
+        "detail": "A reguláris kifejezés szerkezeti felépítését követve minden részkifejezéshez kis ε-NFA-darabot építünk (literál, unió, összefűzés, csillag), majd ezeket ε-átmenetekkel kapcsoljuk össze. Eredmény: {{count}} állapot. A det(epsfree(·)) lánccal DFA-vá alakítható."
+      }
+    }
+  },
+  "workspace": {
+    "unparseableCell": {
+      "title": "Értelmezhetetlen cella",
+      "detail": "A cella vagy YAML-definíció (Machine / Grammar kulccsal), vagy kifejezés („név = kifejezés” alakban) lehet."
+    },
+    "duplicateDefinition": {
+      "title": "Többszörös definíció: „{{name}}”",
+      "detail": "A nevet a(z) {{other}}. és a(z) {{index}}. cella is definiálja — az első definíció él, a többit hagyd ki vagy nevezd át."
+    },
+    "circularDependency": {
+      "title": "Körkörös függőség",
+      "detail": "A(z) „{{name}}” definíciója (közvetve) önmagára hivatkozik: {{chain}}. Bontsd fel a kört."
+    },
+    "brokenDependency": {
+      "title": "Hibás függőség: {{missing}}",
+      "detail": "A hivatkozott cella hibás vagy még nem értékelhető ki — előbb azt javítsd."
+    }
+  },
+  "definitionParser": {
+    "line": "Sor: „{{line}}”.",
+    "missingField": { "title": "Hiányzó mező: {{field}}" },
+    "machine": {
+      "fieldHints": {
+        "states": "Az állapotok felsorolása",
+        "init": "A kezdőállapot",
+        "charset": "A bemeneti ábécé"
+      },
+      "startNotInStates": "A kezdőállapot ({{start}}) nincs az állapotok között",
+      "acceptNotInStates": "Az elfogadó állapot ({{state}}) nincs az állapotok között",
+      "badStoragesField": {
+        "title": "A storages mező kulcs-érték párokat vár",
+        "detail": "Például:\n  storages:\n    v1: stack\n    v2:\n      type: queue\n      init: A"
+      },
+      "duplicateStorageId": "Kétszer szereplő tároló-azonosító: „{{id}}”",
+      "badInputField": {
+        "title": "Az input mező ({{input}}) nem egy tároló azonosítója",
+        "detail": "Használj „head”-et (olvasófej), vagy az egyik tároló nevét: {{storages}}."
+      },
+      "noAcceptSuggestEmptyStorages": {
+        "title": "Nincs elfogadó állapot — üres tárolókkal való elfogadásra az acceptMode: emptyStorages való",
+        "detail": "Elfogadó állapot nélkül és finalState módban a gép az üres nyelvet ismeri fel."
+      },
+      "invalidTransition": {
+        "title": "Hibás átmenet: „{{line}}”",
+        "detail": "Ehhez a géphez {{count}} elem kell: {{shape}}"
+      },
+      "unknownFromState": "Ismeretlen állapot az átmenetben: „{{state}}”",
+      "unknownToState": "Ismeretlen célállapot az átmenetben: „{{state}}”",
+      "unknownInputSymbol": "Ismeretlen bemeneti szimbólum: „{{symbol}}”",
+      "alphabetHint": "Sor: „{{line}}”. Ábécé: {{alphabet}} (ε-hoz $).",
+      "unknownWrittenTapeSymbol": "Ismeretlen szalagjel az írásban: „{{symbol}}” ({{storageId}})",
+      "tapeAlphabetHint": "Szalagábécé: {{alphabet}}",
+      "noAcceptState": {
+        "title": "Nincs elfogadó állapot",
+        "detail": "A gép így az üres nyelvet ismeri fel."
+      },
+      "nondeterministicMachine": {
+        "title": "Nemdeterminisztikus gép: a(z) {{state}} állapotban több átmenet is illeszkedhet",
+        "detail": "A szimuláció minden ágat követ; a gráfon kattintással konkrét ág is választható."
+      }
+    },
+    "grammar": {
+      "fieldHints": {
+        "variables": "A nemterminálisok, pl. variables: S, A, B",
+        "init": "A kezdőszimbólum, pl. init: S",
+        "charset": "A terminálisok, pl. charset: a, b",
+        "rules": "A szabályok, pl. rules: [S -> aA | b]"
+      },
+      "startNotInNonterminals": "A kezdőszimbólum ({{start}}) nincs a nemterminálisok között",
+      "overlappingSymbols": {
+        "title": "Ütköző jelek: {{symbols}}",
+        "detail": "Egy jel nem lehet egyszerre terminális és nemterminális."
+      },
+      "invalidRule": {
+        "title": "Hibás szabály: „{{line}}”",
+        "detail": "Alak: BAL -> JOBB1 | JOBB2 — pl. „S -> aA | b”. ε-hoz írj $-t vagy ε-t."
+      },
+      "unknownSymbolLeft": "Ismeretlen jel a szabály bal oldalán: „{{symbol}}”",
+      "ruleDetail": "Szabály: „{{line}}”. Minden jelet fel kell venni a charset vagy variables mezőbe.",
+      "leftMissingNonterminal": {
+        "title": "A szabály bal oldala nem tartalmaz nemterminálist: „{{line}}”",
+        "detail": "Generatív nyelvtanban a bal oldalon legalább egy nemterminálisnak kell lennie."
+      },
+      "unknownSymbolRight": "Ismeretlen jel a szabály jobb oldalán: „{{symbol}}”"
+    },
+    "yamlSyntaxError": {
+      "titleAtLine": "YAML-szintaxishiba ({{line}}. sor)",
+      "title": "YAML-szintaxishiba",
+      "detail": "{{reason}}. Ellenőrizd a behúzásokat és a kettőspontokat."
+    },
+    "emptyOrUnparseable": "Üres vagy értelmezhetetlen definíció",
+    "missingTypeKey": {
+      "title": "Hiányzó típuskulcs",
+      "detail": "Várt kulcsok: {{keys}}"
+    },
+    "emptyBody": {
+      "title": "A(z) {{key}} alatt mezők kellenek",
+      "detail": "Például: name, states, transitions…"
+    },
+    "reversedRange": {
+      "title": "Fordított intervallum a(z) {{field}} mezőben: „{{range}}”",
+      "detail": "Az intervallumot üresként kezelem."
+    },
+    "rangeTooLarge": { "title": "Túl nagy intervallum a(z) {{field}} mezőben: „{{range}}”" },
+    "unknownStorageType": {
+      "title": "Ismeretlen tárolótípus a(z) „{{id}}” tárolónál",
+      "detail": "Használható: stack/verem, queue/sor, tape/szalag — kezdőtartalommal:\n  v1:\n    type: stack\n    init: Z"
+    },
+    "storageOp": {
+      "badTapeOp": {
+        "title": "Hibás szalagművelet: „{{tokens}}” ({{storageId}})",
+        "detail": "Sor: „{{line}}”. Alak: OLVAS/ÍR MOZGÁS — pl. „a/b >”. Üres jel: _ , „ugyanazt írja”: &."
+      },
+      "unknownMove": {
+        "title": "Ismeretlen mozgás: „{{tokens}}” ({{storageId}})",
+        "detail": "Sor: „{{line}}”. Használható: > < = (vagy R L S)."
+      },
+      "unknownTapeSymbol": {
+        "title": "Ismeretlen szalagjel: „{{tokens}}” ({{storageId}})",
+        "detail": "Sor: „{{line}}”. Szalagábécé: {{alphabet}}"
+      },
+      "badStackOp": {
+        "title": "Hibás tárolóművelet: „{{tokens}}” ({{storageId}})",
+        "detail": "Sor: „{{line}}”. Verem-alak: LEVESZ/FELÍR — pl. „Z/AZ”; ε-hoz $."
+      },
+      "badQueueOp": {
+        "title": "Hibás tárolóművelet: „{{tokens}}” ({{storageId}})",
+        "detail": "Sor: „{{line}}”. Sor-alak: KIVESZ/BETESZ — pl. „A/BA”; ε-hoz $."
+      }
+    }
+  },
+  "ops": {
+    "needsEpsilonFree": {
+      "title": "A(z) {{op}} művelethez ε-mentes automata kell",
+      "detail": "Az automata {{count}} ε-átmenetet tartalmaz ({{list}}{{ellipsis}}). Az ε-átmenet üres szó beolvasásával vált állapotot, ezért előbb az ε-mentesítést kell elvégezni: minden állapothoz kiszámoljuk az ε-lezárását, és az onnan induló átmeneteket „behúzzuk” az eredeti állapotba."
+    },
+    "needsDeterministic": {
+      "title": "A(z) {{op}} művelethez determinisztikus automata kell",
+      "detail": "Nemdeterminizmus található: {{spots}}{{ellipsis}}. Determinisztikus automatában minden (állapot, szimbólum) párhoz pontosan egy következő állapot tartozhat. A hatványhalmaz-konstrukcióval (determinizálás) ekvivalens DFA készíthető."
+    },
+    "needsComplete": {
+      "title": "A(z) {{op}} művelethez teljes automata kell",
+      "detail": "Hiányzó átmenetek: {{spots}}{{ellipsis}} — összesen {{count}} (állapot, szimbólum) párnál nincs definiálva átmenet. Teljessé tételhez bevezetünk egy új „csapda” (elutasító) állapotot, és minden hiányzó átmenetet oda irányítunk."
+    },
+    "fix": {
+      "insertEpsfree": "ε-mentesítés beszúrása",
+      "insertDet": "determinizálás beszúrása",
+      "insertComplete": "teljessé tétel beszúrása",
+      "insertChain": "javítási lánc beszúrása"
+    },
+    "table": {
+      "state": "állapot",
+      "newTransition": "új átmenet",
+      "reason": "indoklás",
+      "stateSet": "állapothalmaz",
+      "missingTransition": "hiányzó átmenet",
+      "newTarget": "új cél",
+      "oldName": "régi név",
+      "newName": "új név",
+      "statePair": "állapotpár"
+    },
+    "epsfree": {
+      "alreadyFree": {
+        "title": "Az automata már ε-mentes",
+        "detail": "Nincs ε-átmenet, a művelet az automatát változatlanul adja vissza."
+      },
+      "step1": {
+        "title": "1. ε-lezárások kiszámítása",
+        "detail": "Minden q állapotra: E(q) = a q-ból csak ε-átmenetekkel elérhető állapotok halmaza (q-t is beleértve)."
+      },
+      "step2": {
+        "title": "2. Új átmenetek bevezetése",
+        "detail": "δ'(q, a) = E(δ(E(q), a)) — az ε-lezáráson keresztül elérhető átmeneteket közvetlenné tesszük."
+      },
+      "step3": {
+        "title": "3. Elfogadó állapotok bővítése",
+        "detailChanged": "Ha E(q) tartalmaz elfogadó állapotot, q is elfogadó lesz. Új elfogadó állapotok: {{list}}.",
+        "detailUnchanged": "Egyetlen állapot ε-lezárása sem tartalmaz új elfogadó állapotot, így az elfogadó halmaz változatlan."
+      }
+    },
+    "det": {
+      "alreadyDeterministic": {
+        "title": "Az automata már determinisztikus",
+        "detail": "Minden (állapot, szimbólum) párhoz legfeljebb egy átmenet tartozik és nincs ε-átmenet — a hatványhalmaz-konstrukció csak az elérhető egyelemű halmazokat hozza létre."
+      },
+      "notComplete": {
+        "title": "Az automata nem teljes — a ∅ állapot megjelenhet",
+        "detail": "Ahol nincs átmenet, ott a hatványhalmaz-konstrukcióban az üres halmazba (∅) jutunk, amely csapdaállapotként viselkedik. Ettől az eredmény teljes DFA lesz."
+      },
+      "step": {
+        "title": "Hatványhalmaz-konstrukció",
+        "detail": "A kezdőállapotból indulva minden elért állapothalmazra és minden szimbólumra kiszámoljuk az elérhető állapotok halmazát. Csak az elérhető halmazokat vesszük fel. Egy halmaz akkor elfogadó, ha tartalmaz eredeti elfogadó állapotot."
+      },
+      "result": {
+        "title": "Eredmény",
+        "detail": "{{count}} állapot keletkezett a lehetséges 2^{{exponent}} = {{possible}} részhalmazból. Elfogadó: {{accept}}."
+      }
+    },
+    "complete": {
+      "alreadyComplete": {
+        "title": "Az automata már teljes",
+        "detail": "Minden (állapot, szimbólum) párhoz van átmenet — nincs teendő."
+      },
+      "nameTaken": {
+        "title": "A(z) „{{trap}}” állapotnév már létezik",
+        "detail": "A teljessé tételhez egy új, eddig nem használt csapdaállapot-név kell.",
+        "fixLabel": "automatikus név használata"
+      },
+      "step": {
+        "title": "Csapdaállapot bevezetése: {{trap}}",
+        "detail": "Az új {{trap}} állapot nem elfogadó, és minden szimbólumra önmagába megy — innen már nem lehet elfogadni. A hiányzó átmenetek ide kerülnek."
+      }
+    },
+    "reachable": {
+      "allReachable": {
+        "title": "Minden állapot elérhető",
+        "detail": "A kezdőállapotból minden állapot elérhető — nincs mit elhagyni."
+      },
+      "step": {
+        "title": "Elérhetetlen állapotok elhagyása",
+        "detail": "A kezdőállapotból szélességi bejárással elérhető állapotok maradnak. Elhagyva: {{removed}}."
+      }
+    },
+    "min": {
+      "unreachableStates": {
+        "title": "Elérhetetlen állapotok",
+        "detail": "A(z) {{states}} állapot(ok) nem érhető(k) el a kezdőállapotból — a minimalizálás első lépéseként elhagyjuk őket, különben hamis ekvivalenciaosztályok keletkezhetnének."
+      },
+      "step0": {
+        "title": "0. Elérhetetlen állapotok elhagyása",
+        "detail": "Elhagyva: {{removed}}."
+      },
+      "step1": {
+        "title": "1. Kezdő partíció",
+        "detail": "Elfogadó és nem elfogadó állapotok szétválasztása: {{partition}}"
+      },
+      "refine": {
+        "title": "{{round}}. Finomítás",
+        "detail": "Egy csoport szétválik, ha két állapota valamely szimbólumra különböző csoportba vezet. Új partíció: {{partition}}"
+      },
+      "fixpoint": {
+        "title": "{{round}}. Fixpont",
+        "detail": "Nincs több szétválás — a partíció stabil: {{partition}}. A csoportok az ekvivalenciaosztályok."
+      },
+      "alreadyMinimal": {
+        "title": "Az automata már minimális volt",
+        "detail": "Minden állapot külön ekvivalenciaosztályba került."
+      },
+      "minimized": {
+        "title": "Minimalizálva: {{before}} → {{after}} állapot",
+        "detail": "Az egy osztályba került állapotok nyelvileg megkülönböztethetetlenek: minden szóra ugyanúgy fogadnak el / utasítanak el."
+      }
+    },
+    "complement": {
+      "whyDfa": {
+        "title": "Miért kell DFA?",
+        "detail": "NFA-nál az elfogadó állapotok átfordítása NEM a komplementer nyelvet adja: egy szót akkor fogad el az NFA, ha LÉTEZIK elfogadó út — az átfordítás után attól még létezhet elutasító út is elfogadóvá válva."
+      },
+      "whyComplete": {
+        "title": "Miért kell teljesség?",
+        "detail": "Ha valahol nincs átmenet, az automata „elakad” és elutasít. Ezeket a szavakat a komplementernek el kellene fogadnia — ehhez előbb csapdaállapottal teljessé kell tenni."
+      },
+      "step": {
+        "title": "Elfogadó állapotok átfordítása",
+        "detail": "Teljes DFA-ban minden szó pontosan egy úton fut végig, így az elfogadó/elutasító állapotok cseréje pontosan a komplementer nyelvet adja. Új elfogadó halmaz: {{accept}}."
+      }
+    },
+    "product": {
+      "first": "első",
+      "second": "második",
+      "hasEpsilon": {
+        "title": "A(z) {{part}} automata ε-átmenetet tartalmaz",
+        "detail": "A szorzat-konstrukció (párhuzamos futtatás) determinisztikus, teljes automatákat vár, mert a két automatának szinkronban, szimbólumonként kell lépnie. Az ε-átmenet ezt elrontaná."
+      },
+      "nondeterministic": {
+        "title": "A(z) {{part}} automata nemdeterminisztikus",
+        "detail": "A szorzatautomata állapotai (p, q) párok, és δ((p,q),a) = (δ₁(p,a), δ₂(q,a)) — ehhez mindkét δ-nak egyértékűnek kell lennie."
+      },
+      "incomplete": {
+        "title": "A(z) {{part}} automata nem teljes",
+        "detailUnion": "Ha az egyik automata elakad, a pár nem tud tovább lépni, pedig a másik még futna — az unióhoz a másik automata elfogadása is számít. Teljessé tétellel (csapdaállapot) ez megoldható.",
+        "detailOther": "Ha az egyik automata elakad, a pár nem tud tovább lépni, pedig a másik még futna — az eredmény hibás lenne. Teljessé tétellel (csapdaállapot) ez megoldható."
+      },
+      "differentAlphabets": {
+        "title": "A két automata ábécéje különbözik",
+        "detail": "Az első automatából hiányzik: {{missing1}}. A másodikból hiányzik: {{missing2}}. A(z) {{mode}} csak közös ábécé fölött értelmes — bővítsd az ábécéket és tedd teljessé az automatákat."
+      },
+      "acceptRule": {
+        "union": "(p,q) elfogadó, ha p VAGY q elfogadó",
+        "intersect": "(p,q) elfogadó, ha p ÉS q is elfogadó",
+        "difference": "(p,q) elfogadó, ha p elfogadó, de q NEM (L₁ \\ L₂)"
+      },
+      "step": {
+        "title": "Szorzat-konstrukció ({{mode}})",
+        "detail": "A két automatát párhuzamosan futtatjuk: az állapotok (p,q) párok, δ((p,q),a) = (δ₁(p,a), δ₂(q,a)). Elfogadás: {{acceptRule}}. Csak az elérhető párokat építjük fel."
+      }
+    },
+    "unionEpsilon": {
+      "info": {
+        "title": "ε-konstrukcióval készült unió",
+        "detail": "Új kezdőállapotból ε-átmenet vezet mindkét automata kezdőállapotába. Az eredmény ε-NFA — determinizálható a det(epsfree(·)) lánccal. (Teljes DFA-k uniója a szorzat-konstrukcióval is elvégezhető.)"
+      },
+      "step": {
+        "title": "Unió ε-átmenetekkel",
+        "detail": "Új {{start}} kezdőállapot, ε-átmenetek: {{start}} → {{m1start}}, {{start}} → {{bstart}}. Elfogadó állapotok: a két automata elfogadó állapotainak uniója."
+      }
+    },
+    "concat": {
+      "step": {
+        "title": "Konkatenáció",
+        "detail": "Az első automata minden elfogadó állapotából ε-átmenet vezet a második kezdőállapotába ({{start}}). Elfogadók: csak a második automata elfogadó állapotai. Az eredmény ε-NFA."
+      }
+    },
+    "star": {
+      "step": {
+        "title": "Kleene-lezárás (csillag)",
+        "detail": "Új {{start}} kezdőállapot (egyben elfogadó — így az üres szó is a nyelvben van), ε-átmenet az eredeti kezdőállapotba, és minden elfogadó állapotból ε-átmenet vissza {{start}}-ba az ismétléshez."
+      }
+    },
+    "reverse": {
+      "step": {
+        "title": "Megfordítás",
+        "detail": "Minden átmenet irányát megfordítjuk, az új kezdőállapotból ({{start}}) ε-átmenet vezet az eredeti elfogadó állapotokba, és az eredeti kezdőállapot lesz az egyetlen elfogadó. L(Mᴿ) = { wᴿ : w ∈ L(M) }."
+      }
+    },
+    "clean": {
+      "step": {
+        "title": "Állapotok átnevezése",
+        "detail": "A kezdőállapotból induló bejárási sorrendben A, B, C… neveket kapnak az állapotok. A nyelv nem változik."
+      }
+    },
+    "equal": {
+      "counterexampleSearch": {
+        "title": "Ellenpélda keresése a szorzatautomatában",
+        "detail": "A két (teljessé és determinisztikussá alakított) automatát párhuzamosan futtatjuk, és a legrövidebb olyan szót keressük, amelynél pontosan az egyik fogad el. Találat: „{{word}}”."
+      },
+      "proof": {
+        "title": "Ekvivalencia igazolása",
+        "detail": "A szorzatautomata minden elérhető (p,q) állapotpárjában p és q elfogadási státusza megegyezik, tehát nincs megkülönböztető szó — a két automata ugyanazt a nyelvet ismeri fel."
+      }
+    }
+  },
+  "grammar": {
+    "classify": {
+      "leftNotSingleNonterminal": "a(z) {{rule}} szabály bal oldala nem egyetlen nemterminális",
+      "notRightLinear": "a(z) {{rule}} szabály jobb oldala nem „terminálisok + legfeljebb egy záró nemterminális” alakú",
+      "notLeftLinear": "a(z) {{rule}} szabály jobb oldala nem „legfeljebb egy kezdő nemterminális + terminálisok” alakú",
+      "startEpsilonNotAllowed": "S → ε csak akkor megengedett, ha S nem fordul elő egyetlen szabály jobb oldalán sem — itt viszont előfordul",
+      "deletingRule": "a(z) {{rule}} törlő szabály (ε csak S → ε alakban megengedett)",
+      "shortens": "a(z) {{rule}} szabály rövidít: |{{left}}| = {{leftLen}} > |{{right}}| = {{rightLen}}",
+      "epsilonNotOnStart": "{{rule}} — ε-szabály nem a kezdőszimbólumon",
+      "startOnRightWithEpsilon": "S → ε mellett S előfordul jobb oldalon — így a nyelvtan nem ε-mentes alakú"
+    },
+    "table": {
+      "rule": "szabály",
+      "transition": "átmenet",
+      "newRules": "új szabályok"
+    },
+    "toFsm": {
+      "needsRightLinear": {
+        "title": "Csak jobblineáris (3. típusú) nyelvtan alakítható véges automatává",
+        "detail": "A konstrukció: minden nemterminális egy állapot, az A → aB szabály A →a B átmenet, az A → a szabály átmenet egy új elfogadó állapotba, az A → ε szabály A-t elfogadóvá teszi. A pontos okért nézd meg a Chomsky-osztályozás panelt."
+      },
+      "step": {
+        "title": "Jobblineáris nyelvtan → NFA",
+        "detail": "Minden nemterminális állapot lesz, a kezdőszimbólum a kezdőállapot. A → aB szabályból a-átmenet A-ból B-be; A → a szabályból átmenet az új ✓ elfogadó állapotba; A → ε esetén A elfogadó."
+      }
+    },
+    "fsmToGrammar": {
+      "tooManyStates": {
+        "title": "Túl sok állapot a nyelvtanná alakításhoz",
+        "detail": "Az automata {{count}} állapotú; az egykarakteres nemterminális-jelölés legfeljebb {{max}} állapotot enged. Minimalizálással csökkenthető az állapotszám."
+      },
+      "renamed": {
+        "title": "Az állapotok nemterminális-betűket kaptak",
+        "detail": "{{mapping}}"
+      },
+      "step": {
+        "title": "NFA → jobblineáris nyelvtan",
+        "detail": "Minden q →a p átmenetből Q → aP szabály, minden elfogadó q állapotból Q → ε szabály. Az így kapott nyelvtan 3. típusú, és ugyanazt a nyelvet generálja."
+      }
+    },
+    "toPda": {
+      "needsContextFree": {
+        "title": "Csak környezetfüggetlen (2. típusú) nyelvtan alakítható veremautomatává",
+        "detail": "A konstrukcióban a verem a mondatformát tárolja, ezért a bal oldalon egyetlen nemterminálisnak kell állnia. A pontos okért nézd meg a Chomsky-osztályozás panelt."
+      },
+      "emptyStackInfo": {
+        "title": "Üres veremmel elfogadó PDA készült",
+        "detail": "A verem a levezetés aktuális mondatformáját tárolja. Ha a verem tetején nemterminális van, egy szabályt alkalmazunk (ε-lépés); ha terminális, illesztjük a bemenet következő betűjével. A szó pontosan akkor elfogadott, ha a bemenet elfogyott és a verem kiürült."
+      },
+      "step": {
+        "title": "CF nyelvtan → PDA (top-down elemző)",
+        "detail": "Egyetlen {{q}} állapot. Kezdő veremtartalom: {{start}}. Szabály-lépések: {{ruleCount}} db (ε, A / α), illesztő lépések: {{terminalCount}} db (a, a / ε)."
+      }
+    },
+    "epsfree": {
+      "needsContextFree": {
+        "title": "Az ε-mentesítés környezetfüggetlen nyelvtanra van definiálva",
+        "detail": "A pontos okért nézd meg a Chomsky-osztályozás panelt."
+      },
+      "step1": {
+        "title": "1. Törölhető nemterminálisok",
+        "detailNone": "Nincs törölhető nemterminális — a nyelvtan már ε-mentes.",
+        "detailSome": "Törölhető (ε-re levezethető): {{nullable}}. Egy A törölhető, ha A → ε, vagy A → α és α minden betűje törölhető."
+      },
+      "step2": {
+        "title": "2. Szabályok bővítése",
+        "detail": "Minden szabályból elkészítjük az összes olyan változatot, ahol a törölhető nemterminálisok egy részhalmazát elhagyjuk (kivéve ha a teljes jobb oldal eltűnne). Ezután az ε-szabályokat elhagyjuk."
+      },
+      "step3": {
+        "title": "3. Új kezdőszimbólum az ε miatt",
+        "detail": "Az eredeti nyelvben benne van az ε (a kezdőszimbólum törölhető), ezért új {{s2}} kezdőszimbólumot vezetünk be: {{s2}} → {{start}} | ε. Így az ε-szabály csak a kezdőszimbólumon marad."
+      }
+    }
+  },
+  "expression": {
+    "kind": {
+      "fsm": "véges automata",
+      "grammar": "nyelvtan",
+      "regex": "reguláris kifejezés",
+      "verdict": "összehasonlítás eredménye"
+    },
+    "error": {
+      "unexpectedChar": "Váratlan karakter: „{{char}}” (pozíció: {{pos}})",
+      "missingExpression": "Hiányzó kifejezés (pozíció: {{pos}})",
+      "unexpectedEnd": "A kifejezés váratlanul véget ért (pozíció: {{pos}})",
+      "missingCloseParen": "Hiányzó záró zárójel (pozíció: {{pos}})",
+      "missingCloseParenRegex": "Hiányzó záró zárójel a regex() hívásban (pozíció: {{pos}})",
+      "missingCommaOrParen": "Hiányzó „,” vagy „)” a függvényhívásban (pozíció: {{pos}})",
+      "functionNeedsParen": "A(z) „{{word}}” függvénynév után zárójel kell (pozíció: {{pos}})",
+      "unknownName": "Ismeretlen név: „{{word}}” — gépekre a nevükkel hivatkozz; betűsorozatot csak a regex(…) belsejében használhatsz (pozíció: {{pos}})",
+      "unparseableChar": "Értelmezhetetlen karakter: „{{char}}” (pozíció: {{pos}})",
+      "wrongArgCount": {
+        "exact": "A(z) {{fn}} függvény {{n}} paramétert vár, de {{count}} érkezett",
+        "range": "A(z) {{fn}} függvény {{n}} vagy {{alsoOk}} paramétert vár, de {{count}} érkezett"
+      },
+      "needsFsm": "{{ctx}}: véges automatát vár, de {{kind}} érkezett",
+      "machineNeedsFsm": "{{ctx}}: véges automatát vár, de a(z) {{name}} {{machineKind}} (tárolói: {{storages}}). A tárolós gép által felismert nyelv általában nem reguláris, ezért nincs automatikus átalakítás — az automata-műveletek csak tárolómentes gépekre alkalmazhatók.",
+      "machineHasStorage": "A(z) {{name}} gép nem alakítható véges automatává, mert tárolója van ({{storages}}) — csak a tárolómentes gép ekvivalens automatával",
+      "toFsmExpects": "A toFsm() nyelvtant, reguláris kifejezést vagy tárolómentes gépet vár",
+      "toPdaExpects": "A toPda() nyelvtant vár",
+      "invalidExpression": "Hibás kifejezés",
+      "parseGeneric": "{{message}}. Példák: detM = det(M) · u = union(M1, M2) · r = regex((ab)*+ba) · e = equal(M1, M2)",
+      "evaluationError": "Kiértékelési hiba",
+      "evalGeneric": "{{message}}"
+    },
+    "eval": {
+      "unknownName": "Ismeretlen név: „{{name}}”",
+      "literalsOnlyInRegex": "Betű-literálok csak a regex(…) belsejében használhatók"
+    },
+    "autoConvert": {
+      "regex": {
+        "title": "A(z) {{name}} regexet automatikusan ε-NFA-vá alakítottam",
+        "detail": "A művelet véges automatát vár; a reguláris kifejezés a Thompson-konstrukcióval automatává alakítható — explicit módon: toFsm({{name}})."
+      },
+      "grammar": {
+        "title": "A(z) {{name}} nyelvtant automatikusan véges automatává alakítottam",
+        "detail": "A művelet véges automatát vár; a jobblineáris nyelvtan átalakítható."
+      }
+    }
+  }
+}

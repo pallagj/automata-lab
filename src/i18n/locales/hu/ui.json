@@ -1,0 +1,470 @@
+{
+  "workspace": {
+    "starterName": "Bemutató munkalap",
+    "defaultName": "Munkalap {{index}}",
+    "importedName": "Importált munkalap"
+  },
+  "app": {
+    "title": "AutomataLab — Nyelvek és automaták",
+    "resizePane": "Húzd a panel átméretezéséhez",
+    "code": "Kód",
+    "visualization": "Vizualizáció"
+  },
+  "topbar": {
+    "selectWorksheet": "Munkalap választása",
+    "newWorksheet": "Új munkalap",
+    "renameWorksheet": "Munkalap átnevezése",
+    "setFolder": "Munkalap mappába rendezése",
+    "deleteWorksheet": "Munkalap törlése",
+    "loadExample": "Beépített példa-munkalap betöltése",
+    "examples": "Példák",
+    "exampleWorksheets": "Példa-munkalapok",
+    "exportWorksheet": "Munkalap mentése fájlba",
+    "export": "Export",
+    "importWorksheet": "Munkalap betöltése fájlból",
+    "import": "Import",
+    "lightTheme": "Világos téma",
+    "darkTheme": "Sötét téma",
+    "help": "Súgó",
+    "language": "Nyelv",
+    "importFailed": "Nem sikerült beolvasni a fájlt — érvényes .automata.json kell.",
+    "renamePrompt": "Munkalap új neve:",
+    "folderPrompt": "Melyik mappába kerüljön a munkalap? (üresen hagyva: mappán kívül)",
+    "deleteConfirm": "Biztosan törlöd a(z) „{{name}}” munkalapot?"
+  },
+  "examples": {
+    "intro": {
+      "name": "Bemutató — determinizálás és minimalizálás"
+    },
+    "epsilonFree": {
+      "name": "ε-mentesítés lépésről lépésre"
+    },
+    "regex": {
+      "name": "Reguláris kifejezések és automaták"
+    },
+    "setOps": {
+      "name": "Halmazműveletek nyelveken"
+    },
+    "pda": {
+      "name": "Veremautomaták"
+    },
+    "turing": {
+      "name": "Turing-gépek"
+    },
+    "customMachines": {
+      "name": "Egyedi gépek — két verem, sor"
+    },
+    "grammars": {
+      "name": "Nyelvtanok és konverziók"
+    }
+  },
+  "help": {
+    "title": "Súgó",
+    "whatIsThis": {
+      "heading": "Mi ez?",
+      "body1": "Az AutomataLab a",
+      "subject": "Nyelvek és automaták",
+      "body2": " tantárgy interaktív műhelye: véges automaták, veremautomaták, Turing-gépek és generatív nyelvtanok definiálhatók, szimulálhatók és transzformálhatók. Minden offline működik, a munkalapok automatikusan mentődnek a böngészőbe."
+    },
+    "machines": {
+      "heading": "Gépek — egyetlen modell",
+      "body1": "Minden gép ugyanazzal a",
+      "body2": "kulccsal készül: véges vezérlő + tetszőleges tárolók.",
+      "emphasis": "A fajtáját a konfiguráció dönti el",
+      "body3": "— tároló nélkül véges automata, egy veremmel veremautomata, egy szalaggal (amelyre a bemenet kerül) Turing-gép, más kombinációval általános gép. A felület felismeri és ennek megfelelően nevezi el.",
+      "example": "Machine:               # véges automata: nincs tároló\n  name: M1\n  charset: a, b\n  states: S, A, F\n  init: S\n  accept: F\n  transitions:\n    - S . S      # \".\" = az ábécé minden betűje\n    - S a A\n    - A b F      # ε-átmenethez: S $ A"
+    },
+    "expressions": {
+      "heading": "Kifejezések",
+      "body1": "Új cellában",
+      "body2": "alakban gépekre hivatkozhatsz és műveleteket végezhetsz. Ha egy művelet előfeltétele hiányzik (pl. a determinizáláshoz ε-mentesség), az alkalmazás elmagyarázza, miért, és egy kattintással beszúrja a javítási láncot.",
+      "ops": {
+        "det": "determinizálás (hatványhalmaz-konstrukció, lépésekkel)",
+        "min": "minimalizálás (partíciófinomítás, lépésekkel)",
+        "epsfree": "ε-mentesítés",
+        "completeReachable": "teljessé tétel csapdaállapottal / elérhetetlen állapotok elhagyása",
+        "setOps": "halmazműveletek (szorzat-konstrukció)",
+        "langOps": "nyelvműveletek",
+        "regex": "reguláris kifejezés mint érték — automatává a toFsm() alakítja",
+        "equal": "ekvivalencia-vizsgálat, ellenpéldával",
+        "conversions": "konverziók automata ↔ nyelvtan, nyelvtan → veremautomata",
+        "namedOps": "műveletek nevesített automaták között: összefűzés, unió, lezárás — betű-literálok csak a regex(…) belsejében"
+      }
+    },
+    "storages": {
+      "heading": "Tárolók: verem, sor, szalag",
+      "example": "Machine:               # veremautomata: egy verem\n  name: AnBn\n  charset: a, b\n  states: q0, q1, q2\n  init: q0\n  accept: q2           # vagy acceptMode: emptyStorages\n  storages:\n    verem: stack       # a verem alapból Z-vel indul; másképp:\n  transitions:         #   verem: { type: stack, init: X }\n    - q0 a Z/AZ q0     # a beolvasása: Z helyett AZ a verembe\n    - q0 b A/$ q1      # $ = nem ír semmit (ε)\n    - q1 $ Z/Z q2      # ε-lépés\n\nMachine:               # Turing-gép: egy szalag, rajta a bemenet\n  name: T\n  charset: a, b\n  states: s, ok\n  init: s\n  accept: ok\n  input: szalag        # a bemenet erre a tárolóra kerül\n  storages:\n    szalag: tape\n  transitions:\n    - s a/b > s        # a-t olvas, b-t ír, jobbra lép\n    - s _/& = ok       # _ = üres jel, & = ugyanazt írja vissza",
+      "transitionSyntax": "HONNAN [BEMENET] tárolónként-művelet… HOVA",
+      "body2": "— verem/sor egy elem (LE/FEL), szalag kettő (olvas/ír mozgás). Akárhány tároló kombinálható: két veremmel már Turing-erejű gép építhető (pl. aⁿbⁿcⁿ, ami veremautomatával nem lehetséges), sorral (queue) sorautomata. Az automata-műveletek (det, min…) csak tárolómentes gépre alkalmazhatók — az alkalmazás megmondja, miért."
+    },
+    "grammar": {
+      "heading": "Nyelvtan",
+      "example": "Grammar:\n  name: G\n  charset: a, b\n  variables: S\n  init: S\n  rules:\n    - S -> aSb | $   # $ = ε",
+      "body": "A nyelvtan nézet automatikusan megadja a Chomsky-hierarchia szerinti osztályt, és minden szinthez megmutatja, melyik szabály miért sérti a feltételt."
+    },
+    "tips": {
+      "heading": "Tippek",
+      "drag": "A gráf húzással mozgatható, görgetéssel nagyítható, dupla kattintásra visszaáll.",
+      "nfaBranch": "Szimuláció közben a kiemelt élekre kattintva NFA-ágat választhatsz.",
+      "yaml": "A kifejezés-cellák eredménye a fejléc ikonjával szerkeszthető YAML-lá bontható.",
+      "acceptedWords": "Az „Elfogadott szavak” chipjeire kattintva azonnal szimulálhatod őket."
+    }
+  },
+  "detail": {
+    "stepsPanel": {
+      "title": "Hogyan készült? — az algoritmus lépései"
+    },
+    "note": "Jegyzet",
+    "whyNotEvaluable": "Miért nem értékelhető ki a cella?",
+    "emptyCanvas": {
+      "doubleClick": "Dupla kattintás",
+      "hereText": "ide: véges automata első állapota —",
+      "orChoose1": "vagy válassz a bal oldali",
+      "insertMenu": "+ Beszúrás",
+      "orChoose2": "menüből (regex, veremautomata, Turing-gép, nyelvtan…).",
+      "autosave": "Minden munkád automatikusan, offline mentődik."
+    },
+    "tapeInput": {
+      "hint": "Kattints a szalagra és gépelj",
+      "input": "bemenet"
+    },
+    "verdict": {
+      "title": "Ekvivalencia-vizsgálat",
+      "equalBody1": "A két automata",
+      "equalEmphasis": "ugyanazt a nyelvet",
+      "equalBody2": " ismeri fel: a szorzatautomata egyetlen elérhető állapotpárjában sem tér el az elfogadás.",
+      "notEqualBody1": "A két automata",
+      "notEqualEmphasis": "nem ekvivalens",
+      "notEqualBody2": ". A legrövidebb megkülönböztető szó:",
+      "counterexample1": "Ezt a szót a(z)",
+      "counterexample2": "elfogadja, a(z)",
+      "counterexample3": "viszont elutasítja."
+    },
+    "regex": {
+      "title": "Reguláris kifejezés",
+      "or": "vagy",
+      "union": "unió",
+      "closure": "lezárás",
+      "optional": "opcionális",
+      "emptyWord": "üres szó",
+      "parens": "zárójelezés",
+      "toFsmHint": "Új cella: automata a Thompson-konstrukcióval",
+      "toFsmLabel": "átalakítás ε-NFA-vá",
+      "structure": "A kifejezés szerkezete",
+      "wordTest": "Szó-teszt",
+      "wordTestPlaceholder": "illeszkedik-e a szó? pl. abb",
+      "matches": "illeszkedik",
+      "noMatch": "nem illeszkedik",
+      "sampleWords": "Illeszkedő szavak (minta)"
+    },
+    "fsm": {
+      "title": "Automata",
+      "stateCount": "{{count}} állapot",
+      "deterministicHint": "Minden (állapot, szimbólum) párhoz legfeljebb egy átmenet tartozik, és nincs ε-átmenet.",
+      "nondeterministicHint": "Nemdeterminisztikus pontok: {{spots}}{{epsilonNote}}",
+      "andHasEpsilon": " — és ε-átmenetek is vannak",
+      "deterministic": "determinisztikus",
+      "nondeterministic": "nemdeterminisztikus",
+      "completeHint": "Minden (állapot, szimbólum) párhoz van átmenet.",
+      "incompleteHint": "Hiányzó átmenetek: {{missing}}{{ellipsis}}",
+      "complete": "teljes",
+      "incomplete": "nem teljes",
+      "epsilonListHint": "ε-átmenetek: {{list}}",
+      "noEpsilonHint": "Nincs ε-átmenet.",
+      "hasEpsilon": "ε-átmenetes",
+      "epsilonFree": "ε-mentes",
+      "unreachableHint": "A kezdőállapotból nem elérhető állapotok — a reachable() művelettel elhagyhatók.",
+      "unreachableLabel": "elérhetetlen",
+      "transitionTable": "Átmenet-táblázat",
+      "state": "állapot",
+      "acceptedWords": "Elfogadott szavak",
+      "noAcceptedWords": "Nem találtam elfogadott szót 7 hosszig — lehet, hogy a felismerendő nyelv üres.",
+      "loadIntoSimulation": "Kattints: betöltés a szimulációba",
+      "wordsNotExhaustive": "…és a nyelv ennél bővebb (a lista 7 hosszig / 24 szóig terjed).",
+      "howWasThisBuilt": "Hogyan készült?",
+      "inputPlaceholder": "bemeneti szó — kattints és gépelj",
+      "restart": "Újraindítás",
+      "stepBack": "Visszalépés",
+      "oneStep": "Egy lépés",
+      "runAll": "Futtatás végig",
+      "accepts": "elfogadja",
+      "rejects": "elutasítja",
+      "running": "fut…",
+      "initialStatesHint": "kezdőállapotok (ε-lezárással)",
+      "afterReadingHint": "a(z) „{{symbol}}” beolvasása után",
+      "branchTip": "a gráf kiemelt éleire kattintva ágat választhatsz"
+    },
+    "grammar": {
+      "title": "Nyelvtan",
+      "type3": "3. típusú — reguláris",
+      "type2": "2. típusú — környezetfüggetlen",
+      "type1": "1. típusú — környezetfüggő",
+      "type0": "0. típusú — általános (mondatszerkezetű)",
+      "epsilonFreeHint": "Az ε legfeljebb S → ε alakban szerepel, és S nem áll jobb oldalon.",
+      "epsilonFreeForm": "ε-mentes alak",
+      "epsilonRuled": "ε-szabályos",
+      "rightLinear": "jobblineáris",
+      "leftLinear": "ballineáris",
+      "type3Short": "3. típus",
+      "type3Holds": "Minden szabály A → uB vagy A → u alakú (u terminális szó).",
+      "notLinear": "nem lineáris alak",
+      "type2Short": "2. típus",
+      "type2Holds": "Minden szabály bal oldala egyetlen nemterminális.",
+      "type1Short": "1. típus",
+      "type1Holds": "Egyik szabály sem rövidít (a megengedett S → ε kivétellel).",
+      "toFsm": "Véges automatává",
+      "toPda": "Veremautomatává",
+      "rules": "Szabályok",
+      "startSymbol": "kezdőszimbólum",
+      "terminals": "terminálisok",
+      "nonterminals": "nemterminálisok",
+      "isDerivable": "Levezethető-e egy szó?",
+      "testPlaceholder": "írj be egy szót, pl. aabb",
+      "derivable": "levezethető",
+      "notDerivable": "nem vezethető le",
+      "undecidedWithinLimit": "a korláton belül nem dönthető el",
+      "generatedWords": "Generált szavak ({{count}}{{plus}})",
+      "clickForDerivation": "Kattints a levezetéshez",
+      "noDerivableWords": "Nem található levezethető szó 8 hosszig.",
+      "moreWordsPossible": "…a nyelv ennél bővebb lehet (a felsorolás 8 hosszig terjed)."
+    },
+    "machine": {
+      "kind": {
+        "fsm": "Automata",
+        "pda": "Veremautomata",
+        "tm": "Turing-gép",
+        "general": "Általános gép",
+        "generalWith": "Általános gép ({{parts}})"
+      },
+      "kindLower": {
+        "fsm": "véges automata",
+        "pda": "veremautomata",
+        "tm": "Turing-gép",
+        "general": "általános gép",
+        "generalWith": "általános gép ({{parts}})"
+      },
+      "storageCount": {
+        "stack": "{{count}} verem",
+        "queue": "{{count}} sor",
+        "tape": "{{count}} szalag"
+      },
+      "top": "tető",
+      "front": "eleje",
+      "initialContentHint": "A(z) {{id}} tároló kezdőtartalma",
+      "initial": "kezdő",
+      "deterministicHint": "Egyetlen helyzetben sem alkalmazható egyszerre több átmenet.",
+      "conflictingTransitions": "Ütköző átmenetek: {{spots}}",
+      "acceptEmptyStorageHint": "A szó akkor elfogadott, ha a bemenet elfogyott és minden tároló kiürült.",
+      "acceptAcceptStateHint": "A szó akkor elfogadott, ha a bemenet elfogyott és a gép elfogadó állapotban van.",
+      "acceptEmptyStorage": "üres tárolóval fogad el",
+      "acceptAcceptState": "elfogadó állapottal fogad el",
+      "decidesOnHaltHint": "A gép megálláskor dönt: elfogadó állapotban megállva elfogad.",
+      "decidesOnHalt": "megálláskor dönt",
+      "transitions": "Átmenetek",
+      "from": "honnan",
+      "input": "bemenet",
+      "to": "hova",
+      "storageType": {
+        "stack": "verem",
+        "queue": "sor",
+        "tape": "szalag"
+      },
+      "tapeStartPlaceholder": "a szalag kezdete — kattints és gépelj",
+      "oneStepAllBranches": "Egy lépés (minden ág)",
+      "hitLimit": "korlátba ütközött",
+      "step": "Lépés: {{n}}",
+      "nondeterministicStepInfo": "A gép nemdeterminisztikus: egyszerre minden lehetséges ágat követünk. Lépés: {{n}} · aktív konfigurációk: {{count}}",
+      "noMoreBranches": "Nincs több folytatható ág — a szó elutasítva.",
+      "showConfigStorages": "Kattints: ennek a konfigurációnak a tárolóit mutatom",
+      "remainingInput": "hátralévő bemenet",
+      "topLeft": "tető balra",
+      "frontLeft": "eleje balra",
+      "moreConfigs": "… és még {{count}} konfiguráció"
+    }
+  },
+  "editor": {
+    "ops": {
+      "groups": {
+        "normalize": "Normalizálás",
+        "language": "Nyelvműveletek",
+        "conversion": "Konverzió",
+        "inspection": "Vizsgálat"
+      },
+      "epsfree": "ε-mentesítés",
+      "det": "determinizálás (hatványhalmaz-konstrukció)",
+      "complete": "teljessé tétel csapdaállapottal",
+      "reachable": "elérhetetlen állapotok elhagyása",
+      "min": "minimalizálás (partíciófinomítás)",
+      "clean": "állapotok átnevezése (A, B, C…)",
+      "complement": "komplementer nyelv",
+      "union": "unió (két automata)",
+      "intersect": "metszet (két automata)",
+      "difference": "különbség (két automata)",
+      "concat": "összefűzés (két automata)",
+      "star": "lezárás (Kleene-csillag)",
+      "reverse": "megfordítás",
+      "toGrammar": "automata → reguláris nyelvtan",
+      "toFsm": "nyelvtan / regex → véges automata",
+      "toPda": "nyelvtan → veremautomata",
+      "equal": "ekvivalencia-vizsgálat ellenpéldával",
+      "kind": {
+        "fsm": "véges automata",
+        "pda": "veremautomata",
+        "tm": "Turing-gép",
+        "generalMachine": "általános gép",
+        "grammar": "nyelvtan",
+        "regex": "reguláris kifejezés",
+        "verdict": "összehasonlítás eredménye",
+        "unknown": "ismeretlen"
+      },
+      "reason": {
+        "notApplicableToVerdict": "összehasonlítás eredményére nem alkalmazható",
+        "expectsGrammarIsRegex": "nyelvtant vár — ez a cella: reguláris kifejezés",
+        "invalidRegex": "hibás reguláris kifejezés",
+        "expectsGrammar": "nyelvtant vár — ez a cella: {{kind}}",
+        "expectsFsmNotRightLinear": "véges automatát vár — ez a nyelvtan nem jobblineáris",
+        "hasStorage": "a gépnek tárolója van ({{types}}) — az általa felismert nyelv általában nem reguláris, ezért automata-művelet nem alkalmazható rá",
+        "expectsFsm": "véges automatát vár — ez a cella: {{kind}}",
+        "unknown": "a művelet előfeltétele nem teljesül"
+      }
+    },
+    "cell": {
+      "kind": {
+        "grammar": "nyelvtan",
+        "regex": "reguláris kifejezés",
+        "verdict": "összehasonlítás",
+        "fsm": "véges automata",
+        "pda": "veremautomata",
+        "tm": "Turing-gép",
+        "note": "jegyzet"
+      },
+      "notApplicable": "Erre a cellára nem alkalmazható: {{reason}}",
+      "workingChain": "működő lánc",
+      "dragToReorder": "Fogd meg és húzd a cella átrendezéséhez",
+      "operationsHint": "Műveletek — a kiválasztott művelettel körbeveszi a cellát",
+      "editYaml": "YAML-kód szerkesztése",
+      "backToForm": "Vissza az űrlapos szerkesztéshez",
+      "expandToDefinition": "Kibontás szerkeszthető definícióvá",
+      "deleteCell": "Cella törlése",
+      "resultingAutomatonName": "A kapott automata neve",
+      "regexHint": "Reguláris kifejezés — műveletek: | (vagy), * (lezárás), zárójelek, $ (ε)"
+    },
+    "form": {
+      "col": {
+        "leftSide": "bal oldal",
+        "rightSide": "jobb oldal (| választ el)",
+        "from": "honnan",
+        "symbol": "jel",
+        "readWrite": "{{id}} olvas/ír",
+        "move": "mozgás",
+        "pushPop": "{{id}} le/fel",
+        "enqueueDequeue": "{{id}} ki/be",
+        "to": "hová"
+      },
+      "moveHint": "mozgás: → jobbra · ← balra · • helyben",
+      "kindChangeTitle": "A gép fajtája megváltozik",
+      "kindChangeBody1": "Ez a módosítás a gépet",
+      "kindChangeBody2": "helyett",
+      "kindChangeBody3": " géppé alakítja — a tárolók határozzák meg, milyen nyelveket képes felismerni. A meglévő átmenetek igazodnak: új tároló érintetlenül hagyó művelettel egészül ki, törölt tároló műveletei elvesznek.",
+      "dontAskAgain": "Ne figyelmeztess többé",
+      "cancel": "Mégse",
+      "confirmChange": "Módosítom",
+      "storageType": {
+        "stack": "verem (LIFO)",
+        "queue": "sor (FIFO)",
+        "tape": "szalag"
+      },
+      "name": "Név",
+      "alphabet": "Ábécé",
+      "variables": "Változók",
+      "states": "Állapotok",
+      "startVariable": "Kezdő változó",
+      "startState": "Kezdőállapot",
+      "accepting": "Elfogadó",
+      "input": "Bemenet",
+      "readHead": "olvasófej",
+      "writtenToStorage": "a(z) {{id}} tárolóra írva",
+      "acceptance": "Elfogadás",
+      "acceptFinalState": "elfogadó állapottal",
+      "acceptEmptyStorages": "üres tárolókkal",
+      "storage": "tároló",
+      "type": "típus",
+      "initialContent": "kezdőtartalom",
+      "namePlaceholder": "név",
+      "tapeInitPlaceholder": "(a bemenet kerülhet rá)",
+      "initialContentPlaceholder": "kezdőtartalom",
+      "deleteStorage": "Tároló törlése",
+      "addStorageHint": "Veremmel veremautomata, szalaggal Turing-gép, többel egyedi gép",
+      "addStorage": "tároló hozzáadása (verem / sor / szalag)",
+      "newStorage": "új tároló",
+      "deleteRow": "Sor törlése",
+      "newRule": "új szabály",
+      "newTransition": "új átmenet"
+    },
+    "insertMenu": {
+      "buttonTitle": "Új cella beszúrása — válaszd ki, mit szeretnél",
+      "insert": "Beszúrás",
+      "fsm": "Véges automata",
+      "pda": "Veremautomata",
+      "tm": "Turing-gép",
+      "machine": "Egyedi gép (tárolókkal)",
+      "grammar": "Nyelvtan",
+      "regex": "Reguláris kifejezés",
+      "expression": "Kifejezés / művelet",
+      "note": "Jegyzet",
+      "noteTemplate": "# Jegyzet\n# A #-tal kezdődő cella megjegyzés — ide írhatsz magyarázatot."
+    },
+    "column": {
+      "cellCount": "{{count}} cella",
+      "ghostCellTitle": "Kattints új cellához (Alt+Enter is működik)"
+    }
+  },
+  "graph": {
+    "edgeFields": {
+      "symbol": "olvasott jel (ε: $)",
+      "stackPop": "{{id}}: tetejéről le",
+      "stackPush": "{{id}}: rá fel",
+      "queuePop": "{{id}}: elejéről ki",
+      "queuePush": "{{id}}: végére be",
+      "tapeRead": "{{id}}: olvas",
+      "tapeWrite": "{{id}}: ír",
+      "move": "mozgás"
+    },
+    "validation": {
+      "emptyName": "Az állapot neve nem lehet üres.",
+      "noSpaceComma": "A névben ne legyen szóköz vagy vessző.",
+      "duplicateName": "Már létezik „{{name}}” nevű állapot."
+    },
+    "stateDialog": {
+      "newTitle": "Új állapot",
+      "editTitle": "Állapot — {{name}}",
+      "startState": "Kezdőállapot",
+      "startStateNote": " — a kezdőállapot máshova jelöléssel vihető át",
+      "acceptState": "Elfogadó állapot",
+      "deleteConfirm": "Törlöd a(z) „{{name}}” állapotot az átmeneteivel együtt?",
+      "delete": "Törlés"
+    },
+    "cancel": "Mégse",
+    "save": "Mentés",
+    "edgeDialog": {
+      "title": "Átmenet — {{from}} → {{to}}",
+      "addRow": "új átmenet ezen az élen",
+      "emptyNote": "Nincs sor — a mentés törli az él összes átmenetét."
+    },
+    "removeRow": "Sor törlése",
+    "export": {
+      "buttonTitle": "Exportálás — SVG / PNG / LaTeX (TikZ)",
+      "svg": "SVG letöltése",
+      "png": "PNG letöltése",
+      "tikz": "LaTeX (TikZ) letöltése",
+      "copyTikz": "LaTeX (TikZ) másolása",
+      "copied": "Másolva ✓",
+      "pngFailed": "PNG-konvertálás sikertelen",
+      "svgLoadFailed": "SVG betöltése sikertelen",
+      "tikzComment": "AutomataLab-export — szükséges csomagok:"
+    },
+    "resetView": "Nézet visszaállítása",
+    "editingHint": "dupla katt: új állapot · kattintás: állapot szerkesztése · húzás: áthelyezés · a széléről (gyűrű / ▸ pont) húzva: átmenet · él címkéjére katt: átmenetek szerkesztése",
+    "dragToConnect": "Húzd egy másik állapotra új átmenethez"
+  }
+}

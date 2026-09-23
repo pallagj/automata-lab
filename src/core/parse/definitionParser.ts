@@ -1,5 +1,5 @@
 import yaml from "js-yaml";
-import { Diagnostic, EPS, err, failResult, info, okResult, OpResult, warn } from "../types";
+import { Diagnostic, EPS, err, failResult, info, okResult, OpResult, tx, warn } from "../types";
 import {
   analyzeMachine,
   Machine,
@@ -65,11 +65,16 @@ function parseList(value: unknown, field: string, diags: Diagnostic[], expandRan
         const from = m[1].charCodeAt(0);
         const to = m[2].charCodeAt(0);
         if (to < from) {
-          diags.push(warn(`Fordított intervallum a(z) ${field} mezőben: „${t}”`, "Az intervallumot üresként kezelem."));
+          diags.push(
+            warn(
+              tx("definitionParser.reversedRange.title", { field, range: t }),
+              tx("definitionParser.reversedRange.detail")
+            )
+          );
           return [];
         }
         if (to - from > 60) {
-          diags.push(warn(`Túl nagy intervallum a(z) ${field} mezőben: „${t}”`));
+          diags.push(warn(tx("definitionParser.rangeTooLarge.title", { field, range: t })));
           return [t];
         }
         return Array.from({ length: to - from + 1 }, (_, i) => String.fromCharCode(from + i));
@@ -91,29 +96,43 @@ function parseYamlBody(source: string, expectedKeys: string[]): OpResult<ParsedB
     parsed = yaml.load(source);
   } catch (e) {
     const ye = e as { mark?: { line?: number; column?: number }; reason?: string };
-    const loc = ye.mark?.line !== undefined ? ` (${ye.mark.line + 1}. sor)` : "";
+    const line = ye.mark?.line !== undefined ? ye.mark.line + 1 : undefined;
     return failResult([
-      err(`YAML-szintaxishiba${loc}`, `${ye.reason ?? (e as Error).message}. Ellenőrizd a behúzásokat és a kettőspontokat.`)
+      err(
+        line !== undefined
+          ? tx("definitionParser.yamlSyntaxError.titleAtLine", { line })
+          : tx("definitionParser.yamlSyntaxError.title"),
+        tx("definitionParser.yamlSyntaxError.detail", { reason: ye.reason ?? (e as Error).message })
+      )
     ]);
   }
   if (typeof parsed !== "object" || parsed === null) {
-    return failResult([err("Üres vagy értelmezhetetlen definíció")]);
+    return failResult([err(tx("definitionParser.emptyOrUnparseable"))]);
   }
   const keys = Object.keys(parsed as object);
   const key = keys.find((k) => expectedKeys.includes(k));
-  if (!key) return failResult([err("Hiányzó típuskulcs", `Várt kulcsok: ${expectedKeys.join(", ")}`)]);
+  if (!key)
+    return failResult([
+      err(tx("definitionParser.missingTypeKey.title"), tx("definitionParser.missingTypeKey.detail", { keys: expectedKeys.join(", ") }))
+    ]);
   const body = (parsed as Record<string, unknown>)[key];
   if (typeof body !== "object" || body === null) {
-    return failResult([err(`A(z) ${key} alatt mezők kellenek`, "Például: name, states, transitions…")]);
+    return failResult([
+      err(tx("definitionParser.emptyBody.title", { key }), tx("definitionParser.emptyBody.detail"))
+    ]);
   }
   const b = body as Record<string, unknown>;
   const name = String(b["name"] ?? "").trim();
   return okResult({ name, body: b, key });
 }
 
-function requireField(body: Record<string, unknown>, field: string, what: string): Diagnostic | null {
+function requireField(
+  body: Record<string, unknown>,
+  field: string,
+  schema: "machine" | "grammar"
+): Diagnostic | null {
   if (body[field] === undefined || body[field] === null || String(body[field]).trim() === "") {
-    return err(`Hiányzó mező: ${field}`, what);
+    return err(tx("definitionParser.missingField.title", { field }), tx(`definitionParser.${schema}.fieldHints.${field}`));
   }
   return null;
 }
@@ -162,8 +181,8 @@ export function parseStorageEntry(id: string, raw: unknown): OpResult<StorageSpe
   const bad = () =>
     failResult<StorageSpec>([
       err(
-        `Ismeretlen tárolótípus a(z) „${id}” tárolónál`,
-        "Használható: stack/verem, queue/sor, tape/szalag — kezdőtartalommal:\n  v1:\n    type: stack\n    init: Z"
+        tx("definitionParser.unknownStorageType.title", { id }),
+        tx("definitionParser.unknownStorageType.detail")
       )
     ]);
   let typeRaw = "";
@@ -199,28 +218,46 @@ function parseStorageOp(
   line: string,
   alphabet: string[]
 ): OpResult<StorageOp> {
-  const bad = (what: string, hint: string) =>
-    failResult<StorageOp>([err(`${what}: „${tokens.join(" ")}” (${spec.id})`, `Sor: „${line}”. ${hint}`)]);
+  const tokStr = tokens.join(" ");
 
   if (spec.type === "tape") {
     const [rw, moveRaw] = tokens;
-    if (!rw.includes("/")) return bad("Hibás szalagművelet", "Alak: OLVAS/ÍR MOZGÁS — pl. „a/b >”. Üres jel: _ , „ugyanazt írja”: &.");
+    if (!rw.includes("/"))
+      return failResult([
+        err(
+          tx("definitionParser.storageOp.badTapeOp.title", { tokens: tokStr, storageId: spec.id }),
+          tx("definitionParser.storageOp.badTapeOp.detail", { line })
+        )
+      ]);
     const [read, writeRaw] = rw.split("/");
     const move = MOVE_MAP[moveRaw];
-    if (!move) return bad("Ismeretlen mozgás", "Használható: > < = (vagy R L S).");
+    if (!move)
+      return failResult([
+        err(
+          tx("definitionParser.storageOp.unknownMove.title", { tokens: tokStr, storageId: spec.id }),
+          tx("definitionParser.storageOp.unknownMove.detail", { line })
+        )
+      ]);
     if (read !== "." && read !== TAPE_BLANK && !alphabet.includes(read))
-      return bad("Ismeretlen szalagjel", `Szalagábécé: ${[...alphabet, TAPE_BLANK].join(", ")}`);
+      return failResult([
+        err(
+          tx("definitionParser.storageOp.unknownTapeSymbol.title", { tokens: tokStr, storageId: spec.id }),
+          tx("definitionParser.storageOp.unknownTapeSymbol.detail", {
+            line,
+            alphabet: [...alphabet, TAPE_BLANK].join(", ")
+          })
+        )
+      ]);
     return okResult({ type: "tape", read, write: writeRaw, move });
   }
 
   const tok = tokens[0];
-  if (!tok.includes("/"))
-    return bad(
-      "Hibás tárolóművelet",
-      spec.type === "stack"
-        ? "Verem-alak: LEVESZ/FELÍR — pl. „Z/AZ”; ε-hoz $."
-        : "Sor-alak: KIVESZ/BETESZ — pl. „A/BA”; ε-hoz $."
-    );
+  if (!tok.includes("/")) {
+    const key = spec.type === "stack" ? "definitionParser.storageOp.badStackOp" : "definitionParser.storageOp.badQueueOp";
+    return failResult([
+      err(tx(`${key}.title`, { tokens: tokStr, storageId: spec.id }), tx(`${key}.detail`, { line }))
+    ]);
+  }
   const [aRaw, bRaw] = tok.split("/");
   const a = normEps(aRaw);
   const b = EPS_ALIASES.has(bRaw) ? "" : bRaw;
@@ -256,12 +293,8 @@ export function parseMachine(source: string): OpResult<Machine> {
   const { name, body } = base.value!;
   const diags: Diagnostic[] = [];
 
-  for (const [f, what] of [
-    ["states", "Az állapotok felsorolása"],
-    ["init", "A kezdőállapot"],
-    ["charset", "A bemeneti ábécé"]
-  ] as const) {
-    const d = requireField(body, f, what);
+  for (const f of ["states", "init", "charset"] as const) {
+    const d = requireField(body, f, "machine");
     if (d) return failResult([d]);
   }
 
@@ -271,9 +304,11 @@ export function parseMachine(source: string): OpResult<Machine> {
   const start = String(body["init"]).trim();
 
   const stateSet = new Set(states);
-  if (!stateSet.has(start)) return failResult([err(`A kezdőállapot (${start}) nincs az állapotok között`)]);
+  if (!stateSet.has(start))
+    return failResult([err(tx("definitionParser.machine.startNotInStates", { start }))]);
   for (const a of accept)
-    if (!stateSet.has(a)) return failResult([err(`Az elfogadó állapot (${a}) nincs az állapotok között`)]);
+    if (!stateSet.has(a))
+      return failResult([err(tx("definitionParser.machine.acceptNotInStates", { state: a }))]);
 
   // tárolók: mapping (id → típus vagy {type, init}) vagy hiányzó (= tárolómentes gép)
   const storages: StorageSpec[] = [];
@@ -281,14 +316,14 @@ export function parseMachine(source: string): OpResult<Machine> {
   if (storagesRaw !== undefined && storagesRaw !== null) {
     if (typeof storagesRaw !== "object" || Array.isArray(storagesRaw)) {
       return failResult([
-        err("A storages mező kulcs-érték párokat vár", "Például:\n  storages:\n    v1: stack\n    v2:\n      type: queue\n      init: A")
+        err(tx("definitionParser.machine.badStoragesField.title"), tx("definitionParser.machine.badStoragesField.detail"))
       ]);
     }
     for (const [id, raw] of Object.entries(storagesRaw as Record<string, unknown>)) {
       const r = parseStorageEntry(id.trim(), raw);
       if (!r.ok) return failResult(r.diagnostics);
       if (storages.some((s) => s.id === r.value!.id))
-        return failResult([err(`Kétszer szereplő tároló-azonosító: „${id}”`)]);
+        return failResult([err(tx("definitionParser.machine.duplicateStorageId", { id }))]);
       storages.push(r.value!);
     }
   }
@@ -299,8 +334,10 @@ export function parseMachine(source: string): OpResult<Machine> {
   if (input !== "head" && !storages.some((s) => s.id === input)) {
     return failResult([
       err(
-        `Az input mező (${input}) nem egy tároló azonosítója`,
-        `Használj „head”-et (olvasófej), vagy az egyik tároló nevét: ${storages.map((s) => s.id).join(", ") || "—"}.`
+        tx("definitionParser.machine.badInputField.title", { input }),
+        tx("definitionParser.machine.badInputField.detail", {
+          storages: storages.map((s) => s.id).join(", ") || "—"
+        })
       )
     ]);
   }
@@ -312,8 +349,8 @@ export function parseMachine(source: string): OpResult<Machine> {
   if (accept.length === 0 && acceptMode === "finalState" && input === "head" && storages.length > 0)
     diags.push(
       info(
-        "Nincs elfogadó állapot — üres tárolókkal való elfogadásra az acceptMode: emptyStorages való",
-        "Elfogadó állapot nélkül és finalState módban a gép az üres nyelvet ismeri fel."
+        tx("definitionParser.machine.noAcceptSuggestEmptyStorages.title"),
+        tx("definitionParser.machine.noAcceptSuggestEmptyStorages.detail")
       )
     );
 
@@ -324,19 +361,28 @@ export function parseMachine(source: string): OpResult<Machine> {
     const parts = line.split(/\s+/).filter((p) => p !== "");
     if (parts.length !== tokensPerLine) {
       const shape = [
-        "HONNAN",
-        ...(input === "head" ? ["BEMENET"] : []),
-        ...storages.map((s) => (s.type === "tape" ? `${s.id}:OLVAS/ÍR MOZGÁS` : `${s.id}:LE/FEL`)),
-        "HOVA"
+        "FROM",
+        ...(input === "head" ? ["INPUT"] : []),
+        ...storages.map((s) => (s.type === "tape" ? `${s.id}:READ/WRITE MOVE` : `${s.id}:POP/PUSH`)),
+        "TO"
       ].join(" ");
-      return failResult([err(`Hibás átmenet: „${line}”`, `Ehhez a géphez ${tokensPerLine} elem kell: ${shape}`)]);
+      return failResult([
+        err(
+          tx("definitionParser.machine.invalidTransition.title", { line }),
+          tx("definitionParser.machine.invalidTransition.detail", { count: tokensPerLine, shape })
+        )
+      ]);
     }
     const from = parts[0];
     const to = parts[parts.length - 1];
     if (from !== "." && !stateSet.has(from))
-      return failResult([err(`Ismeretlen állapot az átmenetben: „${from}”`, `Sor: „${line}”.`)]);
+      return failResult([
+        err(tx("definitionParser.machine.unknownFromState", { state: from }), tx("definitionParser.line", { line }))
+      ]);
     if (to !== "." && to !== "&" && !stateSet.has(to))
-      return failResult([err(`Ismeretlen célállapot az átmenetben: „${to}”`, `Sor: „${line}”.`)]);
+      return failResult([
+        err(tx("definitionParser.machine.unknownToState", { state: to }), tx("definitionParser.line", { line }))
+      ]);
 
     let idx = 1;
     let inputSym = EPS;
@@ -344,7 +390,10 @@ export function parseMachine(source: string): OpResult<Machine> {
       inputSym = normEps(parts[idx++]);
       if (inputSym !== EPS && parts[1] !== "." && !alphabet.includes(inputSym))
         return failResult([
-          err(`Ismeretlen bemeneti szimbólum: „${parts[1]}”`, `Sor: „${line}”. Ábécé: ${alphabet.join(", ")} (ε-hoz $).`)
+          err(
+            tx("definitionParser.machine.unknownInputSymbol", { symbol: parts[1] }),
+            tx("definitionParser.machine.alphabetHint", { line, alphabet: alphabet.join(", ") })
+          )
         ]);
     }
     const ops: StorageOp[] = [];
@@ -395,8 +444,8 @@ export function parseMachine(source: string): OpResult<Machine> {
       if (op.type === "tape" && op.write !== TAPE_BLANK && !alphabet.includes(op.write))
         return failResult([
           err(
-            `Ismeretlen szalagjel az írásban: „${op.write}” (${storages[i].id})`,
-            `Szalagábécé: ${[...alphabet, TAPE_BLANK].join(", ")}`
+            tx("definitionParser.machine.unknownWrittenTapeSymbol", { symbol: op.write, storageId: storages[i].id }),
+            tx("definitionParser.machine.tapeAlphabetHint", { alphabet: [...alphabet, TAPE_BLANK].join(", ") })
           )
         ]);
     }
@@ -416,7 +465,7 @@ export function parseMachine(source: string): OpResult<Machine> {
   };
 
   if (accept.length === 0 && acceptMode === "finalState" && storages.length === 0)
-    diags.push(warn("Nincs elfogadó állapot", "A gép így az üres nyelvet ismeri fel."));
+    diags.push(warn(tx("definitionParser.machine.noAcceptState.title"), tx("definitionParser.machine.noAcceptState.detail")));
 
   // szalagos bemenetű (TM-szerű) gépnél a többértékűség könnyen véletlen — jelezzük
   if (input !== "head") {
@@ -425,8 +474,8 @@ export function parseMachine(source: string): OpResult<Machine> {
       const n = analysis.nondeterministicAt[0];
       diags.push(
         warn(
-          `Nemdeterminisztikus gép: a(z) ${n.state} állapotban több átmenet is illeszkedhet`,
-          "A szimuláció minden ágat követ; a gráfon kattintással konkrét ág is választható."
+          tx("definitionParser.machine.nondeterministicMachine.title", { state: n.state }),
+          tx("definitionParser.machine.nondeterministicMachine.detail")
         )
       );
     }
@@ -445,13 +494,8 @@ export function parseGrammar(source: string): OpResult<Grammar> {
   const { name, body } = base.value!;
   const diags: Diagnostic[] = [];
 
-  for (const [f, what] of [
-    ["variables", "A nemterminálisok, pl. variables: S, A, B"],
-    ["init", "A kezdőszimbólum, pl. init: S"],
-    ["charset", "A terminálisok, pl. charset: a, b"],
-    ["rules", "A szabályok, pl. rules: [S -> aA | b]"]
-  ] as const) {
-    const d = requireField(body, f, what);
+  for (const f of ["variables", "init", "charset", "rules"] as const) {
+    const d = requireField(body, f, "grammar");
     if (d) return failResult([d]);
   }
 
@@ -460,12 +504,15 @@ export function parseGrammar(source: string): OpResult<Grammar> {
   const start = String(body["init"]).trim();
 
   if (!nonterminals.includes(start))
-    return failResult([err(`A kezdőszimbólum (${start}) nincs a nemterminálisok között`)]);
+    return failResult([err(tx("definitionParser.grammar.startNotInNonterminals", { start }))]);
 
   const overlap = terminals.filter((t) => nonterminals.includes(t));
   if (overlap.length)
     return failResult([
-      err(`Ütköző jelek: ${overlap.join(", ")}`, "Egy jel nem lehet egyszerre terminális és nemterminális.")
+      err(
+        tx("definitionParser.grammar.overlappingSymbols.title", { symbols: overlap.join(", ") }),
+        tx("definitionParser.grammar.overlappingSymbols.detail")
+      )
     ]);
 
   const known = new Set([...terminals, ...nonterminals]);
@@ -475,18 +522,24 @@ export function parseGrammar(source: string): OpResult<Grammar> {
     const m = /^(.+?)(?:->|→)(.*)$/.exec(line.replaceAll(" ", ""));
     if (!m) {
       return failResult([
-        err(`Hibás szabály: „${line}”`, "Alak: BAL -> JOBB1 | JOBB2 — pl. „S -> aA | b”. ε-hoz írj $-t vagy ε-t.")
+        err(tx("definitionParser.grammar.invalidRule.title", { line }), tx("definitionParser.grammar.invalidRule.detail"))
       ]);
     }
     const left = m[1];
     for (const c of left)
       if (!known.has(c))
         return failResult([
-          err(`Ismeretlen jel a szabály bal oldalán: „${c}”`, `Szabály: „${line}”. Minden jelet fel kell venni a charset vagy variables mezőbe.`)
+          err(
+            tx("definitionParser.grammar.unknownSymbolLeft", { symbol: c }),
+            tx("definitionParser.grammar.ruleDetail", { line })
+          )
         ]);
     if (![...left].some((c) => nonterminals.includes(c)))
       return failResult([
-        err(`A szabály bal oldala nem tartalmaz nemterminálist: „${line}”`, "Generatív nyelvtanban a bal oldalon legalább egy nemterminálisnak kell lennie.")
+        err(
+          tx("definitionParser.grammar.leftMissingNonterminal.title", { line }),
+          tx("definitionParser.grammar.leftMissingNonterminal.detail")
+        )
       ]);
 
     for (const alt of m[2].split("|")) {
@@ -494,7 +547,10 @@ export function parseGrammar(source: string): OpResult<Grammar> {
       for (const c of right)
         if (!known.has(c))
           return failResult([
-            err(`Ismeretlen jel a szabály jobb oldalán: „${c}”`, `Szabály: „${line}”. Minden jelet fel kell venni a charset vagy variables mezőbe.`)
+            err(
+              tx("definitionParser.grammar.unknownSymbolRight", { symbol: c }),
+              tx("definitionParser.grammar.ruleDetail", { line })
+            )
           ]);
       rules.push({ left, right });
     }

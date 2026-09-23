@@ -4,9 +4,11 @@ import {
   EPS,
   err,
   failResult,
+  I18nText,
   info,
   okResult,
-  OpResult
+  OpResult,
+  tx
 } from "../types";
 import { FSM, makeFSM, transMap } from "../fsm/fsm";
 import { Machine } from "../machine/machine";
@@ -42,13 +44,13 @@ export interface Classification {
   type: 0 | 1 | 2 | 3;
   /** az osztályozás indoklása szintenként */
   reasons: {
-    type3: { holds: boolean; violations: string[] };
-    type2: { holds: boolean; violations: string[] };
-    type1: { holds: boolean; violations: string[] };
+    type3: { holds: boolean; violations: I18nText[] };
+    type2: { holds: boolean; violations: I18nText[] };
+    type1: { holds: boolean; violations: I18nText[] };
   };
   /** ε-mentes-e (a megengedett S → ε kivétellel) */
   epsilonFree: boolean;
-  epsilonIssues: string[];
+  epsilonIssues: I18nText[];
   direction?: "right" | "left";
 }
 
@@ -59,69 +61,68 @@ export function classify(g: Grammar): Classification {
   const isTerminalWord = (w: string) => [...w].every((c) => term.has(c));
 
   /* --- 3. típus: jobblineáris (A → uB | u, u terminális szó) vagy ballineáris --- */
-  const v3right: string[] = [];
-  const v3left: string[] = [];
+  const v3right: I18nText[] = [];
+  const v3left: I18nText[] = [];
   for (const r of g.rules) {
     if (!nt.has(r.left) || r.left.length !== 1) {
-      v3right.push(`a(z) ${ruleToString(r)} szabály bal oldala nem egyetlen nemterminális`);
-      v3left.push(`a(z) ${ruleToString(r)} szabály bal oldala nem egyetlen nemterminális`);
+      const violation = tx("grammar.classify.leftNotSingleNonterminal", { rule: ruleToString(r) });
+      v3right.push(violation);
+      v3left.push(violation);
       continue;
     }
     const w = r.right;
     if (w === "") continue; // ε-szabály — az ε-mentességnél kezeljük
     // jobblineáris: terminálisok, legfeljebb a végén egy nemterminális
     const rOk = isTerminalWord(w) || (isTerminalWord(w.slice(0, -1)) && nt.has(w[w.length - 1]));
-    if (!rOk)
-      v3right.push(
-        `a(z) ${ruleToString(r)} szabály jobb oldala nem „terminálisok + legfeljebb egy záró nemterminális” alakú`
-      );
+    if (!rOk) v3right.push(tx("grammar.classify.notRightLinear", { rule: ruleToString(r) }));
     const lOk = isTerminalWord(w) || (nt.has(w[0]) && isTerminalWord(w.slice(1)));
-    if (!lOk)
-      v3left.push(
-        `a(z) ${ruleToString(r)} szabály jobb oldala nem „legfeljebb egy kezdő nemterminális + terminálisok” alakú`
-      );
+    if (!lOk) v3left.push(tx("grammar.classify.notLeftLinear", { rule: ruleToString(r) }));
   }
   const type3right = v3right.length === 0;
   const type3left = v3left.length === 0;
   const type3 = type3right || type3left;
 
   /* --- 2. típus: környezetfüggetlen (A → α) --- */
-  const v2: string[] = [];
+  const v2: I18nText[] = [];
   for (const r of g.rules) {
     if (!nt.has(r.left) || r.left.length !== 1) {
-      v2.push(`a(z) ${ruleToString(r)} szabály bal oldala nem egyetlen nemterminális`);
+      v2.push(tx("grammar.classify.leftNotSingleNonterminal", { rule: ruleToString(r) }));
     }
   }
   const type2 = v2.length === 0;
 
   /* --- 1. típus: környezetfüggő / monoton (|α| ≤ |β|, kivéve S → ε ha S nem fordul elő jobb oldalon) --- */
-  const v1: string[] = [];
+  const v1: I18nText[] = [];
   const startOnRight = g.rules.some((r) => r.right.includes(g.start));
   for (const r of g.rules) {
     if (r.right === "") {
       if (r.left === g.start) {
-        if (startOnRight)
-          v1.push(
-            `S → ε csak akkor megengedett, ha S nem fordul elő egyetlen szabály jobb oldalán sem — itt viszont előfordul`
-          );
+        if (startOnRight) v1.push(tx("grammar.classify.startEpsilonNotAllowed"));
       } else {
-        v1.push(`a(z) ${ruleToString(r)} törlő szabály (ε csak S → ε alakban megengedett)`);
+        v1.push(tx("grammar.classify.deletingRule", { rule: ruleToString(r) }));
       }
       continue;
     }
     if (r.left.length > r.right.length) {
-      v1.push(`a(z) ${ruleToString(r)} szabály rövidít: |${r.left}| = ${r.left.length} > |${r.right}| = ${r.right.length}`);
+      v1.push(
+        tx("grammar.classify.shortens", {
+          rule: ruleToString(r),
+          left: r.left,
+          leftLen: r.left.length,
+          right: r.right,
+          rightLen: r.right.length
+        })
+      );
     }
   }
   const type1 = v1.length === 0;
 
   /* --- ε-mentesség --- */
-  const epsilonIssues: string[] = [];
+  const epsilonIssues: I18nText[] = [];
   for (const r of g.rules) {
     if (r.right === "") {
-      if (r.left !== g.start) epsilonIssues.push(`${ruleToString(r)} — ε-szabály nem a kezdőszimbólumon`);
-      else if (startOnRight)
-        epsilonIssues.push(`S → ε mellett S előfordul jobb oldalon — így a nyelvtan nem ε-mentes alakú`);
+      if (r.left !== g.start) epsilonIssues.push(tx("grammar.classify.epsilonNotOnStart", { rule: ruleToString(r) }));
+      else if (startOnRight) epsilonIssues.push(tx("grammar.classify.startOnRightWithEpsilon"));
     }
   }
   const epsilonFree = epsilonIssues.length === 0;
@@ -236,15 +237,8 @@ export function generateWords(
 export function grammarToFSM(g: Grammar): OpResult<FSM> {
   const cls = classify(g);
   if (cls.type !== 3 || cls.direction !== "right") {
-    const reasons =
-      cls.reasons.type3.violations.length > 0
-        ? cls.reasons.type3.violations.join("; ")
-        : "a nyelvtan nem jobblineáris";
     return failResult([
-      err(
-        "Csak jobblineáris (3. típusú) nyelvtan alakítható véges automatává",
-        `Indok: ${reasons}. A konstrukció: minden nemterminális egy állapot, az A → aB szabály A →a B átmenet, az A → a szabály átmenet egy új elfogadó állapotba, az A → ε szabály A-t elfogadóvá teszi.`
-      )
+      err(tx("grammar.toFsm.needsRightLinear.title"), tx("grammar.toFsm.needsRightLinear.detail"))
     ]);
   }
 
@@ -258,7 +252,7 @@ export function grammarToFSM(g: Grammar): OpResult<FSM> {
   for (const r of g.rules) {
     if (r.right === "") {
       if (!accept.includes(r.left)) accept.push(r.left);
-      rows.push([ruleToString(r), `${r.left} elfogadó állapot lesz`]);
+      rows.push([ruleToString(r), `${r.left} → ✓`]);
       continue;
     }
     const last = r.right[r.right.length - 1];
@@ -286,10 +280,9 @@ export function grammarToFSM(g: Grammar): OpResult<FSM> {
   }
 
   steps.push({
-    title: "Jobblineáris nyelvtan → NFA",
-    detail:
-      "Minden nemterminális állapot lesz, a kezdőszimbólum a kezdőállapot. A → aB szabályból a-átmenet A-ból B-be; A → a szabályból átmenet az új ✓ elfogadó állapotba; A → ε esetén A elfogadó.",
-    table: { headers: ["szabály", "átmenet"], rows }
+    title: tx("grammar.toFsm.step.title"),
+    detail: tx("grammar.toFsm.step.detail"),
+    table: { headers: [tx("grammar.table.rule"), tx("grammar.table.transition")], rows }
   });
 
   const fsm = makeFSM({
@@ -313,8 +306,8 @@ export function fsmToGrammar(f: FSM): OpResult<Grammar> {
   if (order.length > letters.length) {
     return failResult([
       err(
-        "Túl sok állapot a nyelvtanná alakításhoz",
-        `Az automata ${order.length} állapotú; az egykarakteres nemterminális-jelölés legfeljebb ${letters.length} állapotot enged. Minimalizálással csökkenthető az állapotszám.`
+        tx("grammar.fsmToGrammar.tooManyStates.title"),
+        tx("grammar.fsmToGrammar.tooManyStates.detail", { count: order.length, max: letters.length })
       )
     ]);
   }
@@ -336,8 +329,8 @@ export function fsmToGrammar(f: FSM): OpResult<Grammar> {
   if (renames.length)
     diags.push(
       info(
-        "Az állapotok nemterminális-betűket kaptak",
-        order.map((s) => `${s} ↦ ${mapName.get(s)}`).join(", ")
+        tx("grammar.fsmToGrammar.renamed.title"),
+        tx("grammar.fsmToGrammar.renamed.detail", { mapping: order.map((s) => `${s} ↦ ${mapName.get(s)}`).join(", ") })
       )
     );
 
@@ -351,9 +344,8 @@ export function fsmToGrammar(f: FSM): OpResult<Grammar> {
   };
   return okResult(g, diags, [
     {
-      title: "NFA → jobblineáris nyelvtan",
-      detail:
-        "Minden q →a p átmenetből Q → aP szabály, minden elfogadó q állapotból Q → ε szabály. Az így kapott nyelvtan 3. típusú, és ugyanazt a nyelvet generálja."
+      title: tx("grammar.fsmToGrammar.step.title"),
+      detail: tx("grammar.fsmToGrammar.step.detail")
     }
   ]);
 }
@@ -363,10 +355,7 @@ export function grammarToPDA(g: Grammar): OpResult<Machine> {
   const cls = classify(g);
   if (!cls.reasons.type2.holds) {
     return failResult([
-      err(
-        "Csak környezetfüggetlen (2. típusú) nyelvtan alakítható veremautomatává",
-        `Indok: ${cls.reasons.type2.violations.join("; ")}. A konstrukcióban a verem a mondatformát tárolja, ezért a bal oldalon egyetlen nemterminálisnak kell állnia.`
-      )
+      err(tx("grammar.toPda.needsContextFree.title"), tx("grammar.toPda.needsContextFree.detail"))
     ]);
   }
 
@@ -395,14 +384,11 @@ export function grammarToPDA(g: Grammar): OpResult<Machine> {
   };
 
   return okResult(pda, [
-    info(
-      "Üres veremmel elfogadó PDA készült",
-      "A verem a levezetés aktuális mondatformáját tárolja. Ha a verem tetején nemterminális van, egy szabályt alkalmazunk (ε-lépés); ha terminális, illesztjük a bemenet következő betűjével. A szó pontosan akkor elfogadott, ha a bemenet elfogyott és a verem kiürült."
-    )
+    info(tx("grammar.toPda.emptyStackInfo.title"), tx("grammar.toPda.emptyStackInfo.detail"))
   ], [
     {
-      title: "CF nyelvtan → PDA (top-down elemző)",
-      detail: `Egyetlen ${q} állapot. Kezdő veremtartalom: ${g.start}. Szabály-lépések: ${g.rules.length} db (ε, A / α), illesztő lépések: ${g.terminals.length} db (a, a / ε).`
+      title: tx("grammar.toPda.step.title"),
+      detail: tx("grammar.toPda.step.detail", { q, start: g.start, ruleCount: g.rules.length, terminalCount: g.terminals.length })
     }
   ]);
 }
@@ -412,10 +398,7 @@ export function removeEpsilonRules(g: Grammar): OpResult<Grammar> {
   const cls = classify(g);
   if (!cls.reasons.type2.holds) {
     return failResult([
-      err(
-        "Az ε-mentesítés környezetfüggetlen nyelvtanra van definiálva",
-        `Indok: ${cls.reasons.type2.violations.join("; ")}.`
-      )
+      err(tx("grammar.epsfree.needsContextFree.title"), tx("grammar.epsfree.needsContextFree.detail"))
     ]);
   }
   const steps: AlgoStep[] = [];
@@ -435,11 +418,11 @@ export function removeEpsilonRules(g: Grammar): OpResult<Grammar> {
     }
   }
   steps.push({
-    title: "1. Törölhető nemterminálisok",
+    title: tx("grammar.epsfree.step1.title"),
     detail:
       nullable.size === 0
-        ? "Nincs törölhető nemterminális — a nyelvtan már ε-mentes."
-        : `Törölhető (ε-re levezethető): ${[...nullable].join(", ")}. Egy A törölhető, ha A → ε, vagy A → α és α minden betűje törölhető.`
+        ? tx("grammar.epsfree.step1.detailNone")
+        : tx("grammar.epsfree.step1.detailSome", { nullable: [...nullable].join(", ") })
   });
 
   if (nullable.size === 0) return okResult({ ...g, rules: g.rules.map((r) => ({ ...r })) }, diags, steps);
@@ -470,8 +453,8 @@ export function removeEpsilonRules(g: Grammar): OpResult<Grammar> {
     newRules.add(`${s2}→`);
     start = s2;
     steps.push({
-      title: "3. Új kezdőszimbólum az ε miatt",
-      detail: `Az eredeti nyelvben benne van az ε (a kezdőszimbólum törölhető), ezért új ${s2} kezdőszimbólumot vezetünk be: ${s2} → ${g.start} | ε. Így az ε-szabály csak a kezdőszimbólumon marad.`
+      title: tx("grammar.epsfree.step3.title"),
+      detail: tx("grammar.epsfree.step3.detail", { s2, start: g.start })
     });
   }
 
@@ -481,11 +464,10 @@ export function removeEpsilonRules(g: Grammar): OpResult<Grammar> {
   });
 
   steps.splice(1, 0, {
-    title: "2. Szabályok bővítése",
-    detail:
-      "Minden szabályból elkészítjük az összes olyan változatot, ahol a törölhető nemterminálisok egy részhalmazát elhagyjuk (kivéve ha a teljes jobb oldal eltűnne). Ezután az ε-szabályokat elhagyjuk.",
+    title: tx("grammar.epsfree.step2.title"),
+    detail: tx("grammar.epsfree.step2.detail"),
     table: {
-      headers: ["új szabályok"],
+      headers: [tx("grammar.table.newRules")],
       rows: rules.slice(0, 30).map((r) => [ruleToString(r)])
     }
   });

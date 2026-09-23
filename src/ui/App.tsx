@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo } from "react";
+import { useTranslation } from "react-i18next";
 import { activeWorkspace, useAppStore } from "../state/store";
 import { evaluateCells } from "../core/workspace";
 import { TopBar } from "./TopBar";
@@ -7,6 +8,7 @@ import { DetailPane } from "./detail/DetailPane";
 import { Code2, Eye } from "lucide-react";
 
 export const App: React.FC = () => {
+  const { t, i18n } = useTranslation();
   const theme = useAppStore((s) => s.theme);
   const mobileTab = useAppStore((s) => s.mobileTab);
   const setMobileTab = useAppStore((s) => s.setMobileTab);
@@ -36,6 +38,10 @@ export const App: React.FC = () => {
     document.documentElement.setAttribute("data-theme", theme);
   }, [theme]);
 
+  useEffect(() => {
+    document.title = t("app.title");
+  }, [t, i18n.language]);
+
   const sources = useMemo(() => ws.cells.map((c) => c.source), [ws.cells]);
   const results = useMemo(() => evaluateCells(sources), [sources]);
 
@@ -55,7 +61,7 @@ export const App: React.FC = () => {
         <div className="editor-col">
           <EditorColumn workspace={ws} results={results} />
         </div>
-        <div className="col-resizer" onPointerDown={onResizeStart} title="Húzd a panel átméretezéséhez" />
+        <div className="col-resizer" onPointerDown={onResizeStart} title={t("app.resizePane")} />
         <div className="detail-col">
           <DetailPane result={activeResult} />
         </div>
@@ -63,11 +69,11 @@ export const App: React.FC = () => {
       <nav className="mobile-tabs">
         <button className={mobileTab === "code" ? "active" : ""} onClick={() => setMobileTab("code")}>
           <Code2 size={16} style={{ verticalAlign: "-3px", marginRight: 6 }} />
-          Kód
+          {t("app.code")}
         </button>
         <button className={mobileTab === "view" ? "active" : ""} onClick={() => setMobileTab("view")}>
           <Eye size={16} style={{ verticalAlign: "-3px", marginRight: 6 }} />
-          Vizualizáció
+          {t("app.visualization")}
         </button>
       </nav>
     </div>

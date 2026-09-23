@@ -23,56 +23,68 @@ import {
 import { regexToNFA } from "../../core/fsm/regex";
 import { fsmToGrammar, grammarToFSM, grammarToPDA } from "../../core/grammar/grammar";
 import { machineCaps, machineToFSM } from "../../core/machine/machine";
-import { OpResult } from "../../core/types";
+import { I18nText, OpResult } from "../../core/types";
 import { ExprValue } from "../../core/expr/expression";
+
+/** I18nText constructor for this file's own (ui-namespace) strings. */
+function ux(key: string, params?: Record<string, string | number>): I18nText {
+  return { key, params, ns: "ui" };
+}
 
 export interface OpInfo {
   name: string;
-  desc: string;
+  descKey: string;
   args: 1 | 2;
   /** milyen értékre alkalmazható */
   input: "fsm" | "grammar";
-  group: string;
+  groupKey: string;
 }
 
 export const OPS: OpInfo[] = [
-  { group: "Normalizálás", name: "epsfree", desc: "ε-mentesítés", args: 1, input: "fsm" },
-  { group: "Normalizálás", name: "det", desc: "determinizálás (hatványhalmaz-konstrukció)", args: 1, input: "fsm" },
-  { group: "Normalizálás", name: "complete", desc: "teljessé tétel csapdaállapottal", args: 1, input: "fsm" },
-  { group: "Normalizálás", name: "reachable", desc: "elérhetetlen állapotok elhagyása", args: 1, input: "fsm" },
-  { group: "Normalizálás", name: "min", desc: "minimalizálás (partíciófinomítás)", args: 1, input: "fsm" },
-  { group: "Normalizálás", name: "clean", desc: "állapotok átnevezése (A, B, C…)", args: 1, input: "fsm" },
+  { groupKey: "editor.ops.groups.normalize", name: "epsfree", descKey: "editor.ops.epsfree", args: 1, input: "fsm" },
+  { groupKey: "editor.ops.groups.normalize", name: "det", descKey: "editor.ops.det", args: 1, input: "fsm" },
+  { groupKey: "editor.ops.groups.normalize", name: "complete", descKey: "editor.ops.complete", args: 1, input: "fsm" },
+  { groupKey: "editor.ops.groups.normalize", name: "reachable", descKey: "editor.ops.reachable", args: 1, input: "fsm" },
+  { groupKey: "editor.ops.groups.normalize", name: "min", descKey: "editor.ops.min", args: 1, input: "fsm" },
+  { groupKey: "editor.ops.groups.normalize", name: "clean", descKey: "editor.ops.clean", args: 1, input: "fsm" },
 
-  { group: "Nyelvműveletek", name: "complement", desc: "komplementer nyelv", args: 1, input: "fsm" },
-  { group: "Nyelvműveletek", name: "union", desc: "unió (két automata)", args: 2, input: "fsm" },
-  { group: "Nyelvműveletek", name: "intersect", desc: "metszet (két automata)", args: 2, input: "fsm" },
-  { group: "Nyelvműveletek", name: "difference", desc: "különbség (két automata)", args: 2, input: "fsm" },
-  { group: "Nyelvműveletek", name: "concat", desc: "összefűzés (két automata)", args: 2, input: "fsm" },
-  { group: "Nyelvműveletek", name: "star", desc: "lezárás (Kleene-csillag)", args: 1, input: "fsm" },
-  { group: "Nyelvműveletek", name: "reverse", desc: "megfordítás", args: 1, input: "fsm" },
+  { groupKey: "editor.ops.groups.language", name: "complement", descKey: "editor.ops.complement", args: 1, input: "fsm" },
+  { groupKey: "editor.ops.groups.language", name: "union", descKey: "editor.ops.union", args: 2, input: "fsm" },
+  { groupKey: "editor.ops.groups.language", name: "intersect", descKey: "editor.ops.intersect", args: 2, input: "fsm" },
+  { groupKey: "editor.ops.groups.language", name: "difference", descKey: "editor.ops.difference", args: 2, input: "fsm" },
+  { groupKey: "editor.ops.groups.language", name: "concat", descKey: "editor.ops.concat", args: 2, input: "fsm" },
+  { groupKey: "editor.ops.groups.language", name: "star", descKey: "editor.ops.star", args: 1, input: "fsm" },
+  { groupKey: "editor.ops.groups.language", name: "reverse", descKey: "editor.ops.reverse", args: 1, input: "fsm" },
 
-  { group: "Konverzió", name: "toGrammar", desc: "automata → reguláris nyelvtan", args: 1, input: "fsm" },
-  { group: "Konverzió", name: "toFsm", desc: "nyelvtan / regex → véges automata", args: 1, input: "grammar" },
-  { group: "Konverzió", name: "toPda", desc: "nyelvtan → veremautomata", args: 1, input: "grammar" },
+  { groupKey: "editor.ops.groups.conversion", name: "toGrammar", descKey: "editor.ops.toGrammar", args: 1, input: "fsm" },
+  { groupKey: "editor.ops.groups.conversion", name: "toFsm", descKey: "editor.ops.toFsm", args: 1, input: "grammar" },
+  { groupKey: "editor.ops.groups.conversion", name: "toPda", descKey: "editor.ops.toPda", args: 1, input: "grammar" },
 
-  { group: "Vizsgálat", name: "equal", desc: "ekvivalencia-vizsgálat ellenpéldával", args: 2, input: "fsm" }
+  { groupKey: "editor.ops.groups.inspection", name: "equal", descKey: "editor.ops.equal", args: 2, input: "fsm" }
 ];
 
-const KIND_HU: Record<string, string> = {
-  fsm: "véges automata",
-  grammar: "nyelvtan",
-  regex: "reguláris kifejezés",
-  verdict: "összehasonlítás eredménye"
+const KIND_KEY: Record<string, string> = {
+  fsm: "editor.ops.kind.fsm",
+  grammar: "editor.ops.kind.grammar",
+  regex: "editor.ops.kind.regex",
+  verdict: "editor.ops.kind.verdict"
 };
 
-function describeValue(value: ExprValue): string {
-  if (value.kind === "machine") return machineCaps(value).label.toLowerCase();
-  return KIND_HU[value.kind] ?? value.kind;
+/** Human-readable (translation-key based) description of a cell's value kind. */
+function describeValue(value: ExprValue): I18nText {
+  if (value.kind === "machine") {
+    const caps = machineCaps(value);
+    if (caps.kind === "fsm") return ux("editor.ops.kind.fsm");
+    if (caps.kind === "pda") return ux("editor.ops.kind.pda");
+    if (caps.kind === "tm") return ux("editor.ops.kind.tm");
+    return ux("editor.ops.kind.generalMachine");
+  }
+  return ux(KIND_KEY[value.kind] ?? "editor.ops.kind.unknown");
 }
 
 export interface Applicability {
   ok: boolean;
-  reason?: string;
+  reason?: I18nText;
   /** működő javítási lánc, pl. min(complete(det(M))) */
   fixChain?: string;
 }
@@ -83,7 +95,7 @@ function fromDryRun(r: OpResult<unknown>): Applicability {
   const firstErr = r.diagnostics.find((d) => d.level === "error");
   return {
     ok: false,
-    reason: firstErr?.title ?? "a művelet előfeltétele nem teljesül",
+    reason: firstErr?.title,
     fixChain: firstErr?.fix?.code
   };
 }
@@ -137,21 +149,21 @@ export function opApplicability(op: OpInfo, value: ExprValue | Definition | null
   if (value === null) return { ok: true };
   const kind = value.kind;
   if (kind === "verdict")
-    return { ok: false, reason: "összehasonlítás eredményére nem alkalmazható" };
+    return { ok: false, reason: ux("editor.ops.reason.notApplicableToVerdict") };
 
   if (kind === "regex") {
     if (op.name === "toFsm") return { ok: true };
     if (op.input === "grammar")
-      return { ok: false, reason: "nyelvtant vár — ez a cella: reguláris kifejezés" };
+      return { ok: false, reason: ux("editor.ops.reason.expectsGrammarIsRegex") };
     // automata-műveletek: a Thompson-féle ε-NFA-n teszteljük
     const conv = regexToNFA(value.pattern, value.name);
-    if (!conv.ok) return { ok: false, reason: "hibás reguláris kifejezés" };
+    if (!conv.ok) return { ok: false, reason: ux("editor.ops.reason.invalidRegex") };
     return dryRunFsmOp(op.name, conv.value!);
   }
 
   if (op.input === "grammar") {
     if (kind !== "grammar")
-      return { ok: false, reason: `nyelvtant vár — ez a cella: ${describeValue(value)}` };
+      return { ok: false, reason: ux("editor.ops.reason.expectsGrammar", { kindKey: describeValue(value).key }) };
     return fromDryRun(op.name === "toPda" ? grammarToPDA(value) : grammarToFSM(value));
   }
 
@@ -163,7 +175,7 @@ export function opApplicability(op: OpInfo, value: ExprValue | Definition | null
     // jobblineáris nyelvtan automatikusan automatává alakul
     const conv = grammarToFSM(value);
     if (!conv.ok)
-      return { ok: false, reason: "véges automatát vár — ez a nyelvtan nem jobblineáris" };
+      return { ok: false, reason: ux("editor.ops.reason.expectsFsmNotRightLinear") };
     fsm = conv.value!;
   } else if (kind === "machine") {
     // képesség-kapu: csak a tárolómentes gép viselkedik automataként
@@ -171,11 +183,11 @@ export function opApplicability(op: OpInfo, value: ExprValue | Definition | null
     if (!conv)
       return {
         ok: false,
-        reason: `a gépnek tárolója van (${value.storages.map((s) => s.type).join(", ")}) — az általa felismert nyelv általában nem reguláris, ezért automata-művelet nem alkalmazható rá`
+        reason: ux("editor.ops.reason.hasStorage", { types: value.storages.map((s) => s.type).join(", ") })
       };
     fsm = conv;
   } else {
-    return { ok: false, reason: `véges automatát vár — ez a cella: ${describeValue(value)}` };
+    return { ok: false, reason: ux("editor.ops.reason.expectsFsm", { kindKey: describeValue(value).key }) };
   }
   return dryRunFsmOp(op.name, fsm);
 }

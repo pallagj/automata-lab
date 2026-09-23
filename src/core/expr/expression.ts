@@ -1,4 +1,4 @@
-import { EPS, err, failResult, okResult, OpResult, AlgoStep, Diagnostic, info } from "../types";
+import { EPS, err, failResult, okResult, OpResult, AlgoStep, Diagnostic, I18nText, info, tx } from "../types";
 import { FSM, makeFSM } from "../fsm/fsm";
 import {
   checkEquivalence,
@@ -31,6 +31,13 @@ import { Definition } from "../parse/definitionParser";
  *     intersect, difference, concat, star, reverse, clean, toGrammar, toFsm,
  *     toPda, regex, equal
  */
+
+/** Az expression-nyelv parse-/kiértékelési hibái mindig I18nText-et hordoznak. */
+class ExprError extends Error {
+  constructor(public i18n: I18nText) {
+    super(i18n.key);
+  }
+}
 
 /**
  * A kiértékelés belső értékei között az FSM is megjelenik (a véges-automata
@@ -92,8 +99,8 @@ class ExprParser {
     public knownNames: Set<string>
   ) {}
 
-  error(msg: string): never {
-    throw new Error(`${msg} (pozíció: ${this.pos + 1})`);
+  error(x: I18nText): never {
+    throw new ExprError(x);
   }
 
   peek(): string | undefined {
@@ -107,7 +114,8 @@ class ExprParser {
   parse(): Expr {
     const e = this.parseUnion();
     this.skipWs();
-    if (this.pos < this.src.length) this.error(`Váratlan karakter: „${this.peek()}”`);
+    if (this.pos < this.src.length)
+      this.error(tx("expression.error.unexpectedChar", { char: this.peek() ?? "", pos: this.pos + 1 }));
     return e;
   }
 
@@ -131,7 +139,7 @@ class ExprParser {
       if (c === undefined || c === ")" || c === "+" || c === "|" || c === ",") break;
       items.push(this.parsePostfix());
     }
-    if (items.length === 0) this.error("Hiányzó kifejezés");
+    if (items.length === 0) this.error(tx("expression.error.missingExpression", { pos: this.pos + 1 }));
     return items.length === 1 ? items[0] : { t: "concat", items };
   }
 
@@ -150,12 +158,12 @@ class ExprParser {
   parseAtom(): Expr {
     this.skipWs();
     const c = this.peek();
-    if (c === undefined) this.error("A kifejezés váratlanul véget ért");
+    if (c === undefined) this.error(tx("expression.error.unexpectedEnd", { pos: this.pos + 1 }));
     if (c === "(") {
       this.pos++;
       const e = this.parseUnion();
       this.skipWs();
-      if (this.peek() !== ")") this.error("Hiányzó záró zárójel");
+      if (this.peek() !== ")") this.error(tx("expression.error.missingCloseParen", { pos: this.pos + 1 }));
       this.pos++;
       return e;
     }
@@ -179,7 +187,7 @@ class ExprParser {
             if (this.src[this.pos] === ")") depth--;
             if (depth > 0) this.pos++;
           }
-          if (depth !== 0) this.error("Hiányzó záró zárójel a regex() hívásban");
+          if (depth !== 0) this.error(tx("expression.error.missingCloseParenRegex", { pos: this.pos + 1 }));
           rawArgs.push(this.src.slice(start2, this.pos).trim());
           args.push({ t: "lit", c: EPS }); // helykitöltő, a kiértékelés a rawArgs-ot használja
           this.pos++; // ')'
@@ -204,7 +212,7 @@ class ExprParser {
               this.pos++;
               break;
             }
-            this.error("Hiányzó „,” vagy „)” a függvényhívásban");
+            this.error(tx("expression.error.missingCommaOrParen", { pos: this.pos + 1 }));
           }
         }
         return { t: "call", fn: word as FuncName, args, rawArgs };
@@ -212,12 +220,10 @@ class ExprParser {
       // csak ismert név vagy függvény lehet — betű-literál nincs
       if (this.knownNames.has(word)) return { t: "var", name: word };
       if ((FUNCTION_NAMES as readonly string[]).includes(word))
-        this.error(`A(z) „${word}” függvénynév után zárójel kell`);
-      this.error(
-        `Ismeretlen név: „${word}” — gépekre a nevükkel hivatkozz; betűsorozatot csak a regex(…) belsejében használhatsz`
-      );
+        this.error(tx("expression.error.functionNeedsParen", { word, pos: this.pos + 1 }));
+      this.error(tx("expression.error.unknownName", { word, pos: this.pos + 1 }));
     }
-    this.error(`Értelmezhetetlen karakter: „${c}”`);
+    this.error(tx("expression.error.unparseableChar", { char: c, pos: this.pos + 1 }));
   }
 }
 
@@ -247,14 +253,14 @@ class Evaluator {
     return r.value!;
   }
 
-  asFSM(v: ExprValue, ctx: string): FSM {
+  asFSM(v: ExprValue, ctxOpId: string): FSM {
     if (v.kind === "fsm") return v;
     if (v.kind === "regex") {
       // kényelmi automatikus konverzió: regex → ε-NFA (Thompson)
       this.diagnostics.push(
         info(
-          `A(z) ${v.name} regexet automatikusan ε-NFA-vá alakítottam`,
-          "A művelet véges automatát vár; a reguláris kifejezés a Thompson-konstrukcióval automatává alakítható — explicit módon: toFsm(" + v.name + ")."
+          tx("expression.autoConvert.regex.title", { name: v.name }),
+          tx("expression.autoConvert.regex.detail", { name: v.name })
         )
       );
       return this.take(`toFsm(${v.name})`, regexToNFA(v.pattern, v.name));
@@ -264,7 +270,7 @@ class Evaluator {
       const r = grammarToFSM(v);
       if (r.ok) {
         this.diagnostics.push(
-          info(`A(z) ${v.name} nyelvtant automatikusan véges automatává alakítottam`, "A művelet véges automatát vár; a jobblineáris nyelvtan átalakítható.")
+          info(tx("expression.autoConvert.grammar.title", { name: v.name }), tx("expression.autoConvert.grammar.detail"))
         );
         return this.take(`toFsm(${v.name})`, r);
       }
@@ -273,43 +279,46 @@ class Evaluator {
       // képesség-kapu: a tárolómentes gép maga a véges automata
       const f = machineToFSM(v);
       if (f) return f;
-      throw new Error(
-        `${ctx}: véges automatát vár, de a(z) ${v.name} ${machineCaps(v).label.toLowerCase()} (tárolói: ${v.storages
-          .map((s) => `${s.id}: ${s.type}`)
-          .join(", ")}). A tárolós gép által felismert nyelv általában nem reguláris, ezért nincs automatikus átalakítás — az automata-műveletek csak tárolómentes gépekre alkalmazhatók.`
+      throw new ExprError(
+        tx("expression.error.machineNeedsFsm", {
+          ctxKey: `opNames.${ctxOpId}`,
+          name: v.name,
+          machineKindKey: `machineKind.${machineCaps(v).kind}`,
+          storages: v.storages.map((s) => `${s.id}: ${s.type}`).join(", ")
+        })
       );
     }
-    throw new Error(`${ctx}: véges automatát vár, de ${describeKind(v)} érkezett`);
+    throw new ExprError(tx("expression.error.needsFsm", { ctxKey: `opNames.${ctxOpId}`, kindKey: describeKind(v) }));
   }
 
   evaluate(e: Expr): ExprValue {
     switch (e.t) {
       case "var": {
         const v = this.env.get(e.name);
-        if (v === undefined) throw new Error(`Ismeretlen név: „${e.name}”`);
+        if (v === undefined) throw new ExprError(tx("expression.eval.unknownName", { name: e.name }));
         return v;
       }
       case "lit":
         // csak a regex() belső helykitöltője lehet — közvetlenül nem értékelődik ki
-        throw new Error("Betű-literálok csak a regex(…) belsejében használhatók");
+        throw new ExprError(tx("expression.eval.literalsOnlyInRegex"));
       case "concat": {
-        let acc = this.asFSM(this.evaluate(e.items[0]), "összefűzés");
+        let acc = this.asFSM(this.evaluate(e.items[0]), "concat");
         for (let i = 1; i < e.items.length; i++) {
-          const next = this.asFSM(this.evaluate(e.items[i]), "összefűzés");
+          const next = this.asFSM(this.evaluate(e.items[i]), "concat");
           acc = this.take(`concat`, concatFSM(acc, next));
         }
         return acc;
       }
       case "union": {
-        let acc = this.asFSM(this.evaluate(e.items[0]), "unió");
+        let acc = this.asFSM(this.evaluate(e.items[0]), "union");
         for (let i = 1; i < e.items.length; i++) {
-          const next = this.asFSM(this.evaluate(e.items[i]), "unió");
+          const next = this.asFSM(this.evaluate(e.items[i]), "union");
           acc = this.take(`union`, unionEpsilon(acc, next));
         }
         return acc;
       }
       case "star":
-        return this.take("star", starFSM(this.asFSM(this.evaluate(e.inner), "lezárás")));
+        return this.take("star", starFSM(this.asFSM(this.evaluate(e.inner), "star")));
       case "call":
         return this.call(e);
     }
@@ -318,9 +327,13 @@ class Evaluator {
   call(e: Extract<Expr, { t: "call" }>): ExprValue {
     const expectArgs = (n: number, alsoOk?: number) => {
       if (e.args.length !== n && e.args.length !== alsoOk)
-        throw new Error(`A(z) ${e.fn} függvény ${n}${alsoOk !== undefined ? ` vagy ${alsoOk}` : ""} paramétert vár, de ${e.args.length} érkezett`);
+        throw new ExprError(
+          alsoOk !== undefined
+            ? tx("expression.error.wrongArgCount.range", { fn: e.fn, n, alsoOk, count: e.args.length })
+            : tx("expression.error.wrongArgCount.exact", { fn: e.fn, n, count: e.args.length })
+        );
     };
-    const fsmArg = (i: number) => this.asFSM(this.evaluate(e.args[i]), `${e.fn}() ${i + 1}. paramétere`);
+    const fsmArg = (i: number) => this.asFSM(this.evaluate(e.args[i]), e.fn);
     const label = (base: string) => `${base}(${e.rawArgs.join(", ")})`;
 
     switch (e.fn) {
@@ -379,20 +392,17 @@ class Evaluator {
         if (v.kind === "machine") {
           const f = machineToFSM(v);
           if (f) return f;
-          throw new Error(
-            `A(z) ${v.name} gép nem alakítható véges automatává, mert tárolója van (${v.storages
-              .map((s) => s.type)
-              .join(", ")}) — csak a tárolómentes gép ekvivalens automatával`
+          throw new ExprError(
+            tx("expression.error.machineHasStorage", { name: v.name, storages: v.storages.map((s) => s.type).join(", ") })
           );
         }
-        if (v.kind !== "grammar")
-          throw new Error("A toFsm() nyelvtant, reguláris kifejezést vagy tárolómentes gépet vár");
+        if (v.kind !== "grammar") throw new ExprError(tx("expression.error.toFsmExpects"));
         return this.take(label("toFsm"), grammarToFSM(v));
       }
       case "toPda": {
         expectArgs(1);
         const v = this.evaluate(e.args[0]);
-        if (v.kind !== "grammar") throw new Error("A toPda() nyelvtant vár");
+        if (v.kind !== "grammar") throw new ExprError(tx("expression.error.toPdaExpects"));
         return this.take(label("toPda"), grammarToPDA(v));
       }
       case "regex":
@@ -408,22 +418,22 @@ class Evaluator {
 
 class EvalDiagError extends Error {
   constructor(public diags: Diagnostic[]) {
-    super(diags[0]?.title ?? "Hiba");
+    super(diags[0]?.title.key ?? "error");
   }
 }
 
 function describeKind(v: ExprValue): string {
   switch (v.kind) {
     case "fsm":
-      return "véges automata";
+      return "expression.kind.fsm";
     case "machine":
-      return machineCaps(v).label.toLowerCase();
+      return `machineKind.${machineCaps(v).kind}`;
     case "grammar":
-      return "nyelvtan";
+      return "expression.kind.grammar";
     case "regex":
-      return "reguláris kifejezés";
+      return "expression.kind.regex";
     case "verdict":
-      return "összehasonlítás eredménye";
+      return "expression.kind.verdict";
   }
 }
 
@@ -437,12 +447,8 @@ export function evaluateExpression(
   try {
     ast = new ExprParser(src, known).parse();
   } catch (e) {
-    return failResult([
-      err(
-        "Hibás kifejezés",
-        `${(e as Error).message}. Példák: detM = det(M) · u = union(M1, M2) · r = regex((ab)*+ba) · e = equal(M1, M2)`
-      )
-    ]);
+    const i18n = e instanceof ExprError ? e.i18n : tx("expression.error.parseGeneric", { message: String((e as Error).message ?? e) });
+    return failResult([err(tx("expression.error.invalidExpression"), i18n)]);
   }
   const ev = new Evaluator(env);
   try {
@@ -454,7 +460,8 @@ export function evaluateExpression(
     if (e instanceof EvalDiagError) {
       return { ok: false, diagnostics: ev.diagnostics, steps: [] };
     }
-    return failResult([err("Kiértékelési hiba", (e as Error).message)], []);
+    const i18n = e instanceof ExprError ? e.i18n : tx("expression.error.evalGeneric", { message: String((e as Error).message ?? e) });
+    return failResult([err(tx("expression.error.evaluationError"), i18n)], []);
   }
 }
 
