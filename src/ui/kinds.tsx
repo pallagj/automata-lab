@@ -1,28 +1,37 @@
 import React from "react";
-import { Cpu, Equal, Layers, ListTree, LucideIcon, Quote, RectangleEllipsis, Regex, Workflow } from "lucide-react";
+import {
+  Boxes,
+  CircleDot,
+  Columns3,
+  Equal,
+  FunctionSquare,
+  Layers,
+  ListTree,
+  LucideIcon,
+  Regex,
+  StickyNote
+} from "lucide-react";
 
-/** What a cell or worksheet holds — shown as a small coloured badge. */
-export type ValueKind = "fsm" | "pda" | "tm" | "general" | "grammar" | "regex" | "verdict" | "note";
+/** What a cell or worksheet holds. One plain, grey icon set used everywhere (cells, Insert menu, browser). */
+export type ValueKind = "fsm" | "pda" | "tm" | "general" | "grammar" | "regex" | "verdict" | "expression" | "note";
 
 const ICONS: Record<ValueKind, LucideIcon> = {
-  fsm: Workflow,
+  fsm: CircleDot,
   pda: Layers,
-  tm: RectangleEllipsis,
-  general: Cpu,
+  tm: Columns3,
+  general: Boxes,
   grammar: ListTree,
   regex: Regex,
   verdict: Equal,
-  note: Quote
+  expression: FunctionSquare,
+  note: StickyNote
 };
 
-export const KindIcon: React.FC<{ kind: ValueKind; size?: number }> = ({ kind, size = 13 }) => {
+export const KindIcon: React.FC<{ kind: ValueKind; size?: number; title?: string }> = ({ kind, size = 16, title }) => {
   const Icon = ICONS[kind];
-  return <Icon size={size} />;
+  return (
+    <span className="kind-icon" title={title}>
+      <Icon size={size} />
+    </span>
+  );
 };
-
-/** A round badge in the kind's colour; the title names the kind. */
-export const KindBadge: React.FC<{ kind: ValueKind; title?: string; size?: number }> = ({ kind, title, size = 20 }) => (
-  <span className={`kind-badge kind-${kind}`} title={title} style={{ width: size, height: size }}>
-    <KindIcon kind={kind} size={Math.round(size * 0.6)} />
-  </span>
-);

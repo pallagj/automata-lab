@@ -6,17 +6,8 @@ import { CellResult } from "../../core/workspace";
 import { CellEditor } from "./CellEditor";
 import { CELL_TEMPLATES } from "../../state/examples";
 import { uniqueName, usedNames } from "../../state/names";
-import {
-  Boxes,
-  Braces,
-  CircleDot,
-  FunctionSquare,
-  Layers,
-  Plus,
-  Regex,
-  SquareStack,
-  StickyNote
-} from "lucide-react";
+import { Plus } from "lucide-react";
+import { KindIcon } from "../kinds";
 
 interface Props {
   workspace: Workspace;
@@ -34,38 +25,38 @@ interface InsertOption {
 const INSERT_OPTIONS: InsertOption[] = [
   {
     labelKey: "editor.insertMenu.fsm",
-    icon: <CircleDot size={15} />,
+    icon: <KindIcon kind="fsm" size={15} />,
     make: (used) => CELL_TEMPLATES.fsm.replace("name: M", `name: ${uniqueName("M", used)}`)
   },
   {
     labelKey: "editor.insertMenu.pda",
-    icon: <Layers size={15} />,
+    icon: <KindIcon kind="pda" size={15} />,
     make: (used) => CELL_TEMPLATES.pda.replace("name: P", `name: ${uniqueName("P", used)}`)
   },
   {
     labelKey: "editor.insertMenu.tm",
-    icon: <SquareStack size={15} />,
+    icon: <KindIcon kind="tm" size={15} />,
     make: (used) => CELL_TEMPLATES.tm.replace("name: T", `name: ${uniqueName("T", used)}`)
   },
   {
     labelKey: "editor.insertMenu.machine",
-    icon: <Boxes size={15} />,
+    icon: <KindIcon kind="general" size={15} />,
     make: (used) => CELL_TEMPLATES.machine.replace("name: Custom", `name: ${uniqueName("Custom", used)}`)
   },
   {
     labelKey: "editor.insertMenu.grammar",
-    icon: <Braces size={15} />,
+    icon: <KindIcon kind="grammar" size={15} />,
     make: (used) => CELL_TEMPLATES.grammar.replace("name: G", `name: ${uniqueName("G", used)}`)
   },
   {
     labelKey: "editor.insertMenu.regex",
-    icon: <Regex size={15} />,
+    icon: <KindIcon kind="regex" size={15} />,
     make: (used) => `${uniqueName("R", used)} = regex()`
   },
-  { labelKey: "editor.insertMenu.expression", icon: <FunctionSquare size={15} />, make: () => "" },
+  { labelKey: "editor.insertMenu.expression", icon: <KindIcon kind="expression" size={15} />, make: () => "" },
   {
     labelKey: "editor.insertMenu.note",
-    icon: <StickyNote size={15} />,
+    icon: <KindIcon kind="note" size={15} />,
     make: (_used, t) => t("editor.insertMenu.noteTemplate")
   }
 ];
@@ -113,7 +104,7 @@ export const EditorColumn: React.FC<Props> = ({ workspace, results }) => {
                     setMenuOpen(false);
                   }}
                 >
-                  <span className="ins-icon">{opt.icon}</span> {t(opt.labelKey)}
+                  {opt.icon} {t(opt.labelKey)}
                 </button>
               ))}
             </div>

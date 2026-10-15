@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import { useAppStore } from "../../state/store";
 import { GraphSpec, layoutGraph } from "../graph/GraphView";
 import type { PreviewContent, WorksheetKind } from "./preview";
-import { KindBadge } from "../kinds";
+import { KindIcon } from "../kinds";
 
 type Pinned = Record<string, { x: number; y: number }> | undefined;
 type Layout = ReturnType<typeof layoutGraph>;
@@ -76,9 +76,9 @@ export const KindBadges: React.FC<{ kinds: WorksheetKind[] }> = ({ kinds }) => {
   const { t } = useTranslation();
   if (kinds.length === 0) return null;
   return (
-    <span className="kind-badges">
+    <span className="kind-icons">
       {kinds.map((k) => (
-        <KindBadge key={k} kind={k} title={t(`browser.kind.${k}`)} />
+        <KindIcon key={k} kind={k} size={14} title={t(`browser.kind.${k}`)} />
       ))}
     </span>
   );

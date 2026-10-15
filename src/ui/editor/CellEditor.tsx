@@ -15,7 +15,7 @@ import { opApplicability, OpInfo, OPS } from "./ops";
 import { detectEntityKind, EntityForm, parseEntityDraft } from "./EntityForm";
 import { machineKindLabel } from "../machineLabels";
 import { epsilonInputHandler, regexEpsilonInputHandler } from "./epsilon";
-import { KindBadge, ValueKind } from "../kinds";
+import { KindIcon, ValueKind } from "../kinds";
 
 interface Props {
   cell: Cell;
@@ -299,7 +299,7 @@ export const CellEditor: React.FC<Props> = ({ cell, index, result }) => {
   return (
     <div
       ref={cellRef}
-      className={`cell ${isActive ? "active" : ""} ${hasError ? "has-error" : ""} ${
+      className={`cell ${inline ? "inline" : "block"} ${isActive ? "active" : ""} ${hasError ? "has-error" : ""} ${
         dropPos ? `drop-${dropPos}` : ""
       }`}
       onFocusCapture={() => setActiveCell(cell.id)}
@@ -325,7 +325,8 @@ export const CellEditor: React.FC<Props> = ({ cell, index, result }) => {
         onMouseUp={() => setDragReady(false)}
       >
         <span className="cell-index">{index + 1}</span>
-        {kind && <KindBadge kind={kind} title={kindLabel} size={18} />}
+        {/* one indicator only: a problem if there is one, otherwise what the cell holds */}
+        {!worst && kind && <KindIcon kind={kind} title={kindLabel} />}
         {worst && (
           <span
             ref={warnRef}
@@ -339,7 +340,7 @@ export const CellEditor: React.FC<Props> = ({ cell, index, result }) => {
         )}
       </div>
 
-      <div className={`cell-main ${inline ? "inline" : "block"}`}>
+      <div className="cell-main">
         <div className="cell-body">
           {showForm ? (
             <EntityForm source={cell.source} onChange={(s) => setCellSource(cell.id, s)} />

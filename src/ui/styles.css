@@ -396,11 +396,9 @@ body.resizing {
   width: 260px;
 }
 
-.insert-menu .ins-icon {
-  display: inline-flex;
-  color: var(--accent);
+.insert-menu .kind-icon {
   margin-right: 7px;
-  vertical-align: -2px;
+  vertical-align: -3px;
 }
 
 .cell-list {
@@ -742,13 +740,13 @@ details.card[open] > summary .chev {
 
 /* left strip: index, kind badge, warning */
 .cell-gutter {
+  position: relative;
   width: 34px;
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 5px;
-  padding: 7px 0;
+  justify-content: center;
   border-right: 1px solid var(--border-soft);
   cursor: grab;
   user-select: none;
@@ -758,16 +756,26 @@ details.card[open] > summary .chev {
   cursor: grabbing;
 }
 
+/* the number sits small in the corner, as in Desmos */
 .cell-index {
+  position: absolute;
+  top: 3px;
+  left: 4px;
   font-family: var(--font-mono);
-  font-size: 11px;
+  font-size: 9.5px;
+  line-height: 1;
   color: var(--muted);
+}
+
+/* a tall definition: the indicator stays level with its first row instead of the middle */
+.cell.block .cell-gutter {
+  justify-content: flex-start;
+  padding-top: 26px;
 }
 
 .gutter-warn-wrap {
   display: inline-flex;
   cursor: help;
-  margin-top: 2px;
   filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.25));
 }
 
@@ -796,23 +804,23 @@ details.card[open] > summary .chev {
 }
 
 /* expressions and notes: one line, vertically centred, tools at the end of the line */
-.cell-main.inline {
+.cell.inline .cell-main {
   align-items: center;
   min-height: 46px;
 }
 
-.cell-main.inline .cell-editor {
+.cell.inline .cell-editor {
   padding: 6px 4px 6px 8px;
 }
 
 /* definitions: the form / YAML block with the tools in a column on the right, ✕ on top */
-.cell-main.block .cell-tools {
+.cell.block .cell-tools {
   flex-direction: column;
   align-self: flex-start;
   padding-top: 6px;
 }
 
-.cell-main.block .cell-tool.danger {
+.cell.block .cell-tool.danger {
   order: -1;
 }
 
@@ -1038,44 +1046,17 @@ details.card[open] > summary .chev {
   color: var(--muted) !important;
 }
 
-/* ====== Kind badges (cells and the worksheet browser) ====== */
-.kind-badges {
+/* ====== Kind icons (cells, Insert menu, worksheet browser) — one plain grey set ====== */
+
+.kind-icons {
   display: inline-flex;
-  gap: 3px;
+  gap: 4px;
 }
 
-.kind-badge {
+.kind-icon {
   flex: none;
   display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 50%;
-  color: #fff;
-}
-
-.kind-fsm {
-  background: #8b5cf6;
-}
-.kind-pda {
-  background: #0891b2;
-}
-.kind-tm {
-  background: #d97706;
-}
-.kind-general {
-  background: #64748b;
-}
-.kind-grammar {
-  background: #059669;
-}
-.kind-regex {
-  background: #db2777;
-}
-.kind-verdict {
-  background: #2563eb;
-}
-.kind-note {
-  background: #a16207;
+  color: var(--muted);
 }
 
 /* ====== Diagnostics ====== */
