@@ -422,8 +422,7 @@
       "expandToDefinition": "Zu einer bearbeitbaren Definition aufklappen",
       "deleteCell": "Zelle löschen",
       "resultingAutomatonName": "Name des regulären Ausdrucks",
-      "regexHint": "Regulärer Ausdruck — Operatoren: | (oder), * (Abschluss), Klammern, ε (tippe eps; \\eps = die Buchstaben)",
-      "optionalName": "Name (optional)"
+      "regexHint": "Regulärer Ausdruck — Operatoren: | (oder), * (Abschluss), Klammern, ε (tippe eps; \\eps = die Buchstaben)"
     },
     "form": {
       "col": {

@@ -360,7 +360,7 @@ export const CellEditor: React.FC<Props> = ({ cell, index, result }) => {
                 setCellSource(cell.id, name ? `${name} = regex(${regexMatch[2]})` : `regex(${regexMatch[2]})`);
               }}
               placeholder={t("editor.form.name")}
-              title={`${t("editor.cell.resultingAutomatonName")} — ${t("editor.cell.optionalName")}`}
+              title={t("editor.cell.resultingAutomatonName")}
             />
             <span className="rx-eq">=</span>
             <span className="rx-chip">regex</span>

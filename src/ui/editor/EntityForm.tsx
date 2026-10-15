@@ -462,7 +462,7 @@ export const EntityForm: React.FC<Props> = ({ source, onChange }) => {
       <div className="ef-grid">
         <label>
           <span>{t("editor.form.name")}</span>
-          <input value={draft.name} onChange={(e) => setField("name", e.target.value)} placeholder={t("editor.cell.optionalName")} />
+          <input value={draft.name} onChange={(e) => setField("name", e.target.value)} placeholder={t("editor.form.name")} />
         </label>
         <label>
           <span>{t("editor.form.alphabet")}</span>

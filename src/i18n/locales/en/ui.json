@@ -422,8 +422,7 @@
       "expandToDefinition": "Expand into an editable definition",
       "deleteCell": "Delete cell",
       "resultingAutomatonName": "Name of the regular expression",
-      "regexHint": "Regular expression — operators: | (or), * (closure), parentheses, ε (type eps; \\eps = the letters)",
-      "optionalName": "name (optional)"
+      "regexHint": "Regular expression — operators: | (or), * (closure), parentheses, ε (type eps; \\eps = the letters)"
     },
     "form": {
       "col": {
