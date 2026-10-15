@@ -2,7 +2,8 @@
   "name": "automata-lab",
   "private": true,
   "version": "1.0.0",
-  "description": "AutomataLab — interaktív műhely a Nyelvek és automaták tantárgyhoz",
+  "description": "AutomataLab — an interactive workshop for formal languages and automata theory",
+  "license": "MIT",
   "type": "module",
   "scripts": {
     "dev": "vite",

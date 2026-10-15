@@ -14,7 +14,7 @@ import { acceptsFSM } from "../fsm/fsm";
 import { parseMachine } from "../parse/definitionParser";
 import { serializeMachine } from "../parse/serialize";
 
-const KETVEREM = `
+const TWO_STACKS = `
 Machine:
   name: AnBnCn
   charset: a, b, c
@@ -33,10 +33,10 @@ Machine:
     - qc $ Z/$ Z/$ ok
 `;
 
-describe("általános gép — kétvermes", () => {
-  const m = parseMachine(KETVEREM).value!;
+describe("general machine — two stacks", () => {
+  const m = parseMachine(TWO_STACKS).value!;
 
-  it("parse: két verem, olvasófej", () => {
+  it("parse: two stacks, read head", () => {
     expect(m.storages.map((s) => s.type)).toEqual(["stack", "stack"]);
     expect(m.input).toBe("head");
     expect(machineCaps(m).isFSMLike).toBe(false);
@@ -44,7 +44,7 @@ describe("általános gép — kétvermes", () => {
     expect(machineCaps(m).storageCounts?.stack).toBe(2);
   });
 
-  it("a^n b^n c^n felismerése (nem környezetfüggetlen!)", () => {
+  it("recognises a^n b^n c^n (not context-free!)", () => {
     expect(runMachine(m, "").verdict).toBe("accepted");
     expect(runMachine(m, "abc").verdict).toBe("accepted");
     expect(runMachine(m, "aabbcc").verdict).toBe("accepted");
@@ -54,7 +54,7 @@ describe("általános gép — kétvermes", () => {
     expect(runMachine(m, "cba").verdict).toBe("rejected");
   });
 
-  it("szerializálás-oda-vissza megőrzi a viselkedést", () => {
+  it("serialisation round trip preserves behaviour", () => {
     const re = parseMachine(serializeMachine(m));
     expect(re.ok).toBe(true);
     for (const w of ["", "abc", "aabbcc", "ab", "abca"]) {
@@ -63,25 +63,25 @@ describe("általános gép — kétvermes", () => {
   });
 });
 
-describe("általános gép — sorautomata (queue)", () => {
-  // a^n b^n sorral: az a-k bekerülnek a sorba, a b-k kiveszik őket (FIFO)
+describe("general machine — queue automaton", () => {
+  // a^n b^n with a queue: the a's are enqueued, the b's dequeue them (FIFO)
   const m = parseMachine(`
 Machine:
-  name: AnBnSor
+  name: AnBnQueue
   charset: a, b
-  states: gyujt, fogyaszt
-  init: gyujt
-  accept: fogyaszt
+  states: collect, consume
+  init: collect
+  accept: consume
   acceptMode: emptyStorages
   storages:
     s: queue
   transitions:
-    - gyujt a $/A gyujt
-    - gyujt $ $/$ fogyaszt
-    - fogyaszt b A/$ fogyaszt
+    - collect a $/A collect
+    - collect $ $/$ consume
+    - consume b A/$ consume
 `).value!;
 
-  it("a^n b^n felismerése", () => {
+  it("recognises a^n b^n", () => {
     expect(runMachine(m, "").verdict).toBe("accepted");
     expect(runMachine(m, "ab").verdict).toBe("accepted");
     expect(runMachine(m, "aaabbb").verdict).toBe("accepted");
@@ -89,32 +89,32 @@ Machine:
     expect(runMachine(m, "ba").verdict).toBe("rejected");
   });
 
-  it("FIFO-viselkedés: a sor eleje kerül ki", () => {
+  it("FIFO behaviour: the front of the queue is removed", () => {
     const c0 = initialMachineConfig(m, "ab");
     const after = stepMachineConfigs(m, [c0], "ab");
-    const collecting = after.find((c) => c.state === "gyujt");
+    const collecting = after.find((c) => c.state === "collect");
     expect(collecting?.storages[0]).toBe("A");
   });
 });
 
-describe("általános gép — szalagos bemenet (TM-szerű)", () => {
-  // a szót b-kre írja át, majd a szalag végén megáll elfogadva
+describe("general machine — tape input (TM-like)", () => {
+  // rewrites the word to b's, then halts accepting at the end of the tape
   const m = parseMachine(`
 Machine:
-  name: Atiro
+  name: Rewrite
   charset: a, b
-  states: megy, kesz
-  init: megy
-  accept: kesz
-  input: szalag
+  states: run, done
+  init: run
+  accept: done
+  input: tape
   storages:
-    szalag: tape
+    tape: tape
   transitions:
-    - megy ./b > megy
-    - megy _/_ = kesz
+    - run ./b > run
+    - run _/_ = done
 `).value!;
 
-  it("megálláskor fogad el, a szalagot átírja", () => {
+  it("accepts on halting and rewrites the tape", () => {
     expect(machineCaps(m).isTMLike).toBe(true);
     const r = runMachine(m, "aab");
     expect(r.verdict).toBe("accepted");
@@ -123,10 +123,10 @@ Machine:
     expect(tapeWindow(tape, 10).cells.join("").replace(/_+$/, "")).toBe("bbb");
   });
 
-  it("elfogadó állapot önmagában nem elég: csak megálláskor dönt", () => {
+  it("an accepting state alone is not enough: it decides only on halting", () => {
     const loop = parseMachine(`
 Machine:
-  name: Vegtelen
+  name: Sweep
   charset: a
   states: s
   init: s
@@ -137,13 +137,13 @@ Machine:
   transitions:
     - s a/a > s
 `).value!;
-    // a-n végigmegy, az _ alatt megáll, s elfogadó → elfogad
+    // runs over the a's, halts on _, s is accepting → accepts
     expect(runMachine(loop, "aaa").verdict).toBe("accepted");
   });
 });
 
-describe("determinizmus-analízis", () => {
-  it("determinisztikus kétvermes gépnél nem jelez álpozitívat", () => {
+describe("determinism analysis", () => {
+  it("reports no false positive for a deterministic stack machine", () => {
     const m = parseMachine(`
 Machine:
   name: Det
@@ -160,15 +160,15 @@ Machine:
     expect(analyzeMachine(m).isDeterministic).toBe(true);
   });
 
-  it("ε-bemenet + olvasó átmenet ütközése nemdeterminizmus", () => {
-    const m = parseMachine(KETVEREM).value!;
+  it("an ε-input transition clashing with a reading one is nondeterminism", () => {
+    const m = parseMachine(TWO_STACKS).value!;
     const a = analyzeMachine(m);
     expect(a.isDeterministic).toBe(false);
     expect(a.hasEpsilonInput).toBe(true);
     expect(a.nondeterministicAt.some((n) => n.state === "qa")).toBe(true);
   });
 
-  it("különböző veremtetőre váró átmenetek nem ütköznek", () => {
+  it("transitions expecting different stack tops do not clash", () => {
     const m = parseMachine(`
 Machine:
   name: D2
@@ -186,10 +186,10 @@ Machine:
   });
 });
 
-describe("képességek: tárolómentes gép = véges automata", () => {
+describe("capabilities: storage-free machine = finite automaton", () => {
   const m = parseMachine(`
 Machine:
-  name: VegeB
+  name: EndsB
   charset: a, b
   states: N, B
   init: N
@@ -201,7 +201,7 @@ Machine:
     - B b B
 `).value!;
 
-  it("machineToFSM és a gép-szimuláció viselkedése egyezik", () => {
+  it("machineToFSM agrees with the machine simulation", () => {
     expect(machineCaps(m).isFSMLike).toBe(true);
     const f = machineToFSM(m)!;
     for (const w of ["", "b", "ab", "ba", "abab"]) {
@@ -209,14 +209,14 @@ Machine:
     }
   });
 
-  it("tárolós gép nem alakítható automatává", () => {
-    const p = parseMachine(KETVEREM).value!;
+  it("a machine with storages cannot be turned into an automaton", () => {
+    const p = parseMachine(TWO_STACKS).value!;
     expect(machineToFSM(p)).toBe(null);
   });
 });
 
-describe("storages-formátum", () => {
-  it("beágyazott alak és verem-alapértelmezés (Z)", () => {
+describe("storages format", () => {
+  it("nested form and the stack default (Z)", () => {
     const m = parseMachine(`
 Machine:
   name: S
@@ -225,11 +225,11 @@ Machine:
   init: q
   accept: q
   storages:
-    rovid: stack
-    reszletes:
+    short: stack
+    detailed:
       type: stack
       init: XY
-    ures:
+    empty:
       type: stack
       init: ""
   transitions: []
@@ -238,11 +238,11 @@ Machine:
   });
 });
 
-describe("hibajelzések", () => {
-  it("rossz tokenszámú átmenet érthető hibát ad", () => {
+describe("error reporting", () => {
+  it("a transition with the wrong token count gives a clear error", () => {
     const r = parseMachine(`
 Machine:
-  name: Hibas
+  name: Broken
   charset: a
   states: q
   init: q
@@ -257,10 +257,10 @@ Machine:
     expect(r.diagnostics[0].detail?.params?.count).toBe(4);
   });
 
-  it("ismeretlen tárolótípus", () => {
+  it("unknown storage type", () => {
     const r = parseMachine(`
 Machine:
-  name: Hibas
+  name: Broken
   charset: a
   states: q
   init: q
@@ -273,15 +273,15 @@ Machine:
     expect(r.diagnostics[0].title.key).toBe("definitionParser.unknownStorageType.title");
   });
 
-  it("input mező csak head vagy tároló-id lehet", () => {
+  it("the input field must be head or a storage id", () => {
     const r = parseMachine(`
 Machine:
-  name: Hibas
+  name: Broken
   charset: a
   states: q
   init: q
   accept: q
-  input: nincsilyen
+  input: nosuchstorage
   transitions: []
 `);
     expect(r.ok).toBe(false);
@@ -289,10 +289,31 @@ Machine:
   });
 });
 
-describe("él-címkék", () => {
-  it("egyedi gépnél szegmensekre bontott címke", () => {
-    const m = parseMachine(KETVEREM).value!;
+describe("edge labels", () => {
+  it("custom machines get a label split into segments", () => {
+    const m = parseMachine(TWO_STACKS).value!;
     const t = m.transitions.find((x) => x.from === "qb" && x.input === "b")!;
     expect(machineTransitionLabel(m, t)).toBe("b ‖ A / ε ‖ ε / B");
+  });
+});
+
+describe("legacy Hungarian aliases", () => {
+  it("still parse in worksheets saved by older versions", () => {
+    const r = parseMachine(`
+gep:
+  name: Old
+  charset: a
+  states: q
+  init: q
+  accept: q
+  input: fej
+  storages:
+    v: verem
+    s: sor
+  transitions: []
+`);
+    expect(r.ok).toBe(true);
+    expect(r.value!.input).toBe("head");
+    expect(r.value!.storages.map((s) => s.type)).toEqual(["stack", "queue"]);
   });
 });

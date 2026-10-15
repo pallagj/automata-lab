@@ -136,7 +136,7 @@ button {
   position: relative;
 }
 
-/* ====== Canvas-first gép-nézet (Stage) ====== */
+/* ====== Canvas-first machine view (Stage) ====== */
 
 .stage {
   position: absolute;
@@ -162,7 +162,7 @@ button {
   border-radius: 0;
 }
 
-/* cím és tulajdonság-chipek a vászon fölött, bal felül */
+/* title and property chips above the canvas, top left */
 .stage-chips {
   position: absolute;
   top: 10px;
@@ -194,7 +194,7 @@ button {
   backdrop-filter: blur(8px);
 }
 
-/* lebegő, összecsukható panelek jobb felül */
+/* floating, collapsible panels at the top right */
 .stage-panels {
   position: absolute;
   top: 10px;
@@ -255,7 +255,7 @@ button {
   font-size: 13.5px;
 }
 
-/* alul dokkolt szimulációs sáv */
+/* simulation strip docked at the bottom */
 .stage-bottom {
   flex-shrink: 0;
   max-height: 46%;
@@ -277,7 +277,7 @@ button {
   align-self: center;
 }
 
-/* üres cella vászna */
+/* canvas of an empty cell */
 .empty-canvas {
   cursor: copy;
   background:
@@ -310,7 +310,7 @@ button {
   font-size: 12.5px;
 }
 
-/* a cellapanel színben is elkülönül: zárt, keretes oszlop */
+/* the cell panel stands apart in colour too: a closed, framed column */
 .editor-col {
   gap: 0;
   background: var(--panel);
@@ -318,13 +318,13 @@ button {
   border-radius: var(--radius);
 }
 
-/* a panelek nem zsugorodhatnak össze: ha nem férnek ki, az oszlop görgethető */
+/* panels must not shrink: if they do not fit, the column scrolls */
 .editor-col > *,
 .detail-col > * {
   flex-shrink: 0;
 }
 
-/* panel-átméretező fogantyú a két oszlop között */
+/* panel resize handle between the two columns */
 .col-resizer {
   cursor: col-resize;
   position: relative;
@@ -354,7 +354,7 @@ body.resizing {
   user-select: none;
 }
 
-/* a cellapanel fejléce: munkalap neve + beszúrás */
+/* cell panel header: worksheet name + insert */
 .pane-head {
   position: sticky;
   top: 0;
@@ -616,7 +616,7 @@ details.card[open] > summary .chev {
   transform: rotate(90deg);
 }
 
-/* ====== Cells — egyoszlopos „táblázat”, Desmos-szerűen ====== */
+/* ====== Cells — a single-column "table", Desmos style ====== */
 
 .cell {
   position: relative;
@@ -645,7 +645,7 @@ details.card[open] > summary .chev {
   background: var(--danger);
 }
 
-/* drag&drop beszúrási jelző */
+/* drag & drop insertion marker */
 .cell.drop-above::after,
 .cell.drop-below::after {
   content: "";
@@ -666,7 +666,7 @@ details.card[open] > summary .chev {
   bottom: -1.5px;
 }
 
-/* bal oldali sáv: sorszám, fogantyú, figyelmeztetés */
+/* left strip: index, handle, warning */
 .cell-gutter {
   width: 34px;
   flex-shrink: 0;
@@ -719,7 +719,7 @@ details.card[open] > summary .chev {
   min-width: 0;
 }
 
-/* az (n+1). cella: áttűnő, kattintásra jön létre */
+/* the (n+1)th cell: translucent, created on click */
 .cell.ghost {
   border-bottom: none;
   min-height: 58px;
@@ -742,7 +742,7 @@ details.card[open] > summary .chev {
   flex: 1;
 }
 
-/* diagnosztika-buborék a gutter háromszögéhez */
+/* diagnostics bubble for the gutter triangle */
 .diag-popover {
   position: fixed;
   z-index: 240;
@@ -756,7 +756,7 @@ details.card[open] > summary .chev {
   padding: 8px 4px 0 4px;
 }
 
-/* regex-cella: jelölt, külön mezős bevitel */
+/* regex cell: marked, with a separate input field */
 .regex-row {
   display: flex;
   align-items: center;
@@ -802,7 +802,7 @@ details.card[open] > summary .chev {
   min-width: 0;
 }
 
-/* interaktív entitás-szerkesztő */
+/* interactive entity editor */
 .entity-form {
   padding: 8px 10px 11px 8px;
   display: flex;
@@ -1103,7 +1103,7 @@ details.card[open] > summary .chev {
   color: var(--danger);
 }
 
-/* ====== Regex-elemző nézet ====== */
+/* ====== Regex analyser view ====== */
 
 .rx-pattern {
   font-family: var(--font-mono);
@@ -1385,7 +1385,7 @@ details.card[open] > summary .chev {
   border-color: var(--accent);
 }
 
-/* általános gép: tárolók megjelenítése */
+/* general machine: storage display */
 .storages {
   display: flex;
   flex-direction: column;
@@ -1413,7 +1413,7 @@ details.card[open] > summary .chev {
   border-style: dashed;
 }
 
-/* ====== Közvetlenül szerkeszthető szalag ====== */
+/* ====== Directly editable tape ====== */
 
 .tape-input {
   position: relative;
@@ -1476,7 +1476,7 @@ details.card[open] > summary .chev {
   font-size: 12.5px;
 }
 
-/* tároló-szerkesztő az entitás-űrlapon */
+/* storage editor in the entity form */
 .ef-storages {
   display: flex;
   flex-direction: column;
@@ -1681,7 +1681,7 @@ table.t td.state-cell.accept {
   font-size: 16px;
 }
 
-/* ====== Gráf-szerkesztő dialógusok ====== */
+/* ====== Graph editor dialogs ====== */
 
 .modal.gdialog {
   width: min(460px, 94vw);
@@ -1924,7 +1924,7 @@ table.t td.state-cell.accept {
   padding: 6px;
 }
 
-/* cellán kívül, portálban megjelenő műveletmenü — sosem vágódik le */
+/* operation menu rendered in a portal outside the cell — never clipped */
 .popover-back {
   position: fixed;
   inset: 0;

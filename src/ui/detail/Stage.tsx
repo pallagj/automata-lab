@@ -2,9 +2,9 @@ import React from "react";
 import { ChevronRight } from "lucide-react";
 
 /**
- * Canvas-first elrendezés a gépekhez: a gráf tölti ki a teljes jobb oldalt,
- * a cím/badge-ek és az összecsukható információs panelek fölötte lebegnek,
- * a szimuláció (szalag, konfigurációk) alul dokkolt sávban él.
+ * Canvas-first layout for machines: the graph fills the whole right side, the
+ * title/badges and the collapsible info panels float above it, and the
+ * simulation (tape, configurations) lives in a strip docked at the bottom.
  */
 
 export interface StagePanel {

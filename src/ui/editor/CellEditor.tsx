@@ -26,7 +26,7 @@ const KIND_KEY: Record<string, string> = {
   verdict: "editor.cell.kind.verdict"
 };
 
-/** A felismert gépfajta neve a cella fejlécébe — a konfigurációból. */
+/** The recognised machine kind's name for the cell header — from its configuration. */
 function valueKindLabel(t: TFunction, value: { kind: string }): string | undefined {
   if (value.kind === "machine") {
     const caps = machineCaps(value as never);
@@ -38,10 +38,10 @@ function valueKindLabel(t: TFunction, value: { kind: string }): string | undefin
   return KIND_KEY[value.kind] ? t(KIND_KEY[value.kind]) : undefined;
 }
 
-/** Cellák közti drag&drop: az éppen vonszolt cella azonosítója. */
+/** Drag & drop between cells: the id of the cell being dragged. */
 let draggingId: string | null = null;
 
-/** Kidolgozott figyelmeztető jelvény a gutterbe (nem emoji). */
+/** A proper warning badge for the gutter (not an emoji). */
 const SeverityBadge: React.FC<{ level: "error" | "warning" | "info" }> = ({ level }) => {
   if (level === "info") {
     return (
@@ -91,7 +91,7 @@ export const CellEditor: React.FC<Props> = ({ cell, index, result }) => {
   const [dragReady, setDragReady] = useState(false);
   const [dropPos, setDropPos] = useState<"above" | "below" | null>(null);
 
-  // entitás-cella: űrlap- vagy kódnézet
+  // entity cell: form or code view
   const entityKind = detectEntityKind(cell.source);
   const formAvailable = entityKind !== null && parseEntityDraft(cell.source) !== null;
   const [codeView, setCodeView] = useState(false);
@@ -113,7 +113,7 @@ export const CellEditor: React.FC<Props> = ({ cell, index, result }) => {
 
   const extensions = useMemo(() => (isYaml ? [yaml()] : []), [isYaml]);
 
-  // kifejezés-cella eredménye kibontható szerkeszthető YAML-lá
+  // an expression cell's result can be expanded into editable YAML
   const expandable =
     result?.isExpression && result.value && (result.value.kind === "machine" || result.value.kind === "grammar")
       ? result.value
@@ -153,21 +153,21 @@ export const CellEditor: React.FC<Props> = ({ cell, index, result }) => {
     setDiagOpen(false);
   };
 
-  /** A kiválasztott művelettel körbeveszi a cella kifejezését. */
+  /** Wraps the cell's expression in the selected operation. */
   const applyOp = (op: OpInfo) => {
     setOpsOpen(false);
     const src = cell.source.trim();
     const second = op.args === 2 ? ", " : "";
     const asg = /^\s*([A-Za-z][A-Za-z0-9_'′]*)\s*=\s*([\s\S]+)$/.exec(src);
     if (asg) {
-      // kifejezés-cella: a jobb oldalt csomagoljuk be
+      // expression cell: wrap the right-hand side
       setCellSource(cell.id, `${asg[1]} = ${op.name}(${asg[2].trim()}${second})`);
     } else if (result?.name && !result.isExpression) {
-      // YAML-definíció: új kifejezés-cella alá, a definícióra hivatkozva
+      // YAML definition: a new expression cell below, referring to the definition
       addCell(`${result.name}_${op.name} = ${op.name}(${result.name}${second})`, cell.id);
     } else {
-      // üres / értelmezhetetlen cella: kifejezés-sablon
-      setCellSource(cell.id, `eredmeny = ${op.name}(${second})`);
+      // empty / uninterpretable cell: expression template
+      setCellSource(cell.id, `result = ${op.name}(${second})`);
     }
   };
 
@@ -200,7 +200,7 @@ export const CellEditor: React.FC<Props> = ({ cell, index, result }) => {
     setDropPos(null);
   };
 
-  /* ---- műveletmenü csoportokkal ---- */
+  /* ---- operation menu with groups ---- */
   const renderOpsMenu = () => {
     const value = result?.value ?? null;
     const items: React.ReactNode[] = [];

@@ -120,7 +120,7 @@
   fill: var(--accent);
 }
 
-/* ====== vizuális szerkesztés ====== */
+/* ====== visual editing ====== */
 
 .graph-node.movable {
   cursor: grab;
@@ -130,7 +130,7 @@
   cursor: grabbing;
 }
 
-/* látható szaggatott gyűrű hoverre: innen indul az él */
+/* visible dashed ring on hover: edges start from here */
 .graph-ring-vis {
   fill: none;
   stroke: var(--accent);
@@ -141,7 +141,7 @@
   pointer-events: none;
 }
 
-/* a gyűrű találati sávja: csak a szegélyen fog, a test marad mozgatás */
+/* the ring's hit band: only the border catches, the body still moves the node */
 .graph-ring-hit {
   fill: none;
   stroke: transparent;
@@ -154,7 +154,7 @@
   opacity: 0.8;
 }
 
-/* tömör nyíl-pötty a jobb szélen */
+/* solid arrow dot on the right edge */
 .graph-port-dot {
   opacity: 0;
   cursor: crosshair;
@@ -183,7 +183,7 @@
   stroke-linejoin: round;
 }
 
-/* él-húzás közben a célállapot kiemelése */
+/* highlight the target state while dragging an edge */
 .graph-node.connect-target .graph-node-circle {
   stroke: var(--accent);
   stroke-width: 2.8;
@@ -287,13 +287,13 @@
   color: var(--accent);
 }
 
-/* nagyobb találati felület az él címkéjén — csak a címke szerkeszt */
+/* larger hit area on the edge label — only the label edits */
 .graph-label-hit {
   fill: transparent;
   cursor: pointer;
 }
 
-/* a címke fölött jelezzük, hogy az szerkeszthető */
+/* signal over the label that it is editable */
 .graph-edge.editable .graph-label-hit:hover ~ .graph-edge-label,
 .graph-edge.editable .graph-edge-label.editable:hover {
   fill: var(--accent);

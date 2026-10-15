@@ -34,10 +34,10 @@ interface Props {
   spec: GraphSpec;
   onEdgeClick?: (edge: GraphEdge) => void;
   className?: string;
-  /** pozíció-rögzítés kulcsa (cella) — ha van, az állapotok húzhatók */
+  /** key for pinned positions (cell) — when set, states are draggable */
   cellId?: string | null;
   editing?: GraphEditing | null;
-  /** export-fájlnév alapja */
+  /** base of the export file name */
   exportName?: string;
 }
 
@@ -88,7 +88,7 @@ function layout(
   });
   const byId = new Map(nodes.map((n) => [n.id, n]));
 
-  // azonos (from,to) párok és oda-vissza élpárok megkülönböztetése görbülettel
+  // tell apart identical (from,to) pairs and back-and-forth edge pairs with curvature
   const pairCount = new Map<string, number>();
   for (const e of spec.edges) {
     if (e.from === e.to) continue;
@@ -101,7 +101,7 @@ function layout(
     const b = byId.get(e.to)!;
 
     if (e.from === e.to) {
-      // hurokél: kör a csomópont fölött
+      // self-loop: a circle above the node
       const r = a.r;
       const path = `M ${a.x - r * 0.5} ${a.y - r * 0.85} C ${a.x - r * 1.1} ${a.y - r * 2.6}, ${a.x + r * 1.1} ${a.y - r * 2.6}, ${a.x + r * 0.5} ${a.y - r * 0.85}`;
       return { ...e, path, labelX: a.x, labelY: a.y - r * 2.45 };
@@ -115,7 +115,7 @@ function layout(
     const dist = Math.hypot(dx, dy) || 1;
     const ux = dx / dist;
     const uy = dy / dist;
-    // merőleges eltolás, ha oda-vissza él is van
+    // perpendicular offset when there is a reverse edge too
     const offset = both ? 26 : 0;
     const px = -uy * offset;
     const py = ux * offset;
@@ -158,7 +158,7 @@ export const GraphView: React.FC<Props> = ({ spec, onEdgeClick, className, cellI
   const savedPos = useAppStore((s) => (cellId ? s.layouts[cellId] : undefined));
   const setNodePos = useAppStore((s) => s.setNodePos);
 
-  // élő (húzás közbeni) pozíció a mentett fölé rétegezve
+  // live (while dragging) position layered over the saved one
   const [livePos, setLivePos] = useState<{ id: string; x: number; y: number } | null>(null);
   const overrides = useMemo(() => {
     const m = new Map<string, { x: number; y: number }>();
@@ -179,20 +179,20 @@ export const GraphView: React.FC<Props> = ({ spec, onEdgeClick, className, cellI
   const [exportOpen, setExportOpen] = useState(false);
   const [copied, setCopied] = useState(false);
 
-  // csak a gráf szerkezetének változásakor illesztünk újra (mozgatáskor nem)
+  // refit only when the graph's structure changes (not while moving nodes)
   const structKey = spec.nodes
     .map((n) => n.id)
     .sort()
     .join("|");
-  // festés előtt nullázunk, különben egy képkockára a régi nagyítás látszik az új gráfon
+  // reset before paint, otherwise the old zoom shows on the new graph for one frame
   useLayoutEffect(() => {
     setView(null);
   }, [structKey]);
 
-  // a vászon mérete az automatikus illesztés zoom-korlátjához
+  // canvas size for the zoom limit of the automatic fit
   const [size, setSize] = useState<{ w: number; h: number } | null>(null);
-  // useLayoutEffect + azonnali mérés: az első festés előtt megvan a méret,
-  // így nem villan fel a korlát nélküli (túlnagyított) illesztés egy képkockára
+  // useLayoutEffect + immediate measurement: the size is known before the first paint,
+  // so the unlimited (over-zoomed) fit never flashes for a frame
   useLayoutEffect(() => {
     const el = svgRef.current;
     if (!el) return;
@@ -203,7 +203,7 @@ export const GraphView: React.FC<Props> = ({ spec, onEdgeClick, className, cellI
     return () => ro.disconnect();
   }, []);
 
-  // automatikus illesztés felső zoom-korláttal: kis gráf nagy vásznon ne legyen óriási
+  // automatic fit with an upper zoom limit: a small graph on a big canvas must not be huge
   const MAX_FIT_SCALE = 1.3;
   const fitted = useMemo<[number, number, number, number]>(() => {
     let [x, y, w, h] = bounds;
@@ -226,19 +226,19 @@ export const GraphView: React.FC<Props> = ({ spec, onEdgeClick, className, cellI
 
   const clientToView = (cx: number, cy: number): [number, number] => {
     const rect = svgRef.current!.getBoundingClientRect();
-    // preserveAspectRatio=meet: a tényleges skála a kisebb arány
+    // preserveAspectRatio=meet: the effective scale is the smaller ratio
     const scale = Math.min(rect.width / vb[2], rect.height / vb[3]);
     const padX = (rect.width - vb[2] * scale) / 2;
     const padY = (rect.height - vb[3] * scale) / 2;
     return [vb[0] + (cx - rect.left - padX) / scale, vb[1] + (cy - rect.top - padY) / scale];
   };
 
-  /** húzás indítása előtt rögzítjük a nézetet, hogy ne ugráljon az illesztés */
+  /** pin the view before a drag starts so the fit does not jump */
   const freezeView = () => {
     if (!view) setView([vb[0], vb[1], vb[2], vb[3]]);
   };
 
-  /** a legközelebbi, elég közeli csomópont (átfedő állapotoknál is jó) */
+  /** the nearest node that is close enough (works for overlapping states too) */
   const findTarget = (mx: number, my: number): LaidOutNode | null => {
     let target: LaidOutNode | null = null;
     let best = Infinity;
@@ -263,7 +263,7 @@ export const GraphView: React.FC<Props> = ({ spec, onEdgeClick, className, cellI
   };
 
   const onPointerDown = (e: React.PointerEvent) => {
-    // élre kattintáskor nem indul pan, hogy a kattintás megbízhatóan célba érjen
+    // clicking an edge does not start a pan, so the click lands reliably
     if ((e.target as Element).closest(".graph-edge")) return;
     dragRef.current = { x: e.clientX, y: e.clientY, view: vb };
     (e.currentTarget as Element).setPointerCapture(e.pointerId);
@@ -322,7 +322,7 @@ export const GraphView: React.FC<Props> = ({ spec, onEdgeClick, className, cellI
         const [mx, my] = clientToView(e.clientX, e.clientY);
         setNodePos(cellId, d.id, mx + d.dx, my + d.dy);
       } else if (!d.moved && editing) {
-        // kattintás (húzás nélkül) → állapot-szerkesztő dialógus
+        // click (without dragging) → state editor dialog
         setDialog({ t: "state", name: d.id, x: 0, y: 0 });
       }
       setLivePos(null);
@@ -480,7 +480,7 @@ export const GraphView: React.FC<Props> = ({ spec, onEdgeClick, className, cellI
             </text>
             {editing && (
               <>
-                {/* a szegély sávjából (gyűrű) indul az él-húzás */}
+                {/* edge dragging starts from the border band (ring) */}
                 <circle
                   r={n.r + 4}
                   className="graph-ring-hit"

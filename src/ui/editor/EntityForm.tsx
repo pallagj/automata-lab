@@ -10,12 +10,12 @@ import { useAppStore } from "../../state/store";
 import { machineKindLabel } from "../machineLabels";
 
 /**
- * Interaktív entitás-szerkesztő: a YAML-definíció helyett űrlapon adható meg
- * a gép/nyelvtan — a cella forrása továbbra is YAML, ide-oda alakítjuk.
+ * Interactive entity editor: the machine/grammar can be entered in a form
+ * instead of YAML — the cell's source stays YAML and is converted back and forth.
  *
- * Egyetlen gép-fajta létezik (Machine); hogy automata, veremautomata vagy
- * Turing-gép-e, azt a tárolók konfigurációja dönti el. A tárolók strukturált
- * sorokban szerkeszthetők, az átmenet-oszlopok belőlük generálódnak.
+ * There is a single machine type (Machine); whether it is an automaton, a pushdown
+ * automaton or a Turing machine is decided by its storage configuration. Storages
+ * are edited as structured rows and the transition columns are generated from them.
  */
 
 export type EntityKind = "machine" | "grammar";
@@ -24,18 +24,19 @@ export interface EntityDraft {
   kind: EntityKind;
   name: string;
   charset: string;
-  /** states (gép) / variables (nyelvtan) */
+  /** states (machine) / variables (grammar) */
   states: string;
   init: string;
   accept: string;
   acceptMode: string;
-  /** "head" (olvasófej) vagy egy tároló id-je */
+  /** "head" (read head) or the id of a storage */
   input: string;
   storages: StorageSpec[];
-  /** átmenetek / szabályok részekre (tokenekre) bontva */
+  /** transitions / rules split into parts (tokens) */
   rows: string[][];
 }
 
+/** Top-level keys; gep/gép/nyelvtan are legacy Hungarian aliases kept for old worksheets. */
 const KIND_BY_KEY: Record<string, EntityKind> = {
   Machine: "machine",
   machine: "machine",
@@ -46,7 +47,7 @@ const KIND_BY_KEY: Record<string, EntityKind> = {
   nyelvtan: "grammar"
 };
 
-/** A cella forrásából megállapítja, entitás-e (és milyen). */
+/** Determines from the cell source whether it is an entity (and which kind). */
 export function detectEntityKind(source: string): EntityKind | null {
   const m = /^\s*([A-Za-zÀ-ž]+)\s*:/.exec(source);
   return m ? (KIND_BY_KEY[m[1]] ?? null) : null;
@@ -56,7 +57,7 @@ export function draftStorages(d: EntityDraft): StorageSpec[] {
   return d.kind === "machine" ? d.storages : [];
 }
 
-/** hány tokent foglal egy tároló az átmenet-sorban */
+/** how many tokens a storage occupies in a transition line */
 const tokensOf = (t: StorageType) => (t === "tape" ? 2 : 1);
 
 export function rowArity(d: EntityDraft): number {
@@ -80,7 +81,7 @@ function splitRow(arity: number, isGrammar: boolean, raw: string): string[] {
   return parts.slice(0, arity);
 }
 
-/** YAML → űrlap-vázlat; null, ha (épp) nem értelmezhető. */
+/** YAML → form draft; null if it cannot be interpreted (right now). */
 export function parseEntityDraft(source: string): EntityDraft | null {
   const kind = detectEntityKind(source);
   if (!kind) return null;
@@ -130,7 +131,7 @@ export function parseEntityDraft(source: string): EntityDraft | null {
   return draft;
 }
 
-/** YAML-veszélyes skalárok idézőjelezése (mint a serialize.ts-ben). */
+/** Quotes YAML-unsafe scalars (as in serialize.ts). */
 const NEEDS_QUOTE = /[{}[\]:#'"&*?|>%@`]|^[\s-]|^$/;
 const scalar = (s: string) => (NEEDS_QUOTE.test(s) ? `"${s.replaceAll('"', '\\"')}"` : s);
 
@@ -177,7 +178,7 @@ export function serializeEntityDraft(d: EntityDraft): string {
   return lines.join("\n");
 }
 
-/* --------------------- oszlopok az átmenet-sorokhoz --------------------- */
+/* ---------------------- columns for transition rows ---------------------- */
 
 export interface RowColumn {
   header: string;
@@ -214,7 +215,7 @@ function emptyRow(cols: RowColumn[], isGrammar: boolean): string[] {
   return cols.map((c) => (c.widget === "move" ? ">" : ""));
 }
 
-/** Mozgás-választó: csak nyilak, a szöveg úgysem fér ki. */
+/** Move picker: arrows only, text would not fit anyway. */
 export const MoveSelect: React.FC<{
   value: string;
   onChange: (v: string) => void;
@@ -230,7 +231,7 @@ export const MoveSelect: React.FC<{
   );
 };
 
-/** A felismert gépfajta — csak a bemenettől és a tárolóktól függ. */
+/** The recognised machine kind — depends only on the input and the storages. */
 function draftKindCaps(d: EntityDraft): MachineCaps {
   const probe: Machine = {
     kind: "machine",
@@ -247,7 +248,7 @@ function draftKindCaps(d: EntityDraft): MachineCaps {
   return machineCaps(probe);
 }
 
-/* ------------------- fajtaváltás-figyelmeztető dialógus ------------------- */
+/* ------------------- machine-kind change warning dialog ------------------- */
 
 interface KindChangeRequest {
   fromCaps: MachineCaps;
@@ -313,7 +314,7 @@ const KindChangeDialog: React.FC<{ req: KindChangeRequest; onClose: () => void }
   );
 };
 
-/* ----------------------------- tárolók ----------------------------- */
+/* ----------------------------- storages ---------------------------- */
 
 const STORAGE_TYPE_KEY: Record<StorageType, string> = {
   stack: "editor.form.storageType.stack",
@@ -344,7 +345,7 @@ export const EntityForm: React.FC<Props> = ({ source, onChange }) => {
   const hideKindWarning = useAppStore((s) => s.hideKindChangeWarning);
   const [kindChange, setKindChange] = useState<KindChangeRequest | null>(null);
 
-  // külső forrásváltozás (pl. kód-nézetben szerkesztés) követése
+  // follow external source changes (e.g. editing in the code view)
   useEffect(() => {
     if (source !== lastSerialized.current) {
       lastSerialized.current = source;
@@ -361,13 +362,13 @@ export const EntityForm: React.FC<Props> = ({ source, onChange }) => {
     onChange(s);
   };
 
-  /** az adott tárolót „békén hagyó” token(ek) az átmenet-sorban */
+  /** the token(s) that leave the given storage untouched in a transition line */
   const noOpTokens = (s: StorageSpec): string[] => (s.type === "tape" ? ["./&", "="] : ["$/$"]);
 
   /**
-   * Tároló- vagy bemenet-változáskor a meglévő sorok átrendeződnek: a megmaradt
-   * tárolók megtartják a műveleteiket (azonosító szerint párosítva), az újak
-   * no-op műveletet kapnak — így a gép viselkedése nem változik, csak bővül.
+   * When the storages or the input change, the existing rows are rearranged: the
+   * remaining storages keep their operations (matched by id) and new ones get a
+   * no-op — so the machine's behaviour does not change, it is only extended.
    */
   const reshapeRows = (prev: EntityDraft, next: EntityDraft, renames?: Map<string, string>): EntityDraft => {
     const prevStorages = prev.storages;
@@ -391,7 +392,7 @@ export const EntityForm: React.FC<Props> = ({ source, onChange }) => {
           const oldId = renames?.get(s.id) ?? s.id;
           const old = oldOps.get(oldId);
           const prevSpec = prevStorages.find((x) => x.id === oldId);
-          // típusváltáskor a régi művelet értelmét veszti → no-op
+          // on a type change the old operation becomes meaningless → no-op
           if (old && prevSpec && prevSpec.type === s.type) middle.push(...old);
           else middle.push(...noOpTokens(s));
         }
@@ -401,8 +402,8 @@ export const EntityForm: React.FC<Props> = ({ source, onChange }) => {
   };
 
   /**
-   * Szerkezeti módosítás (tárolók/bemenet): ha megváltoztatná a gép felismert
-   * fajtáját, előbb megerősítést kérünk — hacsak a felhasználó le nem tiltotta.
+   * Structural change (storages/input): if it would change the machine's recognised
+   * kind, ask for confirmation first — unless the user has turned that off.
    */
   const commitStructural = (next: EntityDraft, renames?: Map<string, string>) => {
     const apply = () => update(reshapeRows(draft, next, renames));
@@ -424,7 +425,7 @@ export const EntityForm: React.FC<Props> = ({ source, onChange }) => {
 
   const setStorages = (storages: StorageSpec[]) => {
     const next: EntityDraft = { ...draft, storages };
-    // ha a bemenet egy törölt tárolóra mutatott, vissza az olvasófejre
+    // if the input pointed at a deleted storage, fall back to the read head
     if (next.input !== "head" && !storages.some((s) => s.id === next.input)) next.input = "head";
     commitStructural(next);
   };
@@ -432,9 +433,9 @@ export const EntityForm: React.FC<Props> = ({ source, onChange }) => {
   const setStorage = (i: number, patch: Partial<StorageSpec>) => {
     const prev = draft.storages[i];
     const updated = { ...prev, ...patch };
-    // típusváltáskor az alapértelmezett kezdőtartalom is követ, ha eddig az volt
+    // on a type change the default initial content follows too, if it was the default
     if (patch.type && prev.init === defaultInit(prev.type)) updated.init = defaultInit(patch.type);
-    // a bemenet-hivatkozás követi az átnevezést
+    // the input reference follows the rename
     const storages = draft.storages.map((s, k) => (k === i ? updated : s));
     const next: EntityDraft = { ...draft, storages };
     const renames = patch.id ? new Map([[updated.id, prev.id]]) : undefined;

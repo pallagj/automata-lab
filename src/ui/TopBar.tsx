@@ -51,7 +51,7 @@ export const TopBar: React.FC = () => {
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `${ws.name.replaceAll(/[^\wáéíóöőúüű -]/gi, "")}.automata.json`;
+    a.download = `${ws.name.replaceAll(/[^\p{L}\p{N}_ -]/gu, "")}.automata.json`;
     a.click();
     URL.revokeObjectURL(url);
   };

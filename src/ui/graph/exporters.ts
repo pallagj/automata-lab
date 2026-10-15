@@ -1,6 +1,6 @@
 /**
- * Gráf-export: önálló SVG, PNG és LaTeX (TikZ) — pl. dolgozatba,
- * jegyzetbe illesztéshez.
+ * Graph export: standalone SVG, PNG and LaTeX (TikZ) — e.g. for papers
+ * and lecture notes.
  */
 import i18n from "../../i18n";
 
@@ -47,7 +47,7 @@ const STYLE_PROPS = [
   "dominant-baseline"
 ];
 
-/** a kiszámított stílusok beégetése, hogy a fájl önállóan is jól nézzen ki */
+/** inline the computed styles so the file looks right on its own */
 function inlineStyles(src: Element, dst: Element) {
   const cs = getComputedStyle(src);
   let style = "";
@@ -70,8 +70,8 @@ export function buildStandaloneSVG(
   const clone = svg.cloneNode(true) as SVGSVGElement;
   inlineStyles(svg, clone);
 
-  // csak-UI elemek eltávolítása (hover-gyűrű, port, húzás közbeni vonal):
-  // a klónban már nincs class, ezért az eredeti fa indexei alapján párosítunk
+  // remove UI-only elements (hover ring, port, line while dragging):
+  // the clone has no classes any more, so match by index in the original tree
   const uiNodes = svg.querySelectorAll(
     ".graph-ring-vis, .graph-ring-hit, .graph-port-dot, .graph-connect-line"
   );
@@ -139,9 +139,9 @@ function texEscape(s: string): string {
     .replaceAll("→", "$\\rightarrow$");
 }
 
-/** TikZ-kód a tankönyvi automata-stílusban (tikz automata library). */
+/** TikZ code in the textbook automaton style (tikz automata library). */
 export function toTikz(nodes: ExportNode[], edges: ExportEdge[]): string {
-  // TikZ-barát azonosítók
+  // TikZ-friendly identifiers
   const ids = new Map<string, string>();
   nodes.forEach((n, i) => {
     ids.set(n.id, /^[A-Za-z][A-Za-z0-9]*$/.test(n.id) ? n.id : `s${i}`);
@@ -166,7 +166,7 @@ export function toTikz(nodes: ExportNode[], edges: ExportEdge[]): string {
     lines.push(`  \\node[${opts.join(", ")}] (${ids.get(n.id)}) at (${x},${y}) {${texEscape(n.label)}};`);
   }
 
-  // oda-vissza élpárok: ívelt élek
+  // back-and-forth edge pairs: bent edges
   const pairs = new Set(edges.map((e) => `${e.from}→${e.to}`));
   const edgeLines = edges.map((e) => {
     const a = ids.get(e.from);

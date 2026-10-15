@@ -1,7 +1,7 @@
 /**
- * A kifejezésnyelv műveletei a cella-műveletmenühöz: leírás, csoport,
- * paraméterszám és pontos alkalmazhatóság-vizsgálat (dry-run a core
- * algoritmusokkal, így mindig ugyanazt mondja, mint a tényleges kiértékelés).
+ * Expression-language operations for the cell operation menu: description, group,
+ * arity and an exact applicability check (a dry run of the core algorithms, so it
+ * always agrees with the actual evaluation).
  */
 import { Definition } from "../../core/parse/definitionParser";
 import { FSM } from "../../core/fsm/fsm";
@@ -35,7 +35,7 @@ export interface OpInfo {
   name: string;
   descKey: string;
   args: 1 | 2;
-  /** milyen értékre alkalmazható */
+  /** which kind of value it applies to */
   input: "fsm" | "grammar";
   groupKey: string;
 }
@@ -85,11 +85,11 @@ function describeValue(value: ExprValue): I18nText {
 export interface Applicability {
   ok: boolean;
   reason?: I18nText;
-  /** működő javítási lánc, pl. min(complete(det(M))) */
+  /** a working fix chain, e.g. min(complete(det(M))) */
   fixChain?: string;
 }
 
-/** Az op dry-run eredményéből olvassuk ki, miért nem alkalmazható. */
+/** Reads from the op's dry-run result why it is not applicable. */
 function fromDryRun(r: OpResult<unknown>): Applicability {
   if (r.ok) return { ok: true };
   const firstErr = r.diagnostics.find((d) => d.level === "error");
@@ -116,10 +116,10 @@ function dryRunFsmOp(op: string, f: FSM): Applicability {
       return fromDryRun(complement(f));
     case "intersect":
     case "difference":
-      // a szorzat-konstrukció előfeltételeit a cella saját gépén teszteljük
+      // the product construction's preconditions are tested on the cell's own machine
       return fromDryRun(product(f, f, op));
     case "union": {
-      // teljes DFA-kra szorzat, egyébként ε-konstrukció — mindig megy
+      // product for complete DFAs, ε-construction otherwise — always works
       const p = product(f, f, "union");
       return fromDryRun(p.ok ? p : unionEpsilon(f, f));
     }
@@ -141,9 +141,9 @@ function dryRunFsmOp(op: string, f: FSM): Applicability {
 }
 
 /**
- * Alkalmazható-e a művelet az adott cella értékére? Üres cellára minden
- * megengedett (sablon szúródik be); egyébként a tényleges core algoritmus
- * előfeltétel-ellenőrzése dönt, így a „min ε-átmenetekkel” is piros lesz.
+ * Is the operation applicable to the given cell's value? On an empty cell everything
+ * is allowed (a template is inserted); otherwise the actual core algorithm's
+ * precondition check decides, so "min with ε-transitions" turns red too.
  */
 export function opApplicability(op: OpInfo, value: ExprValue | Definition | null): Applicability {
   if (value === null) return { ok: true };
@@ -155,7 +155,7 @@ export function opApplicability(op: OpInfo, value: ExprValue | Definition | null
     if (op.name === "toFsm") return { ok: true };
     if (op.input === "grammar")
       return { ok: false, reason: ux("editor.ops.reason.expectsGrammarIsRegex") };
-    // automata-műveletek: a Thompson-féle ε-NFA-n teszteljük
+    // automaton operations: tested on the Thompson ε-NFA
     const conv = regexToNFA(value.pattern, value.name);
     if (!conv.ok) return { ok: false, reason: ux("editor.ops.reason.invalidRegex") };
     return dryRunFsmOp(op.name, conv.value!);
@@ -172,13 +172,13 @@ export function opApplicability(op: OpInfo, value: ExprValue | Definition | null
   if (kind === "fsm") {
     fsm = value;
   } else if (kind === "grammar") {
-    // jobblineáris nyelvtan automatikusan automatává alakul
+    // a right-linear grammar is converted to an automaton automatically
     const conv = grammarToFSM(value);
     if (!conv.ok)
       return { ok: false, reason: ux("editor.ops.reason.expectsFsmNotRightLinear") };
     fsm = conv.value!;
   } else if (kind === "machine") {
-    // képesség-kapu: csak a tárolómentes gép viselkedik automataként
+    // capability gate: only a storage-free machine behaves as an automaton
     const conv = machineToFSM(value);
     if (!conv)
       return {

@@ -3,7 +3,7 @@ import { Machine, StorageOp } from "../machine/machine";
 import { Grammar } from "../grammar/grammar";
 import { Definition } from "./definitionParser";
 
-/** Definíció visszaírása a szerkeszthető YAML-formátumba. */
+/** Writes a definition back to the editable YAML format. */
 export function serializeDefinition(d: Definition): string {
   switch (d.kind) {
     case "machine":
@@ -13,7 +13,7 @@ export function serializeDefinition(d: Definition): string {
   }
 }
 
-/** YAML-veszélyes karakterek esetén az egész skalárt idézőjelbe tesszük */
+/** the whole scalar is quoted when it contains YAML-unsafe characters */
 const NEEDS_QUOTE = /[{}[\]:#'"&*?|>%@`]|^[\s-]|^$/;
 const scalar = (s: string) => (NEEDS_QUOTE.test(s) ? `"${s.replaceAll('"', '\\"')}"` : s);
 const listLine = (items: string[]) => scalar(items.join(", "));
@@ -31,7 +31,7 @@ function storageOpToken(op: StorageOp): string {
   }
 }
 
-/** a tároló alapértelmezett kezdőtartalma (l. parseStorageEntry) */
+/** the storage's default initial content (see parseStorageEntry) */
 const defaultInit = (type: string) => (type === "stack" ? "Z" : "");
 
 export function serializeMachine(m: Machine): string {
@@ -79,7 +79,7 @@ function serializeGrammar(g: Grammar): string {
     `  init: ${scalar(g.start)}`,
     "  rules:"
   ];
-  // azonos bal oldalak összevonása
+  // merge rules with identical left-hand sides
   const byLeft = new Map<string, string[]>();
   for (const r of g.rules) {
     if (!byLeft.has(r.left)) byLeft.set(r.left, []);

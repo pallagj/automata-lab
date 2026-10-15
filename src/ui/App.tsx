@@ -17,7 +17,7 @@ export const App: React.FC = () => {
   const paneWidth = useAppStore((s) => s.paneWidth);
   const setPaneWidth = useAppStore((s) => s.setPaneWidth);
 
-  /** a bal panel szélességének húzása */
+  /** dragging the left panel's width */
   const onResizeStart = (e: React.PointerEvent) => {
     e.preventDefault();
     const startX = e.clientX;

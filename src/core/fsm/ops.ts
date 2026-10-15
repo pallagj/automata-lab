@@ -25,7 +25,7 @@ import {
 } from "./fsm";
 
 /* ------------------------------------------------------------------ */
-/* Előfeltétel-magyarázatok                                            */
+/* Precondition explanations                                           */
 /* ------------------------------------------------------------------ */
 
 function explainEpsilon(f: FSM, opId: string, fixCode: string): Diagnostic {
@@ -80,7 +80,7 @@ function explainIncomplete(f: FSM, opId: string, fixCode: string, level: "error"
 }
 
 /* ------------------------------------------------------------------ */
-/* ε-mentesítés                                                        */
+/* ε-removal                                                           */
 /* ------------------------------------------------------------------ */
 
 export function removeEpsilon(f: FSM): OpResult<FSM> {
@@ -124,7 +124,7 @@ export function removeEpsilon(f: FSM): OpResult<FSM> {
       for (const [sym, targets] of inner) {
         if (sym === EPS) continue;
         for (const t of targets) {
-          // δ'(q, a) ∋ E(t) elemei — a tankönyvi definícióban δ'(q,a) = E(δ(E(q),a))
+          // δ'(q, a) ∋ elements of E(t) — in the textbook definition δ'(q,a) = E(δ(E(q),a))
           for (const t2 of closures.get(t)!) {
             if (!out.transitions.some((x) => x.from === q && x.symbol === sym && x.to === t2)) {
               addTransition(out, q, sym, t2);
@@ -164,7 +164,7 @@ export function removeEpsilon(f: FSM): OpResult<FSM> {
 }
 
 /* ------------------------------------------------------------------ */
-/* Determinizálás (hatványhalmaz-konstrukció)                          */
+/* Determinisation (powerset construction)                            */
 /* ------------------------------------------------------------------ */
 
 export function determinize(f: FSM): OpResult<FSM> {
@@ -253,7 +253,7 @@ export function determinize(f: FSM): OpResult<FSM> {
 }
 
 /* ------------------------------------------------------------------ */
-/* Teljessé tétel                                                      */
+/* Completion                                                          */
 /* ------------------------------------------------------------------ */
 
 export function complete(f: FSM, trapName?: string): OpResult<FSM> {
@@ -296,7 +296,7 @@ export function complete(f: FSM, trapName?: string): OpResult<FSM> {
 }
 
 /* ------------------------------------------------------------------ */
-/* Elérhető rész                                                       */
+/* Reachable part                                                      */
 /* ------------------------------------------------------------------ */
 
 export function reachable(f: FSM): OpResult<FSM> {
@@ -328,14 +328,14 @@ export function reachable(f: FSM): OpResult<FSM> {
 }
 
 /* ------------------------------------------------------------------ */
-/* Minimalizálás (partíciófinomítás)                                   */
+/* Minimisation (partition refinement)                                */
 /* ------------------------------------------------------------------ */
 
 export function minimize(f: FSM): OpResult<FSM> {
   const a = analyzeFSM(f);
   const diags: Diagnostic[] = [];
 
-  // Előfeltételek pontos magyarázattal és javítási lánccal
+  // Preconditions with a precise explanation and a fix chain
   if (a.hasEpsilon) {
     return failResult([explainEpsilon(f, "min", `min(det(epsfree(${f.name})))`)]);
   }
@@ -365,7 +365,7 @@ export function minimize(f: FSM): OpResult<FSM> {
   const tm = transMap(work);
   const delta = (s: string, c: string) => [...(tm.get(s)?.get(c) ?? [])][0];
 
-  // Kezdő partíció: {elfogadó, nem elfogadó}
+  // Initial partition: {accepting, non-accepting}
   const acceptSet = new Set(work.accept);
   let partition: string[][] = [
     work.states.filter((s) => acceptSet.has(s)),
@@ -388,7 +388,7 @@ export function minimize(f: FSM): OpResult<FSM> {
     const next: string[][] = [];
     const rows: string[][] = [];
     for (const group of partition) {
-      // szignatúra: melyik csoportba visz minden szimbólum
+      // signature: which group each symbol leads to
       const buckets = new Map<string, string[]>();
       for (const s of group) {
         const sig = work.alphabet.map((c) => groupOf.get(delta(s, c))!).join(",");
@@ -416,7 +416,7 @@ export function minimize(f: FSM): OpResult<FSM> {
     partition = next;
   }
 
-  // Új automata az osztályokból
+  // New automaton from the classes
   const className = new Map<string, string>();
   for (const g of partition) {
     const nm = g.length === 1 ? g[0] : setName(g);
@@ -453,7 +453,7 @@ export function minimize(f: FSM): OpResult<FSM> {
 }
 
 /* ------------------------------------------------------------------ */
-/* Komplementer                                                        */
+/* Complement                                                          */
 /* ------------------------------------------------------------------ */
 
 export function complement(f: FSM): OpResult<FSM> {
@@ -481,7 +481,7 @@ export function complement(f: FSM): OpResult<FSM> {
 }
 
 /* ------------------------------------------------------------------ */
-/* Szorzat-konstrukció: unió / metszet / különbség                     */
+/* Product construction: union / intersection / difference          */
 /* ------------------------------------------------------------------ */
 
 export type ProductMode = "union" | "intersect" | "difference";
@@ -530,7 +530,7 @@ export function product(m1: FSM, m2: FSM, mode: ProductMode): OpResult<FSM> {
   }
   if (fixes.length > 0) return failResult(fixes);
 
-  // közös ábécé
+  // common alphabet
   const alphabet = [...new Set([...m1.alphabet, ...m2.alphabet])];
   const missing1 = alphabet.filter((c) => !m1.alphabet.includes(c));
   const missing2 = alphabet.filter((c) => !m2.alphabet.includes(c));
@@ -612,7 +612,7 @@ export function product(m1: FSM, m2: FSM, mode: ProductMode): OpResult<FSM> {
   return okResult(out, diags, steps);
 }
 
-/** Unió tetszőleges (akár nemdeterminisztikus) automatákra: új kezdőállapot ε-átmenetekkel. */
+/** Union of arbitrary (even nondeterministic) automata: a new start state with ε-transitions. */
 export function unionEpsilon(m1: FSM, m2: FSM): OpResult<FSM> {
   const b = disjointStates(m1, m2);
   const start = freshStateName([...m1.states, ...b.states], "S0");
@@ -640,7 +640,7 @@ export function unionEpsilon(m1: FSM, m2: FSM): OpResult<FSM> {
 }
 
 /* ------------------------------------------------------------------ */
-/* Konkatenáció és lezárás (Thompson-stílus)                           */
+/* Concatenation and closure (Thompson style)                         */
 /* ------------------------------------------------------------------ */
 
 export function concatFSM(m1: FSM, m2: FSM): OpResult<FSM> {
@@ -688,7 +688,7 @@ export function starFSM(f: FSM): OpResult<FSM> {
 }
 
 /* ------------------------------------------------------------------ */
-/* Megfordítás                                                         */
+/* Reversal                                                            */
 /* ------------------------------------------------------------------ */
 
 export function reverseFSM(f: FSM): OpResult<FSM> {
@@ -713,13 +713,13 @@ export function reverseFSM(f: FSM): OpResult<FSM> {
 }
 
 /* ------------------------------------------------------------------ */
-/* Állapotok átnevezése (tisztítás)                                    */
+/* State renaming (clean-up)                                          */
 /* ------------------------------------------------------------------ */
 
 export function cleanFSM(f: FSM): OpResult<FSM> {
   const names = new Map<string, string>();
   const alpha = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-  // BFS-sorrendben nevezünk át, hogy a kezdőállapot A legyen
+  // rename in BFS order so that the start state becomes A
   const order: string[] = [];
   const tm = transMap(f);
   const queue = [f.start];
@@ -760,7 +760,7 @@ export function cleanFSM(f: FSM): OpResult<FSM> {
 }
 
 /* ------------------------------------------------------------------ */
-/* Ekvivalencia-vizsgálat ellenpéldával                                */
+/* Equivalence check with a counterexample                            */
 /* ------------------------------------------------------------------ */
 
 export interface EquivalenceVerdict {
@@ -769,16 +769,16 @@ export interface EquivalenceVerdict {
   machineA: string;
   machineB: string;
   equal: boolean;
-  /** szó, amit az egyik elfogad, a másik nem */
+  /** a word accepted by one but not the other */
   counterexample?: { word: string; acceptedBy: string; rejectedBy: string };
 }
 
-/** Tetszőleges (ε-)NFA-t teljes DFA-vá normalizál. */
+/** Normalises an arbitrary (ε-)NFA into a complete DFA. */
 function normalizeToCompleteDFA(f: FSM): FSM {
   let m = f;
   const a = analyzeFSM(m);
   if (a.hasEpsilon) m = removeEpsilon(m).value!;
-  m = determinize(m).value!; // a determinizálás nálunk teljes DFA-t ad (∅ állapottal)
+  m = determinize(m).value!; // our determinisation yields a complete DFA (with a ∅ state)
   return m;
 }
 
@@ -787,7 +787,7 @@ export function checkEquivalence(a: FSM, b: FSM): OpResult<EquivalenceVerdict> {
   const da = withAlphabet(normalizeToCompleteDFA(a), alphabet);
   const db = withAlphabet(normalizeToCompleteDFA(b), alphabet);
 
-  // szorzat bejárása; keresünk olyan párt, ahol pontosan az egyik fogad el
+  // traverse the product, looking for a pair where exactly one side accepts
   const ta = transMap(da);
   const tb = transMap(db);
   const d1 = (s: string, c: string) => [...(ta.get(s)?.get(c) ?? [])][0];
@@ -845,7 +845,7 @@ export function checkEquivalence(a: FSM, b: FSM): OpResult<EquivalenceVerdict> {
   );
 }
 
-/** Ábécé kibővítése (teljes DFA marad: a hiányzó szimbólumok csapdába mennek). */
+/** Extends the alphabet (stays a complete DFA: missing symbols go to a trap). */
 function withAlphabet(f: FSM, alphabet: string[]): FSM {
   const missing = alphabet.filter((c) => !f.alphabet.includes(c));
   if (missing.length === 0) return f;

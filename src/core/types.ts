@@ -1,6 +1,6 @@
 /**
- * Közös típusok: minden algoritmus diagnosztikát (magyarázatokat, javítási
- * javaslatokat) és rögzített lépéseket adhat vissza az eredmény mellé.
+ * Shared types: every algorithm can return diagnostics (explanations, fix
+ * suggestions) and recorded steps alongside its result.
  */
 
 export type DiagLevel = "error" | "warning" | "info";
@@ -28,9 +28,9 @@ export function tx(key: string, params?: Record<string, string | number>): I18nT
 export interface Diagnostic {
   level: DiagLevel;
   title: I18nText;
-  /** Részletes magyarázat — miért feltétel ez, mit jelent. */
+  /** Detailed explanation — why this is a precondition and what it means. */
   detail?: I18nText;
-  /** Javasolt javítás: ezt a kifejezést beszúrva megoldódik. */
+  /** Suggested fix: inserting this expression resolves the problem. */
   fix?: { label: I18nText; code: string };
 }
 
@@ -74,7 +74,7 @@ export function failResult<T>(diagnostics: Diagnostic[], steps: AlgoStep[] = [])
   return { ok: false, diagnostics, steps };
 }
 
-/** Halmaz segédfüggvények */
+/** Set helpers */
 export const setUnion = <T>(a: Set<T>, b: Set<T>): Set<T> => new Set([...a, ...b]);
 export const setIntersect = <T>(a: Set<T>, b: Set<T>): Set<T> =>
   new Set([...a].filter((x) => b.has(x)));
@@ -83,7 +83,7 @@ export const setDifference = <T>(a: Set<T>, b: Set<T>): Set<T> =>
 export const setEquals = <T>(a: Set<T>, b: Set<T>): boolean =>
   a.size === b.size && [...a].every((x) => b.has(x));
 
-/** Állapothalmaz determinisztikus, olvasható neve: {A,B} */
+/** Deterministic, readable name of a state set: {A,B} */
 export function setName(states: Iterable<string>): string {
   const arr = [...states].sort();
   return arr.length === 0 ? "∅" : `{${arr.join(",")}}`;

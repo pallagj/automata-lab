@@ -8,9 +8,9 @@ class RegexSyntaxError extends Error {
 }
 
 /**
- * Reguláris kifejezés → ε-NFA (Thompson-konstrukció).
- * Támogatott: betű/számjegy literál, ε, ∅, összefűzés, | vagy + (unió),
- * * (csillag), ? (opcionális), zárójelezés.
+ * Regular expression → ε-NFA (Thompson construction).
+ * Supported: letter/digit literals, ε, ∅, concatenation, | or + (union),
+ * * (star), ? (optional), parentheses.
  */
 
 type Node =
@@ -128,7 +128,7 @@ class Builder {
       case "empty": {
         const s = this.newState();
         const a = this.newState();
-        return { start: s, accept: a }; // nincs átmenet — üres nyelv
+        return { start: s, accept: a }; // no transition — empty language
       }
       case "eps": {
         const s = this.newState();
@@ -183,7 +183,7 @@ class Builder {
   }
 }
 
-/** Reguláris kifejezés mint önálló érték — automatává a toFsm() alakítja. */
+/** A regular expression as a standalone value — toFsm() turns it into an automaton. */
 export interface RegexDef {
   kind: "regex";
   name: string;
@@ -200,7 +200,7 @@ function parseOrFail(pattern: string): { ast?: Node; error?: I18nText } {
   }
 }
 
-/** Regex-érték létrehozása szintaktikai ellenőrzéssel. */
+/** Creates a regex value with syntax checking. */
 export function regexValue(pattern: string, name = "R"): OpResult<RegexDef> {
   const cleaned = pattern.replaceAll(" ", "");
   const p = parseOrFail(cleaned);
@@ -208,7 +208,7 @@ export function regexValue(pattern: string, name = "R"): OpResult<RegexDef> {
   return okResult({ kind: "regex", name, pattern: cleaned });
 }
 
-/** A kifejezés szerkezeti fája az elemző-nézethez. */
+/** The expression's syntax tree for the analyser view. */
 export interface RegexNodeInfo {
   label: I18nText;
   children: RegexNodeInfo[];

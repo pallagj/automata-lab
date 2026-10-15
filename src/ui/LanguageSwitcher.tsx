@@ -9,7 +9,7 @@ const SHORT_LABELS: Record<SupportedLanguage, string> = {
   hu: "HU"
 };
 
-// A legördülő listában a nyelvek saját nevükön szerepelnek.
+// The dropdown lists each language under its own name.
 const NATIVE_NAMES: Record<SupportedLanguage, string> = {
   en: "English",
   de: "Deutsch",
@@ -21,8 +21,8 @@ export const LanguageSwitcher: React.FC = () => {
   const detected = (i18n.resolvedLanguage ?? i18n.language ?? "en").split("-")[0] as SupportedLanguage;
   const current = SUPPORTED_LANGUAGES.includes(detected) ? detected : "en";
 
-  // A natív <select> láthatatlanul fedi a gombot: a megjelenés egyezik a többi
-  // fejléc-gombbal, a kiválasztás viszont natív (billentyűzet, mobil) marad.
+  // The native <select> invisibly covers the button: it looks like the other
+  // header buttons while selection stays native (keyboard, mobile).
   return (
     <label className="icon-btn lang-switcher" title={t("topbar.language")}>
       <Globe size={15} aria-hidden />

@@ -12,14 +12,14 @@ import {
 import { Grammar, GrammarRule } from "../grammar/grammar";
 
 /**
- * YAML-alapú definíciók beolvasása barátságos, pontos hibaüzenetekkel.
+ * Parses YAML-based definitions with friendly, precise error messages.
  *
- * Rövidítések az átmenetekben:
- *   - "A a B"      egyszerű átmenet
- *   - "."          helyettesítő: az adott pozíció összes lehetséges értéke
- *   - "&"          „ugyanaz”: állapotnál a kiinduló állapot, írásnál az olvasott jel
- *   - "a-d"        intervallum a felsorolásokban (charset, states)
- *   - "$" vagy "ε" üres szó
+ * Shorthands in transitions:
+ *   - "A a B"      a simple transition
+ *   - "."          wildcard: every possible value of that position
+ *   - "&"          "the same": the source state for a state, the read symbol for a write
+ *   - "a-d"        a range in lists (charset, states)
+ *   - "$" or "ε"   the empty word
  */
 
 export type Definition = Machine | Grammar;
@@ -30,7 +30,7 @@ function normEps(s: string): string {
   return EPS_ALIASES.has(s) ? EPS : s;
 }
 
-/** vesszővágás, amely a {A,B} halmazneveken belül nem vág */
+/** comma split that does not split inside {A,B} set names */
 function splitTopLevel(s: string): string[] {
   const out: string[] = [];
   let depth = 0;
@@ -47,7 +47,7 @@ function splitTopLevel(s: string): string[] {
   return out;
 }
 
-/** vesszős felsorolás / lista → tömb, intervallum-kibontással */
+/** comma-separated list / YAML list → array, with range expansion */
 function parseList(value: unknown, field: string, diags: Diagnostic[], expandRanges = true): string[] {
   if (value === undefined || value === null) return [];
   let items: string[] = [];
@@ -90,7 +90,17 @@ interface ParsedBase {
   body: Record<string, unknown>;
 }
 
-function parseYamlBody(source: string, expectedKeys: string[]): OpResult<ParsedBase & { key: string }> {
+/** Top-level type keys; the legacy Hungarian aliases keep older saved worksheets loading. */
+const MACHINE_KEYS = ["Machine", "machine"];
+const GRAMMAR_KEYS = ["Grammar", "grammar"];
+const LEGACY_MACHINE_KEYS = ["gep", "gép"];
+const LEGACY_GRAMMAR_KEYS = ["nyelvtan"];
+
+function parseYamlBody(
+  source: string,
+  expectedKeys: string[],
+  legacyKeys: string[] = []
+): OpResult<ParsedBase & { key: string }> {
   let parsed: unknown;
   try {
     parsed = yaml.load(source);
@@ -110,7 +120,7 @@ function parseYamlBody(source: string, expectedKeys: string[]): OpResult<ParsedB
     return failResult([err(tx("definitionParser.emptyOrUnparseable"))]);
   }
   const keys = Object.keys(parsed as object);
-  const key = keys.find((k) => expectedKeys.includes(k));
+  const key = keys.find((k) => expectedKeys.includes(k) || legacyKeys.includes(k));
   if (!key)
     return failResult([
       err(tx("definitionParser.missingTypeKey.title"), tx("definitionParser.missingTypeKey.detail", { keys: expectedKeys.join(", ") }))
@@ -137,7 +147,7 @@ function requireField(
   return null;
 }
 
-/** Helyettesítős átmenetsor kibontása: minden "." pozícióra az összes opció. */
+/** Expands a wildcard transition line: every option for each "." position. */
 function expandWildcard(
   parts: string[],
   options: string[][],
@@ -157,25 +167,26 @@ function expandWildcard(
 }
 
 /* ------------------------------------------------------------------ */
-/* Általános gép (Machine)                                              */
+/* General machine (Machine)                                           */
 /* ------------------------------------------------------------------ */
 
+/** Storage type names; the Hungarian aliases keep older saved worksheets loading. */
 const STORAGE_TYPES: Record<string, StorageType> = {
   stack: "stack",
-  verem: "stack",
   queue: "queue",
-  sor: "queue",
   tape: "tape",
+  verem: "stack",
+  sor: "queue",
   szalag: "tape"
 };
 
-/** A verem alapértelmezett kezdőtartalma, ha nincs megadva. */
+/** Default initial content of a stack when none is given. */
 const STACK_DEFAULT_INIT = "Z";
 
 /**
- * Egy tároló bejegyzése a storages mappingben:
- *   v1: stack                      — tömör alak, alapértelmezett kezdőtartalommal
- *   v2: { type: stack, init: Z }   — részletes alak (init helyett default is jó)
+ * A storage entry in the storages mapping:
+ *   v1: stack                      — short form, with the default initial content
+ *   v2: { type: stack, init: Z }   — long form (default works instead of init too)
  */
 export function parseStorageEntry(id: string, raw: unknown): OpResult<StorageSpec> {
   const bad = () =>
@@ -203,14 +214,14 @@ export function parseStorageEntry(id: string, raw: unknown): OpResult<StorageSpe
   return okResult({ id, type, init: EPS_ALIASES.has(init) ? "" : init });
 }
 
-/** hány tokent foglal el egy tároló az átmenet-sorban */
+/** how many tokens a storage occupies in a transition line */
 const STORAGE_TOKENS: Record<StorageType, number> = { stack: 1, queue: 1, tape: 2 };
 
 const MOVE_MAP: Record<string, "L" | "R" | "S"> = { ">": "R", "<": "L", "=": "S", R: "R", L: "L", S: "S" };
 
 /**
- * Egy tároló műveletének beolvasása az átmenet-sor tokenjeiből.
- * stack: "Z/AZ" · queue: "A/BA" · tape: "a/b >" (két token).
+ * Parses a storage's operation from the tokens of a transition line.
+ * stack: "Z/AZ" · queue: "A/BA" · tape: "a/b >" (two tokens).
  */
 function parseStorageOp(
   spec: StorageSpec,
@@ -267,7 +278,7 @@ function parseStorageOp(
 }
 
 /**
- * Általános gép YAML-ből:
+ * General machine from YAML:
  *
  *   Machine:
  *     name: AnBnCn
@@ -275,20 +286,20 @@ function parseStorageOp(
  *     states: q0, q1, q2
  *     init: q0
  *     accept: q2
- *     input: head            # alapértelmezés; vagy egy tároló id-je
+ *     input: head            # default; or the id of a storage
  *     storages:
- *       v1: stack            # tömör alak (verem alapból Z-vel indul)
+ *       v1: stack            # short form (a stack starts with Z by default)
  *       v2:
  *         type: stack
  *         init: Z
  *     transitions:
- *       - q0 a Z/AZ $/B q0   # FROM INPUT tárolónként-op… TO
+ *       - q0 a Z/AZ $/B q0   # FROM INPUT per-storage-op… TO
  *
- * A gép fajtáját (automata / veremautomata / Turing-gép / általános gép)
- * a konfiguráció határozza meg — külön típuskulcs nincs.
+ * The kind of machine (automaton / pushdown automaton / Turing machine / general
+ * machine) is decided by its configuration — there is no separate type key.
  */
 export function parseMachine(source: string): OpResult<Machine> {
-  const base = parseYamlBody(source, ["Machine", "machine", "gep", "gép"]);
+  const base = parseYamlBody(source, MACHINE_KEYS, LEGACY_MACHINE_KEYS);
   if (!base.ok) return failResult(base.diagnostics);
   const { name, body } = base.value!;
   const diags: Diagnostic[] = [];
@@ -310,7 +321,7 @@ export function parseMachine(source: string): OpResult<Machine> {
     if (!stateSet.has(a))
       return failResult([err(tx("definitionParser.machine.acceptNotInStates", { state: a }))]);
 
-  // tárolók: mapping (id → típus vagy {type, init}) vagy hiányzó (= tárolómentes gép)
+  // storages: a mapping (id → type or {type, init}) or missing (= storage-free machine)
   const storages: StorageSpec[] = [];
   const storagesRaw = body["storages"];
   if (storagesRaw !== undefined && storagesRaw !== null) {
@@ -328,7 +339,7 @@ export function parseMachine(source: string): OpResult<Machine> {
     }
   }
 
-  // bemenet: olvasófej vagy egy tároló
+  // input: a read head or a storage ("fej" is a legacy Hungarian alias of head)
   const inputRaw = String(body["input"] ?? "head").trim();
   const input = inputRaw === "" || inputRaw === "head" || inputRaw === "fej" ? "head" : inputRaw;
   if (input !== "head" && !storages.some((s) => s.id === input)) {
@@ -405,8 +416,8 @@ export function parseMachine(source: string): OpResult<Machine> {
       ops.push(r.value!);
     }
 
-    // helyettesítők: "." az állapot-, bemenet- és szalagolvasás-pozíciókban,
-    // "&" a célállapotban ("ugyanoda") és a szalag-írásban ("ugyanazt írja")
+    // wildcards: "." in the state, input and tape-read positions,
+    // "&" in the target state ("same state") and in tape writes ("write the same")
     const rawInput = input === "head" ? (parts[1] === "." ? "." : inputSym) : EPS;
     expandWildcard(
       [from, ...(input === "head" ? [rawInput] : []), to],
@@ -416,7 +427,7 @@ export function parseMachine(source: string): OpResult<Machine> {
         const inp = input === "head" ? resolved[1] : EPS;
         const t = resolved[resolved.length - 1];
         const target = t === "&" ? f : t;
-        // szalag-olvasás "." kibontása minden ábécébeli jelre + a write "&" feloldása
+        // expand a "." tape read to every alphabet symbol + resolve "&" in the write
         const expandTapeOps = (i: number, acc: StorageOp[]) => {
           if (i === ops.length) {
             transitions.push({ from: f, to: target, input: inp, ops: acc });
@@ -437,7 +448,7 @@ export function parseMachine(source: string): OpResult<Machine> {
     );
   }
 
-  // szalag-írások utólagos validálása (a & és . feloldása után)
+  // validate tape writes afterwards (once & and . are resolved)
   for (const t of transitions) {
     for (let i = 0; i < t.ops.length; i++) {
       const op = t.ops[i];
@@ -467,7 +478,7 @@ export function parseMachine(source: string): OpResult<Machine> {
   if (accept.length === 0 && acceptMode === "finalState" && storages.length === 0)
     diags.push(warn(tx("definitionParser.machine.noAcceptState.title"), tx("definitionParser.machine.noAcceptState.detail")));
 
-  // szalagos bemenetű (TM-szerű) gépnél a többértékűség könnyen véletlen — jelezzük
+  // with tape input (TM-like) nondeterminism is easily accidental — warn about it
   if (input !== "head") {
     const analysis = analyzeMachine(machine);
     if (!analysis.isDeterministic) {
@@ -489,7 +500,7 @@ export function parseMachine(source: string): OpResult<Machine> {
 /* ------------------------------------------------------------------ */
 
 export function parseGrammar(source: string): OpResult<Grammar> {
-  const base = parseYamlBody(source, ["Grammar", "grammar", "nyelvtan"]);
+  const base = parseYamlBody(source, GRAMMAR_KEYS, LEGACY_GRAMMAR_KEYS);
   if (!base.ok) return failResult(base.diagnostics);
   const { name, body } = base.value!;
   const diags: Diagnostic[] = [];
@@ -561,15 +572,15 @@ export function parseGrammar(source: string): OpResult<Grammar> {
 }
 
 /* ------------------------------------------------------------------ */
-/* Közös belépési pont                                                  */
+/* Common entry point                                                  */
 /* ------------------------------------------------------------------ */
 
 const TYPE_KEYS: { keys: string[]; parse: (s: string) => OpResult<Definition> }[] = [
-  { keys: ["Machine", "machine", "gep", "gép"], parse: parseMachine as (s: string) => OpResult<Definition> },
-  { keys: ["Grammar", "grammar", "nyelvtan"], parse: parseGrammar as (s: string) => OpResult<Definition> }
+  { keys: [...MACHINE_KEYS, ...LEGACY_MACHINE_KEYS], parse: parseMachine as (s: string) => OpResult<Definition> },
+  { keys: [...GRAMMAR_KEYS, ...LEGACY_GRAMMAR_KEYS], parse: parseGrammar as (s: string) => OpResult<Definition> }
 ];
 
-/** Megállapítja, hogy a forrás YAML-definíció-e, és ha igen, beolvassa. */
+/** Determines whether the source is a YAML definition and, if so, parses it. */
 export function parseDefinition(source: string): OpResult<Definition> | null {
   const firstWord = /^\s*([A-Za-z]+)\s*:/.exec(source);
   if (!firstWord) return null;

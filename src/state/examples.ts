@@ -1,14 +1,14 @@
 /**
- * Beépített példák: teljes munkalapok (nem önálló cellák) — egy kattintással
- * betölthető, összefüggő feladatsorok.
+ * Built-in examples: whole worksheets (not single cells) — coherent sets of
+ * exercises that load with one click.
  *
- * Minden gép ugyanazzal a Machine kulccsal készül; hogy automata,
- * veremautomata vagy Turing-gép-e, azt a tárolói döntik el.
+ * Every machine uses the same Machine key; whether it is an automaton, a
+ * pushdown automaton or a Turing machine is decided by its storages.
  */
 export interface ExampleWorksheet {
   /** i18next key in the "ui" namespace, under examples.<key>.name */
   key: string;
-  /** Hungarian fallback name (source language), used if a translation is missing. */
+  /** English fallback name, used if a translation is missing. */
   name: string;
   cells: string[];
 }
@@ -24,20 +24,20 @@ const NFA_M1 = `Machine:
     - S a A
     - A b F`;
 
-const DFA_PAROS_A = `Machine:
-  name: ParosA
+const DFA_EVEN_A = `Machine:
+  name: EvenA
   charset: a, b
-  states: P, T
-  init: P
-  accept: P
+  states: E, O
+  init: E
+  accept: E
   transitions:
-    - P a T
-    - T a P
-    - P b P
-    - T b T`;
+    - E a O
+    - O a E
+    - E b E
+    - O b O`;
 
-const DFA_VEGE_B = `Machine:
-  name: VegeB
+const DFA_ENDS_B = `Machine:
+  name: EndsB
   charset: a, b
   states: N, B
   init: N
@@ -48,8 +48,8 @@ const DFA_VEGE_B = `Machine:
     - B a N
     - B b B`;
 
-const ENFA_A_VAGY_B = `Machine:
-  name: AvagyB
+const ENFA_A_OR_B = `Machine:
+  name: AorB
   charset: a, b
   states: S, A, B
   init: S
@@ -63,45 +63,45 @@ const ENFA_A_VAGY_B = `Machine:
 export const EXAMPLE_WORKSHEETS: ExampleWorksheet[] = [
   {
     key: "intro",
-    name: "Bemutató — determinizálás és minimalizálás",
-    cells: [NFA_M1, "D = det(M1)", "K = min(D)", "E = equal(M1, K)"]
+    name: "Intro — determinization and minimization",
+    cells: [NFA_M1, "D = det(M1)", "Min = min(D)", "E = equal(M1, Min)"]
   },
   {
     key: "epsilonFree",
-    name: "ε-mentesítés lépésről lépésre",
+    name: "ε-removal step by step",
     cells: [
-      ENFA_A_VAGY_B,
-      "EM = epsfree(AvagyB)",
-      "DM = det(EM)",
-      "KM = min(complete(DM))"
+      ENFA_A_OR_B,
+      "F = epsfree(AorB)",
+      "D = det(F)",
+      "Min = min(complete(D))"
     ]
   },
   {
     key: "regex",
-    name: "Reguláris kifejezések és automaták",
+    name: "Regular expressions and automata",
     cells: [
       "R = regex((a|b)*abb)",
       "A = toFsm(R)",
       "DR = min(det(epsfree(A)))",
       NFA_M1,
-      "Egyenlo = equal(A, M1)"
+      "Same = equal(A, M1)"
     ]
   },
   {
     key: "setOps",
-    name: "Halmazműveletek nyelveken",
+    name: "Set operations on languages",
     cells: [
-      DFA_PAROS_A,
-      DFA_VEGE_B,
-      "Metszet = intersect(ParosA, VegeB)",
-      "Unio = union(ParosA, VegeB)",
-      "Kulonbseg = difference(ParosA, VegeB)",
-      "Komplementer = complement(ParosA)"
+      DFA_EVEN_A,
+      DFA_ENDS_B,
+      "Intersection = intersect(EvenA, EndsB)",
+      "Union = union(EvenA, EndsB)",
+      "Difference = difference(EvenA, EndsB)",
+      "Complement = complement(EvenA)"
     ]
   },
   {
     key: "pda",
-    name: "Veremautomaták",
+    name: "Pushdown automata",
     cells: [
       `Machine:
   name: AnBn
@@ -110,7 +110,7 @@ export const EXAMPLE_WORKSHEETS: ExampleWorksheet[] = [
   init: q0
   accept: q2
   storages:
-    verem: stack
+    stack: stack
   transitions:
     - q0 a Z/AZ q0
     - q0 a A/AA q0
@@ -119,69 +119,69 @@ export const EXAMPLE_WORKSHEETS: ExampleWorksheet[] = [
     - q1 $ Z/Z q2
     - q0 $ Z/Z q2`,
       `Machine:
-  name: Palindrom
+  name: Palindrome
   charset: a, b
-  states: olvas, parosit, kesz
-  init: olvas
-  accept: kesz
+  states: read, match, done
+  init: read
+  accept: done
   storages:
-    verem: stack
+    stack: stack
   transitions:
-    - olvas a $/a olvas
-    - olvas b $/b olvas
-    - olvas $ $/$ parosit
-    - parosit a a/$ parosit
-    - parosit b b/$ parosit
-    - parosit $ Z/Z kesz`
+    - read a $/a read
+    - read b $/b read
+    - read $ $/$ match
+    - match a a/$ match
+    - match b b/$ match
+    - match $ Z/Z done`
     ]
   },
   {
     key: "turing",
-    name: "Turing-gépek",
+    name: "Turing machines",
     cells: [
       `Machine:
-  name: Palindrom
+  name: Palindrome
   charset: a, b
-  states: start, vanA, vanB, parA, parB, vissza, ok
+  states: start, sawA, sawB, matchA, matchB, back, ok
   init: start
   accept: ok
-  input: szalag
+  input: tape
   storages:
-    szalag: tape
+    tape: tape
   transitions:
-    - start a/_ > vanA
-    - start b/_ > vanB
+    - start a/_ > sawA
+    - start b/_ > sawB
     - start _/& = ok
-    - vanA ./& > vanA
-    - vanA _/& < parA
-    - vanB ./& > vanB
-    - vanB _/& < parB
-    - parA a/_ < vissza
-    - parA _/& = ok
-    - parB b/_ < vissza
-    - parB _/& = ok
-    - vissza ./& < vissza
-    - vissza _/& > start`,
+    - sawA ./& > sawA
+    - sawA _/& < matchA
+    - sawB ./& > sawB
+    - sawB _/& < matchB
+    - matchA a/_ < back
+    - matchA _/& = ok
+    - matchB b/_ < back
+    - matchB _/& = ok
+    - back ./& < back
+    - back _/& > start`,
       `Machine:
-  name: Novel
+  name: Increment
   charset: 0, 1
-  states: jobbra, atvitel, kesz
-  init: jobbra
-  accept: kesz
-  input: szalag
+  states: right, carry, done
+  init: right
+  accept: done
+  input: tape
   storages:
-    szalag: tape
+    tape: tape
   transitions:
-    - jobbra ./& > jobbra
-    - jobbra _/& < atvitel
-    - atvitel 1/0 < atvitel
-    - atvitel 0/1 = kesz
-    - atvitel _/1 = kesz`
+    - right ./& > right
+    - right _/& < carry
+    - carry 1/0 < carry
+    - carry 0/1 = done
+    - carry _/1 = done`
     ]
   },
   {
     key: "customMachines",
-    name: "Egyedi gépek — két verem, sor",
+    name: "Custom machines — two stacks, a queue",
     cells: [
       `Machine:
   name: AnBnCn
@@ -200,22 +200,22 @@ export const EXAMPLE_WORKSHEETS: ExampleWorksheet[] = [
     - qc c $/$ B/$ qc
     - qc $ Z/$ Z/$ ok`,
       `Machine:
-  name: AnBnSorral
+  name: AnBnQueue
   charset: a, b
-  states: gyujt, fogyaszt
-  init: gyujt
+  states: collect, consume
+  init: collect
   acceptMode: emptyStorages
   storages:
     s: queue
   transitions:
-    - gyujt a $/A gyujt
-    - gyujt $ $/$ fogyaszt
-    - fogyaszt b A/$ fogyaszt`
+    - collect a $/A collect
+    - collect $ $/$ consume
+    - consume b A/$ consume`
     ]
   },
   {
     key: "grammars",
-    name: "Nyelvtanok és konverziók",
+    name: "Grammars and conversions",
     cells: [
       `Grammar:
   name: G3
@@ -247,7 +247,7 @@ export const EXAMPLE_WORKSHEETS: ExampleWorksheet[] = [
   }
 ];
 
-/** Cellasablonok az „+ Beszúrás” menühöz — mind ugyanaz a Machine, más tárolókkal. */
+/** Cell templates for the "+ Insert" menu — all the same Machine, with different storages. */
 export const CELL_TEMPLATES: Record<string, string> = {
   fsm: `Machine:
   name: M
@@ -267,7 +267,7 @@ export const CELL_TEMPLATES: Record<string, string> = {
   init: q0
   accept: q1
   storages:
-    verem: stack
+    stack: stack
   transitions:
     - q0 a Z/AZ q0
     - q0 $ Z/Z q1`,
@@ -277,9 +277,9 @@ export const CELL_TEMPLATES: Record<string, string> = {
   states: start, ok
   init: start
   accept: ok
-  input: szalag
+  input: tape
   storages:
-    szalag: tape
+    tape: tape
   transitions:
     - start a/a > start
     - start _/_ = ok`,
@@ -291,7 +291,7 @@ export const CELL_TEMPLATES: Record<string, string> = {
   rules:
     - S -> aS | b`,
   machine: `Machine:
-  name: Gep
+  name: Custom
   charset: a, b
   states: q0, q1
   init: q0
@@ -306,7 +306,7 @@ export const CELL_TEMPLATES: Record<string, string> = {
 
 export const STARTER_CELLS: string[] = EXAMPLE_WORKSHEETS[0].cells;
 
-/** Resolves an example worksheet's translated display name, falling back to the Hungarian source name. */
+/** Resolves an example worksheet's translated display name, falling back to the English source name. */
 export function exampleWorksheetName(t: (key: string) => string, ws: ExampleWorksheet): string {
   const key = `examples.${ws.key}.name`;
   const translated = t(key);

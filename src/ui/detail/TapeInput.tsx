@@ -3,15 +3,15 @@ import { useTranslation } from "react-i18next";
 import { Pencil } from "lucide-react";
 
 /**
- * Közvetlenül szerkeszthető szalag: a bemeneti szó cellákként jelenik meg,
- * a cellára kattintva oda ugrik a kurzor és azonnal gépelhetsz — a tényleges
- * szöveget egy láthatatlan input tartja, így a billentyűzet-kezelés natív.
+ * Directly editable tape: the input word is shown as cells; clicking a cell moves
+ * the cursor there and you can type right away — the actual text lives in an
+ * invisible input, so keyboard handling stays native.
  */
 
 interface Props {
   value: string;
   onChange: (v: string) => void;
-  /** az olvasófej pozíciója a szimulációban (kiemelés); undefined = nincs fej */
+  /** the read head's position in the simulation (highlight); undefined = no head */
   pos?: number;
   placeholder?: string;
 }

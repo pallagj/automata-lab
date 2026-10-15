@@ -2,16 +2,16 @@ import { EPS } from "../types";
 import { FSM } from "../fsm/fsm";
 
 /**
- * Általános gépmodell: véges vezérlő + konfigurálható tárolók.
+ * General machine model: finite control + configurable storages.
  *
- * Egy gép tetszőleges számú tárolót kaphat (verem / sor / szalag), a bemenetet
- * pedig vagy egyirányú olvasófejjel fogyasztja (input: "head" — FSM/PDA-stílus),
- * vagy egy tárolóra írva kapja meg induláskor (input: <tároló id> — TM-stílus).
+ * A machine may have any number of storages (stack / queue / tape) and consumes
+ * its input either with a one-way read head (input: "head" — FSM/PDA style) or
+ * receives it written onto a storage at start-up (input: <storage id> — TM style).
  *
- * A klasszikus géposztályok megszorított esetek:
- *   - véges automata:  nincs tároló, input: head
- *   - veremautomata:   1 verem, input: head
- *   - Turing-gép:      1 szalag, input: a szalag
+ * The classic machine classes are restricted cases:
+ *   - finite automaton:   no storage, input: head
+ *   - pushdown automaton: 1 stack, input: head
+ *   - Turing machine:     1 tape, input: the tape
  */
 
 export const TAPE_BLANK = "_";
@@ -21,22 +21,22 @@ export type StorageType = "stack" | "queue" | "tape";
 export interface StorageSpec {
   id: string;
   type: StorageType;
-  /** verem/sor kezdőtartalma (verem: bal széle a tető; sor: bal széle az eleje) */
+  /** initial content of a stack/queue (stack: left end is the top; queue: left end is the front) */
   init: string;
 }
 
-/** Egy tárolón végzett művelet — a típusa a tároló típusát követi. */
+/** An operation on one storage — its type follows the storage's type. */
 export type StorageOp =
-  | { type: "stack"; pop: string; push: string } // pop: EPS = nem néz/nem vesz le
-  | { type: "queue"; take: string; put: string } // take: EPS = nem olvas az elejéről
+  | { type: "stack"; pop: string; push: string } // pop: EPS = does not inspect/pop
+  | { type: "queue"; take: string; put: string } // take: EPS = does not read from the front
   | { type: "tape"; read: string; write: string; move: "L" | "R" | "S" };
 
 export interface MachineTransition {
   from: string;
   to: string;
-  /** beolvasott jel vagy EPS — csak input: "head" esetén értelmezett */
+  /** symbol read or EPS — only meaningful with input: "head" */
   input: string;
-  /** tárolónként egy művelet, a storages sorrendjében */
+  /** one operation per storage, in the order of storages */
   ops: StorageOp[];
 }
 
@@ -47,9 +47,9 @@ export interface Machine {
   states: string[];
   start: string;
   accept: string[];
-  /** finalState: elfogadó állapotban; emptyStorages: minden verem/sor üres */
+  /** finalState: in an accepting state; emptyStorages: every stack/queue is empty */
   acceptMode: "finalState" | "emptyStorages";
-  /** "head" = egyirányú olvasófej, egyébként egy tároló id-je (oda kerül a bemenet) */
+  /** "head" = one-way read head, otherwise the id of a storage (the input is written there) */
   input: "head" | string;
   storages: StorageSpec[];
   transitions: MachineTransition[];
@@ -64,9 +64,9 @@ export type StorageState = string | TapeState;
 
 export interface MachineConfig {
   state: string;
-  /** az olvasófej pozíciója (input: "head" esetén) */
+  /** position of the read head (with input: "head") */
   pos: number;
-  /** tárolónként az aktuális tartalom, a storages sorrendjében */
+  /** current content per storage, in the order of storages */
   storages: StorageState[];
   steps: number;
 }
@@ -76,7 +76,7 @@ export function hasInputHead(m: Machine): boolean {
 }
 
 /* ------------------------------------------------------------------ */
-/* Konfigurációk                                                        */
+/* Configurations                                                      */
 /* ------------------------------------------------------------------ */
 
 function emptyTape(content: string): TapeState {
@@ -112,7 +112,7 @@ export function machineConfigKey(c: MachineConfig): string {
 }
 
 /* ------------------------------------------------------------------ */
-/* Lépés                                                                */
+/* Step                                                                */
 /* ------------------------------------------------------------------ */
 
 function applyOp(op: StorageOp, st: StorageState): StorageState | null {
@@ -141,7 +141,7 @@ function applyOp(op: StorageOp, st: StorageState): StorageState | null {
   }
 }
 
-/** Egy konfigurációból egy lépésben elérhető konfigurációk (az alkalmazott átmenettel). */
+/** Configurations reachable from a configuration in one step (with the transition applied). */
 export function machineMoves(
   m: Machine,
   c: MachineConfig,
@@ -156,7 +156,7 @@ export function machineMoves(
     let newPos = c.pos;
     if (head) {
       if (t.input === EPS) {
-        // nem olvas
+        // does not read
       } else if (nextChar !== null && t.input === nextChar) {
         newPos = c.pos + 1;
       } else continue;
@@ -176,9 +176,9 @@ export function machineMoves(
 }
 
 /**
- * Elfogadó-e a konfiguráció?
- *  - olvasófejes gép: a bemenet elfogyott ÉS (elfogadó állapot / minden verem-sor üres)
- *  - szalagos bemenetű gép: megállt (nincs alkalmazható átmenet) elfogadó állapotban
+ * Is the configuration accepting?
+ *  - read-head machine: the input is consumed AND (accepting state / every stack and queue empty)
+ *  - tape-input machine: it has halted (no applicable transition) in an accepting state
  */
 export function isAcceptingMachineConfig(m: Machine, c: MachineConfig, input: string): boolean {
   if (hasInputHead(m)) {
@@ -192,7 +192,7 @@ export function isAcceptingMachineConfig(m: Machine, c: MachineConfig, input: st
 }
 
 /* ------------------------------------------------------------------ */
-/* Futtatás                                                             */
+/* Running                                                             */
 /* ------------------------------------------------------------------ */
 
 export interface MachineRunResult {
@@ -201,7 +201,7 @@ export interface MachineRunResult {
   exploredConfigs: number;
 }
 
-/** Szó elfogadásának eldöntése korlátos BFS-sel (végtelen ε-körök / futások ellen). */
+/** Decides whether a word is accepted with a bounded BFS (guards against infinite ε-loops / runs). */
 export function runMachine(
   m: Machine,
   input: string,
@@ -261,7 +261,7 @@ export function runMachine(
   return { verdict: "rejected", exploredConfigs: explored };
 }
 
-/** Interaktív szimuláció: az aktuális konfigurációhalmaz egy lépése (minden ág). */
+/** Interactive simulation: one step of the current configuration set (every branch). */
 export function stepMachineConfigs(
   m: Machine,
   configs: MachineConfig[],
@@ -284,18 +284,18 @@ export function stepMachineConfigs(
 }
 
 /* ------------------------------------------------------------------ */
-/* Analízis és képességek                                               */
+/* Analysis and capabilities                                          */
 /* ------------------------------------------------------------------ */
 
 export interface MachineAnalysis {
-  /** statikus determinizmus: sehol sem illeszkedhet egyszerre két átmenet */
+  /** static determinism: two transitions can never match at the same time */
   isDeterministic: boolean;
-  /** átmenet-párok, amelyek ugyanabban a helyzetben egyszerre alkalmazhatók */
+  /** pairs of transitions that are applicable in the same situation */
   nondeterministicAt: { state: string; detail: string }[];
   hasEpsilonInput: boolean;
 }
 
-/** Két őrfeltétel átfedhet-e (mindkettő illeszkedhet ugyanarra a konfigurációra)? */
+/** Can two guards overlap (both match the same configuration)? */
 function guardsOverlap(m: Machine, a: MachineTransition, b: MachineTransition): boolean {
   if (hasInputHead(m) && a.input !== EPS && b.input !== EPS && a.input !== b.input) return false;
   for (let i = 0; i < m.storages.length; i++) {
@@ -331,7 +331,7 @@ export function analyzeMachine(m: Machine): MachineAnalysis {
             state,
             detail: `${machineTransitionLabel(m, ts[i])}  ‖  ${machineTransitionLabel(m, ts[j])}`
           });
-          found = true; // állapotonként egy példa elég
+          found = true; // one example per state is enough
         }
       }
     }
@@ -344,15 +344,15 @@ export function analyzeMachine(m: Machine): MachineAnalysis {
 }
 
 export interface MachineCaps {
-  /** nincs tároló, olvasófejes — véges automataként kezelhető */
+  /** no storage, read head — can be treated as a finite automaton */
   isFSMLike: boolean;
-  /** olvasófej + pontosan 1 verem */
+  /** read head + exactly 1 stack */
   isPDALike: boolean;
-  /** pontosan 1 szalag, a bemenet azon */
+  /** exactly 1 tape, holding the input */
   isTMLike: boolean;
-  /** géptípus-azonosító a felületi felirathoz (i18n kulcs) */
+  /** machine-kind identifier for the UI label (i18n key) */
   kind: "fsm" | "pda" | "tm" | "general";
-  /** csak kind === "general" esetén: tárolók száma típusonként, a felirat összeállításához */
+  /** only for kind === "general": number of storages per type, to build the label */
   storageCounts?: Partial<Record<StorageType, number>>;
 }
 
@@ -374,7 +374,7 @@ export function machineCaps(m: Machine): MachineCaps {
   return { isFSMLike, isPDALike, isTMLike, kind, storageCounts };
 }
 
-/** Tárolómentes gép átalakítása a véges-automata algoritmusok bemenetévé. */
+/** Converts a storage-free machine into input for the finite-automaton algorithms. */
 export function machineToFSM(m: Machine): FSM | null {
   if (!machineCaps(m).isFSMLike) return null;
   return {
@@ -388,7 +388,7 @@ export function machineToFSM(m: Machine): FSM | null {
   };
 }
 
-/** A véges-automata algoritmusok eredménye vissza az egységes gépmodellbe. */
+/** Converts the result of the finite-automaton algorithms back into the unified machine model. */
 export function fsmToMachine(f: FSM): Machine {
   return {
     kind: "machine",
@@ -405,7 +405,7 @@ export function fsmToMachine(f: FSM): Machine {
 }
 
 /* ------------------------------------------------------------------ */
-/* Címkék                                                               */
+/* Labels                                                              */
 /* ------------------------------------------------------------------ */
 
 const showEps = (s: string) => (s === "" ? EPS : s);
@@ -425,7 +425,7 @@ export function storageOpLabel(op: StorageOp): string {
   }
 }
 
-/** Él-címke a gráfra: a preset gépeknél a tankönyvi alak, egyébként szegmensek. */
+/** Edge label for the graph: the textbook form for preset machines, segments otherwise. */
 export function machineTransitionLabel(m: Machine, t: MachineTransition): string {
   const caps = machineCaps(m);
   if (caps.isFSMLike) return t.input;
@@ -437,7 +437,7 @@ export function machineTransitionLabel(m: Machine, t: MachineTransition): string
   return parts.join(" ‖ ");
 }
 
-/** A szalag látható szelete + a fej relatív pozíciója (megjelenítéshez). */
+/** The visible slice of the tape + the head's relative position (for display). */
 export function tapeWindow(
   t: TapeState,
   radius = 10

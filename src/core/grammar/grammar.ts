@@ -14,8 +14,8 @@ import { FSM, makeFSM, transMap } from "../fsm/fsm";
 import { Machine } from "../machine/machine";
 
 /**
- * Generatív nyelvtan. A szabályok jobb oldalán "" jelenti az ε-t.
- * A szimbólumok egykarakteresek (nemterminálisok jellemzően nagybetűk).
+ * Generative grammar. An empty right-hand side "" stands for ε.
+ * Symbols are single characters (nonterminals are typically upper-case).
  */
 export interface Grammar {
   kind: "grammar";
@@ -36,19 +36,19 @@ export function ruleToString(r: GrammarRule): string {
 }
 
 /* ------------------------------------------------------------------ */
-/* Chomsky-osztályozás részletes magyarázattal                          */
+/* Chomsky classification with detailed explanations                  */
 /* ------------------------------------------------------------------ */
 
 export interface Classification {
-  /** a legmagasabb teljesülő osztály */
+  /** the highest class that holds */
   type: 0 | 1 | 2 | 3;
-  /** az osztályozás indoklása szintenként */
+  /** the reasoning behind the classification, per level */
   reasons: {
     type3: { holds: boolean; violations: I18nText[] };
     type2: { holds: boolean; violations: I18nText[] };
     type1: { holds: boolean; violations: I18nText[] };
   };
-  /** ε-mentes-e (a megengedett S → ε kivétellel) */
+  /** whether it is ε-free (apart from the allowed S → ε) */
   epsilonFree: boolean;
   epsilonIssues: I18nText[];
   direction?: "right" | "left";
@@ -60,7 +60,7 @@ export function classify(g: Grammar): Classification {
 
   const isTerminalWord = (w: string) => [...w].every((c) => term.has(c));
 
-  /* --- 3. típus: jobblineáris (A → uB | u, u terminális szó) vagy ballineáris --- */
+  /* --- type 3: right-linear (A → uB | u, u a terminal word) or left-linear --- */
   const v3right: I18nText[] = [];
   const v3left: I18nText[] = [];
   for (const r of g.rules) {
@@ -71,8 +71,8 @@ export function classify(g: Grammar): Classification {
       continue;
     }
     const w = r.right;
-    if (w === "") continue; // ε-szabály — az ε-mentességnél kezeljük
-    // jobblineáris: terminálisok, legfeljebb a végén egy nemterminális
+    if (w === "") continue; // ε-rule — handled by the ε-freeness check
+    // right-linear: terminals, with at most one nonterminal at the end
     const rOk = isTerminalWord(w) || (isTerminalWord(w.slice(0, -1)) && nt.has(w[w.length - 1]));
     if (!rOk) v3right.push(tx("grammar.classify.notRightLinear", { rule: ruleToString(r) }));
     const lOk = isTerminalWord(w) || (nt.has(w[0]) && isTerminalWord(w.slice(1)));
@@ -82,7 +82,7 @@ export function classify(g: Grammar): Classification {
   const type3left = v3left.length === 0;
   const type3 = type3right || type3left;
 
-  /* --- 2. típus: környezetfüggetlen (A → α) --- */
+  /* --- type 2: context-free (A → α) --- */
   const v2: I18nText[] = [];
   for (const r of g.rules) {
     if (!nt.has(r.left) || r.left.length !== 1) {
@@ -91,7 +91,7 @@ export function classify(g: Grammar): Classification {
   }
   const type2 = v2.length === 0;
 
-  /* --- 1. típus: környezetfüggő / monoton (|α| ≤ |β|, kivéve S → ε ha S nem fordul elő jobb oldalon) --- */
+  /* --- type 1: context-sensitive / monotone (|α| ≤ |β|, except S → ε if S never occurs on a right-hand side) --- */
   const v1: I18nText[] = [];
   const startOnRight = g.rules.some((r) => r.right.includes(g.start));
   for (const r of g.rules) {
@@ -117,7 +117,7 @@ export function classify(g: Grammar): Classification {
   }
   const type1 = v1.length === 0;
 
-  /* --- ε-mentesség --- */
+  /* --- ε-freeness --- */
   const epsilonIssues: I18nText[] = [];
   for (const r of g.rules) {
     if (r.right === "") {
@@ -131,10 +131,10 @@ export function classify(g: Grammar): Classification {
   if (type1) type = 1;
   if (type2 && type1) type = 2;
   if (type3 && type2 && type1) type = 3;
-  // megjegyzés: a hierarchia definíció szerint kumulatív; a 2-es/3-as szint
-  // ε-szabályait a szokásos konvencióval kezeljük (S→ε megengedett).
+  // note: the hierarchy is cumulative by definition; ε-rules on levels 2/3
+  // follow the usual convention (S→ε is allowed).
   if (type2 && !type1) {
-    // CF nyelvtan ε-szabályokkal: a szokásos kurzuskonvenció szerint 2. típusú
+    // a CF grammar with ε-rules is type 2 by the usual course convention
     type = 2;
     if (type3) type = 3;
   }
@@ -153,12 +153,12 @@ export function classify(g: Grammar): Classification {
 }
 
 /* ------------------------------------------------------------------ */
-/* Szógenerálás levezetésekkel                                          */
+/* Word generation with derivations                                   */
 /* ------------------------------------------------------------------ */
 
 export interface GeneratedWord {
   word: string; // "" = ε
-  derivation: string[]; // mondatformák sorozata S-től a szóig
+  derivation: string[]; // sequence of sentential forms from S to the word
 }
 
 export function generateWords(
@@ -180,18 +180,18 @@ export function generateWords(
   while (frontier.length > 0 && words.length < maxCount && formCount < maxForms) {
     const next: { form: string; path: string[] }[] = [];
     for (const { form, path } of frontier) {
-      // legbaloldalibb levezetés: az első nemterminálist írjuk át
+      // leftmost derivation: rewrite the first nonterminal
       const idx = [...form].findIndex((c) => nt.has(c));
       if (idx === -1) continue;
       const A = form[idx];
       for (const r of g.rules) {
-        // környezetfüggő szabályokhoz: bárhol illeszthető bal oldal
+        // for context-sensitive rules: the left-hand side may match anywhere
         if (r.left.length === 1 && nt.has(r.left)) {
           if (r.left !== A) continue;
           const newForm = form.slice(0, idx) + r.right + form.slice(idx + 1);
           consider(newForm, path);
         } else {
-          // általános szabály: minden előfordulásra
+          // general rule: at every occurrence
           let from = 0;
           while (true) {
             const at = form.indexOf(r.left, from);
@@ -204,10 +204,10 @@ export function generateWords(
       }
 
       function consider(newForm: string, path: string[]) {
-        // vágás: ha a terminális rész már túl hosszú, nem éri el a korlátot
+        // prune: if the terminal part is already too long it cannot fit the limit
         const termLen = newForm.length - countNT(newForm);
         if (termLen > maxLength) return;
-        if (newForm.length > maxLength + 4) return; // mondatforma-korlát
+        if (newForm.length > maxLength + 4) return; // sentential form limit
         if (seenForms.has(newForm)) return;
         seenForms.add(newForm);
         formCount++;
@@ -230,10 +230,10 @@ export function generateWords(
 }
 
 /* ------------------------------------------------------------------ */
-/* Konverziók                                                           */
+/* Conversions                                                         */
 /* ------------------------------------------------------------------ */
 
-/** 3. típusú (jobblineáris) nyelvtan → NFA */
+/** Type-3 (right-linear) grammar → NFA */
 export function grammarToFSM(g: Grammar): OpResult<FSM> {
   const cls = classify(g);
   if (cls.type !== 3 || cls.direction !== "right") {
@@ -259,7 +259,7 @@ export function grammarToFSM(g: Grammar): OpResult<FSM> {
     const isNT = g.nonterminals.includes(last);
     const symbols = isNT ? r.right.slice(0, -1) : r.right;
     const target = isNT ? last : acceptState;
-    // többkarakteres terminálisrész: közbülső állapotok
+    // multi-character terminal part: intermediate states
     let from = r.left;
     for (let i = 0; i < symbols.length; i++) {
       const isLast = i === symbols.length - 1;
@@ -273,7 +273,7 @@ export function grammarToFSM(g: Grammar): OpResult<FSM> {
       from = to;
     }
     if (symbols.length === 0 && isNT) {
-      // A → B alakú lánc-szabály: ε-átmenet
+      // chain rule of the form A → B: ε-transition
       transitions.push({ from: r.left, symbol: EPS, to: target });
     }
     rows.push([ruleToString(r), isNT ? `${r.left} —${symbols || EPS}→ ${target}` : `${r.left} —${symbols}→ ${acceptState}`]);
@@ -296,10 +296,10 @@ export function grammarToFSM(g: Grammar): OpResult<FSM> {
   return okResult(fsm, [], steps);
 }
 
-/** NFA → jobblineáris nyelvtan */
+/** NFA → right-linear grammar */
 export function fsmToGrammar(f: FSM): OpResult<Grammar> {
   const diags: Diagnostic[] = [];
-  // állapot → nemterminális betű hozzárendelés
+  // state → nonterminal letter mapping
   const letters = "SABCDEFGHIJKLMNOPQRTUVWXYZ";
   const mapName = new Map<string, string>();
   const order = [f.start, ...f.states.filter((s) => s !== f.start)];
@@ -350,7 +350,7 @@ export function fsmToGrammar(f: FSM): OpResult<Grammar> {
   ]);
 }
 
-/** Környezetfüggetlen nyelvtan → veremautomata (felülről lefelé elemző). */
+/** Context-free grammar → pushdown automaton (top-down parser). */
 export function grammarToPDA(g: Grammar): OpResult<Machine> {
   const cls = classify(g);
   if (!cls.reasons.type2.holds) {
@@ -361,11 +361,11 @@ export function grammarToPDA(g: Grammar): OpResult<Machine> {
 
   const q = "q";
   const transitions: Machine["transitions"] = [];
-  // nemterminális a verem tetején: szabály alkalmazása
+  // nonterminal on top of the stack: apply a rule
   for (const r of g.rules) {
     transitions.push({ from: q, input: EPS, to: q, ops: [{ type: "stack", pop: r.left, push: r.right }] });
   }
-  // terminális a verem tetején: illesztés a bemenettel
+  // terminal on top of the stack: match it against the input
   for (const a of g.terminals) {
     transitions.push({ from: q, input: a, to: q, ops: [{ type: "stack", pop: a, push: "" }] });
   }
@@ -379,7 +379,7 @@ export function grammarToPDA(g: Grammar): OpResult<Machine> {
     accept: [],
     acceptMode: "emptyStorages",
     input: "head",
-    storages: [{ id: "verem", type: "stack", init: g.start }],
+    storages: [{ id: "stack", type: "stack", init: g.start }],
     transitions
   };
 
@@ -393,7 +393,7 @@ export function grammarToPDA(g: Grammar): OpResult<Machine> {
   ]);
 }
 
-/** ε-szabályok kiküszöbölése (2-3. típusú nyelvtanra). */
+/** Eliminates ε-rules (for type 2–3 grammars). */
 export function removeEpsilonRules(g: Grammar): OpResult<Grammar> {
   const cls = classify(g);
   if (!cls.reasons.type2.holds) {
@@ -404,7 +404,7 @@ export function removeEpsilonRules(g: Grammar): OpResult<Grammar> {
   const steps: AlgoStep[] = [];
   const diags: Diagnostic[] = [];
 
-  // 1. törölhető (nullable) nemterminálisok
+  // 1. nullable nonterminals
   const nullable = new Set<string>();
   let changed = true;
   while (changed) {
@@ -427,7 +427,7 @@ export function removeEpsilonRules(g: Grammar): OpResult<Grammar> {
 
   if (nullable.size === 0) return okResult({ ...g, rules: g.rules.map((r) => ({ ...r })) }, diags, steps);
 
-  // 2. szabályok bővítése: törölhető előfordulások minden részhalmazának elhagyása
+  // 2. extend the rules: drop every subset of nullable occurrences
   const newRules = new Set<string>();
   for (const r of g.rules) {
     if (r.right === "") continue;
@@ -441,7 +441,7 @@ export function removeEpsilonRules(g: Grammar): OpResult<Grammar> {
     }
   }
 
-  // 3. ha ε a nyelvben volt: új kezdőszimbólum S' → S | ε
+  // 3. if ε was in the language: new start symbol S' → S | ε
   const generatesEps = nullable.has(g.start);
   let start = g.start;
   let nonterminals = [...g.nonterminals];
@@ -476,7 +476,7 @@ export function removeEpsilonRules(g: Grammar): OpResult<Grammar> {
   return okResult(out, diags, steps);
 }
 
-/** Szó levezethetőségének (korlátos) tesztje. */
+/** (Bounded) test of whether a word is derivable. */
 export function grammarAccepts(
   g: Grammar,
   word: string,
@@ -485,8 +485,8 @@ export function grammarAccepts(
   const nt = new Set(g.nonterminals);
   const target = word;
   const countNT = (w: string) => [...w].filter((c) => nt.has(c)).length;
-  // tényleges monotonitás (nem a kurzuskonvenciós osztály): csak így vágható
-  // biztonságosan a mondatforma hossza a célszó hosszára
+  // actual monotonicity (not the course-convention class): only then can the
+  // sentential form length be safely pruned to the target word length
   const monotone = g.rules.every((r) => r.right.length >= r.left.length);
 
   const seen = new Set<string>([g.start]);

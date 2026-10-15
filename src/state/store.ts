@@ -4,8 +4,8 @@ import i18n from "../i18n";
 import { STARTER_CELLS } from "./examples";
 
 /**
- * Offline-first állapot: minden munkalap a localStorage-ban él,
- * bejelentkezés és hálózat nélkül.
+ * Offline-first state: every worksheet lives in localStorage,
+ * with no sign-in and no network.
  */
 
 export interface Cell {
@@ -16,7 +16,7 @@ export interface Cell {
 export interface Workspace {
   id: string;
   name: string;
-  /** fő mappa neve a munkalap-választóban (üres/undefined = nincs mappában) */
+  /** top-level folder name in the worksheet picker (empty/undefined = no folder) */
   folder?: string;
   cells: Cell[];
   createdAt: number;
@@ -32,11 +32,11 @@ interface AppState {
   activeCellId: string | null;
   theme: Theme;
   mobileTab: MobileTab;
-  /** a bal oldali cellapanel szélessége px-ben */
+  /** width of the left cell panel in px */
   paneWidth: number;
-  /** kézzel rögzített gráf-pozíciók: cellId → állapotnév → koordináta */
+  /** manually pinned graph positions: cellId → state name → coordinate */
   layouts: Record<string, Record<string, { x: number; y: number }>>;
-  /** „ne figyelmeztess többé” a gépfajta-váltó szerkesztéseknél */
+  /** "don't warn me again" for edits that change the machine kind */
   hideKindChangeWarning: boolean;
 
   setHideKindChangeWarning: (v: boolean) => void;
@@ -188,7 +188,7 @@ export const useAppStore = create<AppState>()(
           const idx = ws.cells.findIndex((c) => c.id === cellId);
           let cells = ws.cells.filter((c) => c.id !== cellId);
           if (cells.length === 0) cells = [{ id: uid(), source: "" }];
-          // mindig marad aktív cella: a törölt helyén álló (vagy az utolsó)
+          // there is always an active cell: the one taking the deleted cell's place (or the last one)
           const activeCellId =
             s.activeCellId === cellId || s.activeCellId === null
               ? cells[Math.min(Math.max(idx, 0), cells.length - 1)].id

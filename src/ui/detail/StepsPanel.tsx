@@ -37,7 +37,7 @@ const Step: React.FC<{ step: AlgoStep }> = ({ step }) => {
   );
 };
 
-/** A lépéslista tartalma — kártyában és lebegő panelben is használható. */
+/** The step list's content — usable both in a card and in a floating panel. */
 export const StepsContent: React.FC<{ stepGroups: StepGroup[] }> = ({ stepGroups }) => (
   <>
     {stepGroups.map((g, i) => (

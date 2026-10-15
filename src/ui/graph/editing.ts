@@ -11,9 +11,9 @@ import {
 import { StorageSpec } from "../../core/machine/machine";
 
 /**
- * Vizuális gráf-szerkesztés: az aktív cella YAML-definícióját módosítja
- * strukturált műveletekkel (állapot/átmenet hozzáadás, átírás, törlés),
- * így az űrlap-, a kód- és a gráfnézet mindig szinkronban marad.
+ * Visual graph editing: modifies the active cell's YAML definition with
+ * structured operations (add, change, delete states/transitions), so the
+ * form, code and graph views always stay in sync.
  */
 
 export interface StatePatch {
@@ -22,27 +22,27 @@ export interface StatePatch {
   isAccept: boolean;
 }
 
-/** Az átmenet-dialógus egy beviteli mezője. */
+/** One input field of the transition dialog. */
 export interface EdgeField {
   label: string;
   placeholder: string;
   widget: "text" | "move";
 }
 
-/** Egy átmenet „középrésze” a dialógus mezőire bontva (l. edgeFields). */
+/** The "middle part" of a transition split into dialog fields (see edgeFields). */
 export type EdgeMiddle = string[];
 
 export interface GraphEditing {
   states: string[];
-  /** az átmenet-dialógus mezői — a gép tárolóiból generálva */
+  /** fields of the transition dialog — generated from the machine's storages */
   edgeFields: EdgeField[];
   getState(name: string): StatePatch;
-  /** hiba esetén hibaüzenettel tér vissza */
+  /** returns an error message on failure */
   addState(p: StatePatch, x: number, y: number): string | null;
   updateState(oldName: string, p: StatePatch): string | null;
   deleteState(name: string): void;
   getEdge(from: string, to: string): EdgeMiddle[];
-  /** üres lista = az összes from→to átmenet törlése */
+  /** empty list = delete every from→to transition */
   setEdge(from: string, to: string, middles: EdgeMiddle[]): void;
 }
 
@@ -67,7 +67,7 @@ function suggestStateName(used: Set<string>): string {
 
 export { suggestStateName };
 
-/** A dialógus mezői: bemeneti jel + tárolónként a műveleteik részmezői. */
+/** The dialog's fields: input symbol + the sub-fields of each storage's operation. */
 export function edgeFieldsFor(t: TFunction, hasHead: boolean, storages: StorageSpec[]): EdgeField[] {
   const fields: EdgeField[] = [];
   if (hasHead) fields.push({ label: t("graph.edgeFields.symbol"), placeholder: "a", widget: "text" });
@@ -87,7 +87,7 @@ export function edgeFieldsFor(t: TFunction, hasHead: boolean, storages: StorageS
   return fields;
 }
 
-/** sor-tokenek (from/to nélkül) → dialógus-mezőértékek */
+/** line tokens (without from/to) → dialog field values */
 export function tokensToFields(hasHead: boolean, storages: StorageSpec[], tokens: string[]): string[] {
   const out: string[] = [];
   let i = 0;
@@ -104,7 +104,7 @@ export function tokensToFields(hasHead: boolean, storages: StorageSpec[], tokens
   return out;
 }
 
-/** dialógus-mezőértékek → sor-tokenek (from/to nélkül) */
+/** dialog field values → line tokens (without from/to) */
 export function fieldsToTokens(hasHead: boolean, storages: StorageSpec[], fields: string[]): string[] {
   const out: string[] = [];
   let i = 0;
@@ -155,7 +155,7 @@ export function useGraphEditing(): {
     to
   ];
 
-  /** közös állapot-mező frissítés név/init/accept alapján */
+  /** shared state-field update based on name/init/accept */
   const applyState = (
     d: EntityDraft,
     nextStates: string[],
@@ -209,7 +209,7 @@ export function useGraphEditing(): {
       const nextStates = states.map(renamed);
       let nextInit = renamed(init);
       if (p.isInit) nextInit = p.name;
-      // a kezdőállapot kipipálását nem engedjük el némán: marad, ami volt
+      // unticking the start state is not silently allowed: it stays as it was
       let nextAccept = accept.map(renamed);
       nextAccept = p.isAccept
         ? nextAccept.includes(p.name)

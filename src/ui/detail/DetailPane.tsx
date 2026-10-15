@@ -12,7 +12,7 @@ import { VerdictView } from "./VerdictView";
 import { StepsPanel } from "./StepsPanel";
 import { DiagnosticsList } from "./DiagnosticsList";
 
-/** Üres cella: teljes vászon — dupla kattintásra megszületik az első állapot. */
+/** Empty cell: a full canvas — double-click creates the first state. */
 const EmptyCanvas: React.FC = () => {
   const { t } = useTranslation();
   const activeCellId = useAppStore((s) => s.activeCellId);
@@ -23,7 +23,7 @@ const EmptyCanvas: React.FC = () => {
   const onDoubleClick = (e: React.MouseEvent) => {
     if (!activeCellId) return;
     const rect = e.currentTarget.getBoundingClientRect();
-    // egyedi gépnév a munkalapon
+    // a machine name that is unique within the worksheet
     const used = new Set<string>();
     for (const c of ws.cells) {
       const m = /^\s*name:\s*([A-Za-z][A-Za-z0-9_'′]*)/m.exec(c.source);
@@ -95,7 +95,7 @@ export const DetailPane: React.FC<{ result: CellResult | null }> = ({ result }) 
   }
 
   if (!result.value) {
-    // a javítási javaslat az aktív cella kifejezését cseréli
+    // the suggested fix replaces the active cell's expression
     const applyFix = (code: string) => {
       const cell = ws.cells.find((c) => c.id === activeCellId);
       if (!cell) return;
@@ -112,10 +112,10 @@ export const DetailPane: React.FC<{ result: CellResult | null }> = ({ result }) 
 
   const v = result.value;
 
-  // gépek: canvas-first elrendezés (a lépés-panel a lebegő panelek közé kerül)
+  // machines: canvas-first layout (the steps panel joins the floating panels)
   if (v.kind === "fsm") return <FSMView fsm={v} stepGroups={result.stepGroups} />;
   if (v.kind === "machine") {
-    // tárolómentes gép: a teljes automata-nézetet kapja (analízis, szavak, idővonal)
+    // storage-free machine: gets the full automaton view (analysis, words, timeline)
     const f = machineToFSM(v);
     if (f) return <FSMView fsm={f} stepGroups={result.stepGroups} />;
     return <MachineView machine={v} stepGroups={result.stepGroups} />;

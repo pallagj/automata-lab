@@ -31,14 +31,14 @@ import { machineKindLabel } from "../machineLabels";
 
 const MAX_RUN_LEVELS = 300;
 
-/** Egy tároló tartalmának tömör szövege a konfiguráció-listához. */
+/** Compact text of a storage's content for the configuration list. */
 function storageText(st: StorageState): string {
   if (typeof st === "string") return st || "ε";
   const w = tapeWindow(st, 8);
   return w.cells.map((c, i) => (i === w.headIndex ? `[${c}]` : c)).join("");
 }
 
-/** Egy tároló cellasoros megjelenítése (verem: tető balra, sor: eleje balra). */
+/** Shows a storage as a row of cells (stack: top on the left, queue: front on the left). */
 const StorageCells: React.FC<{ type: "stack" | "queue" | "tape"; st: StorageState }> = ({ type, st }) => {
   const { t } = useTranslation();
   if (type === "tape") {
@@ -84,8 +84,8 @@ export const MachineView: React.FC<{ machine: Machine; stepGroups?: StepGroup[] 
   const [historyState, setHistory] = useState<MachineConfig[][]>([[initialMachineConfig(m, "")]]);
   const [selected, setSelected] = useState(0);
 
-  // gépváltáskor render közben nullázunk: a régi konfigurációk tárolói nem
-  // illenek az új géphez, egyetlen ilyen képkocka is összeomlana
+  // reset during render when the machine changes: the old configurations' storages
+  // do not fit the new machine, and even a single such frame would crash
   const [forMachine, setForMachine] = useState(m);
   const machineChanged = forMachine !== m;
   if (machineChanged) {
@@ -94,7 +94,7 @@ export const MachineView: React.FC<{ machine: Machine; stepGroups?: StepGroup[] 
     setHistory([[initialMachineConfig(m, "")]]);
     setSelected(0);
   }
-  // a folyamatban lévő (eldobás előtti) renderben is az új géphez illő adatokkal dolgozunk
+  // even the in-progress (to-be-discarded) render works with data that fits the new machine
   const input = machineChanged ? "" : inputState;
   const history = machineChanged ? [[initialMachineConfig(m, "")]] : historyState;
 
@@ -136,7 +136,7 @@ export const MachineView: React.FC<{ machine: Machine; stepGroups?: StepGroup[] 
     });
   };
 
-  /** él-kattintás: csak a kattintott él átmeneteivel lépünk (ágválasztás) */
+  /** edge click: step only with the clicked edge's transitions (branch choice) */
   const stepEdge = (edge: GraphEdge) => {
     if (status !== "working") return;
     const [from, , to] = edge.id.split("⇒");

@@ -21,7 +21,7 @@ import { machineCaps, machineToFSM, runMachine } from "./machine/machine";
 import { evaluateCells } from "./workspace";
 import { serializeDefinition } from "./parse/serialize";
 
-/** páros számú a-t tartalmazó szavak DFA-ja */
+/** DFA of words with an even number of a's */
 const evenA = makeFSM({
   name: "evenA",
   alphabet: ["a", "b"],
@@ -36,7 +36,7 @@ const evenA = makeFSM({
   ]
 });
 
-/** ab-re végződő szavak NFA-ja */
+/** NFA of words ending in ab */
 const endsAB = makeFSM({
   name: "endsAB",
   alphabet: ["a", "b"],
@@ -51,17 +51,17 @@ const endsAB = makeFSM({
   ]
 });
 
-describe("FSM szimuláció", () => {
-  it("DFA elfogadás", () => {
+describe("FSM simulation", () => {
+  it("DFA acceptance", () => {
     expect(acceptsFSM(evenA, "")).toBe(true);
     expect(acceptsFSM(evenA, "aba")).toBe(true);
     expect(acceptsFSM(evenA, "ab")).toBe(false);
   });
-  it("NFA elfogadás", () => {
+  it("NFA acceptance", () => {
     expect(acceptsFSM(endsAB, "aab")).toBe(true);
     expect(acceptsFSM(endsAB, "abba")).toBe(false);
   });
-  it("ε-NFA elfogadás", () => {
+  it("ε-NFA acceptance", () => {
     const m = makeFSM({
       name: "m",
       alphabet: ["a"],
@@ -78,8 +78,8 @@ describe("FSM szimuláció", () => {
   });
 });
 
-describe("determinizálás", () => {
-  it("NFA-ból ekvivalens teljes DFA", () => {
+describe("determinisation", () => {
+  it("NFA to an equivalent complete DFA", () => {
     const r = determinize(endsAB);
     expect(r.ok).toBe(true);
     const d = r.value!;
@@ -88,7 +88,7 @@ describe("determinizálás", () => {
       expect(acceptsFSM(d, w)).toBe(acceptsFSM(endsAB, w));
     }
   });
-  it("ε-átmenetes automatát elutasít javítási javaslattal", () => {
+  it("rejects an automaton with ε-transitions, suggesting a fix", () => {
     const m = makeFSM({
       name: "m",
       alphabet: ["a"],
@@ -103,8 +103,8 @@ describe("determinizálás", () => {
   });
 });
 
-describe("ε-mentesítés", () => {
-  it("megőrzi a nyelvet", () => {
+describe("ε-removal", () => {
+  it("preserves the language", () => {
     const m = makeFSM({
       name: "m",
       alphabet: ["a", "b"],
@@ -127,9 +127,9 @@ describe("ε-mentesítés", () => {
   });
 });
 
-describe("minimalizálás", () => {
-  it("összevonja az ekvivalens állapotokat", () => {
-    // két felesleges állapotú DFA az (a|b)* b nyelvhez
+describe("minimisation", () => {
+  it("merges equivalent states", () => {
+    // a DFA with two redundant states for the language (a|b)* b
     const m = makeFSM({
       name: "m",
       alphabet: ["a", "b"],
@@ -154,12 +154,12 @@ describe("minimalizálás", () => {
       expect(acceptsFSM(r.value!, w)).toBe(acceptsFSM(m, w));
     }
   });
-  it("nemdeterminisztikusat elutasít fix-szel", () => {
+  it("rejects a nondeterministic one with a fix", () => {
     const r = minimize(endsAB);
     expect(r.ok).toBe(false);
     expect(r.diagnostics[0].fix?.code).toContain("det(");
   });
-  it("nem teljeset elutasít fix-szel", () => {
+  it("rejects an incomplete one with a fix", () => {
     const m = makeFSM({
       name: "m",
       alphabet: ["a", "b"],
@@ -174,14 +174,14 @@ describe("minimalizálás", () => {
   });
 });
 
-describe("műveletek", () => {
-  it("komplementer", () => {
+describe("operations", () => {
+  it("complement", () => {
     const r = complement(evenA);
     expect(r.ok).toBe(true);
     expect(acceptsFSM(r.value!, "a")).toBe(true);
     expect(acceptsFSM(r.value!, "aa")).toBe(false);
   });
-  it("metszet szorzattal", () => {
+  it("intersection via product", () => {
     const evenB = makeFSM({
       name: "evenB",
       alphabet: ["a", "b"],
@@ -200,7 +200,7 @@ describe("műveletek", () => {
     expect(acceptsFSM(r.value!, "abab")).toBe(true);
     expect(acceptsFSM(r.value!, "aab")).toBe(false);
   });
-  it("konkatenáció és csillag", () => {
+  it("concatenation and star", () => {
     const a = regexToNFA("a").value!;
     const b = regexToNFA("b").value!;
     const ab = concatFSM(a, b).value!;
@@ -211,12 +211,12 @@ describe("műveletek", () => {
     expect(acceptsFSM(star, "abab")).toBe(true);
     expect(acceptsFSM(star, "aba")).toBe(false);
   });
-  it("megfordítás", () => {
+  it("reversal", () => {
     const r = reverseFSM(endsAB).value!;
     expect(acceptsFSM(r, "ba")).toBe(true);
     expect(acceptsFSM(r, "ab")).toBe(false);
   });
-  it("unió ε-konstrukcióval", () => {
+  it("union via ε-construction", () => {
     const u = unionEpsilon(evenA, endsAB).value!;
     expect(acceptsFSM(u, "aa")).toBe(true);
     expect(acceptsFSM(u, "ab")).toBe(true);
@@ -224,8 +224,8 @@ describe("műveletek", () => {
   });
 });
 
-describe("ekvivalencia", () => {
-  it("regex(ab*) ≠ regex(a*b) ellenpéldával", () => {
+describe("equivalence", () => {
+  it("regex(ab*) ≠ regex(a*b) with a counterexample", () => {
     const a = regexToNFA("ab*").value!;
     const b = regexToNFA("a*b").value!;
     const r = checkEquivalence(a, b);
@@ -247,7 +247,7 @@ describe("regex", () => {
     expect(acceptsFSM(m, "aabb")).toBe(true);
     expect(acceptsFSM(m, "ab")).toBe(false);
   });
-  it("szóenumeráció", () => {
+  it("word enumeration", () => {
     const m = regexToNFA("ab*").value!;
     const { words } = enumerateWords(m, 4, 10);
     expect(words).toContain("a");
@@ -257,7 +257,7 @@ describe("regex", () => {
 });
 
 describe("parser", () => {
-  it("automata helyettesítőkkel és intervallummal", () => {
+  it("automaton with wildcards and a range", () => {
     const r = parseMachine(`
 Machine:
   name: M
@@ -273,10 +273,10 @@ Machine:
 `);
     expect(r.ok).toBe(true);
     expect(r.value!.states).toEqual(["S", "A", "B", "C"]);
-    // wildcard: S minden szimbólumra önmagába
+    // wildcard: S loops to itself on every symbol
     expect(runMachine(r.value!, "bbaba").verdict).toBe("accepted");
   });
-  it("ismeretlen állapot hibát ad", () => {
+  it("an unknown state is an error", () => {
     const r = parseMachine(`
 Machine:
   name: M
@@ -291,7 +291,7 @@ Machine:
     expect(r.diagnostics[0].title.key).toBe("definitionParser.machine.unknownToState");
     expect(r.diagnostics[0].title.params?.state).toBe("X");
   });
-  it("hiányzó init hibát ad", () => {
+  it("a missing init is an error", () => {
     const r = parseMachine(`
 Machine:
   name: M
@@ -304,7 +304,7 @@ Machine:
   });
 });
 
-describe("nyelvtan", () => {
+describe("grammar", () => {
   const regular = parseGrammar(`
 Grammar:
   name: G
@@ -316,13 +316,13 @@ Grammar:
     - A -> bA | b
 `).value!;
 
-  it("osztályozás: 3. típus", () => {
+  it("classification: type 3", () => {
     const c = classify(regular);
     expect(c.type).toBe(3);
     expect(c.direction).toBe("right");
   });
 
-  it("osztályozás: 2. típus magyarázattal", () => {
+  it("classification: type 2 with an explanation", () => {
     const g = parseGrammar(`
 Grammar:
   name: G
@@ -337,7 +337,7 @@ Grammar:
     expect(c.reasons.type3.holds).toBe(false);
   });
 
-  it("osztályozás: 1. típus (környezetfüggő)", () => {
+  it("classification: type 1 (context-sensitive)", () => {
     const g = parseGrammar(`
 Grammar:
   name: G
@@ -353,7 +353,7 @@ Grammar:
     expect(c.type).toBe(1);
   });
 
-  it("szógenerálás levezetéssel", () => {
+  it("word generation with derivations", () => {
     const { words } = generateWords(regular, 4, 20);
     const w = words.find((x) => x.word === "abb");
     expect(w).toBeDefined();
@@ -361,7 +361,7 @@ Grammar:
     expect(w!.derivation[w!.derivation.length - 1]).toBe("abb");
   });
 
-  it("RG → FSM nyelvmegőrző", () => {
+  it("RG → FSM preserves the language", () => {
     const r = grammarToFSM(regular);
     expect(r.ok).toBe(true);
     expect(acceptsFSM(r.value!, "abb")).toBe(true);
@@ -369,14 +369,14 @@ Grammar:
     expect(acceptsFSM(r.value!, "ba")).toBe(false);
   });
 
-  it("FSM → RG nyelvmegőrző", () => {
+  it("FSM → RG preserves the language", () => {
     const r = fsmToGrammar(evenA);
     expect(r.ok).toBe(true);
     expect(grammarAccepts(r.value!, "aba").verdict).toBe("yes");
     expect(grammarAccepts(r.value!, "ab").verdict).toBe("no");
   });
 
-  it("ε-mentesítés", () => {
+  it("ε-removal", () => {
     const g = parseGrammar(`
 Grammar:
   name: G
@@ -396,7 +396,7 @@ Grammar:
 });
 
 describe("PDA", () => {
-  it("a^n b^n elfogadása", () => {
+  it("accepts a^n b^n", () => {
     const p = parseMachine(`
 Machine:
   name: P
@@ -405,7 +405,7 @@ Machine:
   init: q0
   accept: q2
   storages:
-    verem: stack
+    stack: stack
   transitions:
     - q0 a Z/AZ q0
     - q0 a A/AA q0
@@ -420,7 +420,7 @@ Machine:
     expect(runMachine(p, "ba").verdict).toBe("rejected");
   });
 
-  it("visszaírás: a veremautomata-gép formátuma round-trippel", () => {
+  it("serialisation: the pushdown machine format round-trips", () => {
     const p = parseMachine(`
 Machine:
   name: P
@@ -429,21 +429,21 @@ Machine:
   init: q0
   accept: q1
   storages:
-    verem: stack
+    stack: stack
   transitions:
     - q0 a Z/AZ q0
     - q0 $ Z/Z q1
 `).value!;
     const ser = serializeDefinition(p);
     expect(ser).toContain("Machine:");
-    expect(ser).toContain("verem: stack");
+    expect(ser).toContain("stack: stack");
     const back = parseMachine(ser).value!;
     for (const w of ["", "a", "aa"]) {
       expect(runMachine(back, w).verdict).toBe(runMachine(p, w).verdict);
     }
   });
 
-  it("CFG → PDA: palindromok", () => {
+  it("CFG → PDA: palindromes", () => {
     const g = parseGrammar(`
 Grammar:
   name: G
@@ -462,8 +462,8 @@ Grammar:
   });
 });
 
-describe("Turing-gép", () => {
-  it("palindróma-ellenőrző", () => {
+describe("Turing machine", () => {
+  it("palindrome checker", () => {
     const t = parseMachine(`
 Machine:
   name: T
@@ -471,9 +471,9 @@ Machine:
   states: start, haveA, haveB, matchA, matchB, back, ok
   init: start
   accept: ok
-  input: szalag
+  input: tape
   storages:
-    szalag: tape
+    tape: tape
   transitions:
     - start a/_ > haveA
     - start b/_ > haveB
@@ -496,7 +496,7 @@ Machine:
     expect(runMachine(t, "").verdict).toBe("accepted");
   });
 
-  it("visszaírás: a Turing-gép formátuma round-trippel", () => {
+  it("serialisation: the Turing machine format round-trips", () => {
     const t = parseMachine(`
 Machine:
   name: T
@@ -504,9 +504,9 @@ Machine:
   states: s, ok
   init: s
   accept: ok
-  input: szalag
+  input: tape
   storages:
-    szalag: tape
+    tape: tape
   transitions:
     - s a/a > s
     - s _/_ = ok
@@ -519,8 +519,8 @@ Machine:
   });
 });
 
-describe("munkalap-kiértékelés", () => {
-  it("kifejezések függőségi sorrendben", () => {
+describe("worksheet evaluation", () => {
+  it("expressions in dependency order", () => {
     const cells = [
       `Machine:
   name: M
@@ -545,31 +545,31 @@ describe("munkalap-kiértékelés", () => {
     expect((rs[3].value as { equal: boolean }).equal).toBe(true);
   });
 
-  it("#-tal kezdődő cella jegyzet, nem hiba", () => {
-    const rs = evaluateCells(["# Ez egy megjegyzés\n# több sorban"]);
+  it("a cell starting with # is a note, not an error", () => {
+    const rs = evaluateCells(["# This is a note\n# spanning two lines"]);
     expect(rs[0].comment).toBe(true);
     expect(rs[0].diagnostics).toEqual([]);
     expect(rs[0].value).toBeNull();
   });
 
-  it("hibás függőség jelzése", () => {
-    const rs = evaluateCells(["X = det(Nincs)"]);
+  it("reports a broken dependency", () => {
+    const rs = evaluateCells(["X = det(Missing)"]);
     expect(rs[0].value).toBeNull();
     expect(rs[0].diagnostics.some((d) => d.level === "error")).toBe(true);
   });
 
-  it("körkörös függőség jelzése", () => {
+  it("reports a circular dependency", () => {
     const rs = evaluateCells(["A = det(B)", "B = det(A)"]);
     expect(rs[0].diagnostics.some((d) => d.title.key === "workspace.circularDependency.title")).toBe(true);
   });
 
-  it("betű-literálok tiltása a kifejezésnyelvben", () => {
+  it("letter literals are not allowed in the expression language", () => {
     const rs = evaluateCells(["R = (ab)*+ba"]);
     expect(rs[0].value).toBeNull();
     expect(rs[0].diagnostics.some((d) => d.level === "error")).toBe(true);
   });
 
-  it("regex önálló érték, toFsm alakítja automatává", () => {
+  it("regex is a standalone value, toFsm turns it into an automaton", () => {
     const rs = evaluateCells(["R = regex((ab)*+ba)", "A = toFsm(R)"]);
     expect(rs[0].value?.kind).toBe("regex");
     const m = rs[1].value;
@@ -580,14 +580,14 @@ describe("munkalap-kiértékelés", () => {
     expect(runMachine(m as never, "aab").verdict).toBe("rejected");
   });
 
-  it("regex automatikus konverziója automata-műveletben", () => {
+  it("regex is auto-converted in automaton operations", () => {
     const rs = evaluateCells(["R = regex(ab*)", "D = det(epsfree(R))"]);
     expect(rs[1].value?.kind).toBe("machine");
     expect(runMachine(rs[1].value as never, "abb").verdict).toBe("accepted");
     expect(runMachine(rs[1].value as never, "ba").verdict).toBe("rejected");
   });
 
-  it("javítási lánc működik: min(det(epsfree(M)))", () => {
+  it("the fix chain works: min(det(epsfree(M)))", () => {
     const cells = [
       `Machine:
   name: M
@@ -607,7 +607,7 @@ describe("munkalap-kiértékelés", () => {
     expect(rs[2].value?.kind).toBe("machine");
   });
 
-  it("képesség-kapu: tárolós gépre nem megy automata-művelet", () => {
+  it("capability gate: automaton operations reject machines with storages", () => {
     const cells = [
       `Machine:
   name: P
@@ -615,7 +615,7 @@ describe("munkalap-kiértékelés", () => {
   states: q0
   init: q0
   storages:
-    verem: stack
+    stack: stack
   transitions:
     - q0 a Z/Z q0`,
       "D = det(P)"
@@ -629,7 +629,7 @@ describe("munkalap-kiértékelés", () => {
     ).toBe(true);
   });
 
-  it("képesség-kapu: tárolómentes Machine automataként használható", () => {
+  it("capability gate: a storage-free Machine can be used as an automaton", () => {
     const cells = [
       `Machine:
   name: M
@@ -650,7 +650,7 @@ describe("munkalap-kiértékelés", () => {
     expect(runMachine(rs[2].value as never, "b").verdict).toBe("rejected");
   });
 
-  it("toPda eredménye veremautomata-gép, és szimulálható", () => {
+  it("toPda yields a pushdown machine that can be simulated", () => {
     const cells = [
       `Grammar:
   name: G2
@@ -668,7 +668,7 @@ describe("munkalap-kiértékelés", () => {
     expect(runMachine(rs[1].value as never, "aba").verdict).toBe("rejected");
   });
 
-  it("szerializálás round-trip", () => {
+  it("serialisation round trip", () => {
     const rs = evaluateCells(["R0 = regex(ab+a)", "R = det(epsfree(toFsm(R0)))"]);
     const ser = serializeDefinition(rs[1].value as never);
     expect(ser).toContain("Machine:");

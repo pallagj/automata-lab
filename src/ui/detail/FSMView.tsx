@@ -37,7 +37,7 @@ export const FSMView: React.FC<{ fsm: FSM; stepGroups?: StepGroup[] }> = ({ fsm,
   const [input, setInput] = useState("");
   const [history, setHistory] = useState<Set<string>[]>([initialStates(fsm)]);
 
-  // automata csere → szimuláció újraindítása
+  // automaton changed → restart the simulation
   useEffect(() => {
     setHistory([initialStates(fsm)]);
     setInput("");
@@ -79,7 +79,7 @@ export const FSMView: React.FC<{ fsm: FSM; stepGroups?: StepGroup[] }> = ({ fsm,
   const reset = () => setHistory([initialStates(fsm)]);
 
   const stepEdge = (edge: GraphEdge) => {
-    // egy konkrét él választása: csak az adott célállapotba lépünk
+    // a specific edge was chosen: step only into its target state
     const [from, , to] = edge.id.split("⇒");
     if (nextChar === null) return;
     const symbols = tm.get(from);

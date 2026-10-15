@@ -156,7 +156,7 @@
     "rangeTooLarge": { "title": "Túl nagy intervallum a(z) {{field}} mezőben: „{{range}}”" },
     "unknownStorageType": {
       "title": "Ismeretlen tárolótípus a(z) „{{id}}” tárolónál",
-      "detail": "Használható: stack/verem, queue/sor, tape/szalag — kezdőtartalommal:\n  v1:\n    type: stack\n    init: Z"
+      "detail": "Használható: stack, queue, tape — kezdőtartalommal:\n  v1:\n    type: stack\n    init: Z"
     },
     "storageOp": {
       "badTapeOp": {

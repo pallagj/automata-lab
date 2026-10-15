@@ -22,17 +22,17 @@ import { fsmToMachine, machineCaps, machineToFSM } from "../machine/machine";
 import { Definition } from "../parse/definitionParser";
 
 /**
- * Kifejezésnyelv: name = kifejezés
- *   - változók: korábban definiált gépek / regexek nevei
- *   - műveletek nevek között: összefűzés (egymás után írás), + (unió),
- *     * (lezárás), zárójelek
- *   - betű-literálok NINCSENEK — betűsorozat csak a regex(...) belsejében
- *   - függvények: det, min, epsfree, complete, reachable, complement, union,
+ * Expression language: name = expression
+ *   - variables: names of previously defined machines / regexes
+ *   - operators between names: concatenation (juxtaposition), + (union),
+ *     * (closure), parentheses
+ *   - there are NO letter literals — letter sequences only inside regex(...)
+ *   - functions: det, min, epsfree, complete, reachable, complement, union,
  *     intersect, difference, concat, star, reverse, clean, toGrammar, toFsm,
  *     toPda, regex, equal
  */
 
-/** Az expression-nyelv parse-/kiértékelési hibái mindig I18nText-et hordoznak. */
+/** Parse/evaluation errors of the expression language always carry an I18nText. */
 class ExprError extends Error {
   constructor(public i18n: I18nText) {
     super(i18n.key);
@@ -40,9 +40,9 @@ class ExprError extends Error {
 }
 
 /**
- * A kiértékelés belső értékei között az FSM is megjelenik (a véges-automata
- * algoritmusok ezen dolgoznak), de a végeredmény mindig az egységes
- * gépmodellre konvertálódik — kifelé csak machine/grammar/regex/verdict létezik.
+ * FSM appears among the internal values of evaluation (the finite-automaton
+ * algorithms work on it), but the final result is always converted to the
+ * unified machine model — externally only machine/grammar/regex/verdict exist.
  */
 export type ExprValue = Definition | FSM | RegexDef | EquivalenceVerdict;
 
@@ -168,18 +168,18 @@ class ExprParser {
       return e;
     }
     if (/[A-Za-z0-9_ε$]/.test(c)) {
-      // azonosító beolvasása
+      // read an identifier
       const start = this.pos;
       while (this.pos < this.src.length && /[A-Za-z0-9_'′ε$]/.test(this.src[this.pos])) this.pos++;
       const word = this.src.slice(start, this.pos);
       this.skipWs();
       if (this.peek() === "(" && (FUNCTION_NAMES as readonly string[]).includes(word)) {
-        // függvényhívás
+        // function call
         this.pos++;
         const args: Expr[] = [];
         const rawArgs: string[] = [];
         if (word === "regex") {
-          // a regex tartalmát nyersen olvassuk a záró zárójelig
+          // the regex body is read raw up to the closing parenthesis
           let depth = 1;
           const start2 = this.pos;
           while (this.pos < this.src.length && depth > 0) {
@@ -189,7 +189,7 @@ class ExprParser {
           }
           if (depth !== 0) this.error(tx("expression.error.missingCloseParenRegex", { pos: this.pos + 1 }));
           rawArgs.push(this.src.slice(start2, this.pos).trim());
-          args.push({ t: "lit", c: EPS }); // helykitöltő, a kiértékelés a rawArgs-ot használja
+          args.push({ t: "lit", c: EPS }); // placeholder, evaluation uses rawArgs
           this.pos++; // ')'
           return { t: "call", fn: "regex", args, rawArgs };
         }
@@ -199,7 +199,7 @@ class ExprParser {
         } else {
           while (true) {
             const argStart = this.pos;
-            // regex() és complete() második paramétere: nyers szövegként is eltesszük
+            // second argument of regex() and complete(): also kept as raw text
             const arg = this.parseUnion();
             rawArgs.push(this.src.slice(argStart, this.pos).trim());
             args.push(arg);
@@ -217,7 +217,7 @@ class ExprParser {
         }
         return { t: "call", fn: word as FuncName, args, rawArgs };
       }
-      // csak ismert név vagy függvény lehet — betű-literál nincs
+      // only a known name or function is allowed — there are no letter literals
       if (this.knownNames.has(word)) return { t: "var", name: word };
       if ((FUNCTION_NAMES as readonly string[]).includes(word))
         this.error(tx("expression.error.functionNeedsParen", { word, pos: this.pos + 1 }));
@@ -227,7 +227,7 @@ class ExprParser {
   }
 }
 
-/** Egy kifejezésben hivatkozott változónevek (a kiértékelési sorrendhez). */
+/** Variable names referenced in an expression (for evaluation order). */
 export function collectDependencies(src: string, knownNames: Set<string>): Set<string> {
   const deps = new Set<string>();
   const re = /[A-Za-z0-9_'′]+/g;
@@ -238,7 +238,7 @@ export function collectDependencies(src: string, knownNames: Set<string>): Set<s
   return deps;
 }
 
-/* --------------------------- Kiértékelés --------------------------- */
+/* --------------------------- Evaluation ---------------------------- */
 
 class Evaluator {
   diagnostics: Diagnostic[] = [];
@@ -256,7 +256,7 @@ class Evaluator {
   asFSM(v: ExprValue, ctxOpId: string): FSM {
     if (v.kind === "fsm") return v;
     if (v.kind === "regex") {
-      // kényelmi automatikus konverzió: regex → ε-NFA (Thompson)
+      // convenience auto-conversion: regex → ε-NFA (Thompson)
       this.diagnostics.push(
         info(
           tx("expression.autoConvert.regex.title", { name: v.name }),
@@ -266,7 +266,7 @@ class Evaluator {
       return this.take(`toFsm(${v.name})`, regexToNFA(v.pattern, v.name));
     }
     if (v.kind === "grammar") {
-      // kényelmi automatikus konverzió 3. típusú nyelvtanra
+      // convenience auto-conversion for type-3 grammars
       const r = grammarToFSM(v);
       if (r.ok) {
         this.diagnostics.push(
@@ -276,7 +276,7 @@ class Evaluator {
       }
     }
     if (v.kind === "machine") {
-      // képesség-kapu: a tárolómentes gép maga a véges automata
+      // capability gate: a storage-free machine is itself the finite automaton
       const f = machineToFSM(v);
       if (f) return f;
       throw new ExprError(
@@ -299,7 +299,7 @@ class Evaluator {
         return v;
       }
       case "lit":
-        // csak a regex() belső helykitöltője lehet — közvetlenül nem értékelődik ki
+        // can only be regex()'s internal placeholder — never evaluated directly
         throw new ExprError(tx("expression.eval.literalsOnlyInRegex"));
       case "concat": {
         let acc = this.asFSM(this.evaluate(e.items[0]), "concat");
@@ -362,7 +362,7 @@ class Evaluator {
         const a = fsmArg(0);
         const b = fsmArg(1);
         if (e.fn === "union") {
-          // teljes DFA-kra szorzat, egyébként ε-konstrukció
+          // product for complete DFAs, ε-construction otherwise
           const r = product(a, b, "union");
           if (r.ok) return this.take(label("union"), r);
           return this.take(label("union"), unionEpsilon(a, b));
@@ -437,7 +437,7 @@ function describeKind(v: ExprValue): string {
   }
 }
 
-/** epsfree-mentesítés a régi $ jelölésre is figyelve. */
+/** ε-removal that also honours the legacy $ notation. */
 export function evaluateExpression(
   src: string,
   env: Map<string, ExprValue>
@@ -453,7 +453,7 @@ export function evaluateExpression(
   const ev = new Evaluator(env);
   try {
     let value = ev.evaluate(ast);
-    // a végeredmény az egységes gépmodellben jelenik meg
+    // the final result appears in the unified machine model
     if (value.kind === "fsm") value = fsmToMachine(value);
     return okResult({ value, diagnostics: ev.diagnostics, stepGroups: ev.stepGroups }, ev.diagnostics);
   } catch (e) {
@@ -465,7 +465,7 @@ export function evaluateExpression(
   }
 }
 
-/** „name = kifejezés” felbontása. */
+/** Splits "name = expression". */
 export function splitAssignment(source: string): { name: string; expr: string } | null {
   const m = /^\s*([A-Za-z][A-Za-z0-9_'′]*)\s*=\s*([\s\S]+)$/.exec(source.trim());
   if (!m) return null;

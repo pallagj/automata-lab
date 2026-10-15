@@ -156,7 +156,7 @@
     "rangeTooLarge": { "title": "Zu großer Bereich im Feld {{field}}: „{{range}}“" },
     "unknownStorageType": {
       "title": "Unbekannter Speichertyp beim Speicher „{{id}}“",
-      "detail": "Erlaubt: stack/verem, queue/sor, tape/szalag — mit Anfangsinhalt:\n  v1:\n    type: stack\n    init: Z"
+      "detail": "Erlaubt: stack, queue, tape — mit Anfangsinhalt:\n  v1:\n    type: stack\n    init: Z"
     },
     "storageOp": {
       "badTapeOp": {

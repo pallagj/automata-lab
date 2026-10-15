@@ -22,7 +22,7 @@ interface Props {
   results: CellResult[];
 }
 
-/** Foglalt nevek a munkalapon (definíciók + értékadások). */
+/** Names already taken in the worksheet (definitions + assignments). */
 function usedNames(ws: Workspace): Set<string> {
   const used = new Set<string>();
   for (const c of ws.cells) {
@@ -44,11 +44,11 @@ function uniqueName(base: string, used: Set<string>): string {
 interface InsertOption {
   labelKey: string;
   icon: React.ReactNode;
-  /** sablon a {NAME} helyére kerülő egyedi névvel */
+  /** template; {NAME} is replaced by a unique name */
   make: (used: Set<string>, t: TFunction) => string;
 }
 
-/** A gépek erősorrendben, utána nyelvtan, regex, végül a szabad kifejezés. */
+/** Machines in order of power, then grammar, regex, and finally a free expression. */
 const INSERT_OPTIONS: InsertOption[] = [
   {
     labelKey: "editor.insertMenu.fsm",
@@ -68,7 +68,7 @@ const INSERT_OPTIONS: InsertOption[] = [
   {
     labelKey: "editor.insertMenu.machine",
     icon: <Boxes size={15} />,
-    make: (used) => CELL_TEMPLATES.machine.replace("name: Gep", `name: ${uniqueName("Gep", used)}`)
+    make: (used) => CELL_TEMPLATES.machine.replace("name: Custom", `name: ${uniqueName("Custom", used)}`)
   },
   {
     labelKey: "editor.insertMenu.grammar",
@@ -96,7 +96,7 @@ export const EditorColumn: React.FC<Props> = ({ workspace, results }) => {
   const activeCellId = useAppStore((s) => s.activeCellId);
   const [menuOpen, setMenuOpen] = useState(false);
 
-  /** mint a Desmosban: üres aktív cellába írunk, egyébként alá szúrunk be */
+  /** like Desmos: fill an empty active cell, otherwise insert below it */
   const insert = (source: string) => {
     const active = workspace.cells.find((c) => c.id === activeCellId);
     if (active && active.source.trim() === "") {

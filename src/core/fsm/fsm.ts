@@ -1,6 +1,6 @@
 import { EPS, setEquals, setName, setUnion } from "../types";
 
-/** Véges automata (lehet NFA, ε-NFA vagy DFA — az analyze() dönti el). */
+/** Finite automaton (may be an NFA, ε-NFA or DFA — analyze() decides). */
 export interface FSM {
   kind: "fsm";
   name: string;
@@ -13,7 +13,7 @@ export interface FSM {
 
 export interface FSMTransition {
   from: string;
-  /** bemeneti szimbólum vagy EPS */
+  /** input symbol or EPS */
   symbol: string;
   to: string;
 }
@@ -56,16 +56,16 @@ export function addTransition(f: FSM, from: string, symbol: string, to: string) 
 
 export interface FSMAnalysis {
   hasEpsilon: boolean;
-  /** minden (állapot, szimbólum) párra legfeljebb 1 átmenet és nincs ε */
+  /** at most 1 transition for every (state, symbol) pair and no ε */
   isDeterministic: boolean;
-  /** minden (állapot, szimbólum) párra legalább 1 átmenet */
+  /** at least 1 transition for every (state, symbol) pair */
   isComplete: boolean;
-  /** determinisztikus ÉS teljes */
+  /** deterministic AND complete */
   isCompleteDFA: boolean;
   unreachableStates: string[];
-  /** (állapot, szimbólum) párok, ahol nincs átmenet */
+  /** (state, symbol) pairs with no transition */
   missing: { state: string; symbol: string }[];
-  /** (állapot, szimbólum) párok, ahol több átmenet van */
+  /** (state, symbol) pairs with several transitions */
   nondeterministicAt: { state: string; symbol: string; targets: string[] }[];
   epsilonTransitions: FSMTransition[];
 }
@@ -119,7 +119,7 @@ export function reachableStates(f: FSM): Set<string> {
   return visited;
 }
 
-/** ε-lezárás: az adott halmazból ε-átmenetekkel elérhető összes állapot. */
+/** ε-closure: every state reachable from the given set via ε-transitions. */
 export function epsilonClosure(f: FSM, states: Iterable<string>, tm?: TransMap): Set<string> {
   const map = tm ?? transMap(f);
   const closure = new Set<string>(states);
@@ -137,7 +137,7 @@ export function epsilonClosure(f: FSM, states: Iterable<string>, tm?: TransMap):
   return closure;
 }
 
-/** Egy lépés: aktuális állapothalmazból `symbol` beolvasásával hova jutunk (ε-lezárással). */
+/** One step: where reading `symbol` takes the current state set (with ε-closure). */
 export function stepStates(f: FSM, current: Set<string>, symbol: string, tm?: TransMap): Set<string> {
   const map = tm ?? transMap(f);
   let next = new Set<string>();
@@ -162,7 +162,7 @@ export function acceptsFSM(f: FSM, word: string): boolean {
   return [...current].some((s) => f.accept.includes(s));
 }
 
-/** Elfogadott szavak felsorolása hossz szerint (BFS), korlátokkal. */
+/** Enumerates accepted words by length (BFS), with limits. */
 export function enumerateWords(
   f: FSM,
   maxLength = 8,
@@ -171,7 +171,7 @@ export function enumerateWords(
   const tm = transMap(f);
   const words: string[] = [];
   const acceptSet = new Set(f.accept);
-  // szint: (állapothalmaz kulcs → egy reprezentáns szó)
+  // level: (state-set key → one representative word)
   let frontier = new Map<string, { states: Set<string>; word: string }>();
   const start = epsilonClosure(f, [f.start], tm);
   frontier.set(setName(start), { states: start, word: "" });
@@ -189,7 +189,7 @@ export function enumerateWords(
         if (ns.size === 0) continue;
         const w = word + a;
         if (isAccepting(ns) && words.length < maxCount) words.push(w);
-        const key = setName(ns) + "|" + w; // minden szót külön követünk a teljes felsoroláshoz
+        const key = setName(ns) + "|" + w; // every word is tracked separately for a complete enumeration
         if (!next.has(key)) next.set(key, { states: ns, word: w });
       }
     }
@@ -200,7 +200,7 @@ export function enumerateWords(
   return { words: words.slice(0, maxCount), exhaustive };
 }
 
-/** Friss, még nem használt állapotnév. */
+/** A fresh, not yet used state name. */
 export function freshStateName(existing: Iterable<string>, preferred = "T"): string {
   const used = new Set(existing);
   if (!used.has(preferred)) return preferred;
@@ -209,7 +209,7 @@ export function freshStateName(existing: Iterable<string>, preferred = "T"): str
   return `${preferred}${i}`;
 }
 
-/** Állapotok átnevezése ütközés ellen (m2 állapotait nevezi át, ha kell). */
+/** Renames states to avoid clashes (renames m2's states if needed). */
 export function disjointStates(a: FSM, b: FSM): FSM {
   const used = new Set([...a.states, ...b.states]);
   const renames = new Map<string, string>();

@@ -9,19 +9,19 @@ import {
 } from "./expr/expression";
 
 /**
- * Egy munkalap celláinak kiértékelése: definíciók beolvasása, kifejezések
- * függőségi sorrendben való kiszámítása, kör- és névütközés-felismerés.
+ * Evaluates the cells of a worksheet: parses definitions, computes expressions
+ * in dependency order, and detects cycles and name clashes.
  */
 
 export interface CellResult {
-  /** a cella által definiált név (ha felismerhető) */
+  /** the name defined by the cell (if recognisable) */
   name: string | null;
   value: ExprValue | null;
   diagnostics: Diagnostic[];
   stepGroups: StepGroup[];
   isExpression: boolean;
   empty: boolean;
-  /** #-tal kezdődő cella: megjegyzés, nem értékelődik ki */
+  /** a cell starting with # is a note and is not evaluated */
   comment?: boolean;
 }
 
@@ -44,13 +44,13 @@ export function evaluateCells(sources: string[]): CellResult[] {
   const definedAt = new Map<string, number>();
   const names = new Set<string>();
 
-  // 1. menet: definíciók és nevek begyűjtése
+  // pass 1: collect definitions and names
   sources.forEach((src, i) => {
     const trimmed = src.trim();
     if (trimmed === "") return;
     results[i].empty = false;
 
-    // #-tal kezdődő cella: jegyzet — nem értékeljük ki
+    // a cell starting with # is a note — not evaluated
     if (trimmed.startsWith("#")) {
       results[i].comment = true;
       return;
@@ -99,7 +99,7 @@ export function evaluateCells(sources: string[]): CellResult[] {
     names.add(name);
   }
 
-  // 2. menet: kifejezések függőségi gráfja + topologikus sorrend
+  // pass 2: dependency graph of expressions + topological order
   const deps = new Map<string, Set<string>>();
   for (const c of exprCells) {
     deps.set(c.name, collectDependencies(c.expr, names));
@@ -126,7 +126,7 @@ export function evaluateCells(sources: string[]): CellResult[] {
   };
   for (const c of exprCells) visit(c.name, []);
 
-  // 3. menet: kiértékelés sorrendben
+  // pass 3: evaluate in order
   const env = new Map<string, ExprValue>();
   sources.forEach((_, i) => {
     if (results[i].value !== null && results[i].name && definedAt.get(results[i].name!) === i) {
@@ -160,7 +160,7 @@ export function evaluateCells(sources: string[]): CellResult[] {
     r.diagnostics.push(...out.diagnostics.filter((d) => !r.diagnostics.includes(d)));
     if (out.ok) {
       const v = out.value!.value;
-      // a kapott gép a cella nevét veszi fel
+      // the resulting machine takes the cell's name
       const named = { ...v, name: cell.name } as ExprValue;
       r.value = named;
       r.stepGroups = out.value!.stepGroups;
@@ -168,7 +168,7 @@ export function evaluateCells(sources: string[]): CellResult[] {
     }
   }
 
-  // dedup diagnosztika
+  // deduplicate diagnostics
   const i18nKey = (x?: { key: string; params?: Record<string, string | number> }) =>
     x ? `${x.key}|${JSON.stringify(x.params ?? {})}` : "";
   for (const r of results) {

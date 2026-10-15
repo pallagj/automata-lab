@@ -7,8 +7,8 @@ import { tr } from "../../i18n/translate";
 import { ArrowRight, Check, X } from "lucide-react";
 
 /**
- * Regex-elemző nézet: a kifejezés szerkezete, szó-teszt és minta-szavak —
- * az érték regex marad, automatává a toFsm() alakítja.
+ * Regex analyser view: the expression's structure, a word test and sample words —
+ * the value stays a regex; toFsm() turns it into an automaton.
  */
 
 const TreeNode: React.FC<{ node: RegexNodeInfo }> = ({ node }) => {
@@ -33,7 +33,7 @@ export const RegexView: React.FC<{ regex: RegexDef }> = ({ regex }) => {
   const activeCellId = useAppStore((s) => s.activeCellId);
   const ws = useAppStore(activeWorkspace);
 
-  // belső ε-NFA csak az elemzéshez (szó-teszt, minta-szavak)
+  // internal ε-NFA only for the analysis (word test, sample words)
   const nfa = useMemo(() => regexToNFA(regex.pattern, regex.name).value ?? null, [regex]);
   const tree = useMemo(() => regexTree(regex.pattern), [regex.pattern]);
   const words = useMemo(() => (nfa ? enumerateWords(nfa, 7, 24) : null), [nfa]);
@@ -45,7 +45,7 @@ export const RegexView: React.FC<{ regex: RegexDef }> = ({ regex }) => {
   );
 
   const insertToFsm = () => {
-    // egyedi név az automatának
+    // a unique name for the automaton
     const used = new Set<string>();
     for (const c of ws.cells) {
       const m = /^\s*([A-Za-z][A-Za-z0-9_'′]*)\s*=/.exec(c.source);

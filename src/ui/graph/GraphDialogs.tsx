@@ -5,7 +5,7 @@ import { Plus, Trash2, X } from "lucide-react";
 import { EdgeField, EdgeMiddle, StatePatch } from "./editing";
 import { MoveSelect } from "../editor/EntityForm";
 
-/** Kidolgozott szerkesztő-dialógusok a gráfhoz (állapot / átmenet). */
+/** Editor dialogs for the graph (state / transition). */
 
 const Modal: React.FC<{ title: string; onClose: () => void; children: React.ReactNode }> = ({
   title,
@@ -33,12 +33,12 @@ const Modal: React.FC<{ title: string; onClose: () => void; children: React.Reac
   );
 };
 
-/* ----------------------------- állapot ----------------------------- */
+/* ------------------------------ state ------------------------------ */
 
 interface StateDialogProps {
   mode: "new" | "edit";
   initial: StatePatch;
-  /** mentés; hibaüzenettel tér vissza, ha nem sikerült */
+  /** save; returns an error message if it failed */
   onSave: (p: StatePatch) => string | null;
   onDelete?: () => void;
   onClose: () => void;
@@ -120,10 +120,10 @@ export const StateDialog: React.FC<StateDialogProps> = ({ mode, initial, onSave,
   );
 };
 
-/* ----------------------------- átmenet ----------------------------- */
+/* --------------------------- transition ---------------------------- */
 
 interface EdgeDialogProps {
-  /** a gép tárolóiból generált mezők (l. editing.edgeFieldsFor) */
+  /** fields generated from the machine's storages (see editing.edgeFieldsFor) */
   fields: EdgeField[];
   from: string;
   to: string;
