@@ -39,17 +39,20 @@ export function epsilonAt(text: string, caret: number, options: EpsilonOptions =
     tokenStart: start
   });
 
+  // in grammars a word made only of declared symbols stays letters, alone or not
+  const isDeclared = (word: string) => !!declared && [...word].every((c) => c === EPS || declared.has(c));
+
   let start = caret;
   while (start > 0 && !boundary.test(text[start - 1])) start--;
   let end = caret;
   while (end < text.length && !boundary.test(text[end])) end++;
-  if (EPS_WORDS.has(text.slice(start, end))) return replace(start, end);
+  const token = text.slice(start, end);
+  if (EPS_WORDS.has(token) && !isDeclared(token)) return replace(start, end);
 
   if (declared) {
     const before = text.slice(0, caret);
     for (const word of EPS_WORDS) {
-      const letters = [...word].filter((c) => c !== EPS);
-      if (before.endsWith(word) && !letters.every((c) => declared.has(c))) return replace(caret - word.length, caret);
+      if (before.endsWith(word) && !isDeclared(word)) return replace(caret - word.length, caret);
     }
   }
   return null;

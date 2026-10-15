@@ -544,7 +544,7 @@ export function parseGrammar(source: string): OpResult<Grammar> {
       ]);
 
     for (const alt of m[2].split("|")) {
-      const right = EPS_ALIASES.has(alt) ? "" : grammarEpsilon(alt, known);
+      const right = grammarEpsilon(alt, known);
       for (const c of right)
         if (!known.has(c))
           return failResult([

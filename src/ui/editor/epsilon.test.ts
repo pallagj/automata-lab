@@ -36,6 +36,8 @@ describe("ε typing shortcuts in grammars and regexes", () => {
   it("works inside a grammar word unless its letters are declared symbols", () => {
     expect(grammar("Aeps", ["S", "A", "a", "b"])).toBe("Aε");
     expect(grammar("Aeps", ["S", "A", "e", "p", "s"])).toBe(null);
+    expect(grammar("eps", ["S", "e", "p", "s"])).toBe(null);
+    expect(grammar("eps", ["S", "a"])).toBe("ε");
   });
 
   it("treats regex operators as boundaries", () => {

@@ -11,8 +11,9 @@ export function regexEpsilonWords(pattern: string): string {
 
 /**
  * Grammar right-hand side: ε is the identity of concatenation (εA = A), and "eps" or
- * "epsilon" inside a word count as ε too — unless their letters are declared symbols of
- * the grammar, so a grammar over {e, p, s} keeps its letters.
+ * "epsilon" — alone or inside a word — count as ε too, unless their letters are declared
+ * symbols of the grammar, so a grammar over {e, p, s} keeps its letters. No escape is
+ * needed: undeclared letters could not be symbols anyway.
  */
 export function grammarEpsilon(right: string, declared: Set<string>): string {
   let s = right;

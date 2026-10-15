@@ -17,6 +17,8 @@ describe("ε in grammar right-hand sides", () => {
   it("reads eps inside a word as ε unless the letters are declared", () => {
     expect(grammarEpsilon("Aeps", new Set(["S", "A", "a"]))).toBe("A");
     expect(grammarEpsilon("aeps", new Set(["a", "e", "p", "s"]))).toBe("aeps");
+    expect(grammarEpsilon("eps", new Set(["e", "p", "s"]))).toBe("eps");
+    expect(grammarEpsilon("eps", new Set(["a"]))).toBe("");
   });
 
   it("leaves $ as an ordinary symbol, e.g. an end marker", () => {
