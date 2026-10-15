@@ -26,13 +26,6 @@
     "renameHint": "Zum Umbenennen klicken",
     "worksheetMenu": "Arbeitsblatt-Menü"
   },
-  "settings": {
-    "title": "Einstellungen",
-    "epsilon": {
-      "title": "beim Tippen",
-      "hint": "In Definitionen wird ein getipptes eps oder epsilon zu ε. Ausgeschaltet tippst du ε selbst — eps und epsilon bedeuten trotzdem ε."
-    }
-  },
   "browser": {
     "title": "Arbeitsblätter",
     "tabs": {

@@ -26,13 +26,6 @@
     "renameHint": "Click to rename",
     "worksheetMenu": "Worksheet menu"
   },
-  "settings": {
-    "title": "Settings",
-    "epsilon": {
-      "title": "while typing",
-      "hint": "In definitions a typed eps or epsilon turns into ε. When this is off, type the ε character yourself — eps and epsilon still mean ε."
-    }
-  },
   "browser": {
     "title": "Worksheets",
     "tabs": {

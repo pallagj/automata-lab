@@ -13,8 +13,7 @@ import { machineCaps } from "../../core/machine/machine";
 import { opApplicability, OpInfo, OPS } from "./ops";
 import { detectEntityKind, EntityForm, parseEntityDraft } from "./EntityForm";
 import { machineKindLabel } from "../machineLabels";
-import { epsilonChange, epsilonInputHandler, REGEX_BOUNDARY, shortcutWords } from "./epsilon";
-import { useEpsilonWords } from "./useEpsilonWords";
+import { epsilonChange, epsilonInputHandler, REGEX_BOUNDARY } from "./epsilon";
 
 interface Props {
   cell: Cell;
@@ -73,7 +72,6 @@ const REGEX_CELL = /^\s*([A-Za-z][A-Za-z0-9_'′]*)\s*=\s*regex\(([\s\S]*)\)\s*$
 
 export const CellEditor: React.FC<Props> = ({ cell, index, result }) => {
   const { t } = useTranslation();
-  const words = useEpsilonWords();
   const theme = useAppStore((s) => s.theme);
   const activeCellId = useAppStore((s) => s.activeCellId);
   const setActiveCell = useAppStore((s) => s.setActiveCell);
@@ -114,11 +112,7 @@ export const CellEditor: React.FC<Props> = ({ cell, index, result }) => {
   const hasError = worst === "error";
   const isYaml = /^\s*[A-Za-z]+\s*:/.test(cell.source);
 
-  const extensions = useMemo(
-    () =>
-      isYaml ? [yaml(), epsilonInputHandler(() => shortcutWords(useAppStore.getState().epsilonShortcut))] : [],
-    [isYaml]
-  );
+  const extensions = useMemo(() => (isYaml ? [yaml(), epsilonInputHandler] : []), [isYaml]);
 
   // an expression cell's result can be expanded into editable YAML
   const expandable =
@@ -365,8 +359,7 @@ export const CellEditor: React.FC<Props> = ({ cell, index, result }) => {
               value={regexMatch[2]}
               onChange={(e) =>
                 epsilonChange(e, (v) => setCellSource(cell.id, `${regexMatch[1]} = regex(${v})`), {
-                  boundary: REGEX_BOUNDARY,
-                  words
+                  boundary: REGEX_BOUNDARY
                 })
               }
               placeholder="(a|b)*abb"

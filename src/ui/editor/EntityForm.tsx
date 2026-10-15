@@ -10,7 +10,6 @@ import { useAppStore } from "../../state/store";
 import { machineKindLabel } from "../machineLabels";
 import { EPS } from "../../core/types";
 import { declaredSymbols, epsilonChange } from "./epsilon";
-import { useEpsilonWords } from "./useEpsilonWords";
 
 /**
  * Interactive entity editor: the machine/grammar can be entered in a form
@@ -339,7 +338,6 @@ interface Props {
 
 export const EntityForm: React.FC<Props> = ({ source, onChange }) => {
   const { t } = useTranslation();
-  const words = useEpsilonWords();
   const [draft, setDraft] = useState<EntityDraft | null>(() => parseEntityDraft(source));
   const lastSerialized = useRef(source);
   const hideKindWarning = useAppStore((s) => s.hideKindChangeWarning);
@@ -536,7 +534,7 @@ export const EntityForm: React.FC<Props> = ({ source, onChange }) => {
               </select>
               <input
                 value={s.init}
-                onChange={(e) => epsilonChange(e, (init) => setStorage(i, { init }), { words })}
+                onChange={(e) => epsilonChange(e, (init) => setStorage(i, { init }))}
                 placeholder={s.type === "tape" ? t("editor.form.tapeInitPlaceholder") : t("editor.form.initialContentPlaceholder")}
                 spellCheck={false}
               />
@@ -576,12 +574,11 @@ export const EntityForm: React.FC<Props> = ({ source, onChange }) => {
                     k === "grammar"
                       ? j === 1
                         ? epsilonChange(e, (v) => setRow(i, j, v), {
-                            words,
                             declared: declaredSymbols(draft.charset, draft.states)
                           })
                         : setRow(i, j, e.target.value)
                       : j > 0 && j < row.length - 1
-                        ? epsilonChange(e, (v) => setRow(i, j, v), { words })
+                        ? epsilonChange(e, (v) => setRow(i, j, v))
                         : setRow(i, j, e.target.value)
                   }
                   placeholder={cols[j]?.placeholder ?? ""}

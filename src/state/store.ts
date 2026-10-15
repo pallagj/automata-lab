@@ -56,8 +56,6 @@ export interface AppState {
   folders: string[];
   browserView: BrowserView;
   browserSort: BrowserSort;
-  /** whether eps / epsilon turn into ε while typing a definition */
-  epsilonShortcut: boolean;
 
   setHideKindChangeWarning: (v: boolean) => void;
   setTheme: (t: Theme) => void;
@@ -69,7 +67,6 @@ export interface AppState {
   setBrowserView: (v: BrowserView) => void;
   setBrowserSort: (s: BrowserSort) => void;
   restoreSnapshot: (snap: LibrarySnapshot) => void;
-  setEpsilonShortcut: (on: boolean) => void;
 
   addWorkspace: (name?: string, folder?: string) => void;
   renameWorkspace: (id: string, name: string) => void;
@@ -126,7 +123,6 @@ export const useAppStore = create<AppState>()(
       folders: [],
       browserView: "grid",
       browserSort: { key: "updated", asc: false },
-      epsilonShortcut: true,
 
       setHideKindChangeWarning: (hideKindChangeWarning) => set({ hideKindChangeWarning }),
       setTheme: (theme) => set({ theme }),
@@ -147,7 +143,6 @@ export const useAppStore = create<AppState>()(
       setBrowserView: (browserView) => set({ browserView }),
       setBrowserSort: (browserSort) => set({ browserSort }),
       restoreSnapshot: (snap) => set({ ...snap }),
-      setEpsilonShortcut: (epsilonShortcut) => set({ epsilonShortcut }),
 
       addWorkspace: (name, folder) => {
         const ws = newWorkspace(

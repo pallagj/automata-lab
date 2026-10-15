@@ -26,13 +26,6 @@
     "renameHint": "Kattints az átnevezéshez",
     "worksheetMenu": "Munkalap menü"
   },
-  "settings": {
-    "title": "Beállítások",
-    "epsilon": {
-      "title": "gépelés közben",
-      "hint": "Definíciókban a beírt eps vagy epsilon ε-ra vált. Kikapcsolva magadnak kell ε-t írnod — az eps és az epsilon ettől még ε-t jelent."
-    }
-  },
   "browser": {
     "title": "Munkalapok",
     "tabs": {

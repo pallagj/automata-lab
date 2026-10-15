@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { declaredSymbols, epsilonAt, REGEX_BOUNDARY, shortcutWords } from "./epsilon";
+import { declaredSymbols, epsilonAt, REGEX_BOUNDARY } from "./epsilon";
 
 const typed = (text: string) => epsilonAt(text, text.length)?.text ?? null;
 
@@ -26,13 +26,6 @@ describe("ε typing shortcuts", () => {
 
   it("puts the caret right after the inserted ε", () => {
     expect(epsilonAt("aSb | eps", 9)).toEqual({ text: "aSb | ε", caret: 7, tokenStart: 6 });
-  });
-
-  it("does nothing when switched off in the settings", () => {
-    const off = shortcutWords(false);
-    expect(epsilonAt("eps", 3, { words: off })).toBe(null);
-    expect(epsilonAt("Aeps", 4, { words: off, declared: new Set(["A"]) })).toBe(null);
-    expect(epsilonAt("eps", 3, { words: shortcutWords(true) })?.text).toBe("ε");
   });
 });
 

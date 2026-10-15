@@ -6,16 +6,9 @@ import { EPS } from "../../core/types";
  * Typing shortcuts for ε, like Desmos turns "pi" into π: a whole token "eps" or
  * "epsilon" becomes ε as soon as it is typed. "eps" already turns into ε before
  * "epsilon" is finished, so the leftover "εilon" is folded back into ε as well.
- * Expression cells never use this, so epsfree(...) stays intact. The shortcut can be
- * switched off in the settings.
+ * Expression cells never use this, so epsfree(...) stays intact.
  */
-const ALL_WORDS = new Set(["eps", "epsilon", "εilon"]);
-const NO_WORDS = new Set<string>();
-
-/** The shortcut words, depending on whether the shortcut is switched on in the settings. */
-export function shortcutWords(enabled: boolean): Set<string> {
-  return enabled ? ALL_WORDS : NO_WORDS;
-}
+const EPS_WORDS = new Set(["eps", "epsilon", "εilon"]);
 /** what separates tokens in definitions: transition parts, stack ops, grammar alternatives */
 const DEFINITION_BOUNDARY = /[\s,|/]/;
 /** in regexes the operators separate the parts */
@@ -23,8 +16,6 @@ export const REGEX_BOUNDARY = /[\s()|+*?]/;
 
 export interface EpsilonOptions {
   boundary?: RegExp;
-  /** the alias words to replace (default: all) */
-  words?: Set<string>;
   /**
    * Declared grammar symbols. When given, the shortcut works inside a word too (Aeps → Aε),
    * except for words made only of declared symbols — mirroring grammarEpsilon in the parser.
@@ -41,7 +32,7 @@ export interface EpsilonEdit {
 
 /** Replaces the ε-alias around `caret` with ε; null when there is nothing to replace. */
 export function epsilonAt(text: string, caret: number, options: EpsilonOptions = {}): EpsilonEdit | null {
-  const { boundary = DEFINITION_BOUNDARY, declared, words = ALL_WORDS } = options;
+  const { boundary = DEFINITION_BOUNDARY, declared } = options;
   const replace = (start: number, end: number): EpsilonEdit => ({
     text: text.slice(0, start) + EPS + text.slice(end),
     caret: start + EPS.length,
@@ -52,11 +43,11 @@ export function epsilonAt(text: string, caret: number, options: EpsilonOptions =
   while (start > 0 && !boundary.test(text[start - 1])) start--;
   let end = caret;
   while (end < text.length && !boundary.test(text[end])) end++;
-  if (words.has(text.slice(start, end))) return replace(start, end);
+  if (EPS_WORDS.has(text.slice(start, end))) return replace(start, end);
 
   if (declared) {
     const before = text.slice(0, caret);
-    for (const word of words) {
+    for (const word of EPS_WORDS) {
       const letters = [...word].filter((c) => c !== EPS);
       if (before.endsWith(word) && !letters.every((c) => declared.has(c))) return replace(caret - word.length, caret);
     }
@@ -108,35 +99,31 @@ function grammarDeclared(doc: string): Set<string> {
 /**
  * CodeMirror input handler for YAML definitions. Machine transition rows get the
  * whole-token shortcut except in their first token (the source state); grammar rule
- * rows get the full grammar behaviour, but only on the right of "->". `getWords` is
- * read on every keystroke, so settings changes apply without rebuilding the editor.
+ * rows get the full grammar behaviour, but only on the right of "->".
  */
-export const epsilonInputHandler = (getWords: () => Set<string>) =>
-  EditorView.inputHandler.of((view, from, to, text) => {
-    if (DEFINITION_BOUNDARY.test(text)) return false;
-    const line = view.state.doc.lineAt(from);
-    const row = LIST_ROW.exec(line.text);
-    if (!row || from - line.from < row[0].length) return false;
-    const before = line.text.slice(0, from - line.from) + text;
-    const lineText = before + line.text.slice(to - line.from);
+export const epsilonInputHandler = EditorView.inputHandler.of((view, from, to, text) => {
+  if (DEFINITION_BOUNDARY.test(text)) return false;
+  const line = view.state.doc.lineAt(from);
+  const row = LIST_ROW.exec(line.text);
+  if (!row || from - line.from < row[0].length) return false;
+  const before = line.text.slice(0, from - line.from) + text;
+  const lineText = before + line.text.slice(to - line.from);
 
-    const doc = view.state.doc.toString();
-    const words = getWords();
-    if (words.size === 0) return false;
-    let edit: EpsilonEdit | null;
-    if (GRAMMAR_DOC.test(doc)) {
-      const arrow = /->|→/.exec(lineText);
-      if (!arrow || before.length <= arrow.index + arrow[0].length) return false;
-      edit = epsilonAt(lineText, before.length, { words, declared: grammarDeclared(doc) });
-    } else {
-      edit = epsilonAt(lineText, before.length, { words });
-      if (edit?.tokenStart === row[0].length) edit = null;
-    }
-    if (!edit) return false;
-    view.dispatch({
-      changes: { from: line.from, to: line.to, insert: edit.text },
-      selection: { anchor: line.from + edit.caret },
-      userEvent: "input.type"
-    });
-    return true;
+  const doc = view.state.doc.toString();
+  let edit: EpsilonEdit | null;
+  if (GRAMMAR_DOC.test(doc)) {
+    const arrow = /->|→/.exec(lineText);
+    if (!arrow || before.length <= arrow.index + arrow[0].length) return false;
+    edit = epsilonAt(lineText, before.length, { declared: grammarDeclared(doc) });
+  } else {
+    edit = epsilonAt(lineText, before.length);
+    if (edit?.tokenStart === row[0].length) edit = null;
+  }
+  if (!edit) return false;
+  view.dispatch({
+    changes: { from: line.from, to: line.to, insert: edit.text },
+    selection: { anchor: line.from + edit.caret },
+    userEvent: "input.type"
   });
+  return true;
+});
