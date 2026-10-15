@@ -25,12 +25,12 @@ Machine:
     v1: stack
     v2: stack
   transitions:
-    - qa a $/A $/$ qa
-    - qa $ $/$ $/$ qb
-    - qb b A/$ $/B qb
-    - qb $ $/$ $/$ qc
-    - qc c $/$ B/$ qc
-    - qc $ Z/$ Z/$ ok
+    - qa a ε/A ε/ε qa
+    - qa ε ε/ε ε/ε qb
+    - qb b A/ε ε/B qb
+    - qb ε ε/ε ε/ε qc
+    - qc c ε/ε B/ε qc
+    - qc ε Z/ε Z/ε ok
 `;
 
 describe("general machine — two stacks", () => {
@@ -76,9 +76,9 @@ Machine:
   storages:
     s: queue
   transitions:
-    - collect a $/A collect
-    - collect $ $/$ consume
-    - consume b A/$ consume
+    - collect a ε/A collect
+    - collect ε ε/ε consume
+    - consume b A/ε consume
 `).value!;
 
   it("recognises a^n b^n", () => {
@@ -155,7 +155,7 @@ Machine:
     v: stack
   transitions:
     - q a Z/AZ q
-    - q b A/$ q
+    - q b A/ε q
 `).value!;
     expect(analyzeMachine(m).isDeterministic).toBe(true);
   });
@@ -297,23 +297,28 @@ describe("edge labels", () => {
   });
 });
 
-describe("legacy Hungarian aliases", () => {
-  it("still parse in worksheets saved by older versions", () => {
+describe("$ is an ordinary symbol", () => {
+  it("works as a bottom-of-stack marker", () => {
     const r = parseMachine(`
-gep:
-  name: Old
-  charset: a
-  states: q
-  init: q
-  accept: q
-  input: fej
+Machine:
+  name: Bottom
+  charset: a, b
+  states: q0, q1, q2
+  init: q0
+  accept: q2
   storages:
-    v: verem
-    s: sor
-  transitions: []
+    stack:
+      type: stack
+      init: $
+  transitions:
+    - q0 a $/A$ q0
+    - q0 a A/AA q0
+    - q0 b A/ε q1
+    - q1 b A/ε q1
+    - q1 ε $/$ q2
 `);
     expect(r.ok).toBe(true);
-    expect(r.value!.input).toBe("head");
-    expect(r.value!.storages.map((s) => s.type)).toEqual(["stack", "queue"]);
+    expect(runMachine(r.value!, "aabb").verdict).toBe("accepted");
+    expect(runMachine(r.value!, "aab").verdict).toBe("rejected");
   });
 });

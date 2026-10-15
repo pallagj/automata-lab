@@ -5,6 +5,7 @@ import { Plus, Trash2, X } from "lucide-react";
 import { EdgeField, EdgeMiddle, StatePatch } from "./editing";
 import { MoveSelect } from "../editor/EntityForm";
 import { epsilonChange } from "../editor/epsilon";
+import { useEpsilonWords } from "../editor/useEpsilonWords";
 
 /** Editor dialogs for the graph (state / transition). */
 
@@ -135,6 +136,7 @@ interface EdgeDialogProps {
 
 export const EdgeDialog: React.FC<EdgeDialogProps> = ({ fields, from, to, initial, onSave, onClose }) => {
   const { t } = useTranslation();
+  const words = useEpsilonWords();
   const empty = () => fields.map((f) => (f.widget === "move" ? ">" : ""));
   const [rows, setRows] = useState<EdgeMiddle[]>(initial.length > 0 ? initial : [empty()]);
 
@@ -166,7 +168,7 @@ export const EdgeDialog: React.FC<EdgeDialogProps> = ({ fields, from, to, initia
                     key={j}
                     value={val}
                     placeholder={fields[j].placeholder}
-                    onChange={(e) => epsilonChange(e, (v) => setCell(i, j, v))}
+                    onChange={(e) => epsilonChange(e, (v) => setCell(i, j, v), { words })}
                     onKeyDown={(e) => e.key === "Enter" && save()}
                     spellCheck={false}
                   />

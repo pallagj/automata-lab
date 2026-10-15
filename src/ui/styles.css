@@ -2070,3 +2070,42 @@ table.t td.state-cell.accept {
   background: var(--accent-soft);
   color: var(--accent);
 }
+
+/* ====== Settings popover ====== */
+
+.settings-section {
+  padding: 2px 10px 6px;
+}
+
+.settings-hint {
+  margin: 3px 0 8px;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.settings-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 2px;
+  font-size: 13.5px;
+  cursor: pointer;
+}
+
+.settings-toggle input {
+  margin: 0;
+  accent-color: var(--accent);
+}
+
+.settings-toggle code {
+  padding: 1px 6px;
+  border-radius: 5px;
+  background: var(--panel-2);
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+}
+
+.settings-arrow {
+  color: var(--muted);
+}

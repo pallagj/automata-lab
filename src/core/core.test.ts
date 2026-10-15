@@ -330,7 +330,7 @@ Grammar:
   variables: S
   init: S
   rules:
-    - S -> aSb | $
+    - S -> aSb | ε
 `).value!;
     const c = classify(g);
     expect(c.type).toBe(2);
@@ -385,7 +385,7 @@ Grammar:
   init: S
   rules:
     - S -> aAb
-    - A -> aA | $
+    - A -> aA | ε
 `).value!;
     const r = removeEpsilonRules(g);
     expect(r.ok).toBe(true);
@@ -409,9 +409,9 @@ Machine:
   transitions:
     - q0 a Z/AZ q0
     - q0 a A/AA q0
-    - q0 b A/$ q1
-    - q1 b A/$ q1
-    - q1 $ Z/Z q2
+    - q0 b A/ε q1
+    - q1 b A/ε q1
+    - q1 ε Z/Z q2
 `).value!;
     expect(machineCaps(p).isPDALike).toBe(true);
     expect(runMachine(p, "aabb").verdict).toBe("accepted");
@@ -432,12 +432,12 @@ Machine:
     stack: stack
   transitions:
     - q0 a Z/AZ q0
-    - q0 $ Z/Z q1
+    - q0 eps Z/Z q1
 `).value!;
     const ser = serializeDefinition(p);
     expect(ser).toContain("Machine:");
     expect(ser).toContain("stack: stack");
-    // the legacy $ input is written back as ε
+    // the eps alias is written back as ε
     expect(ser).toContain("- q0 ε Z/Z q1");
     expect(ser).not.toContain("$");
     const back = parseMachine(ser).value!;
@@ -454,7 +454,7 @@ Grammar:
   variables: S
   init: S
   rules:
-    - S -> aSa | bSb | a | b | $
+    - S -> aSa | bSb | a | b | ε
 `).value!;
     const r = grammarToPDA(g);
     expect(r.ok).toBe(true);
@@ -599,7 +599,7 @@ describe("worksheet evaluation", () => {
   init: S
   accept: A
   transitions:
-    - S $ A
+    - S ε A
     - A a A`,
       "K = min(M)",
       "J = min(complete(det(epsfree(M))))"
@@ -661,7 +661,7 @@ describe("worksheet evaluation", () => {
   variables: S
   init: S
   rules:
-    - S -> aSb | $`,
+    - S -> aSb | ε`,
       "P = toPda(G2)"
     ];
     const rs = evaluateCells(cells);

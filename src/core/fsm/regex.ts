@@ -1,5 +1,6 @@
 import { EPS, err, failResult, I18nText, okResult, OpResult, tx } from "../types";
 import { FSM, makeFSM } from "./fsm";
+import { regexEpsilonWords } from "../epsilon";
 
 class RegexSyntaxError extends Error {
   constructor(public i18n: I18nText) {
@@ -89,7 +90,7 @@ class Parser {
     if (c === ")") throw new RegexSyntaxError(tx("regex.error.unmatchedCloseParen", { pos: this.pos + 1 }));
     if (c === "*" || c === "?")
       throw new RegexSyntaxError(tx("regex.error.operatorNeedsExpr", { op: c, pos: this.pos + 1 }));
-    if (c === "ε" || c === "$") {
+    if (c === "ε") {
       this.eat();
       return { t: "eps" };
     }
@@ -200,9 +201,12 @@ function parseOrFail(pattern: string): { ast?: Node; error?: I18nText } {
   }
 }
 
+/** Spaces are ignored and whole "eps"/"epsilon" words mean ε. */
+const clean = (pattern: string) => regexEpsilonWords(pattern.replaceAll(" ", ""));
+
 /** Creates a regex value with syntax checking. */
 export function regexValue(pattern: string, name = "R"): OpResult<RegexDef> {
-  const cleaned = pattern.replaceAll(" ", "");
+  const cleaned = clean(pattern);
   const p = parseOrFail(cleaned);
   if (p.error) return failResult([err(tx("regex.error.invalid"), p.error)]);
   return okResult({ kind: "regex", name, pattern: cleaned });
@@ -234,12 +238,12 @@ function nodeInfo(n: Node): RegexNodeInfo {
 }
 
 export function regexTree(pattern: string): RegexNodeInfo | null {
-  const p = parseOrFail(pattern.replaceAll(" ", ""));
+  const p = parseOrFail(clean(pattern));
   return p.ast ? nodeInfo(p.ast) : null;
 }
 
 export function regexToNFA(pattern: string, name = "R"): OpResult<FSM> {
-  const cleaned = pattern.replaceAll(" ", "");
+  const cleaned = clean(pattern);
   const p = parseOrFail(cleaned);
   if (p.error) return failResult([err(tx("regex.error.invalid"), p.error)]);
   const ast = p.ast!;

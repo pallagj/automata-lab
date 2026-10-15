@@ -101,7 +101,7 @@
       "unknownFromState": "Unknown state in the transition: \"{{state}}\"",
       "unknownToState": "Unknown target state in the transition: \"{{state}}\"",
       "unknownInputSymbol": "Unknown input symbol: \"{{symbol}}\"",
-      "alphabetHint": "Line: \"{{line}}\". Alphabet: {{alphabet}} (type ε as eps or $).",
+      "alphabetHint": "Line: \"{{line}}\". Alphabet: {{alphabet}} (type ε as eps).",
       "unknownWrittenTapeSymbol": "Unknown tape symbol being written: \"{{symbol}}\" ({{storageId}})",
       "tapeAlphabetHint": "Tape alphabet: {{alphabet}}",
       "noAcceptState": {
@@ -127,7 +127,7 @@
       },
       "invalidRule": {
         "title": "Invalid rule: \"{{line}}\"",
-        "detail": "Form: LEFT -> RIGHT1 | RIGHT2 — e.g. \"S -> aA | b\". Write ε (or eps, $) for the empty word."
+        "detail": "Form: LEFT -> RIGHT1 | RIGHT2 — e.g. \"S -> aA | b\". Write ε (or eps) for the empty word."
       },
       "unknownSymbolLeft": "Unknown symbol on the left side of the rule: \"{{symbol}}\"",
       "ruleDetail": "Rule: \"{{line}}\". Every symbol must be listed in charset or variables.",
@@ -177,11 +177,11 @@
       },
       "badStackOp": {
         "title": "Invalid storage operation: \"{{tokens}}\" ({{storageId}})",
-        "detail": "Line: \"{{line}}\". Stack form: POP/PUSH — e.g. \"Z/AZ\"; ε (or eps, $) for nothing."
+        "detail": "Line: \"{{line}}\". Stack form: POP/PUSH — e.g. \"Z/AZ\"; ε (or eps) for nothing."
       },
       "badQueueOp": {
         "title": "Invalid storage operation: \"{{tokens}}\" ({{storageId}})",
-        "detail": "Line: \"{{line}}\". Queue form: TAKE/PUT — e.g. \"A/BA\"; ε (or eps, $) for nothing."
+        "detail": "Line: \"{{line}}\". Queue form: TAKE/PUT — e.g. \"A/BA\"; ε (or eps) for nothing."
       }
     }
   },

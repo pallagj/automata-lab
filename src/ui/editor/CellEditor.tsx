@@ -13,7 +13,8 @@ import { machineCaps } from "../../core/machine/machine";
 import { opApplicability, OpInfo, OPS } from "./ops";
 import { detectEntityKind, EntityForm, parseEntityDraft } from "./EntityForm";
 import { machineKindLabel } from "../machineLabels";
-import { epsilonInputHandler } from "./epsilon";
+import { epsilonChange, epsilonInputHandler, REGEX_BOUNDARY, shortcutWords } from "./epsilon";
+import { useEpsilonWords } from "./useEpsilonWords";
 
 interface Props {
   cell: Cell;
@@ -72,6 +73,7 @@ const REGEX_CELL = /^\s*([A-Za-z][A-Za-z0-9_'′]*)\s*=\s*regex\(([\s\S]*)\)\s*$
 
 export const CellEditor: React.FC<Props> = ({ cell, index, result }) => {
   const { t } = useTranslation();
+  const words = useEpsilonWords();
   const theme = useAppStore((s) => s.theme);
   const activeCellId = useAppStore((s) => s.activeCellId);
   const setActiveCell = useAppStore((s) => s.setActiveCell);
@@ -112,7 +114,11 @@ export const CellEditor: React.FC<Props> = ({ cell, index, result }) => {
   const hasError = worst === "error";
   const isYaml = /^\s*[A-Za-z]+\s*:/.test(cell.source);
 
-  const extensions = useMemo(() => (isYaml ? [yaml(), epsilonInputHandler] : []), [isYaml]);
+  const extensions = useMemo(
+    () =>
+      isYaml ? [yaml(), epsilonInputHandler(() => shortcutWords(useAppStore.getState().epsilonShortcut))] : [],
+    [isYaml]
+  );
 
   // an expression cell's result can be expanded into editable YAML
   const expandable =
@@ -358,7 +364,10 @@ export const CellEditor: React.FC<Props> = ({ cell, index, result }) => {
               className="rx-body"
               value={regexMatch[2]}
               onChange={(e) =>
-                setCellSource(cell.id, `${regexMatch[1]} = regex(${e.target.value})`)
+                epsilonChange(e, (v) => setCellSource(cell.id, `${regexMatch[1]} = regex(${v})`), {
+                  boundary: REGEX_BOUNDARY,
+                  words
+                })
               }
               placeholder="(a|b)*abb"
               title={t("editor.cell.regexHint")}

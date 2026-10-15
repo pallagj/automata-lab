@@ -26,6 +26,13 @@
     "renameHint": "Zum Umbenennen klicken",
     "worksheetMenu": "Arbeitsblatt-Menü"
   },
+  "settings": {
+    "title": "Einstellungen",
+    "epsilon": {
+      "title": "beim Tippen",
+      "hint": "In Definitionen wird ein getipptes eps oder epsilon zu ε. Ausgeschaltet tippst du ε selbst — eps und epsilon bedeuten trotzdem ε."
+    }
+  },
   "browser": {
     "title": "Arbeitsblätter",
     "tabs": {
@@ -146,7 +153,7 @@
       "body2": "Schlüssel gebaut: eine endliche Steuerung plus beliebig viele Speicher.",
       "emphasis": "Ihre Art wird durch die Konfiguration bestimmt",
       "body3": "— kein Speicher bedeutet endlicher Automat, ein Keller bedeutet Kellerautomat, ein Band (auf dem die Eingabe liegt) bedeutet Turingmaschine, eine andere Kombination bedeutet eine allgemeine Maschine. Die Oberfläche erkennt das und benennt die Maschine entsprechend.",
-      "example": "Machine:               # endlicher Automat: kein Speicher\n  name: M1\n  charset: a, b\n  states: S, A, F\n  init: S\n  accept: F\n  transitions:\n    - S . S      # \".\" = jedes Zeichen des Alphabets\n    - S a A\n    - A b F      # ε-Übergang: S ε A (tippe eps oder $)"
+      "example": "Machine:               # endlicher Automat: kein Speicher\n  name: M1\n  charset: a, b\n  states: S, A, F\n  init: S\n  accept: F\n  transitions:\n    - S . S      # \".\" = jedes Zeichen des Alphabets\n    - S a A\n    - A b F      # ε-Übergang: S ε A (tippe eps)"
     },
     "expressions": {
       "heading": "Ausdrücke",
@@ -167,13 +174,13 @@
     },
     "storages": {
       "heading": "Speicher: Keller, Warteschlange, Band",
-      "example": "Machine:               # Kellerautomat: ein Keller\n  name: AnBn\n  charset: a, b\n  states: q0, q1, q2\n  init: q0\n  accept: q2           # oder acceptMode: emptyStorages\n  storages:\n    keller: stack      # der Keller startet standardmäßig mit Z; sonst:\n  transitions:         #   keller: { type: stack, init: X }\n    - q0 a Z/AZ q0     # a lesen: statt Z wird AZ auf den Keller gelegt\n    - q0 b A/ε q1      # ε = schreibt nichts\n    - q1 ε Z/Z q2      # ε-Schritt (tippe eps oder $)\n\nMachine:               # Turingmaschine: ein Band, darauf die Eingabe\n  name: T\n  charset: a, b\n  states: s, ok\n  init: s\n  accept: ok\n  input: band          # die Eingabe kommt auf diesen Speicher\n  storages:\n    band: tape\n  transitions:\n    - s a/b > s        # liest a, schreibt b, bewegt sich nach rechts\n    - s _/& = ok       # _ = Leerzeichen, & = schreibt dasselbe Zeichen zurück",
+      "example": "Machine:               # Kellerautomat: ein Keller\n  name: AnBn\n  charset: a, b\n  states: q0, q1, q2\n  init: q0\n  accept: q2           # oder acceptMode: emptyStorages\n  storages:\n    keller: stack      # der Keller startet standardmäßig mit Z; sonst:\n  transitions:         #   keller: { type: stack, init: X }\n    - q0 a Z/AZ q0     # a lesen: statt Z wird AZ auf den Keller gelegt\n    - q0 b A/ε q1      # ε = schreibt nichts\n    - q1 ε Z/Z q2      # ε-Schritt (tippe eps)\n\nMachine:               # Turingmaschine: ein Band, darauf die Eingabe\n  name: T\n  charset: a, b\n  states: s, ok\n  init: s\n  accept: ok\n  input: band          # die Eingabe kommt auf diesen Speicher\n  storages:\n    band: tape\n  transitions:\n    - s a/b > s        # liest a, schreibt b, bewegt sich nach rechts\n    - s _/& = ok       # _ = Leerzeichen, & = schreibt dasselbe Zeichen zurück",
       "transitionSyntax": "VON [EINGABE] Operation-pro-Speicher… NACH",
       "body2": "— Keller/Warteschlange nehmen ein Element (POP/PUSH), ein Band nimmt zwei (lesen/schreiben Bewegung). Beliebig viele Speicher lassen sich kombinieren: zwei Keller ergeben bereits eine Maschine mit Turing-Mächtigkeit (z. B. aⁿbⁿcⁿ, was mit einem Kellerautomaten nicht möglich ist), eine Warteschlange ergibt einen Warteschlangenautomaten. Die Automaten-Operationen (det, min…) gelten nur für speicherfreie Maschinen — die App erklärt, warum."
     },
     "grammar": {
       "heading": "Grammatik",
-      "example": "Grammar:\n  name: G\n  charset: a, b\n  variables: S\n  init: S\n  rules:\n    - S -> aSb | ε   # für ε tippe eps oder $",
+      "example": "Grammar:\n  name: G\n  charset: a, b\n  variables: S\n  init: S\n  rules:\n    - S -> aSb | ε   # für ε tippe eps",
       "body": "Die Grammatikansicht bestimmt automatisch die Klasse nach der Chomsky-Hierarchie und zeigt für jede Stufe, welche Regel warum dagegen verstößt."
     },
     "tips": {
@@ -421,7 +428,7 @@
       "expandToDefinition": "Zu einer bearbeitbaren Definition aufklappen",
       "deleteCell": "Zelle löschen",
       "resultingAutomatonName": "Name des entstehenden Automaten",
-      "regexHint": "Regulärer Ausdruck — Operatoren: | (oder), * (Abschluss), Klammern, ε (oder $)"
+      "regexHint": "Regulärer Ausdruck — Operatoren: | (oder), * (Abschluss), Klammern, ε (tippe eps)"
     },
     "form": {
       "col": {

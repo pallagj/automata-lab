@@ -101,7 +101,7 @@
       "unknownFromState": "Unbekannter Zustand im Übergang: „{{state}}“",
       "unknownToState": "Unbekannter Zielzustand im Übergang: „{{state}}“",
       "unknownInputSymbol": "Unbekanntes Eingabesymbol: „{{symbol}}“",
-      "alphabetHint": "Zeile: „{{line}}“. Alphabet: {{alphabet}} (ε als eps oder $ tippen).",
+      "alphabetHint": "Zeile: „{{line}}“. Alphabet: {{alphabet}} (ε als eps tippen).",
       "unknownWrittenTapeSymbol": "Unbekanntes geschriebenes Bandsymbol: „{{symbol}}“ ({{storageId}})",
       "tapeAlphabetHint": "Bandalphabet: {{alphabet}}",
       "noAcceptState": {
@@ -127,7 +127,7 @@
       },
       "invalidRule": {
         "title": "Ungültige Regel: „{{line}}“",
-        "detail": "Form: LINKS -> RECHTS1 | RECHTS2 — z. B. „S -> aA | b“. Für das leere Wort ε (oder eps, $) schreiben."
+        "detail": "Form: LINKS -> RECHTS1 | RECHTS2 — z. B. „S -> aA | b“. Für das leere Wort ε (oder eps) schreiben."
       },
       "unknownSymbolLeft": "Unbekanntes Symbol auf der linken Regelseite: „{{symbol}}“",
       "ruleDetail": "Regel: „{{line}}“. Jedes Symbol muss in charset oder variables aufgenommen werden.",
@@ -177,11 +177,11 @@
       },
       "badStackOp": {
         "title": "Ungültige Speicheroperation: „{{tokens}}“ ({{storageId}})",
-        "detail": "Zeile: „{{line}}“. Keller-Form: POP/PUSH — z. B. „Z/AZ“; ε (oder eps, $) für nichts."
+        "detail": "Zeile: „{{line}}“. Keller-Form: POP/PUSH — z. B. „Z/AZ“; ε (oder eps) für nichts."
       },
       "badQueueOp": {
         "title": "Ungültige Speicheroperation: „{{tokens}}“ ({{storageId}})",
-        "detail": "Zeile: „{{line}}“. Warteschlangen-Form: ENTNEHMEN/EINFÜGEN — z. B. „A/BA“; ε (oder eps, $) für nichts."
+        "detail": "Zeile: „{{line}}“. Warteschlangen-Form: ENTNEHMEN/EINFÜGEN — z. B. „A/BA“; ε (oder eps) für nichts."
       }
     }
   },

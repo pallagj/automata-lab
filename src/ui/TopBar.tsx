@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { HelpModal } from "./HelpModal";
 import { LanguageSwitcher } from "./LanguageSwitcher";
+import { SettingsMenu } from "./SettingsMenu";
 import { BrowserTab, WorksheetBrowser } from "./browser/WorksheetBrowser";
 import { InlineInput, MovePanel, Popover } from "./browser/controls";
 
@@ -128,6 +129,7 @@ export const TopBar: React.FC = () => {
       </div>
 
       <div className="topbar-right">
+        <SettingsMenu />
         <button
           className="icon-btn ghost"
           onClick={() => setHelpOpen(true)}

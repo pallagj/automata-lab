@@ -101,7 +101,7 @@
       "unknownFromState": "Ismeretlen állapot az átmenetben: „{{state}}”",
       "unknownToState": "Ismeretlen célállapot az átmenetben: „{{state}}”",
       "unknownInputSymbol": "Ismeretlen bemeneti szimbólum: „{{symbol}}”",
-      "alphabetHint": "Sor: „{{line}}”. Ábécé: {{alphabet}} (ε-hoz írd: eps vagy $).",
+      "alphabetHint": "Sor: „{{line}}”. Ábécé: {{alphabet}} (ε-hoz írd: eps).",
       "unknownWrittenTapeSymbol": "Ismeretlen szalagjel az írásban: „{{symbol}}” ({{storageId}})",
       "tapeAlphabetHint": "Szalagábécé: {{alphabet}}",
       "noAcceptState": {
@@ -127,7 +127,7 @@
       },
       "invalidRule": {
         "title": "Hibás szabály: „{{line}}”",
-        "detail": "Alak: BAL -> JOBB1 | JOBB2 — pl. „S -> aA | b”. Az üres szó: ε (vagy eps, $)."
+        "detail": "Alak: BAL -> JOBB1 | JOBB2 — pl. „S -> aA | b”. Az üres szó: ε (vagy eps)."
       },
       "unknownSymbolLeft": "Ismeretlen jel a szabály bal oldalán: „{{symbol}}”",
       "ruleDetail": "Szabály: „{{line}}”. Minden jelet fel kell venni a charset vagy variables mezőbe.",
@@ -177,11 +177,11 @@
       },
       "badStackOp": {
         "title": "Hibás tárolóművelet: „{{tokens}}” ({{storageId}})",
-        "detail": "Sor: „{{line}}”. Verem-alak: LEVESZ/FELÍR — pl. „Z/AZ”; semmihez ε (vagy eps, $)."
+        "detail": "Sor: „{{line}}”. Verem-alak: LEVESZ/FELÍR — pl. „Z/AZ”; semmihez ε (vagy eps)."
       },
       "badQueueOp": {
         "title": "Hibás tárolóművelet: „{{tokens}}” ({{storageId}})",
-        "detail": "Sor: „{{line}}”. Sor-alak: KIVESZ/BETESZ — pl. „A/BA”; semmihez ε (vagy eps, $)."
+        "detail": "Sor: „{{line}}”. Sor-alak: KIVESZ/BETESZ — pl. „A/BA”; semmihez ε (vagy eps)."
       }
     }
   },

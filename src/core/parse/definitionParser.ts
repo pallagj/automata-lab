@@ -10,6 +10,7 @@ import {
   TAPE_BLANK
 } from "../machine/machine";
 import { Grammar, GrammarRule } from "../grammar/grammar";
+import { grammarEpsilon } from "../epsilon";
 
 /**
  * Parses YAML-based definitions with friendly, precise error messages.
@@ -19,12 +20,12 @@ import { Grammar, GrammarRule } from "../grammar/grammar";
  *   - "."          wildcard: every possible value of that position
  *   - "&"          "the same": the source state for a state, the read symbol for a write
  *   - "a-d"        a range in lists (charset, states)
- *   - "$" or "ε"   the empty word
+ *   - "ε" (or "eps", "epsilon") the empty word
  */
 
 export type Definition = Machine | Grammar;
 
-const EPS_ALIASES = new Set(["$", "ε", "eps", "epsilon"]);
+const EPS_ALIASES = new Set(["ε", "eps", "epsilon"]);
 
 function normEps(s: string): string {
   return EPS_ALIASES.has(s) ? EPS : s;
@@ -90,17 +91,10 @@ interface ParsedBase {
   body: Record<string, unknown>;
 }
 
-/** Top-level type keys; the legacy Hungarian aliases keep older saved worksheets loading. */
 const MACHINE_KEYS = ["Machine", "machine"];
 const GRAMMAR_KEYS = ["Grammar", "grammar"];
-const LEGACY_MACHINE_KEYS = ["gep", "gép"];
-const LEGACY_GRAMMAR_KEYS = ["nyelvtan"];
 
-function parseYamlBody(
-  source: string,
-  expectedKeys: string[],
-  legacyKeys: string[] = []
-): OpResult<ParsedBase & { key: string }> {
+function parseYamlBody(source: string, expectedKeys: string[]): OpResult<ParsedBase & { key: string }> {
   let parsed: unknown;
   try {
     parsed = yaml.load(source);
@@ -120,7 +114,7 @@ function parseYamlBody(
     return failResult([err(tx("definitionParser.emptyOrUnparseable"))]);
   }
   const keys = Object.keys(parsed as object);
-  const key = keys.find((k) => expectedKeys.includes(k) || legacyKeys.includes(k));
+  const key = keys.find((k) => expectedKeys.includes(k));
   if (!key)
     return failResult([
       err(tx("definitionParser.missingTypeKey.title"), tx("definitionParser.missingTypeKey.detail", { keys: expectedKeys.join(", ") }))
@@ -170,14 +164,10 @@ function expandWildcard(
 /* General machine (Machine)                                           */
 /* ------------------------------------------------------------------ */
 
-/** Storage type names; the Hungarian aliases keep older saved worksheets loading. */
 const STORAGE_TYPES: Record<string, StorageType> = {
   stack: "stack",
   queue: "queue",
-  tape: "tape",
-  verem: "stack",
-  sor: "queue",
-  szalag: "tape"
+  tape: "tape"
 };
 
 /** Default initial content of a stack when none is given. */
@@ -299,7 +289,7 @@ function parseStorageOp(
  * machine) is decided by its configuration — there is no separate type key.
  */
 export function parseMachine(source: string): OpResult<Machine> {
-  const base = parseYamlBody(source, MACHINE_KEYS, LEGACY_MACHINE_KEYS);
+  const base = parseYamlBody(source, MACHINE_KEYS);
   if (!base.ok) return failResult(base.diagnostics);
   const { name, body } = base.value!;
   const diags: Diagnostic[] = [];
@@ -339,9 +329,9 @@ export function parseMachine(source: string): OpResult<Machine> {
     }
   }
 
-  // input: a read head or a storage ("fej" is a legacy Hungarian alias of head)
+  // input: a read head or a storage
   const inputRaw = String(body["input"] ?? "head").trim();
-  const input = inputRaw === "" || inputRaw === "head" || inputRaw === "fej" ? "head" : inputRaw;
+  const input = inputRaw === "" || inputRaw === "head" ? "head" : inputRaw;
   if (input !== "head" && !storages.some((s) => s.id === input)) {
     return failResult([
       err(
@@ -500,7 +490,7 @@ export function parseMachine(source: string): OpResult<Machine> {
 /* ------------------------------------------------------------------ */
 
 export function parseGrammar(source: string): OpResult<Grammar> {
-  const base = parseYamlBody(source, GRAMMAR_KEYS, LEGACY_GRAMMAR_KEYS);
+  const base = parseYamlBody(source, GRAMMAR_KEYS);
   if (!base.ok) return failResult(base.diagnostics);
   const { name, body } = base.value!;
   const diags: Diagnostic[] = [];
@@ -554,7 +544,7 @@ export function parseGrammar(source: string): OpResult<Grammar> {
       ]);
 
     for (const alt of m[2].split("|")) {
-      const right = EPS_ALIASES.has(alt) || alt === "" ? "" : alt;
+      const right = EPS_ALIASES.has(alt) ? "" : grammarEpsilon(alt, known);
       for (const c of right)
         if (!known.has(c))
           return failResult([
@@ -576,8 +566,8 @@ export function parseGrammar(source: string): OpResult<Grammar> {
 /* ------------------------------------------------------------------ */
 
 const TYPE_KEYS: { keys: string[]; parse: (s: string) => OpResult<Definition> }[] = [
-  { keys: [...MACHINE_KEYS, ...LEGACY_MACHINE_KEYS], parse: parseMachine as (s: string) => OpResult<Definition> },
-  { keys: [...GRAMMAR_KEYS, ...LEGACY_GRAMMAR_KEYS], parse: parseGrammar as (s: string) => OpResult<Definition> }
+  { keys: MACHINE_KEYS, parse: parseMachine as (s: string) => OpResult<Definition> },
+  { keys: GRAMMAR_KEYS, parse: parseGrammar as (s: string) => OpResult<Definition> }
 ];
 
 /** Determines whether the source is a YAML definition and, if so, parses it. */

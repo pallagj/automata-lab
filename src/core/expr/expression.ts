@@ -437,7 +437,7 @@ function describeKind(v: ExprValue): string {
   }
 }
 
-/** ε-removal that also honours the legacy $ notation. */
+/** Evaluates an expression against the names defined so far. */
 export function evaluateExpression(
   src: string,
   env: Map<string, ExprValue>

@@ -9,7 +9,8 @@ import { parseStorageEntry } from "../../core/parse/definitionParser";
 import { useAppStore } from "../../state/store";
 import { machineKindLabel } from "../machineLabels";
 import { EPS } from "../../core/types";
-import { epsilonChange } from "./epsilon";
+import { declaredSymbols, epsilonChange } from "./epsilon";
+import { useEpsilonWords } from "./useEpsilonWords";
 
 /**
  * Interactive entity editor: the machine/grammar can be entered in a form
@@ -38,15 +39,11 @@ export interface EntityDraft {
   rows: string[][];
 }
 
-/** Top-level keys; gep/gép/nyelvtan are legacy Hungarian aliases kept for old worksheets. */
 const KIND_BY_KEY: Record<string, EntityKind> = {
   Machine: "machine",
   machine: "machine",
-  gep: "machine",
-  gép: "machine",
   Grammar: "grammar",
-  grammar: "grammar",
-  nyelvtan: "grammar"
+  grammar: "grammar"
 };
 
 /** Determines from the cell source whether it is an entity (and which kind). */
@@ -342,6 +339,7 @@ interface Props {
 
 export const EntityForm: React.FC<Props> = ({ source, onChange }) => {
   const { t } = useTranslation();
+  const words = useEpsilonWords();
   const [draft, setDraft] = useState<EntityDraft | null>(() => parseEntityDraft(source));
   const lastSerialized = useRef(source);
   const hideKindWarning = useAppStore((s) => s.hideKindChangeWarning);
@@ -538,7 +536,7 @@ export const EntityForm: React.FC<Props> = ({ source, onChange }) => {
               </select>
               <input
                 value={s.init}
-                onChange={(e) => epsilonChange(e, (init) => setStorage(i, { init }))}
+                onChange={(e) => epsilonChange(e, (init) => setStorage(i, { init }), { words })}
                 placeholder={s.type === "tape" ? t("editor.form.tapeInitPlaceholder") : t("editor.form.initialContentPlaceholder")}
                 spellCheck={false}
               />
@@ -574,10 +572,17 @@ export const EntityForm: React.FC<Props> = ({ source, onChange }) => {
                   key={j}
                   value={part}
                   onChange={(e) =>
-                    // ε shortcuts only in symbol/operation columns, never in the state or left-side ones
-                    j > 0 && (k === "grammar" || j < row.length - 1)
-                      ? epsilonChange(e, (v) => setRow(i, j, v))
-                      : setRow(i, j, e.target.value)
+                    // ε shortcuts only in symbol/operation columns and grammar right sides, never for states
+                    k === "grammar"
+                      ? j === 1
+                        ? epsilonChange(e, (v) => setRow(i, j, v), {
+                            words,
+                            declared: declaredSymbols(draft.charset, draft.states)
+                          })
+                        : setRow(i, j, e.target.value)
+                      : j > 0 && j < row.length - 1
+                        ? epsilonChange(e, (v) => setRow(i, j, v), { words })
+                        : setRow(i, j, e.target.value)
                   }
                   placeholder={cols[j]?.placeholder ?? ""}
                   className={k === "grammar" && j === 1 ? "wide" : ""}

@@ -26,6 +26,13 @@
     "renameHint": "Click to rename",
     "worksheetMenu": "Worksheet menu"
   },
+  "settings": {
+    "title": "Settings",
+    "epsilon": {
+      "title": "while typing",
+      "hint": "In definitions a typed eps or epsilon turns into ε. When this is off, type the ε character yourself — eps and epsilon still mean ε."
+    }
+  },
   "browser": {
     "title": "Worksheets",
     "tabs": {
@@ -146,7 +153,7 @@
       "body2": "key: a finite control plus any number of storages.",
       "emphasis": "Its kind is decided by the configuration",
       "body3": "— no storage means a finite automaton, one stack means a pushdown automaton, one tape (holding the input) means a Turing machine, another combination means a general machine. The interface recognizes it and names it accordingly.",
-      "example": "Machine:               # finite automaton: no storage\n  name: M1\n  charset: a, b\n  states: S, A, F\n  init: S\n  accept: F\n  transitions:\n    - S . S      # \".\" = every letter of the alphabet\n    - S a A\n    - A b F      # ε-transition: S ε A (type eps or $)"
+      "example": "Machine:               # finite automaton: no storage\n  name: M1\n  charset: a, b\n  states: S, A, F\n  init: S\n  accept: F\n  transitions:\n    - S . S      # \".\" = every letter of the alphabet\n    - S a A\n    - A b F      # ε-transition: S ε A (type eps)"
     },
     "expressions": {
       "heading": "Expressions",
@@ -167,13 +174,13 @@
     },
     "storages": {
       "heading": "Storages: stack, queue, tape",
-      "example": "Machine:               # pushdown automaton: one stack\n  name: AnBn\n  charset: a, b\n  states: q0, q1, q2\n  init: q0\n  accept: q2           # or acceptMode: emptyStorages\n  storages:\n    stack: stack       # the stack starts with Z by default; otherwise:\n  transitions:         #   stack: { type: stack, init: X }\n    - q0 a Z/AZ q0     # reading a: push AZ instead of Z\n    - q0 b A/ε q1      # ε = push nothing\n    - q1 ε Z/Z q2      # ε-step (type eps or $)\n\nMachine:               # Turing machine: one tape, holding the input\n  name: T\n  charset: a, b\n  states: s, ok\n  init: s\n  accept: ok\n  input: tape          # the input is placed on this storage\n  storages:\n    tape: tape\n  transitions:\n    - s a/b > s        # read a, write b, move right\n    - s _/& = ok       # _ = blank symbol, & = write the same symbol back",
+      "example": "Machine:               # pushdown automaton: one stack\n  name: AnBn\n  charset: a, b\n  states: q0, q1, q2\n  init: q0\n  accept: q2           # or acceptMode: emptyStorages\n  storages:\n    stack: stack       # the stack starts with Z by default; otherwise:\n  transitions:         #   stack: { type: stack, init: X }\n    - q0 a Z/AZ q0     # reading a: push AZ instead of Z\n    - q0 b A/ε q1      # ε = push nothing\n    - q1 ε Z/Z q2      # ε-step (type eps)\n\nMachine:               # Turing machine: one tape, holding the input\n  name: T\n  charset: a, b\n  states: s, ok\n  init: s\n  accept: ok\n  input: tape          # the input is placed on this storage\n  storages:\n    tape: tape\n  transitions:\n    - s a/b > s        # read a, write b, move right\n    - s _/& = ok       # _ = blank symbol, & = write the same symbol back",
       "transitionSyntax": "FROM [INPUT] per-storage-operation… TO",
       "body2": "— a stack/queue takes one element (POP/PUSH), a tape takes two (read/write move). Any number of storages can be combined: two stacks already build a Turing-power machine (e.g. aⁿbⁿcⁿ, which is impossible with a pushdown automaton), a queue gives a queue automaton. The automaton operations (det, min…) only apply to storage-free machines — the app explains why."
     },
     "grammar": {
       "heading": "Grammar",
-      "example": "Grammar:\n  name: G\n  charset: a, b\n  variables: S\n  init: S\n  rules:\n    - S -> aSb | ε   # type eps or $ for ε",
+      "example": "Grammar:\n  name: G\n  charset: a, b\n  variables: S\n  init: S\n  rules:\n    - S -> aSb | ε   # type eps for ε",
       "body": "The grammar view automatically determines the class according to the Chomsky hierarchy, and for every level shows which rule violates it and why."
     },
     "tips": {
@@ -421,7 +428,7 @@
       "expandToDefinition": "Expand into an editable definition",
       "deleteCell": "Delete cell",
       "resultingAutomatonName": "Name of the resulting automaton",
-      "regexHint": "Regular expression — operators: | (or), * (closure), parentheses, ε (or $)"
+      "regexHint": "Regular expression — operators: | (or), * (closure), parentheses, ε (type eps)"
     },
     "form": {
       "col": {
