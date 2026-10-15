@@ -1,6 +1,6 @@
-import React, { useMemo, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import CodeMirror from "@uiw/react-codemirror";
+import CodeMirror, { keymap, Prec, ReactCodeMirrorRef } from "@uiw/react-codemirror";
 import { yaml } from "@codemirror/lang-yaml";
 import { useTranslation } from "react-i18next";
 import type { TFunction } from "i18next";
@@ -8,13 +8,14 @@ import { activeWorkspace, Cell, useAppStore } from "../../state/store";
 import { uniqueName, usedNames } from "../../state/names";
 import { CellResult } from "../../core/workspace";
 import { DiagnosticsList } from "../detail/DiagnosticsList";
-import { Code2, FileCode2, FunctionSquare, GripVertical, SlidersHorizontal, X } from "lucide-react";
+import { Code2, FileCode2, FunctionSquare, SlidersHorizontal, X } from "lucide-react";
 import { serializeDefinition } from "../../core/parse/serialize";
 import { machineCaps } from "../../core/machine/machine";
 import { opApplicability, OpInfo, OPS } from "./ops";
 import { detectEntityKind, EntityForm, parseEntityDraft } from "./EntityForm";
 import { machineKindLabel } from "../machineLabels";
 import { epsilonInputHandler, regexEpsilonInputHandler } from "./epsilon";
+import { KindBadge, ValueKind } from "../kinds";
 
 interface Props {
   cell: Cell;
@@ -38,6 +39,16 @@ function valueKindLabel(t: TFunction, value: { kind: string }): string | undefin
     return machineKindLabel(t, caps, true);
   }
   return KIND_KEY[value.kind] ? t(KIND_KEY[value.kind]) : undefined;
+}
+
+/** The kind shown as a badge in the gutter; null while the cell has no value. */
+function cellKind(result: CellResult | undefined): ValueKind | null {
+  if (result?.comment) return "note";
+  const value = result?.value;
+  if (!value) return null;
+  if (value.kind === "machine") return machineCaps(value as never).kind;
+  if (value.kind === "grammar" || value.kind === "regex" || value.kind === "verdict") return value.kind;
+  return null;
 }
 
 /** Drag & drop between cells: the id of the cell being dragged. */
@@ -112,7 +123,41 @@ export const CellEditor: React.FC<Props> = ({ cell, index, result }) => {
   const hasError = worst === "error";
   const isYaml = /^\s*[A-Za-z]+\s*:/.test(cell.source);
 
-  const extensions = useMemo(() => (isYaml ? [yaml(), epsilonInputHandler] : [regexEpsilonInputHandler]), [isYaml]);
+  // expressions and notes are one line, as in Desmos: Enter starts a new cell below (Shift+Enter still breaks
+  // the line); YAML definitions are multi-line, so there Enter stays a newline
+  const extensions = useMemo(
+    () =>
+      isYaml
+        ? [yaml(), epsilonInputHandler]
+        : [
+            regexEpsilonInputHandler,
+            Prec.high(keymap.of([{ key: "Enter", run: () => (addCell("", cell.id), true) }]))
+          ],
+    [isYaml, addCell, cell.id]
+  );
+
+  // a new, empty cell (Enter, the ghost cell) takes the keyboard focus as soon as its editor exists;
+  // an empty cell that becomes active later (e.g. by deleting the one below) gets it on the next frame
+  const autoFocus = useRef(isActive && cell.source === "").current;
+  const cellRef = useRef<HTMLDivElement>(null);
+  const cmRef = useRef<ReactCodeMirrorRef>(null);
+  useEffect(() => {
+    if (!isActive || cell.source !== "") return;
+    const frame = requestAnimationFrame(() => {
+      if (!cellRef.current?.contains(document.activeElement)) cmRef.current?.view?.focus();
+    });
+    return () => cancelAnimationFrame(frame);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isActive]);
+
+  const kind = cellKind(result);
+  const kindLabel = result?.comment
+    ? t("editor.cell.kind.note")
+    : result?.value
+      ? valueKindLabel(t, result.value)
+      : undefined;
+  // a single line: expressions and notes; a block: the form or the YAML of a definition
+  const inline = !showForm && !isYaml;
 
   // an expression cell's result can be expanded into editable YAML
   const expandable =
@@ -253,6 +298,7 @@ export const CellEditor: React.FC<Props> = ({ cell, index, result }) => {
 
   return (
     <div
+      ref={cellRef}
       className={`cell ${isActive ? "active" : ""} ${hasError ? "has-error" : ""} ${
         dropPos ? `drop-${dropPos}` : ""
       }`}
@@ -279,7 +325,7 @@ export const CellEditor: React.FC<Props> = ({ cell, index, result }) => {
         onMouseUp={() => setDragReady(false)}
       >
         <span className="cell-index">{index + 1}</span>
-        <GripVertical size={13} className="grip" />
+        {kind && <KindBadge kind={kind} title={kindLabel} size={18} />}
         {worst && (
           <span
             ref={warnRef}
@@ -293,12 +339,33 @@ export const CellEditor: React.FC<Props> = ({ cell, index, result }) => {
         )}
       </div>
 
-      <div className="cell-main">
-        <div className="cell-head">
-          {result?.name && <span className="cell-name">{result.name}</span>}
-          {result?.value && <span className="cell-kind">{valueKindLabel(t, result.value)}</span>}
-          {result?.comment && <span className="cell-kind">{t("editor.cell.kind.note")}</span>}
-          <span className="spacer" />
+      <div className={`cell-main ${inline ? "inline" : "block"}`}>
+        <div className="cell-body">
+          {showForm ? (
+            <EntityForm source={cell.source} onChange={(s) => setCellSource(cell.id, s)} />
+          ) : (
+            <div className="cell-editor">
+              <CodeMirror
+                ref={cmRef}
+                autoFocus={autoFocus}
+                value={cell.source}
+                theme={theme}
+                extensions={extensions}
+                onChange={(value) => setCellSource(cell.id, value)}
+                onFocus={() => setActiveCell(cell.id)}
+                basicSetup={{
+                  lineNumbers: cell.source.split("\n").length > 3,
+                  foldGutter: false,
+                  autocompletion: false,
+                  highlightActiveLine: false,
+                  highlightActiveLineGutter: false
+                }}
+              />
+            </div>
+          )}
+        </div>
+
+        <div className="cell-tools">
           <button
             ref={opsBtnRef}
             className="cell-tool"
@@ -345,27 +412,6 @@ export const CellEditor: React.FC<Props> = ({ cell, index, result }) => {
             <X size={15} />
           </button>
         </div>
-
-        {showForm ? (
-          <EntityForm source={cell.source} onChange={(s) => setCellSource(cell.id, s)} />
-        ) : (
-          <div className="cell-editor">
-            <CodeMirror
-              value={cell.source}
-              theme={theme}
-              extensions={extensions}
-              onChange={(value) => setCellSource(cell.id, value)}
-              onFocus={() => setActiveCell(cell.id)}
-              basicSetup={{
-                lineNumbers: cell.source.split("\n").length > 3,
-                foldGutter: false,
-                autocompletion: false,
-                highlightActiveLine: false,
-                highlightActiveLineGutter: false
-              }}
-            />
-          </div>
-        )}
       </div>
 
       {opsOpen &&

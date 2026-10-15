@@ -489,7 +489,7 @@
     },
     "column": {
       "cellCount": "{{count}} cella",
-      "ghostCellTitle": "Kattints új cellához (Alt+Enter is működik)"
+      "ghostCellTitle": "Kattints új cellához (vagy nyomj Entert egy kifejezésben)"
     }
   },
   "graph": {

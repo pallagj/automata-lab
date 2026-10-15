@@ -134,7 +134,6 @@ export const EditorColumn: React.FC<Props> = ({ workspace, results }) => {
           <div className="cell-gutter">
             <span className="cell-index">{workspace.cells.length + 1}</span>
           </div>
-          <div className="ghost-line" />
         </div>
       </div>
     </>

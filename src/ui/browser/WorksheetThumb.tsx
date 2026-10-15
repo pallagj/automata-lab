@@ -1,9 +1,9 @@
 import React, { useId, useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { Cpu, Layers, ListTree, LucideIcon, RectangleEllipsis, Regex, Workflow } from "lucide-react";
 import { useAppStore } from "../../state/store";
 import { GraphSpec, layoutGraph } from "../graph/GraphView";
 import type { PreviewContent, WorksheetKind } from "./preview";
+import { KindBadge } from "../kinds";
 
 type Pinned = Record<string, { x: number; y: number }> | undefined;
 type Layout = ReturnType<typeof layoutGraph>;
@@ -71,20 +71,6 @@ export const WorksheetThumb: React.FC<{ preview: PreviewContent; labels?: boolea
   );
 };
 
-const KIND_ICONS: Record<WorksheetKind, LucideIcon> = {
-  fsm: Workflow,
-  pda: Layers,
-  tm: RectangleEllipsis,
-  general: Cpu,
-  grammar: ListTree,
-  regex: Regex
-};
-
-export const KindIcon: React.FC<{ kind: WorksheetKind; size?: number }> = ({ kind, size = 13 }) => {
-  const Icon = KIND_ICONS[kind];
-  return <Icon size={size} />;
-};
-
 /** Small round badges telling what a worksheet contains. */
 export const KindBadges: React.FC<{ kinds: WorksheetKind[] }> = ({ kinds }) => {
   const { t } = useTranslation();
@@ -92,9 +78,7 @@ export const KindBadges: React.FC<{ kinds: WorksheetKind[] }> = ({ kinds }) => {
   return (
     <span className="kind-badges">
       {kinds.map((k) => (
-        <span key={k} className={`kind-badge kind-${k}`} title={t(`browser.kind.${k}`)}>
-          <KindIcon kind={k} size={12} />
-        </span>
+        <KindBadge key={k} kind={k} title={t(`browser.kind.${k}`)} />
       ))}
     </span>
   );

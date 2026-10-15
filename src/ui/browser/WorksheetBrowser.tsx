@@ -31,7 +31,8 @@ import {
 } from "../../state/store";
 import { EXAMPLE_WORKSHEETS, exampleWorksheetName } from "../../state/examples";
 import { summarizeCells, WORKSHEET_KINDS, WorksheetKind } from "./preview";
-import { KindBadges, KindIcon, WorksheetThumb } from "./WorksheetThumb";
+import { KindBadges, WorksheetThumb } from "./WorksheetThumb";
+import { KindBadge } from "../kinds";
 import { InlineInput, MovePanel, Popover } from "./controls";
 import "./browser.css";
 
@@ -824,9 +825,7 @@ export const WorksheetBrowser: React.FC<Props> = ({ initialTab = "saved", initia
               }
             >
               <span className="check-slot">{kindFilter.has(k) && <Check size={14} />}</span>
-              <span className={`kind-badge kind-${k}`}>
-                <KindIcon kind={k} size={12} />
-              </span>
+              <KindBadge kind={k} />
               {t(`browser.kind.${k}`)}
             </button>
           ))}

@@ -489,7 +489,7 @@
     },
     "column": {
       "cellCount": "{{count}} cells",
-      "ghostCellTitle": "Click for a new cell (Alt+Enter also works)"
+      "ghostCellTitle": "Click for a new cell (or press Enter in an expression)"
     }
   },
   "graph": {

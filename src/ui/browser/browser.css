@@ -558,42 +558,6 @@
   font-size: 5px;
 }
 
-/* kind badges */
-.kind-badges {
-  display: inline-flex;
-  gap: 3px;
-}
-
-.kind-badge {
-  flex: none;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 20px;
-  height: 20px;
-  border-radius: 50%;
-  color: #fff;
-}
-
-.kind-fsm {
-  background: #8b5cf6;
-}
-.kind-pda {
-  background: #0891b2;
-}
-.kind-tm {
-  background: #d97706;
-}
-.kind-general {
-  background: #64748b;
-}
-.kind-grammar {
-  background: #059669;
-}
-.kind-regex {
-  background: #db2777;
-}
-
 /* list view */
 .ws-list {
   display: flex;

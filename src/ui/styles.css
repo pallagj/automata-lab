@@ -740,7 +740,7 @@ details.card[open] > summary .chev {
   bottom: -1.5px;
 }
 
-/* left strip: index, handle, warning */
+/* left strip: index, kind badge, warning */
 .cell-gutter {
   width: 34px;
   flex-shrink: 0;
@@ -748,7 +748,7 @@ details.card[open] > summary .chev {
   flex-direction: column;
   align-items: center;
   gap: 5px;
-  padding: 9px 0;
+  padding: 7px 0;
   border-right: 1px solid var(--border-soft);
   cursor: grab;
   user-select: none;
@@ -762,11 +762,6 @@ details.card[open] > summary .chev {
   font-family: var(--font-mono);
   font-size: 11px;
   color: var(--muted);
-}
-
-.cell-gutter .grip {
-  color: var(--muted);
-  opacity: 0.55;
 }
 
 .gutter-warn-wrap {
@@ -789,8 +784,56 @@ details.card[open] > summary .chev {
 }
 
 .cell-main {
+  position: relative;
   flex: 1;
   min-width: 0;
+  display: flex;
+}
+
+.cell-body {
+  flex: 1;
+  min-width: 0;
+}
+
+/* expressions and notes: one line, vertically centred, tools at the end of the line */
+.cell-main.inline {
+  align-items: center;
+  min-height: 46px;
+}
+
+.cell-main.inline .cell-editor {
+  padding: 6px 4px 6px 8px;
+}
+
+/* definitions: the form / YAML block with the tools in a column on the right, ✕ on top */
+.cell-main.block .cell-tools {
+  flex-direction: column;
+  align-self: flex-start;
+  padding-top: 6px;
+}
+
+.cell-main.block .cell-tool.danger {
+  order: -1;
+}
+
+.cell-tools {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 1px;
+  padding: 0 6px 0 2px;
+}
+
+/* ✕ is always there (as in Desmos); the other tools show on the active or hovered cell */
+.cell-tools .cell-tool:not(.danger) {
+  opacity: 0;
+  transition: opacity 0.12s;
+}
+
+.cell:hover .cell-tools .cell-tool,
+.cell.active .cell-tools .cell-tool,
+.cell-tools .cell-tool:focus-visible {
+  opacity: 1;
 }
 
 /* the (n+1)th cell: translucent, created on click */
@@ -954,32 +997,6 @@ details.card[open] > summary .chev {
   color: var(--accent);
 }
 
-.cell-head {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 6px 8px 0 10px;
-}
-
-.cell-name {
-  font-family: var(--font-mono);
-  font-size: 12px;
-  font-weight: 700;
-  color: var(--accent);
-  background: var(--accent-soft);
-  border-radius: 6px;
-  padding: 2px 8px;
-}
-
-.cell-kind {
-  font-size: 11.5px;
-  color: var(--muted);
-}
-
-.cell-head .spacer {
-  flex: 1;
-}
-
 .cell-tool {
   background: none;
   border: none;
@@ -1019,6 +1036,46 @@ details.card[open] > summary .chev {
   background: transparent !important;
   border-right: none !important;
   color: var(--muted) !important;
+}
+
+/* ====== Kind badges (cells and the worksheet browser) ====== */
+.kind-badges {
+  display: inline-flex;
+  gap: 3px;
+}
+
+.kind-badge {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  color: #fff;
+}
+
+.kind-fsm {
+  background: #8b5cf6;
+}
+.kind-pda {
+  background: #0891b2;
+}
+.kind-tm {
+  background: #d97706;
+}
+.kind-general {
+  background: #64748b;
+}
+.kind-grammar {
+  background: #059669;
+}
+.kind-regex {
+  background: #db2777;
+}
+.kind-verdict {
+  background: #2563eb;
+}
+.kind-note {
+  background: #a16207;
 }
 
 /* ====== Diagnostics ====== */
