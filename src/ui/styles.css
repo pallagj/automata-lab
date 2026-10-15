@@ -539,23 +539,36 @@ body.resizing {
 }
 
 .lang-switcher {
-  padding: 5px 8px;
-  cursor: default;
+  position: relative;
+  line-height: normal;
 }
 
-.lang-select {
-  background: transparent;
-  color: var(--text-soft);
-  border: none;
-  font-size: 13px;
+.lang-switcher:focus-within {
+  color: var(--text);
+  border-color: var(--accent);
+}
+
+.lang-current {
   font-weight: 600;
   letter-spacing: 0.02em;
-  cursor: pointer;
-  padding: 0;
 }
 
-.lang-select:focus {
-  outline: none;
+.lang-chevron {
+  margin-left: -2px;
+  opacity: 0.7;
+}
+
+.topbar .lang-select {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  padding: 0;
+  border: none;
+  opacity: 0;
+  cursor: pointer;
+  appearance: none;
 }
 
 /* ====== Cards ====== */
