@@ -514,6 +514,10 @@
         "title": "Die Grammatik {{name}} automatisch in einen endlichen Automaten umgewandelt",
         "detail": "Die Operation erwartet einen endlichen Automaten; die rechtslineare Grammatik lässt sich umwandeln."
       }
+    },
+    "regexNameInside": {
+      "title": "{{names}} in regex(…) sind nur Buchstaben",
+      "detail": "Ein regulärer Ausdruck kann nicht auf andere Definitionen verweisen — hier bedeutet {{name}} die Buchstaben {{letters}}. Um ihn mit der Definition {{name}} zu kombinieren, tu das außerhalb des Ausdrucks, z. B. {{name}} + regex(…) oder union({{name}}, …)."
     }
   }
 }

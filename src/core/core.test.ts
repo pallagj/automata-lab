@@ -722,3 +722,15 @@ describe("unnamed cells", () => {
     expect(serializeDefinition(m as never)).not.toContain("name:");
   });
 });
+
+describe("names inside a regex", () => {
+  it("are letters, with a warning that they are not references", () => {
+    const rs = evaluateCells(["R1 = regex(ab)", "X = regex(R1|b)", "Y = regex(ab|b)", "Z = regex(Later)", "Later = regex(a)"]);
+    expect(rs[1].value?.kind).toBe("regex");
+    expect(rs[1].diagnostics.map((d) => d.title.key)).toContain("expression.regexNameInside.title");
+    expect(rs[1].diagnostics.find((d) => d.level === "warning")?.title.params?.names).toBe("R1");
+    expect(rs[2].diagnostics).toEqual([]);
+    // names defined further down count too
+    expect(rs[3].diagnostics.map((d) => d.title.key)).toContain("expression.regexNameInside.title");
+  });
+});

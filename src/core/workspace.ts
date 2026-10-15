@@ -169,7 +169,7 @@ export function evaluateCells(sources: string[]): CellResult[] {
       continue;
     }
 
-    const out = evaluateExpression(cell.expr, env);
+    const out = evaluateExpression(cell.expr, env, names);
     r.diagnostics.push(...out.diagnostics.filter((d) => !r.diagnostics.includes(d)));
     if (out.ok) {
       const v = out.value!.value;

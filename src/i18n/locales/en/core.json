@@ -514,6 +514,10 @@
         "title": "Automatically converted the grammar {{name}} to a finite automaton",
         "detail": "The operation expects a finite automaton; the right-linear grammar can be converted."
       }
+    },
+    "regexNameInside": {
+      "title": "{{names}} in regex(…) is just letters",
+      "detail": "A regular expression can't refer to other definitions — here {{name}} means the letters {{letters}}. To combine it with the definition {{name}}, do it outside the regex, e.g. {{name}} + regex(…) or union({{name}}, …)."
     }
   }
 }

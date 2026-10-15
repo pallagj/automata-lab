@@ -514,6 +514,10 @@
         "title": "A(z) {{name}} nyelvtant automatikusan véges automatává alakítottam",
         "detail": "A művelet véges automatát vár; a jobblineáris nyelvtan átalakítható."
       }
+    },
+    "regexNameInside": {
+      "title": "A regex(…)-en belül a(z) {{names}} csak betűk",
+      "detail": "Reguláris kifejezés nem hivatkozhat más definíciókra — itt a(z) {{name}} a(z) {{letters}} betűket jelenti. Ha a(z) {{name}} definícióval akarod kombinálni, azt a regexen kívül teheted meg, pl. {{name}} + regex(…) vagy union({{name}}, …)."
     }
   }
 }

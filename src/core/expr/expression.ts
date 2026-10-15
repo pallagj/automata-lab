@@ -1,4 +1,4 @@
-import { EPS, err, failResult, okResult, OpResult, AlgoStep, Diagnostic, I18nText, info, tx } from "../types";
+import { EPS, err, failResult, okResult, OpResult, AlgoStep, Diagnostic, I18nText, info, tx, warn } from "../types";
 import { FSM, makeFSM } from "../fsm/fsm";
 import {
   checkEquivalence,
@@ -244,7 +244,11 @@ class Evaluator {
   diagnostics: Diagnostic[] = [];
   stepGroups: StepGroup[] = [];
 
-  constructor(public env: Map<string, ExprValue>) {}
+  /** `names`: every name in the worksheet, also the ones not evaluated yet */
+  constructor(
+    public env: Map<string, ExprValue>,
+    private names: Set<string> = new Set(env.keys())
+  ) {}
 
   take<T>(operation: string, r: OpResult<T>): T {
     this.diagnostics.push(...r.diagnostics);
@@ -405,9 +409,20 @@ class Evaluator {
         if (v.kind !== "grammar") throw new ExprError(tx("expression.error.toPdaExpects"));
         return this.take(label("toPda"), grammarToPDA(v));
       }
-      case "regex":
+      case "regex": {
         expectArgs(1);
-        return this.take(label("regex"), regexValue(e.rawArgs[0]));
+        // a regex is a self-contained pattern: a name inside it is just letters — say so, since it looks like a reference
+        const pattern = e.rawArgs[0];
+        const named = [...new Set(pattern.match(/[A-Za-z][A-Za-z0-9_'′]*/g) ?? [])].filter((w) => this.names.has(w));
+        if (named.length > 0)
+          this.diagnostics.push(
+            warn(
+              tx("expression.regexNameInside.title", { names: named.join(", ") }),
+              tx("expression.regexNameInside.detail", { name: named[0], letters: [...named[0]].join(", ") })
+            )
+          );
+        return this.take(label("regex"), regexValue(pattern));
+      }
       case "equal": {
         expectArgs(2);
         return this.take(label("equal"), checkEquivalence(fsmArg(0), fsmArg(1)));
@@ -440,7 +455,8 @@ function describeKind(v: ExprValue): string {
 /** Evaluates an expression against the names defined so far. */
 export function evaluateExpression(
   src: string,
-  env: Map<string, ExprValue>
+  env: Map<string, ExprValue>,
+  names: Set<string> = new Set(env.keys())
 ): OpResult<EvalOutput> {
   const known = new Set(env.keys());
   let ast: Expr;
@@ -450,7 +466,7 @@ export function evaluateExpression(
     const i18n = e instanceof ExprError ? e.i18n : tx("expression.error.parseGeneric", { message: String((e as Error).message ?? e) });
     return failResult([err(tx("expression.error.invalidExpression"), i18n)]);
   }
-  const ev = new Evaluator(env);
+  const ev = new Evaluator(env, names);
   try {
     let value = ev.evaluate(ast);
     // the final result appears in the unified machine model
