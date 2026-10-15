@@ -420,9 +420,7 @@
       "editYaml": "Edit YAML code",
       "backToForm": "Back to form editing",
       "expandToDefinition": "Expand into an editable definition",
-      "deleteCell": "Delete cell",
-      "resultingAutomatonName": "Name of the regular expression",
-      "regexHint": "Regular expression — operators: | (or), * (closure), parentheses, ε (type eps; \\eps = the letters)"
+      "deleteCell": "Delete cell"
     },
     "form": {
       "col": {

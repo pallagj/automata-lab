@@ -40,6 +40,37 @@ export function epsilonChange(e: React.ChangeEvent<HTMLInputElement>, apply: (va
   requestAnimationFrame(() => input.setSelectionRange(edit.caret, edit.caret));
 }
 
+/** Whether the end of `text` is inside an unclosed regex(…) — where the shortcut applies in expressions. */
+export function insideRegex(text: string): boolean {
+  const opens = [...text.matchAll(/\bregex\s*\(/g)];
+  if (opens.length === 0) return false;
+  const last = opens[opens.length - 1];
+  let depth = 0;
+  for (let i = last.index! + last[0].length - 1; i < text.length; i++) {
+    if (text[i] === "(") depth++;
+    else if (text[i] === ")" && --depth === 0) return false;
+  }
+  return depth > 0;
+}
+
+/**
+ * CodeMirror input handler for expression cells: the shortcut only inside regex(…),
+ * so function names such as epsfree(…) are never touched.
+ */
+export const regexEpsilonInputHandler = EditorView.inputHandler.of((view, from, to, text) => {
+  const doc = view.state.doc.toString();
+  const head = doc.slice(0, from) + text;
+  if (!insideRegex(head)) return false;
+  const edit = epsilonAt(head + doc.slice(to), head.length);
+  if (!edit) return false;
+  view.dispatch({
+    changes: { from: 0, to: doc.length, insert: edit.text },
+    selection: { anchor: edit.caret },
+    userEvent: "input.type"
+  });
+  return true;
+});
+
 /** "- " list rows in YAML: machine transitions and grammar rules. */
 const LIST_ROW = /^\s*-\s+/;
 const GRAMMAR_DOC = /^\s*(Grammar|grammar)\s*:/;

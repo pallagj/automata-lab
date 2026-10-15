@@ -14,7 +14,7 @@ import { machineCaps } from "../../core/machine/machine";
 import { opApplicability, OpInfo, OPS } from "./ops";
 import { detectEntityKind, EntityForm, parseEntityDraft } from "./EntityForm";
 import { machineKindLabel } from "../machineLabels";
-import { epsilonChange, epsilonInputHandler } from "./epsilon";
+import { epsilonInputHandler, regexEpsilonInputHandler } from "./epsilon";
 
 interface Props {
   cell: Cell;
@@ -69,8 +69,6 @@ const SeverityBadge: React.FC<{ level: "error" | "warning" | "info" }> = ({ leve
   );
 };
 
-/** `R = regex(…)` or an unnamed `regex(…)` */
-const REGEX_CELL = /^\s*(?:([A-Za-z][A-Za-z0-9_'′]*)\s*=\s*)?regex\(([\s\S]*)\)\s*$/;
 
 export const CellEditor: React.FC<Props> = ({ cell, index, result }) => {
   const { t } = useTranslation();
@@ -101,7 +99,6 @@ export const CellEditor: React.FC<Props> = ({ cell, index, result }) => {
   const [codeView, setCodeView] = useState(false);
   const showForm = formAvailable && !codeView;
 
-  const regexMatch = REGEX_CELL.exec(cell.source);
 
   const isActive = cell.id === activeCellId;
   const diagnostics = result?.diagnostics ?? [];
@@ -115,7 +112,7 @@ export const CellEditor: React.FC<Props> = ({ cell, index, result }) => {
   const hasError = worst === "error";
   const isYaml = /^\s*[A-Za-z]+\s*:/.test(cell.source);
 
-  const extensions = useMemo(() => (isYaml ? [yaml(), epsilonInputHandler] : []), [isYaml]);
+  const extensions = useMemo(() => (isYaml ? [yaml(), epsilonInputHandler] : [regexEpsilonInputHandler]), [isYaml]);
 
   // an expression cell's result can be expanded into editable YAML
   const expandable =
@@ -301,7 +298,6 @@ export const CellEditor: React.FC<Props> = ({ cell, index, result }) => {
           {result?.name && <span className="cell-name">{result.name}</span>}
           {result?.value && <span className="cell-kind">{valueKindLabel(t, result.value)}</span>}
           {result?.comment && <span className="cell-kind">{t("editor.cell.kind.note")}</span>}
-          {regexMatch && !result?.value && <span className="cell-kind">{t("editor.cell.kind.regex")}</span>}
           <span className="spacer" />
           <button
             ref={opsBtnRef}
@@ -350,33 +346,7 @@ export const CellEditor: React.FC<Props> = ({ cell, index, result }) => {
           </button>
         </div>
 
-        {regexMatch ? (
-          <div className="regex-row">
-            <input
-              className="rx-name"
-              value={regexMatch[1] ?? ""}
-              onChange={(e) => {
-                const name = e.target.value.trim();
-                setCellSource(cell.id, name ? `${name} = regex(${regexMatch[2]})` : `regex(${regexMatch[2]})`);
-              }}
-              placeholder={t("editor.form.name")}
-              title={t("editor.cell.resultingAutomatonName")}
-            />
-            <span className="rx-eq">=</span>
-            <span className="rx-chip">regex</span>
-            <input
-              className="rx-body"
-              value={regexMatch[2]}
-              onChange={(e) =>
-                epsilonChange(e, (v) =>
-                  setCellSource(cell.id, regexMatch[1] ? `${regexMatch[1]} = regex(${v})` : `regex(${v})`)
-                )
-              }
-              placeholder="(a|b)*abb"
-              title={t("editor.cell.regexHint")}
-            />
-          </div>
-        ) : showForm ? (
+        {showForm ? (
           <EntityForm source={cell.source} onChange={(s) => setCellSource(cell.id, s)} />
         ) : (
           <div className="cell-editor">

@@ -420,9 +420,7 @@
       "editYaml": "YAML-kód szerkesztése",
       "backToForm": "Vissza az űrlapos szerkesztéshez",
       "expandToDefinition": "Kibontás szerkeszthető definícióvá",
-      "deleteCell": "Cella törlése",
-      "resultingAutomatonName": "A reguláris kifejezés neve",
-      "regexHint": "Reguláris kifejezés — műveletek: | (vagy), * (lezárás), zárójelek, ε (írd: eps; \\eps = a betűk)"
+      "deleteCell": "Cella törlése"
     },
     "form": {
       "col": {
