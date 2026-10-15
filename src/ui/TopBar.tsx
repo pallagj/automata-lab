@@ -1,23 +1,50 @@
-import React, { useRef, useState } from "react";
+import React, { useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { activeWorkspace, exportWorkspaceJSON, useAppStore, Workspace } from "../state/store";
-import { Download, FolderOpen, HelpCircle, Moon, Pencil, Plus, Sparkles, Sun, Upload } from "lucide-react";
+import { activeWorkspace, allFolders, exportWorkspaceJSON, useAppStore, Workspace } from "../state/store";
+import {
+  ChevronDown,
+  Copy,
+  Download,
+  FolderInput,
+  FolderOpen,
+  HelpCircle,
+  Moon,
+  Pencil,
+  Plus,
+  Sparkles,
+  Sun,
+  Upload
+} from "lucide-react";
 import { HelpModal } from "./HelpModal";
 import { LanguageSwitcher } from "./LanguageSwitcher";
-import { BrowserTab, InlineInput, WorksheetBrowser } from "./browser/WorksheetBrowser";
+import { BrowserTab, WorksheetBrowser } from "./browser/WorksheetBrowser";
+import { InlineInput, MovePanel, Popover } from "./browser/controls";
 
+type HeaderMenu = { t: "worksheet" | "move"; rect: DOMRect };
+
+/**
+ * Header in three zones: the worksheet (browser, title, actions menu) on the left,
+ * the logo in the middle, and app-wide settings as plain icons on the right.
+ */
 export const TopBar: React.FC = () => {
   const { t } = useTranslation();
   const theme = useAppStore((s) => s.theme);
   const setTheme = useAppStore((s) => s.setTheme);
   const ws = useAppStore(activeWorkspace);
+  const workspaces = useAppStore((s) => s.workspaces);
+  const explicitFolders = useAppStore((s) => s.folders);
   const addWorkspace = useAppStore((s) => s.addWorkspace);
   const renameWorkspace = useAppStore((s) => s.renameWorkspace);
+  const duplicateWorkspace = useAppStore((s) => s.duplicateWorkspace);
+  const moveWorkspaces = useAppStore((s) => s.moveWorkspaces);
   const importWorkspace = useAppStore((s) => s.importWorkspace);
   const [helpOpen, setHelpOpen] = useState(false);
   const [browser, setBrowser] = useState<{ tab: BrowserTab; folder: string | null } | null>(null);
   const [renaming, setRenaming] = useState(false);
+  const [menu, setMenu] = useState<HeaderMenu | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
+
+  const folders = useMemo(() => allFolders({ folders: explicitFolders, workspaces }), [explicitFolders, workspaces]);
 
   const onExport = () => {
     const blob = new Blob([exportWorkspaceJSON(ws)], { type: "application/json" });
@@ -38,8 +65,61 @@ export const TopBar: React.FC = () => {
     }
   };
 
+  /** runs a worksheet-menu action and closes the menu */
+  const act = (fn: () => void) => () => {
+    setMenu(null);
+    fn();
+  };
+
   return (
     <header className="topbar">
+      <div className="topbar-left">
+        <button
+          className="icon-btn ghost"
+          onClick={() => setBrowser({ tab: "saved", folder: null })}
+          title={t("topbar.openWorksheets")}
+          aria-label={t("topbar.openWorksheets")}
+        >
+          <FolderOpen size={18} />
+        </button>
+        <span className="topbar-divider" />
+
+        <div className="ws-title">
+          {ws.folder && (
+            <button
+              className="ws-folder"
+              onClick={() => setBrowser({ tab: "saved", folder: ws.folder ?? null })}
+              title={t("topbar.openFolder")}
+            >
+              {ws.folder}
+              <span className="ws-sep">/</span>
+            </button>
+          )}
+          {renaming ? (
+            <InlineInput
+              initial={ws.name}
+              onCommit={(name) => {
+                renameWorkspace(ws.id, name);
+                setRenaming(false);
+              }}
+              onCancel={() => setRenaming(false)}
+            />
+          ) : (
+            <button className="ws-name" onClick={() => setRenaming(true)} title={t("topbar.renameHint")}>
+              <span>{ws.name}</span>
+            </button>
+          )}
+        </div>
+        <button
+          className="icon-btn ghost ws-menu-btn"
+          title={t("topbar.worksheetMenu")}
+          aria-label={t("topbar.worksheetMenu")}
+          onClick={(e) => setMenu({ t: "worksheet", rect: e.currentTarget.getBoundingClientRect() })}
+        >
+          <ChevronDown size={16} />
+        </button>
+      </div>
+
       <div className="logo">
         <img src="/icon.svg" alt="" />
         <span>
@@ -47,65 +127,66 @@ export const TopBar: React.FC = () => {
         </span>
       </div>
 
-      <button
-        className="icon-btn"
-        onClick={() => setBrowser({ tab: "saved", folder: null })}
-        title={t("topbar.openWorksheets")}
-      >
-        <FolderOpen size={15} />
-        <span className="hide-sm">{t("topbar.worksheets")}</span>
-      </button>
-
-      <div className="ws-title">
-        {ws.folder && (
-          <button
-            className="ws-folder"
-            onClick={() => setBrowser({ tab: "saved", folder: ws.folder ?? null })}
-            title={t("topbar.openFolder")}
-          >
-            {ws.folder}
-            <span className="ws-sep">/</span>
-          </button>
-        )}
-        {renaming ? (
-          <InlineInput
-            initial={ws.name}
-            onCommit={(name) => {
-              renameWorkspace(ws.id, name);
-              setRenaming(false);
-            }}
-            onCancel={() => setRenaming(false)}
-          />
-        ) : (
-          <button className="ws-name" onClick={() => setRenaming(true)} title={t("topbar.renameHint")}>
-            <span>{ws.name}</span>
-            <Pencil size={12} />
-          </button>
-        )}
+      <div className="topbar-right">
+        <button
+          className="icon-btn ghost"
+          onClick={() => setHelpOpen(true)}
+          title={t("topbar.help")}
+          aria-label={t("topbar.help")}
+        >
+          <HelpCircle size={17} />
+        </button>
+        <LanguageSwitcher />
+        <button
+          className="icon-btn ghost"
+          onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+          title={theme === "dark" ? t("topbar.lightTheme") : t("topbar.darkTheme")}
+          aria-label={theme === "dark" ? t("topbar.lightTheme") : t("topbar.darkTheme")}
+        >
+          {theme === "dark" ? <Sun size={17} /> : <Moon size={17} />}
+        </button>
       </div>
 
-      <button className="icon-btn" onClick={() => addWorkspace(undefined, ws.folder)} title={t("topbar.newWorksheet")}>
-        <Plus size={15} />
-      </button>
-      <button
-        className="icon-btn"
-        onClick={() => setBrowser({ tab: "examples", folder: null })}
-        title={t("topbar.loadExample")}
-      >
-        <Sparkles size={15} />
-        <span className="hide-sm">{t("topbar.examples")}</span>
-      </button>
+      {menu?.t === "worksheet" && (
+        <Popover rect={menu.rect} width={240} onClose={() => setMenu(null)}>
+          <button onClick={act(() => setRenaming(true))}>
+            <Pencil size={14} /> {t("browser.menu.rename")}
+          </button>
+          <button onClick={act(() => addWorkspace(undefined, ws.folder))}>
+            <Plus size={14} /> {t("topbar.newWorksheet")}
+          </button>
+          <button onClick={act(() => duplicateWorkspace(ws.id, true))}>
+            <Copy size={14} /> {t("browser.menu.duplicate")}
+          </button>
+          <button onClick={() => setMenu({ t: "move", rect: menu.rect })}>
+            <FolderInput size={14} /> {t("browser.menu.move")}
+          </button>
+          <div className="menu-sep" />
+          <button onClick={act(onExport)}>
+            <Download size={14} /> {t("topbar.exportWorksheet")}
+          </button>
+          <button onClick={act(() => fileRef.current?.click())}>
+            <Upload size={14} /> {t("topbar.importWorksheet")}
+          </button>
+          <div className="menu-sep" />
+          <button onClick={act(() => setBrowser({ tab: "examples", folder: null }))}>
+            <Sparkles size={14} /> {t("topbar.examples")}
+          </button>
+        </Popover>
+      )}
+      {menu?.t === "move" && (
+        <Popover rect={menu.rect} width={260} onClose={() => setMenu(null)}>
+          <MovePanel
+            folders={folders}
+            currentFolders={new Set([ws.folder])}
+            onMove={(target) => {
+              moveWorkspaces([ws.id], target);
+              setMenu(null);
+            }}
+          />
+        </Popover>
+      )}
 
-      <div className="spacer" />
-
-      <button className="icon-btn" onClick={onExport} title={t("topbar.exportWorksheet")}>
-        <Download size={15} />
-        <span className="hide-sm">{t("topbar.export")}</span>
-      </button>
-      <button className="icon-btn" onClick={() => fileRef.current?.click()} title={t("topbar.importWorksheet")}>
-        <Upload size={15} />
-        <span className="hide-sm">{t("topbar.import")}</span>
-      </button>
       <input
         ref={fileRef}
         type="file"
@@ -117,19 +198,6 @@ export const TopBar: React.FC = () => {
           e.target.value = "";
         }}
       />
-
-      <LanguageSwitcher />
-
-      <button
-        className="icon-btn"
-        onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-        title={theme === "dark" ? t("topbar.lightTheme") : t("topbar.darkTheme")}
-      >
-        {theme === "dark" ? <Sun size={15} /> : <Moon size={15} />}
-      </button>
-      <button className="icon-btn" onClick={() => setHelpOpen(true)} title={t("topbar.help")}>
-        <HelpCircle size={15} />
-      </button>
 
       {helpOpen && <HelpModal onClose={() => setHelpOpen(false)} />}
       {browser && (

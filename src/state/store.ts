@@ -70,7 +70,8 @@ export interface AppState {
 
   addWorkspace: (name?: string, folder?: string) => void;
   renameWorkspace: (id: string, name: string) => void;
-  duplicateWorkspace: (id: string) => void;
+  /** copies a worksheet next to the original; `open` switches to the copy */
+  duplicateWorkspace: (id: string, open?: boolean) => void;
   deleteWorkspaces: (ids: string[]) => void;
   importWorkspace: (ws: Workspace, folder?: string) => void;
   /** moves worksheets into a folder (created if new); undefined = out of any folder */
@@ -159,7 +160,7 @@ export const useAppStore = create<AppState>()(
         set((s) => ({
           workspaces: s.workspaces.map((w) => (w.id === id ? { ...w, name, updatedAt: Date.now() } : w))
         })),
-      duplicateWorkspace: (id) => {
+      duplicateWorkspace: (id, open = false) => {
         const src = get().workspaces.find((w) => w.id === id);
         if (!src) return;
         const copy = newWorkspace(
@@ -176,7 +177,9 @@ export const useAppStore = create<AppState>()(
           const at = s.workspaces.findIndex((w) => w.id === id);
           const workspaces = [...s.workspaces];
           workspaces.splice(at + 1, 0, copy);
-          return { workspaces, layouts };
+          return open
+            ? { workspaces, layouts, activeWorkspaceId: copy.id, activeCellId: copy.cells[0]?.id ?? null }
+            : { workspaces, layouts };
         });
       },
       deleteWorkspaces: (ids) => {

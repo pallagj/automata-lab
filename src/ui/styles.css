@@ -460,14 +460,37 @@ body.resizing {
 
 /* ====== Top bar ====== */
 
+/* three zones: worksheet on the left, logo in the middle, settings on the right */
 .topbar {
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
   align-items: center;
-  gap: 10px;
-  padding: 10px 16px;
+  gap: 12px;
+  padding: 6px 12px;
   background: var(--panel);
   border-bottom: 1px solid var(--border);
-  flex-wrap: wrap;
+}
+
+.topbar-left {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  min-width: 0;
+}
+
+.topbar-right {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 2px;
+}
+
+.topbar-divider {
+  flex: none;
+  width: 1px;
+  height: 22px;
+  margin: 0 6px;
+  background: var(--border);
 }
 
 .topbar .logo {
@@ -488,31 +511,17 @@ body.resizing {
   color: var(--accent);
 }
 
-.topbar .spacer {
-  flex: 1;
-}
-
-.topbar select {
-  background: var(--panel-2);
-  color: var(--text);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-  padding: 7px 10px;
-  font-size: 14px;
-  max-width: 200px;
-}
-
 /* active worksheet name in the header: folder crumb + click-to-rename title */
 .ws-title {
   display: flex;
   align-items: center;
   gap: 2px;
   min-width: 0;
-  max-width: 340px;
 }
 
 .ws-folder {
-  max-width: 130px;
+  flex: 0 1 auto;
+  max-width: 140px;
   padding: 5px 2px 5px 6px;
   overflow: hidden;
   background: none;
@@ -536,16 +545,15 @@ body.resizing {
 .ws-name {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
   min-width: 0;
   padding: 5px 8px;
   background: none;
   border: 1px solid transparent;
   border-radius: var(--radius-sm);
   color: var(--text);
-  font-size: 14.5px;
+  font-size: 15px;
   font-weight: 600;
-  cursor: pointer;
+  cursor: text;
 }
 
 .ws-name span {
@@ -554,25 +562,39 @@ body.resizing {
   text-overflow: ellipsis;
 }
 
-.ws-name svg {
-  flex: none;
-  color: var(--muted);
-  opacity: 0;
-  transition: opacity 0.15s;
-}
-
 .ws-name:hover {
   border-color: var(--border);
 }
 
-.ws-name:hover svg,
-.ws-name:focus-visible svg {
-  opacity: 1;
-}
-
 .ws-title .inline-input {
   flex: none;
-  width: 220px;
+  width: min(260px, 40vw);
+}
+
+.ws-menu-btn {
+  flex: none;
+  padding: 5px;
+}
+
+.menu-sep {
+  height: 1px;
+  margin: 5px 4px;
+  background: var(--border-soft);
+}
+
+@media (max-width: 720px) {
+  .topbar .logo span {
+    display: none;
+  }
+}
+
+@media (max-width: 520px) {
+  .topbar {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+  .topbar .logo {
+    display: none;
+  }
 }
 
 .icon-btn {
@@ -596,6 +618,18 @@ body.resizing {
   border-color: var(--accent);
 }
 
+/* borderless icon button for the header */
+.icon-btn.ghost {
+  padding: 7px;
+  background: transparent;
+  border-color: transparent;
+}
+
+.icon-btn.ghost:hover {
+  background: var(--panel-2);
+  border-color: var(--border-soft);
+}
+
 .icon-btn.primary {
   background: var(--accent);
   border-color: var(--accent);
@@ -609,39 +643,6 @@ body.resizing {
 .icon-btn.danger:hover {
   color: var(--danger);
   border-color: var(--danger);
-}
-
-.lang-switcher {
-  position: relative;
-  line-height: normal;
-}
-
-.lang-switcher:focus-within {
-  color: var(--text);
-  border-color: var(--accent);
-}
-
-.lang-current {
-  font-weight: 600;
-  letter-spacing: 0.02em;
-}
-
-.lang-chevron {
-  margin-left: -2px;
-  opacity: 0.7;
-}
-
-.topbar .lang-select {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  max-width: none;
-  padding: 0;
-  border: none;
-  opacity: 0;
-  cursor: pointer;
-  appearance: none;
 }
 
 /* ====== Cards ====== */

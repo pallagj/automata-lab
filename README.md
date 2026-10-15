@@ -80,7 +80,8 @@ E = equal(M1, Min)
 ```
 
 Adding `storages:` turns the same `Machine` into a pushdown automaton, a Turing machine or a custom
-machine — see the built-in example worksheets (✨ Examples in the header) for each kind.
+machine — see the built-in example worksheets (the worksheet menu ▾ next to the title → Examples)
+for each kind.
 
 ## Development
 

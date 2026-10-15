@@ -13,21 +13,18 @@
   },
   "topbar": {
     "newWorksheet": "Új munkalap",
-    "loadExample": "Beépített példa-munkalap betöltése",
     "examples": "Példák",
     "exportWorksheet": "Munkalap mentése fájlba",
-    "export": "Export",
     "importWorksheet": "Munkalap betöltése fájlból",
-    "import": "Import",
     "lightTheme": "Világos téma",
     "darkTheme": "Sötét téma",
     "help": "Súgó",
     "language": "Nyelv",
     "importFailed": "Nem sikerült beolvasni a fájlt — érvényes .automata.json kell.",
-    "worksheets": "Munkalapok",
     "openWorksheets": "Munkalapjaid megnyitása",
     "openFolder": "Mappa megnyitása",
-    "renameHint": "Kattints az átnevezéshez"
+    "renameHint": "Kattints az átnevezéshez",
+    "worksheetMenu": "Munkalap menü"
   },
   "browser": {
     "title": "Munkalapok",

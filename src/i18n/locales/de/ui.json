@@ -13,21 +13,18 @@
   },
   "topbar": {
     "newWorksheet": "Neues Arbeitsblatt",
-    "loadExample": "Ein integriertes Beispiel-Arbeitsblatt laden",
     "examples": "Beispiele",
     "exportWorksheet": "Arbeitsblatt als Datei speichern",
-    "export": "Export",
     "importWorksheet": "Arbeitsblatt aus Datei laden",
-    "import": "Import",
     "lightTheme": "Helles Design",
     "darkTheme": "Dunkles Design",
     "help": "Hilfe",
     "language": "Sprache",
     "importFailed": "Die Datei konnte nicht gelesen werden — eine gültige .automata.json wird benötigt.",
-    "worksheets": "Arbeitsblätter",
     "openWorksheets": "Deine Arbeitsblätter öffnen",
     "openFolder": "Diesen Ordner öffnen",
-    "renameHint": "Zum Umbenennen klicken"
+    "renameHint": "Zum Umbenennen klicken",
+    "worksheetMenu": "Arbeitsblatt-Menü"
   },
   "browser": {
     "title": "Arbeitsblätter",

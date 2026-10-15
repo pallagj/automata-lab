@@ -13,21 +13,18 @@
   },
   "topbar": {
     "newWorksheet": "New worksheet",
-    "loadExample": "Load a built-in example worksheet",
     "examples": "Examples",
     "exportWorksheet": "Save worksheet to file",
-    "export": "Export",
     "importWorksheet": "Load worksheet from file",
-    "import": "Import",
     "lightTheme": "Light theme",
     "darkTheme": "Dark theme",
     "help": "Help",
     "language": "Language",
     "importFailed": "Couldn't read the file — a valid .automata.json is required.",
-    "worksheets": "Worksheets",
     "openWorksheets": "Open your worksheets",
     "openFolder": "Open this folder",
-    "renameHint": "Click to rename"
+    "renameHint": "Click to rename",
+    "worksheetMenu": "Worksheet menu"
   },
   "browser": {
     "title": "Worksheets",
