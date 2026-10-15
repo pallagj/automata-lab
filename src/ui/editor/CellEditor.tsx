@@ -13,6 +13,7 @@ import { machineCaps } from "../../core/machine/machine";
 import { opApplicability, OpInfo, OPS } from "./ops";
 import { detectEntityKind, EntityForm, parseEntityDraft } from "./EntityForm";
 import { machineKindLabel } from "../machineLabels";
+import { epsilonInputHandler } from "./epsilon";
 
 interface Props {
   cell: Cell;
@@ -111,7 +112,7 @@ export const CellEditor: React.FC<Props> = ({ cell, index, result }) => {
   const hasError = worst === "error";
   const isYaml = /^\s*[A-Za-z]+\s*:/.test(cell.source);
 
-  const extensions = useMemo(() => (isYaml ? [yaml()] : []), [isYaml]);
+  const extensions = useMemo(() => (isYaml ? [yaml(), epsilonInputHandler] : []), [isYaml]);
 
   // an expression cell's result can be expanded into editable YAML
   const expandable =

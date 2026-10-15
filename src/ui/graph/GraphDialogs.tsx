@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import { Plus, Trash2, X } from "lucide-react";
 import { EdgeField, EdgeMiddle, StatePatch } from "./editing";
 import { MoveSelect } from "../editor/EntityForm";
+import { epsilonChange } from "../editor/epsilon";
 
 /** Editor dialogs for the graph (state / transition). */
 
@@ -165,7 +166,7 @@ export const EdgeDialog: React.FC<EdgeDialogProps> = ({ fields, from, to, initia
                     key={j}
                     value={val}
                     placeholder={fields[j].placeholder}
-                    onChange={(e) => setCell(i, j, e.target.value)}
+                    onChange={(e) => epsilonChange(e, (v) => setCell(i, j, v))}
                     onKeyDown={(e) => e.key === "Enter" && save()}
                     spellCheck={false}
                   />

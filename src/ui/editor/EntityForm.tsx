@@ -8,6 +8,8 @@ import { Machine, machineCaps, MachineCaps, StorageSpec, StorageType } from "../
 import { parseStorageEntry } from "../../core/parse/definitionParser";
 import { useAppStore } from "../../state/store";
 import { machineKindLabel } from "../machineLabels";
+import { EPS } from "../../core/types";
+import { epsilonChange } from "./epsilon";
 
 /**
  * Interactive entity editor: the machine/grammar can be entered in a form
@@ -363,7 +365,7 @@ export const EntityForm: React.FC<Props> = ({ source, onChange }) => {
   };
 
   /** the token(s) that leave the given storage untouched in a transition line */
-  const noOpTokens = (s: StorageSpec): string[] => (s.type === "tape" ? ["./&", "="] : ["$/$"]);
+  const noOpTokens = (s: StorageSpec): string[] => (s.type === "tape" ? ["./&", "="] : [`${EPS}/${EPS}`]);
 
   /**
    * When the storages or the input change, the existing rows are rearranged: the
@@ -379,7 +381,7 @@ export const EntityForm: React.FC<Props> = ({ source, onChange }) => {
         const to = r[r.length - 1] ?? "";
         let i = 1;
         let oldInput: string | null = null;
-        if (prev.input === "head") oldInput = r[i++] ?? "$";
+        if (prev.input === "head") oldInput = r[i++] ?? EPS;
         const oldOps = new Map<string, string[]>();
         for (const s of prevStorages) {
           const n = tokensOf(s.type);
@@ -387,7 +389,7 @@ export const EntityForm: React.FC<Props> = ({ source, onChange }) => {
           i += n;
         }
         const middle: string[] = [];
-        if (next.input === "head") middle.push(oldInput ?? "$");
+        if (next.input === "head") middle.push(oldInput ?? EPS);
         for (const s of next.storages) {
           const oldId = renames?.get(s.id) ?? s.id;
           const old = oldOps.get(oldId);
@@ -536,7 +538,7 @@ export const EntityForm: React.FC<Props> = ({ source, onChange }) => {
               </select>
               <input
                 value={s.init}
-                onChange={(e) => setStorage(i, { init: e.target.value })}
+                onChange={(e) => epsilonChange(e, (init) => setStorage(i, { init }))}
                 placeholder={s.type === "tape" ? t("editor.form.tapeInitPlaceholder") : t("editor.form.initialContentPlaceholder")}
                 spellCheck={false}
               />
@@ -571,7 +573,12 @@ export const EntityForm: React.FC<Props> = ({ source, onChange }) => {
                 <input
                   key={j}
                   value={part}
-                  onChange={(e) => setRow(i, j, e.target.value)}
+                  onChange={(e) =>
+                    // ε shortcuts only in symbol/operation columns, never in the state or left-side ones
+                    j > 0 && (k === "grammar" || j < row.length - 1)
+                      ? epsilonChange(e, (v) => setRow(i, j, v))
+                      : setRow(i, j, e.target.value)
+                  }
                   placeholder={cols[j]?.placeholder ?? ""}
                   className={k === "grammar" && j === 1 ? "wide" : ""}
                 />

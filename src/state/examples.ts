@@ -55,8 +55,8 @@ const ENFA_A_OR_B = `Machine:
   init: S
   accept: A, B
   transitions:
-    - S $ A
-    - S $ B
+    - S ε A
+    - S ε B
     - A a A
     - B b B`;
 
@@ -114,10 +114,10 @@ export const EXAMPLE_WORKSHEETS: ExampleWorksheet[] = [
   transitions:
     - q0 a Z/AZ q0
     - q0 a A/AA q0
-    - q0 b A/$ q1
-    - q1 b A/$ q1
-    - q1 $ Z/Z q2
-    - q0 $ Z/Z q2`,
+    - q0 b A/ε q1
+    - q1 b A/ε q1
+    - q1 ε Z/Z q2
+    - q0 ε Z/Z q2`,
       `Machine:
   name: Palindrome
   charset: a, b
@@ -127,12 +127,12 @@ export const EXAMPLE_WORKSHEETS: ExampleWorksheet[] = [
   storages:
     stack: stack
   transitions:
-    - read a $/a read
-    - read b $/b read
-    - read $ $/$ match
-    - match a a/$ match
-    - match b b/$ match
-    - match $ Z/Z done`
+    - read a ε/a read
+    - read b ε/b read
+    - read ε ε/ε match
+    - match a a/ε match
+    - match b b/ε match
+    - match ε Z/Z done`
     ]
   },
   {
@@ -193,12 +193,12 @@ export const EXAMPLE_WORKSHEETS: ExampleWorksheet[] = [
     v1: stack
     v2: stack
   transitions:
-    - qa a $/A $/$ qa
-    - qa $ $/$ $/$ qb
-    - qb b A/$ $/B qb
-    - qb $ $/$ $/$ qc
-    - qc c $/$ B/$ qc
-    - qc $ Z/$ Z/$ ok`,
+    - qa a ε/A ε/ε qa
+    - qa ε ε/ε ε/ε qb
+    - qb b A/ε ε/B qb
+    - qb ε ε/ε ε/ε qc
+    - qc c ε/ε B/ε qc
+    - qc ε Z/ε Z/ε ok`,
       `Machine:
   name: AnBnQueue
   charset: a, b
@@ -208,9 +208,9 @@ export const EXAMPLE_WORKSHEETS: ExampleWorksheet[] = [
   storages:
     s: queue
   transitions:
-    - collect a $/A collect
-    - collect $ $/$ consume
-    - consume b A/$ consume`
+    - collect a ε/A collect
+    - collect ε ε/ε consume
+    - consume b A/ε consume`
     ]
   },
   {
@@ -232,7 +232,7 @@ export const EXAMPLE_WORKSHEETS: ExampleWorksheet[] = [
   variables: S
   init: S
   rules:
-    - S -> aSb | $`,
+    - S -> aSb | ε`,
       "P = toPda(G2)",
       `Grammar:
   name: G1
@@ -270,7 +270,7 @@ export const CELL_TEMPLATES: Record<string, string> = {
     stack: stack
   transitions:
     - q0 a Z/AZ q0
-    - q0 $ Z/Z q1`,
+    - q0 ε Z/Z q1`,
   tm: `Machine:
   name: T
   charset: a, b
@@ -300,8 +300,8 @@ export const CELL_TEMPLATES: Record<string, string> = {
     v1: stack
     v2: stack
   transitions:
-    - q0 a Z/AZ $/$ q0
-    - q0 $ Z/Z $/$ q1`
+    - q0 a Z/AZ ε/ε q0
+    - q0 ε Z/Z ε/ε q1`
 };
 
 export const STARTER_CELLS: string[] = EXAMPLE_WORKSHEETS[0].cells;

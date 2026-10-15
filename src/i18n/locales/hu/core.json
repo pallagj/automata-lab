@@ -70,7 +70,9 @@
   },
   "definitionParser": {
     "line": "Sor: „{{line}}”.",
-    "missingField": { "title": "Hiányzó mező: {{field}}" },
+    "missingField": {
+      "title": "Hiányzó mező: {{field}}"
+    },
     "machine": {
       "fieldHints": {
         "states": "Az állapotok felsorolása",
@@ -99,7 +101,7 @@
       "unknownFromState": "Ismeretlen állapot az átmenetben: „{{state}}”",
       "unknownToState": "Ismeretlen célállapot az átmenetben: „{{state}}”",
       "unknownInputSymbol": "Ismeretlen bemeneti szimbólum: „{{symbol}}”",
-      "alphabetHint": "Sor: „{{line}}”. Ábécé: {{alphabet}} (ε-hoz $).",
+      "alphabetHint": "Sor: „{{line}}”. Ábécé: {{alphabet}} (ε-hoz írd: eps vagy $).",
       "unknownWrittenTapeSymbol": "Ismeretlen szalagjel az írásban: „{{symbol}}” ({{storageId}})",
       "tapeAlphabetHint": "Szalagábécé: {{alphabet}}",
       "noAcceptState": {
@@ -125,7 +127,7 @@
       },
       "invalidRule": {
         "title": "Hibás szabály: „{{line}}”",
-        "detail": "Alak: BAL -> JOBB1 | JOBB2 — pl. „S -> aA | b”. ε-hoz írj $-t vagy ε-t."
+        "detail": "Alak: BAL -> JOBB1 | JOBB2 — pl. „S -> aA | b”. Az üres szó: ε (vagy eps, $)."
       },
       "unknownSymbolLeft": "Ismeretlen jel a szabály bal oldalán: „{{symbol}}”",
       "ruleDetail": "Szabály: „{{line}}”. Minden jelet fel kell venni a charset vagy variables mezőbe.",
@@ -153,7 +155,9 @@
       "title": "Fordított intervallum a(z) {{field}} mezőben: „{{range}}”",
       "detail": "Az intervallumot üresként kezelem."
     },
-    "rangeTooLarge": { "title": "Túl nagy intervallum a(z) {{field}} mezőben: „{{range}}”" },
+    "rangeTooLarge": {
+      "title": "Túl nagy intervallum a(z) {{field}} mezőben: „{{range}}”"
+    },
     "unknownStorageType": {
       "title": "Ismeretlen tárolótípus a(z) „{{id}}” tárolónál",
       "detail": "Használható: stack, queue, tape — kezdőtartalommal:\n  v1:\n    type: stack\n    init: Z"
@@ -173,11 +177,11 @@
       },
       "badStackOp": {
         "title": "Hibás tárolóművelet: „{{tokens}}” ({{storageId}})",
-        "detail": "Sor: „{{line}}”. Verem-alak: LEVESZ/FELÍR — pl. „Z/AZ”; ε-hoz $."
+        "detail": "Sor: „{{line}}”. Verem-alak: LEVESZ/FELÍR — pl. „Z/AZ”; semmihez ε (vagy eps, $)."
       },
       "badQueueOp": {
         "title": "Hibás tárolóművelet: „{{tokens}}” ({{storageId}})",
-        "detail": "Sor: „{{line}}”. Sor-alak: KIVESZ/BETESZ — pl. „A/BA”; ε-hoz $."
+        "detail": "Sor: „{{line}}”. Sor-alak: KIVESZ/BETESZ — pl. „A/BA”; semmihez ε (vagy eps, $)."
       }
     }
   },

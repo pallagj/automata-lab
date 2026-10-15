@@ -437,6 +437,9 @@ Machine:
     const ser = serializeDefinition(p);
     expect(ser).toContain("Machine:");
     expect(ser).toContain("stack: stack");
+    // the legacy $ input is written back as ε
+    expect(ser).toContain("- q0 ε Z/Z q1");
+    expect(ser).not.toContain("$");
     const back = parseMachine(ser).value!;
     for (const w of ["", "a", "aa"]) {
       expect(runMachine(back, w).verdict).toBe(runMachine(p, w).verdict);

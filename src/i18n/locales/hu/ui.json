@@ -146,7 +146,7 @@
       "body2": "kulccsal készül: véges vezérlő + tetszőleges tárolók.",
       "emphasis": "A fajtáját a konfiguráció dönti el",
       "body3": "— tároló nélkül véges automata, egy veremmel veremautomata, egy szalaggal (amelyre a bemenet kerül) Turing-gép, más kombinációval általános gép. A felület felismeri és ennek megfelelően nevezi el.",
-      "example": "Machine:               # véges automata: nincs tároló\n  name: M1\n  charset: a, b\n  states: S, A, F\n  init: S\n  accept: F\n  transitions:\n    - S . S      # \".\" = az ábécé minden betűje\n    - S a A\n    - A b F      # ε-átmenethez: S $ A"
+      "example": "Machine:               # véges automata: nincs tároló\n  name: M1\n  charset: a, b\n  states: S, A, F\n  init: S\n  accept: F\n  transitions:\n    - S . S      # \".\" = az ábécé minden betűje\n    - S a A\n    - A b F      # ε-átmenet: S ε A (írd: eps vagy $)"
     },
     "expressions": {
       "heading": "Kifejezések",
@@ -167,13 +167,13 @@
     },
     "storages": {
       "heading": "Tárolók: verem, sor, szalag",
-      "example": "Machine:               # veremautomata: egy verem\n  name: AnBn\n  charset: a, b\n  states: q0, q1, q2\n  init: q0\n  accept: q2           # vagy acceptMode: emptyStorages\n  storages:\n    verem: stack       # a verem alapból Z-vel indul; másképp:\n  transitions:         #   verem: { type: stack, init: X }\n    - q0 a Z/AZ q0     # a beolvasása: Z helyett AZ a verembe\n    - q0 b A/$ q1      # $ = nem ír semmit (ε)\n    - q1 $ Z/Z q2      # ε-lépés\n\nMachine:               # Turing-gép: egy szalag, rajta a bemenet\n  name: T\n  charset: a, b\n  states: s, ok\n  init: s\n  accept: ok\n  input: szalag        # a bemenet erre a tárolóra kerül\n  storages:\n    szalag: tape\n  transitions:\n    - s a/b > s        # a-t olvas, b-t ír, jobbra lép\n    - s _/& = ok       # _ = üres jel, & = ugyanazt írja vissza",
+      "example": "Machine:               # veremautomata: egy verem\n  name: AnBn\n  charset: a, b\n  states: q0, q1, q2\n  init: q0\n  accept: q2           # vagy acceptMode: emptyStorages\n  storages:\n    verem: stack       # a verem alapból Z-vel indul; másképp:\n  transitions:         #   verem: { type: stack, init: X }\n    - q0 a Z/AZ q0     # a beolvasása: Z helyett AZ a verembe\n    - q0 b A/ε q1      # ε = nem ír semmit\n    - q1 ε Z/Z q2      # ε-lépés (írd: eps vagy $)\n\nMachine:               # Turing-gép: egy szalag, rajta a bemenet\n  name: T\n  charset: a, b\n  states: s, ok\n  init: s\n  accept: ok\n  input: szalag        # a bemenet erre a tárolóra kerül\n  storages:\n    szalag: tape\n  transitions:\n    - s a/b > s        # a-t olvas, b-t ír, jobbra lép\n    - s _/& = ok       # _ = üres jel, & = ugyanazt írja vissza",
       "transitionSyntax": "HONNAN [BEMENET] tárolónként-művelet… HOVA",
       "body2": "— verem/sor egy elem (LE/FEL), szalag kettő (olvas/ír mozgás). Akárhány tároló kombinálható: két veremmel már Turing-erejű gép építhető (pl. aⁿbⁿcⁿ, ami veremautomatával nem lehetséges), sorral (queue) sorautomata. Az automata-műveletek (det, min…) csak tárolómentes gépre alkalmazhatók — az alkalmazás megmondja, miért."
     },
     "grammar": {
       "heading": "Nyelvtan",
-      "example": "Grammar:\n  name: G\n  charset: a, b\n  variables: S\n  init: S\n  rules:\n    - S -> aSb | $   # $ = ε",
+      "example": "Grammar:\n  name: G\n  charset: a, b\n  variables: S\n  init: S\n  rules:\n    - S -> aSb | ε   # ε-hoz írd: eps vagy $",
       "body": "A nyelvtan nézet automatikusan megadja a Chomsky-hierarchia szerinti osztályt, és minden szinthez megmutatja, melyik szabály miért sérti a feltételt."
     },
     "tips": {
@@ -421,7 +421,7 @@
       "expandToDefinition": "Kibontás szerkeszthető definícióvá",
       "deleteCell": "Cella törlése",
       "resultingAutomatonName": "A kapott automata neve",
-      "regexHint": "Reguláris kifejezés — műveletek: | (vagy), * (lezárás), zárójelek, $ (ε)"
+      "regexHint": "Reguláris kifejezés — műveletek: | (vagy), * (lezárás), zárójelek, ε (vagy $)"
     },
     "form": {
       "col": {
@@ -495,7 +495,7 @@
   },
   "graph": {
     "edgeFields": {
-      "symbol": "olvasott jel (ε: $)",
+      "symbol": "olvasott jel (ε: írd, hogy eps)",
       "stackPop": "{{id}}: tetejéről le",
       "stackPush": "{{id}}: rá fel",
       "queuePop": "{{id}}: elejéről ki",

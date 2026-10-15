@@ -23,9 +23,9 @@ const MOVE_CHAR = { R: ">", L: "<", S: "=" } as const;
 function storageOpToken(op: StorageOp): string {
   switch (op.type) {
     case "stack":
-      return `${op.pop === EPS ? "$" : op.pop}/${op.push === "" ? "$" : op.push}`;
+      return `${op.pop}/${op.push === "" ? EPS : op.push}`;
     case "queue":
-      return `${op.take === EPS ? "$" : op.take}/${op.put === "" ? "$" : op.put}`;
+      return `${op.take}/${op.put === "" ? EPS : op.put}`;
     case "tape":
       return `${op.read}/${op.write} ${MOVE_CHAR[op.move]}`;
   }
@@ -61,7 +61,7 @@ export function serializeMachine(m: Machine): string {
   for (const t of m.transitions) {
     const tokens = [
       t.from,
-      ...(m.input === "head" ? [t.input === EPS ? "$" : t.input] : []),
+      ...(m.input === "head" ? [t.input] : []),
       ...t.ops.map(storageOpToken),
       t.to
     ];
@@ -83,7 +83,7 @@ function serializeGrammar(g: Grammar): string {
   const byLeft = new Map<string, string[]>();
   for (const r of g.rules) {
     if (!byLeft.has(r.left)) byLeft.set(r.left, []);
-    byLeft.get(r.left)!.push(r.right === "" ? "$" : r.right);
+    byLeft.get(r.left)!.push(r.right === "" ? EPS : r.right);
   }
   for (const [left, rights] of byLeft) {
     lines.push(`    - ${left} -> ${rights.join(" | ")}`);
