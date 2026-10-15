@@ -1,4 +1,8 @@
 import { EPS } from "../types";
+import { escapeSymbols } from "../epsilon";
+
+/** a symbol position: ε stays ε, literal text is escaped so eps-like letters read back unchanged */
+const sym = (s: string) => (s === EPS || s === "" ? EPS : escapeSymbols(s));
 import { Machine, StorageOp } from "../machine/machine";
 import { Grammar } from "../grammar/grammar";
 import { Definition } from "./definitionParser";
@@ -23,9 +27,9 @@ const MOVE_CHAR = { R: ">", L: "<", S: "=" } as const;
 function storageOpToken(op: StorageOp): string {
   switch (op.type) {
     case "stack":
-      return `${op.pop}/${op.push === "" ? EPS : op.push}`;
+      return `${sym(op.pop)}/${sym(op.push)}`;
     case "queue":
-      return `${op.take}/${op.put === "" ? EPS : op.put}`;
+      return `${sym(op.take)}/${sym(op.put)}`;
     case "tape":
       return `${op.read}/${op.write} ${MOVE_CHAR[op.move]}`;
   }
@@ -53,7 +57,7 @@ export function serializeMachine(m: Machine): string {
       } else {
         lines.push(`    ${s.id}:`);
         lines.push(`      type: ${s.type}`);
-        lines.push(`      init: ${scalar(s.init)}`);
+        lines.push(`      init: ${scalar(escapeSymbols(s.init))}`);
       }
     }
   }
@@ -61,7 +65,7 @@ export function serializeMachine(m: Machine): string {
   for (const t of m.transitions) {
     const tokens = [
       t.from,
-      ...(m.input === "head" ? [t.input] : []),
+      ...(m.input === "head" ? [sym(t.input)] : []),
       ...t.ops.map(storageOpToken),
       t.to
     ];
@@ -83,7 +87,7 @@ function serializeGrammar(g: Grammar): string {
   const byLeft = new Map<string, string[]>();
   for (const r of g.rules) {
     if (!byLeft.has(r.left)) byLeft.set(r.left, []);
-    byLeft.get(r.left)!.push(r.right === "" ? EPS : r.right);
+    byLeft.get(r.left)!.push(sym(r.right));
   }
   for (const [left, rights] of byLeft) {
     lines.push(`    - ${left} -> ${rights.join(" | ")}`);

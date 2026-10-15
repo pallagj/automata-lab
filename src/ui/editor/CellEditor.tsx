@@ -13,7 +13,7 @@ import { machineCaps } from "../../core/machine/machine";
 import { opApplicability, OpInfo, OPS } from "./ops";
 import { detectEntityKind, EntityForm, parseEntityDraft } from "./EntityForm";
 import { machineKindLabel } from "../machineLabels";
-import { epsilonChange, epsilonInputHandler, REGEX_BOUNDARY } from "./epsilon";
+import { epsilonChange, epsilonInputHandler } from "./epsilon";
 
 interface Props {
   cell: Cell;
@@ -358,9 +358,7 @@ export const CellEditor: React.FC<Props> = ({ cell, index, result }) => {
               className="rx-body"
               value={regexMatch[2]}
               onChange={(e) =>
-                epsilonChange(e, (v) => setCellSource(cell.id, `${regexMatch[1]} = regex(${v})`), {
-                  boundary: REGEX_BOUNDARY
-                })
+                epsilonChange(e, (v) => setCellSource(cell.id, `${regexMatch[1]} = regex(${v})`))
               }
               placeholder="(a|b)*abb"
               title={t("editor.cell.regexHint")}

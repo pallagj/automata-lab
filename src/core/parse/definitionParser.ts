@@ -10,7 +10,7 @@ import {
   TAPE_BLANK
 } from "../machine/machine";
 import { Grammar, GrammarRule } from "../grammar/grammar";
-import { grammarEpsilon } from "../epsilon";
+import { symbolString } from "../epsilon";
 
 /**
  * Parses YAML-based definitions with friendly, precise error messages.
@@ -20,15 +20,15 @@ import { grammarEpsilon } from "../epsilon";
  *   - "."          wildcard: every possible value of that position
  *   - "&"          "the same": the source state for a state, the read symbol for a write
  *   - "a-d"        a range in lists (charset, states)
- *   - "ε" (or "eps", "epsilon") the empty word
+ *   - "ε" (or "eps", "epsilon") the empty word — see core/epsilon.ts
  */
 
 export type Definition = Machine | Grammar;
 
-const EPS_ALIASES = new Set(["ε", "eps", "epsilon"]);
-
+/** a single symbol position: ε (or eps, epsilon) means "no symbol" */
 function normEps(s: string): string {
-  return EPS_ALIASES.has(s) ? EPS : s;
+  const v = symbolString(s);
+  return v === "" ? EPS : v;
 }
 
 /** comma split that does not split inside {A,B} set names */
@@ -201,7 +201,7 @@ export function parseStorageEntry(id: string, raw: unknown): OpResult<StorageSpe
   const type = STORAGE_TYPES[typeRaw];
   if (!type) return bad();
   if (init === undefined) init = type === "stack" ? STACK_DEFAULT_INIT : "";
-  return okResult({ id, type, init: EPS_ALIASES.has(init) ? "" : init });
+  return okResult({ id, type, init: symbolString(init) });
 }
 
 /** how many tokens a storage occupies in a transition line */
@@ -261,7 +261,7 @@ function parseStorageOp(
   }
   const [aRaw, bRaw] = tok.split("/");
   const a = normEps(aRaw);
-  const b = EPS_ALIASES.has(bRaw) ? "" : bRaw;
+  const b = symbolString(bRaw);
   return okResult(
     spec.type === "stack" ? { type: "stack", pop: a, push: b } : { type: "queue", take: a, put: b }
   );
@@ -544,7 +544,7 @@ export function parseGrammar(source: string): OpResult<Grammar> {
       ]);
 
     for (const alt of m[2].split("|")) {
-      const right = grammarEpsilon(alt, known);
+      const right = symbolString(alt);
       for (const c of right)
         if (!known.has(c))
           return failResult([

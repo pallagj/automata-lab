@@ -173,7 +173,7 @@
     },
     "grammar": {
       "heading": "Grammar",
-      "example": "Grammar:\n  name: G\n  charset: a, b\n  variables: S\n  init: S\n  rules:\n    - S -> aSb | ε   # type eps for ε",
+      "example": "Grammar:\n  name: G\n  charset: a, b\n  variables: S\n  init: S\n  rules:\n    - S -> aSb | ε   # type eps for ε; \\eps = the letters",
       "body": "The grammar view automatically determines the class according to the Chomsky hierarchy, and for every level shows which rule violates it and why."
     },
     "tips": {
@@ -421,7 +421,7 @@
       "expandToDefinition": "Expand into an editable definition",
       "deleteCell": "Delete cell",
       "resultingAutomatonName": "Name of the resulting automaton",
-      "regexHint": "Regular expression — operators: | (or), * (closure), parentheses, ε (type eps)"
+      "regexHint": "Regular expression — operators: | (or), * (closure), parentheses, ε (type eps; \\eps = the letters)"
     },
     "form": {
       "col": {

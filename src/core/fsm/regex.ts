@@ -1,6 +1,6 @@
 import { EPS, err, failResult, I18nText, okResult, OpResult, tx } from "../types";
 import { FSM, makeFSM } from "./fsm";
-import { regexEpsilonWords } from "../epsilon";
+import { epsilonWords } from "../epsilon";
 
 class RegexSyntaxError extends Error {
   constructor(public i18n: I18nText) {
@@ -93,6 +93,14 @@ class Parser {
     if (c === "ε") {
       this.eat();
       return { t: "eps" };
+    }
+    if (c === "\\") {
+      // escaped character: taken literally, e.g. \eps is the letters e, p, s
+      this.eat();
+      const lit = this.peek();
+      if (lit === undefined) throw new RegexSyntaxError(tx("regex.error.unexpectedEnd"));
+      this.eat();
+      return { t: "lit", c: lit };
     }
     if (c === "∅") {
       this.eat();
@@ -201,8 +209,8 @@ function parseOrFail(pattern: string): { ast?: Node; error?: I18nText } {
   }
 }
 
-/** Spaces are ignored and whole "eps"/"epsilon" words mean ε. */
-const clean = (pattern: string) => regexEpsilonWords(pattern.replaceAll(" ", ""));
+/** Spaces are ignored and eps/epsilon mean ε (see core/epsilon.ts). */
+const clean = (pattern: string) => epsilonWords(pattern.replaceAll(" ", ""));
 
 /** Creates a regex value with syntax checking. */
 export function regexValue(pattern: string, name = "R"): OpResult<RegexDef> {

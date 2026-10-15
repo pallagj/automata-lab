@@ -173,7 +173,7 @@
     },
     "grammar": {
       "heading": "Nyelvtan",
-      "example": "Grammar:\n  name: G\n  charset: a, b\n  variables: S\n  init: S\n  rules:\n    - S -> aSb | ε   # ε-hoz írd: eps",
+      "example": "Grammar:\n  name: G\n  charset: a, b\n  variables: S\n  init: S\n  rules:\n    - S -> aSb | ε   # ε-hoz írd: eps; \\eps = a betűk",
       "body": "A nyelvtan nézet automatikusan megadja a Chomsky-hierarchia szerinti osztályt, és minden szinthez megmutatja, melyik szabály miért sérti a feltételt."
     },
     "tips": {
@@ -421,7 +421,7 @@
       "expandToDefinition": "Kibontás szerkeszthető definícióvá",
       "deleteCell": "Cella törlése",
       "resultingAutomatonName": "A kapott automata neve",
-      "regexHint": "Reguláris kifejezés — műveletek: | (vagy), * (lezárás), zárójelek, ε (írd: eps)"
+      "regexHint": "Reguláris kifejezés — műveletek: | (vagy), * (lezárás), zárójelek, ε (írd: eps; \\eps = a betűk)"
     },
     "form": {
       "col": {

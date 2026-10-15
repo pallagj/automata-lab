@@ -173,7 +173,7 @@
     },
     "grammar": {
       "heading": "Grammatik",
-      "example": "Grammar:\n  name: G\n  charset: a, b\n  variables: S\n  init: S\n  rules:\n    - S -> aSb | ε   # für ε tippe eps",
+      "example": "Grammar:\n  name: G\n  charset: a, b\n  variables: S\n  init: S\n  rules:\n    - S -> aSb | ε   # für ε tippe eps; \\eps = die Buchstaben",
       "body": "Die Grammatikansicht bestimmt automatisch die Klasse nach der Chomsky-Hierarchie und zeigt für jede Stufe, welche Regel warum dagegen verstößt."
     },
     "tips": {
@@ -421,7 +421,7 @@
       "expandToDefinition": "Zu einer bearbeitbaren Definition aufklappen",
       "deleteCell": "Zelle löschen",
       "resultingAutomatonName": "Name des entstehenden Automaten",
-      "regexHint": "Regulärer Ausdruck — Operatoren: | (oder), * (Abschluss), Klammern, ε (tippe eps)"
+      "regexHint": "Regulärer Ausdruck — Operatoren: | (oder), * (Abschluss), Klammern, ε (tippe eps; \\eps = die Buchstaben)"
     },
     "form": {
       "col": {

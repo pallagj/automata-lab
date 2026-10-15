@@ -9,7 +9,7 @@ import { parseStorageEntry } from "../../core/parse/definitionParser";
 import { useAppStore } from "../../state/store";
 import { machineKindLabel } from "../machineLabels";
 import { EPS } from "../../core/types";
-import { declaredSymbols, epsilonChange } from "./epsilon";
+import { epsilonChange } from "./epsilon";
 
 /**
  * Interactive entity editor: the machine/grammar can be entered in a form
@@ -570,16 +570,11 @@ export const EntityForm: React.FC<Props> = ({ source, onChange }) => {
                   key={j}
                   value={part}
                   onChange={(e) =>
-                    // ε shortcuts only in symbol/operation columns and grammar right sides, never for states
-                    k === "grammar"
-                      ? j === 1
-                        ? epsilonChange(e, (v) => setRow(i, j, v), {
-                            declared: declaredSymbols(draft.charset, draft.states)
-                          })
-                        : setRow(i, j, e.target.value)
-                      : j > 0 && j < row.length - 1
-                        ? epsilonChange(e, (v) => setRow(i, j, v))
-                        : setRow(i, j, e.target.value)
+                    // the ε shortcut is for symbols: grammar right sides and the middle columns of a
+                    // transition — never the state names (first and last column) or a rule's left side
+                    (k === "grammar" ? j === 1 : j > 0 && j < row.length - 1)
+                      ? epsilonChange(e, (v) => setRow(i, j, v))
+                      : setRow(i, j, e.target.value)
                   }
                   placeholder={cols[j]?.placeholder ?? ""}
                   className={k === "grammar" && j === 1 ? "wide" : ""}

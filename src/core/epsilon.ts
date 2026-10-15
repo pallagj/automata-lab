@@ -1,24 +1,31 @@
 import { EPS } from "./types";
 
 /**
- * Regex: a whole "eps" / "epsilon" between operators means ε, e.g. (a|eps)* — inside
- * a longer run of letters they stay letters (aeps = a·e·p·s). Write (e)ps for the
- * literal word.
+ * The ε rule, the same wherever symbols are written — transition symbols, stack and
+ * queue operations, grammar right-hand sides and regexes: "eps" and "epsilon" always
+ * mean ε, even inside a word. A backslash keeps the next character literal, so \eps is
+ * the letters e, p, s. Names (states, variables, machines) are never touched.
  */
-export function regexEpsilonWords(pattern: string): string {
-  return pattern.replace(/(?<![^()|+*?])(epsilon|eps)(?![^()|+*?])/g, EPS);
+
+/** Replaces eps/epsilon with ε; escapes are kept for the caller to resolve. */
+export function epsilonWords(text: string): string {
+  return text.replace(/\\.|epsilon|eps/gs, (m) => (m.startsWith("\\") ? m : EPS));
+}
+
+/** Removes the escaping backslashes: \e → e. */
+export function unescapeSymbols(text: string): string {
+  return text.replace(/\\(.)/gs, "$1");
+}
+
+/** Escapes text so that it reads back literally: the inverse of symbolString for ε-free text. */
+export function escapeSymbols(text: string): string {
+  return text.replaceAll("\\", "\\\\").replaceAll("eps", "\\eps");
 }
 
 /**
- * Grammar right-hand side: ε is the identity of concatenation (εA = A), and "eps" or
- * "epsilon" — alone or inside a word — count as ε too, unless their letters are declared
- * symbols of the grammar, so a grammar over {e, p, s} keeps its letters. No escape is
- * needed: undeclared letters could not be symbols anyway.
+ * A string of symbols with ε as the identity of concatenation:
+ * "εA" and "Aeps" are "A", and "ε" or "eps" alone is "" (the empty word).
  */
-export function grammarEpsilon(right: string, declared: Set<string>): string {
-  let s = right;
-  for (const word of ["epsilon", "eps"]) {
-    if (![...word].every((c) => declared.has(c))) s = s.replaceAll(word, EPS);
-  }
-  return s.replaceAll(EPS, "");
+export function symbolString(text: string): string {
+  return unescapeSymbols(epsilonWords(text).replace(/(?<!\\)ε/g, ""));
 }
