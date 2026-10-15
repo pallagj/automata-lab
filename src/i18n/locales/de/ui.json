@@ -163,7 +163,8 @@
         "equal": "Äquivalenzprüfung mit Gegenbeispiel",
         "conversions": "Umwandlungen Automat ↔ Grammatik, Grammatik → Kellerautomat",
         "namedOps": "Operationen zwischen benannten Automaten: Verkettung, Vereinigung, Abschluss — Buchstaben-Literale nur innerhalb von regex(…)"
-      }
+      },
+      "optionalName": "Der Name ist optional: Ohne ihn wird das Ergebnis trotzdem angezeigt, es kann nur nicht aus anderen Zellen referenziert werden — wie ein unbenannter Ausdruck in Desmos."
     },
     "storages": {
       "heading": "Speicher: Keller, Warteschlange, Band",
@@ -420,8 +421,9 @@
       "backToForm": "Zurück zur Formularbearbeitung",
       "expandToDefinition": "Zu einer bearbeitbaren Definition aufklappen",
       "deleteCell": "Zelle löschen",
-      "resultingAutomatonName": "Name des entstehenden Automaten",
-      "regexHint": "Regulärer Ausdruck — Operatoren: | (oder), * (Abschluss), Klammern, ε (tippe eps; \\eps = die Buchstaben)"
+      "resultingAutomatonName": "Name des regulären Ausdrucks",
+      "regexHint": "Regulärer Ausdruck — Operatoren: | (oder), * (Abschluss), Klammern, ε (tippe eps; \\eps = die Buchstaben)",
+      "optionalName": "Name (optional)"
     },
     "form": {
       "col": {

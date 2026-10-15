@@ -191,7 +191,8 @@ export const MachineView: React.FC<{ machine: Machine; stepGroups?: StepGroup[] 
   const chips = (
     <>
       <span className="stage-title">
-        {machineKindLabel(t, caps)} — {m.name}
+        {machineKindLabel(t, caps)}
+        {m.name && ` — ${m.name}`}
       </span>
       <span className="badge accent">{t("detail.fsm.stateCount", { count: m.states.length })}</span>
       {m.storages

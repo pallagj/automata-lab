@@ -53,7 +53,7 @@
   "workspace": {
     "unparseableCell": {
       "title": "Unparseable cell",
-      "detail": "A cell must be either a YAML definition (with a Machine / Grammar key) or an expression (in the form \"name = expression\")."
+      "detail": "A cell is either a YAML definition (with a Machine / Grammar key) or an expression, optionally named: \"name = expression\"."
     },
     "duplicateDefinition": {
       "title": "Duplicate definition: \"{{name}}\"",

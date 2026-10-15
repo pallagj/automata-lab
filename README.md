@@ -38,7 +38,8 @@ an app; everything runs locally, no account needed.
   RG ↔ NFA and CFG → PDA conversions.
 - **Desmos-style worksheets:** a column of cells holding expressions, regexes, machines, grammars
   and `#` notes; drag & drop reordering, an operation menu that checks applicability up front,
-  and a form editor or YAML code view for definitions. Type `eps` and it turns into `ε`, Desmos-style
+  and a form editor or YAML code view for definitions. Names are optional, as in Desmos: `det(M1)` or
+  `regex(a+b)` on their own are shown right away; name a cell only to reference it elsewhere. Type `eps` and it turns into `ε`, Desmos-style
   (`\eps` keeps the letters).
 - **Worksheet browser:** all your worksheets as cards with live graph previews (or a sortable list),
   search, sort and filter by what they contain, folders, multi-select, drag & drop into folders,

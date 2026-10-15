@@ -163,7 +163,8 @@
         "equal": "ekvivalencia-vizsgálat, ellenpéldával",
         "conversions": "konverziók automata ↔ nyelvtan, nyelvtan → veremautomata",
         "namedOps": "műveletek nevesített automaták között: összefűzés, unió, lezárás — betű-literálok csak a regex(…) belsejében"
-      }
+      },
+      "optionalName": "A név elhagyható: nélküle is megjelenik az eredmény, csak más cellából nem lehet rá hivatkozni — mint a névtelen kifejezések a Desmosban."
     },
     "storages": {
       "heading": "Tárolók: verem, sor, szalag",
@@ -420,8 +421,9 @@
       "backToForm": "Vissza az űrlapos szerkesztéshez",
       "expandToDefinition": "Kibontás szerkeszthető definícióvá",
       "deleteCell": "Cella törlése",
-      "resultingAutomatonName": "A kapott automata neve",
-      "regexHint": "Reguláris kifejezés — műveletek: | (vagy), * (lezárás), zárójelek, ε (írd: eps; \\eps = a betűk)"
+      "resultingAutomatonName": "A reguláris kifejezés neve",
+      "regexHint": "Reguláris kifejezés — műveletek: | (vagy), * (lezárás), zárójelek, ε (írd: eps; \\eps = a betűk)",
+      "optionalName": "név (opcionális)"
     },
     "form": {
       "col": {

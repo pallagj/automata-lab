@@ -454,7 +454,7 @@ export function parseMachine(source: string): OpResult<Machine> {
 
   const machine: Machine = {
     kind: "machine",
-    name: name || "M",
+    name,
     alphabet,
     states,
     start,
@@ -557,7 +557,7 @@ export function parseGrammar(source: string): OpResult<Grammar> {
     }
   }
 
-  const g: Grammar = { kind: "grammar", name: name || "G", terminals, nonterminals, start, rules };
+  const g: Grammar = { kind: "grammar", name, terminals, nonterminals, start, rules };
   return okResult(g, diags);
 }
 

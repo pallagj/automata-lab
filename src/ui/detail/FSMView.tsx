@@ -129,7 +129,10 @@ export const FSMView: React.FC<{ fsm: FSM; stepGroups?: StepGroup[] }> = ({ fsm,
 
   const chips = (
     <>
-      <span className="stage-title">{t("detail.fsm.title")} — {fsm.name}</span>
+      <span className="stage-title">
+        {t("detail.fsm.title")}
+        {fsm.name && ` — ${fsm.name}`}
+      </span>
       <span className="badge accent">{t("detail.fsm.stateCount", { count: fsm.states.length })}</span>
       <span
         className={`badge ${analysis.isDeterministic ? "ok" : "no"}`}

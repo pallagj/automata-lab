@@ -10,11 +10,12 @@ import {
 
 /**
  * Evaluates the cells of a worksheet: parses definitions, computes expressions
- * in dependency order, and detects cycles and name clashes.
+ * in dependency order, and detects cycles and name clashes. Names are optional,
+ * as in Desmos: an unnamed cell is evaluated and shown but cannot be referenced.
  */
 
 export interface CellResult {
-  /** the name defined by the cell (if recognisable) */
+  /** the name defined by the cell; null for unnamed cells */
   name: string | null;
   value: ExprValue | null;
   diagnostics: Diagnostic[];
@@ -37,9 +38,12 @@ export function evaluateCells(sources: string[]): CellResult[] {
 
   interface ExprCell {
     index: number;
-    name: string;
+    /** null for an unnamed expression */
+    name: string | null;
     expr: string;
   }
+  /** dependency-graph key: the name, or a per-cell key for unnamed expressions */
+  const keyOf = (c: ExprCell) => c.name ?? `\u0000${c.index}`;
   const exprCells: ExprCell[] = [];
   const definedAt = new Map<string, number>();
   const names = new Set<string>();
@@ -62,8 +66,10 @@ export function evaluateCells(sources: string[]): CellResult[] {
       if (def.ok) {
         const value = def.value as Definition;
         results[i].value = value;
-        results[i].name = value.name;
-        registerName(value.name, i);
+        if (value.name) {
+          results[i].name = value.name;
+          registerName(value.name, i);
+        }
       }
       return;
     }
@@ -74,6 +80,13 @@ export function evaluateCells(sources: string[]): CellResult[] {
       results[i].name = asg.name;
       exprCells.push({ index: i, name: asg.name, expr: asg.expr });
       registerName(asg.name, i);
+      return;
+    }
+
+    // anything else is an unnamed expression — unless it looks like a definition with an unknown key
+    if (!/^[A-Za-z]+\s*:/.test(trimmed)) {
+      results[i].isExpression = true;
+      exprCells.push({ index: i, name: null, expr: trimmed });
       return;
     }
 
@@ -102,29 +115,29 @@ export function evaluateCells(sources: string[]): CellResult[] {
   // pass 2: dependency graph of expressions + topological order
   const deps = new Map<string, Set<string>>();
   for (const c of exprCells) {
-    deps.set(c.name, collectDependencies(c.expr, names));
+    deps.set(keyOf(c), collectDependencies(c.expr, names));
   }
 
   const order: ExprCell[] = [];
   const visited = new Map<string, "doing" | "done">();
   const cyclic = new Set<string>();
 
-  const visit = (name: string, chain: string[]) => {
-    const state = visited.get(name);
+  const visit = (key: string, chain: string[]) => {
+    const state = visited.get(key);
     if (state === "done") return;
     if (state === "doing") {
-      for (const n of chain.slice(chain.indexOf(name))) cyclic.add(n);
+      for (const n of chain.slice(chain.indexOf(key))) cyclic.add(n);
       return;
     }
-    visited.set(name, "doing");
-    for (const d of deps.get(name) ?? []) {
-      if (deps.has(d)) visit(d, [...chain, name]);
+    visited.set(key, "doing");
+    for (const d of deps.get(key) ?? []) {
+      if (deps.has(d)) visit(d, [...chain, key]);
     }
-    visited.set(name, "done");
-    const cell = exprCells.find((c) => c.name === name && definedAt.get(name) === c.index);
+    visited.set(key, "done");
+    const cell = exprCells.find((c) => keyOf(c) === key && (c.name === null || definedAt.get(c.name) === c.index));
     if (cell) order.push(cell);
   };
-  for (const c of exprCells) visit(c.name, []);
+  for (const c of exprCells) visit(keyOf(c), []);
 
   // pass 3: evaluate in order
   const env = new Map<string, ExprValue>();
@@ -136,16 +149,16 @@ export function evaluateCells(sources: string[]): CellResult[] {
 
   for (const cell of order) {
     const r = results[cell.index];
-    if (cyclic.has(cell.name)) {
+    if (cyclic.has(keyOf(cell))) {
       r.diagnostics.push(
         err(
           tx("workspace.circularDependency.title"),
-          tx("workspace.circularDependency.detail", { name: cell.name, chain: [...cyclic].join(" → ") })
+          tx("workspace.circularDependency.detail", { name: cell.name ?? "", chain: [...cyclic].join(" → ") })
         )
       );
       continue;
     }
-    const missing = [...(deps.get(cell.name) ?? [])].filter((d) => !env.has(d) && names.has(d));
+    const missing = [...(deps.get(keyOf(cell)) ?? [])].filter((d) => !env.has(d) && names.has(d));
     if (missing.length > 0) {
       r.diagnostics.push(
         err(
@@ -160,11 +173,11 @@ export function evaluateCells(sources: string[]): CellResult[] {
     r.diagnostics.push(...out.diagnostics.filter((d) => !r.diagnostics.includes(d)));
     if (out.ok) {
       const v = out.value!.value;
-      // the resulting machine takes the cell's name
-      const named = { ...v, name: cell.name } as ExprValue;
+      // the result takes the cell's name (an unnamed cell's result stays unnamed)
+      const named = { ...v, name: cell.name ?? "" } as ExprValue;
       r.value = named;
       r.stepGroups = out.value!.stepGroups;
-      env.set(cell.name, named);
+      if (cell.name !== null) env.set(cell.name, named);
     }
   }
 

@@ -682,3 +682,43 @@ describe("worksheet evaluation", () => {
     ).toBe(true);
   });
 });
+
+describe("unnamed cells", () => {
+  const M1 = `Machine:
+  name: M1
+  charset: a, b
+  states: S, A
+  init: S
+  accept: A
+  transitions:
+    - S a A
+    - S b S`;
+  const unnamed = M1.replace("  name: M1\n", "");
+
+  it("evaluates an expression without a name", () => {
+    const rs = evaluateCells([M1, "det(M1)", "regex(a+b)", "M1"]);
+    expect(rs[1].name).toBe(null);
+    expect(rs[1].value?.kind).toBe("machine");
+    expect(rs[2].value?.kind).toBe("regex");
+    expect(rs[3].value?.kind).toBe("machine");
+    expect(rs.flatMap((r) => r.diagnostics).filter((d) => d.level === "error")).toEqual([]);
+  });
+
+  it("shows an unnamed definition, but it cannot be referenced and never clashes", () => {
+    const rs = evaluateCells([unnamed, unnamed, "det(M)"]);
+    expect(rs[0].value?.kind).toBe("machine");
+    expect(rs[0].name).toBe(null);
+    expect(rs[1].diagnostics).toEqual([]);
+    expect(rs[2].value).toBe(null);
+  });
+
+  it("still reports a definition with an unknown type key", () => {
+    const rs = evaluateCells(["Machin:\n  name: X"]);
+    expect(rs[0].diagnostics[0].title.key).toBe("workspace.unparseableCell.title");
+  });
+
+  it("keeps an unnamed definition unnamed when written back", () => {
+    const m = evaluateCells([unnamed])[0].value!;
+    expect(serializeDefinition(m as never)).not.toContain("name:");
+  });
+});

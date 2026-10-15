@@ -5,6 +5,7 @@ import { Workspace, useAppStore } from "../../state/store";
 import { CellResult } from "../../core/workspace";
 import { CellEditor } from "./CellEditor";
 import { CELL_TEMPLATES } from "../../state/examples";
+import { uniqueName, usedNames } from "../../state/names";
 import {
   Boxes,
   Braces,
@@ -20,25 +21,6 @@ import {
 interface Props {
   workspace: Workspace;
   results: CellResult[];
-}
-
-/** Names already taken in the worksheet (definitions + assignments). */
-function usedNames(ws: Workspace): Set<string> {
-  const used = new Set<string>();
-  for (const c of ws.cells) {
-    const def = /^\s*name:\s*([A-Za-z][A-Za-z0-9_'′]*)/m.exec(c.source);
-    if (def) used.add(def[1]);
-    const asg = /^\s*([A-Za-z][A-Za-z0-9_'′]*)\s*=/.exec(c.source);
-    if (asg) used.add(asg[1]);
-  }
-  return used;
-}
-
-function uniqueName(base: string, used: Set<string>): string {
-  if (!used.has(base)) return base;
-  let i = 2;
-  while (used.has(`${base}${i}`)) i++;
-  return `${base}${i}`;
 }
 
 interface InsertOption {
@@ -127,7 +109,7 @@ export const EditorColumn: React.FC<Props> = ({ workspace, results }) => {
                 <button
                   key={opt.labelKey}
                   onClick={() => {
-                    insert(opt.make(usedNames(workspace), t));
+                    insert(opt.make(usedNames(workspace.cells), t));
                     setMenuOpen(false);
                   }}
                 >

@@ -41,7 +41,8 @@ const defaultInit = (type: string) => (type === "stack" ? "Z" : "");
 export function serializeMachine(m: Machine): string {
   const lines = [
     "Machine:",
-    `  name: ${scalar(m.name)}`,
+    // an unnamed definition stays unnamed
+    ...(m.name ? [`  name: ${scalar(m.name)}`] : []),
     `  charset: ${listLine(m.alphabet)}`,
     `  states: ${listLine(m.states)}`,
     `  init: ${scalar(m.start)}`,
@@ -77,7 +78,7 @@ export function serializeMachine(m: Machine): string {
 function serializeGrammar(g: Grammar): string {
   const lines = [
     "Grammar:",
-    `  name: ${scalar(g.name)}`,
+    ...(g.name ? [`  name: ${scalar(g.name)}`] : []),
     `  charset: ${listLine(g.terminals)}`,
     `  variables: ${listLine(g.nonterminals)}`,
     `  init: ${scalar(g.start)}`,

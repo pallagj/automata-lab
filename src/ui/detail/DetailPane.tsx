@@ -2,6 +2,7 @@ import React from "react";
 import { useTranslation } from "react-i18next";
 import { CellResult } from "../../core/workspace";
 import { useAppStore, activeWorkspace } from "../../state/store";
+import { uniqueName, usedNames } from "../../state/names";
 import { serializeEntityDraft } from "../editor/EntityForm";
 import { FSMView } from "./FSMView";
 import { MachineView } from "./MachineView";
@@ -24,16 +25,7 @@ const EmptyCanvas: React.FC = () => {
     if (!activeCellId) return;
     const rect = e.currentTarget.getBoundingClientRect();
     // a machine name that is unique within the worksheet
-    const used = new Set<string>();
-    for (const c of ws.cells) {
-      const m = /^\s*name:\s*([A-Za-z][A-Za-z0-9_'′]*)/m.exec(c.source);
-      if (m) used.add(m[1]);
-      const a = /^\s*([A-Za-z][A-Za-z0-9_'′]*)\s*=/.exec(c.source);
-      if (a) used.add(a[1]);
-    }
-    let name = "M";
-    let i = 2;
-    while (used.has(name)) name = `M${i++}`;
+    const name = uniqueName("M", usedNames(ws.cells));
     setNodePos(activeCellId, "S", e.clientX - rect.left, e.clientY - rect.top);
     setCellSource(
       activeCellId,

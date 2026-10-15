@@ -4,7 +4,8 @@ import CodeMirror from "@uiw/react-codemirror";
 import { yaml } from "@codemirror/lang-yaml";
 import { useTranslation } from "react-i18next";
 import type { TFunction } from "i18next";
-import { Cell, useAppStore } from "../../state/store";
+import { activeWorkspace, Cell, useAppStore } from "../../state/store";
+import { uniqueName, usedNames } from "../../state/names";
 import { CellResult } from "../../core/workspace";
 import { DiagnosticsList } from "../detail/DiagnosticsList";
 import { Code2, FileCode2, FunctionSquare, GripVertical, SlidersHorizontal, X } from "lucide-react";
@@ -68,7 +69,8 @@ const SeverityBadge: React.FC<{ level: "error" | "warning" | "info" }> = ({ leve
   );
 };
 
-const REGEX_CELL = /^\s*([A-Za-z][A-Za-z0-9_'′]*)\s*=\s*regex\(([\s\S]*)\)\s*$/;
+/** `R = regex(…)` or an unnamed `regex(…)` */
+const REGEX_CELL = /^\s*(?:([A-Za-z][A-Za-z0-9_'′]*)\s*=\s*)?regex\(([\s\S]*)\)\s*$/;
 
 export const CellEditor: React.FC<Props> = ({ cell, index, result }) => {
   const { t } = useTranslation();
@@ -79,6 +81,7 @@ export const CellEditor: React.FC<Props> = ({ cell, index, result }) => {
   const removeCell = useAppStore((s) => s.removeCell);
   const moveCellTo = useAppStore((s) => s.moveCellTo);
   const addCell = useAppStore((s) => s.addCell);
+  const ensureCellName = useAppStore((s) => s.ensureCellName);
 
   const [opsOpen, setOpsOpen] = useState(false);
   const [menuPos, setMenuPos] = useState<{ top: number; left: number }>({ top: 0, left: 0 });
@@ -161,18 +164,23 @@ export const CellEditor: React.FC<Props> = ({ cell, index, result }) => {
     const second = op.args === 2 ? ", " : "";
     const asg = /^\s*([A-Za-z][A-Za-z0-9_'′]*)\s*=\s*([\s\S]+)$/.exec(src);
     if (asg) {
-      // expression cell: wrap the right-hand side
+      // named expression cell: wrap the right-hand side
       setCellSource(cell.id, `${asg[1]} = ${op.name}(${asg[2].trim()}${second})`);
-    } else if (result?.name && !result.isExpression) {
-      // YAML definition: a new expression cell below, referring to the definition
-      addCell(`${result.name}_${op.name} = ${op.name}(${result.name}${second})`, cell.id);
+    } else if (result?.isExpression) {
+      // unnamed expression cell: wrap the whole expression
+      setCellSource(cell.id, `${op.name}(${src}${second})`);
+    } else if (result?.value) {
+      // YAML definition: a new expression cell below, referring to the definition by name
+      const name = ensureCellName(cell.id, result.value.kind === "grammar" ? "G" : "M");
+      const used = usedNames(activeWorkspace(useAppStore.getState()).cells);
+      addCell(`${uniqueName(`${name}_${op.name}`, used)} = ${op.name}(${name}${second})`, cell.id);
     } else {
-      // empty / uninterpretable cell: expression template
-      setCellSource(cell.id, `result = ${op.name}(${second})`);
+      // empty / uninterpretable cell: an expression template
+      setCellSource(cell.id, `${op.name}(${second})`);
     }
   };
 
-  /* ---- drag & drop a gutterrel ---- */
+  /* ---- drag & drop via the gutter ---- */
   const onDragStart = (e: React.DragEvent) => {
     if (!dragReady) {
       e.preventDefault();
@@ -346,11 +354,13 @@ export const CellEditor: React.FC<Props> = ({ cell, index, result }) => {
           <div className="regex-row">
             <input
               className="rx-name"
-              value={regexMatch[1]}
-              onChange={(e) =>
-                setCellSource(cell.id, `${e.target.value} = regex(${regexMatch[2]})`)
-              }
-              title={t("editor.cell.resultingAutomatonName")}
+              value={regexMatch[1] ?? ""}
+              onChange={(e) => {
+                const name = e.target.value.trim();
+                setCellSource(cell.id, name ? `${name} = regex(${regexMatch[2]})` : `regex(${regexMatch[2]})`);
+              }}
+              placeholder={t("editor.form.name")}
+              title={`${t("editor.cell.resultingAutomatonName")} — ${t("editor.cell.optionalName")}`}
             />
             <span className="rx-eq">=</span>
             <span className="rx-chip">regex</span>
@@ -358,7 +368,9 @@ export const CellEditor: React.FC<Props> = ({ cell, index, result }) => {
               className="rx-body"
               value={regexMatch[2]}
               onChange={(e) =>
-                epsilonChange(e, (v) => setCellSource(cell.id, `${regexMatch[1]} = regex(${v})`))
+                epsilonChange(e, (v) =>
+                  setCellSource(cell.id, regexMatch[1] ? `${regexMatch[1]} = regex(${v})` : `regex(${v})`)
+                )
               }
               placeholder="(a|b)*abb"
               title={t("editor.cell.regexHint")}

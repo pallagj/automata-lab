@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { RegexDef, RegexNodeInfo, regexToNFA, regexTree } from "../../core/fsm/regex";
 import { acceptsFSM, enumerateWords } from "../../core/fsm/fsm";
 import { useAppStore, activeWorkspace } from "../../state/store";
+import { uniqueName, usedNames } from "../../state/names";
 import { tr } from "../../i18n/translate";
 import { ArrowRight, Check, X } from "lucide-react";
 
@@ -31,7 +32,7 @@ export const RegexView: React.FC<{ regex: RegexDef }> = ({ regex }) => {
   const { t } = useTranslation();
   const addCell = useAppStore((s) => s.addCell);
   const activeCellId = useAppStore((s) => s.activeCellId);
-  const ws = useAppStore(activeWorkspace);
+  const ensureCellName = useAppStore((s) => s.ensureCellName);
 
   // internal ε-NFA only for the analysis (word test, sample words)
   const nfa = useMemo(() => regexToNFA(regex.pattern, regex.name).value ?? null, [regex]);
@@ -45,33 +46,29 @@ export const RegexView: React.FC<{ regex: RegexDef }> = ({ regex }) => {
   );
 
   const insertToFsm = () => {
-    // a unique name for the automaton
-    const used = new Set<string>();
-    for (const c of ws.cells) {
-      const m = /^\s*([A-Za-z][A-Za-z0-9_'′]*)\s*=/.exec(c.source);
-      if (m) used.add(m[1]);
-      const d = /^\s*name:\s*([A-Za-z][A-Za-z0-9_'′]*)/m.exec(c.source);
-      if (d) used.add(d[1]);
-    }
-    let name = `${regex.name}_fsm`;
-    let i = 2;
-    while (used.has(name)) name = `${regex.name}_fsm${i++}`;
-    addCell(`${name} = toFsm(${regex.name})`, activeCellId);
+    if (!activeCellId) return;
+    // an unnamed regex gets a name first, so the new cell can refer to it
+    const source = regex.name || ensureCellName(activeCellId, "R");
+    const used = usedNames(activeWorkspace(useAppStore.getState()).cells);
+    addCell(`${uniqueName(`${source}_fsm`, used)} = toFsm(${source})`, activeCellId);
   };
 
   return (
     <>
       <div className="card">
-        <div className="card-title">{t("detail.regex.title")} — {regex.name}</div>
+        <div className="card-title">
+          {t("detail.regex.title")}
+          {regex.name && ` — ${regex.name}`}
+        </div>
         <div className="card-body">
           <div className="rx-pattern">{regex.pattern === "" ? "ε" : regex.pattern}</div>
           <div className="rx-legend">
             <code>|</code> {t("detail.regex.or")} <code>+</code> {t("detail.regex.union")} · <code>*</code> {t("detail.regex.closure")} ·{" "}
-            <code>?</code> {t("detail.regex.optional")} · <code>$</code>/<code>ε</code> {t("detail.regex.emptyWord")} · {t("detail.regex.parens")}
+            <code>?</code> {t("detail.regex.optional")} · <code>ε</code> (eps) {t("detail.regex.emptyWord")} · {t("detail.regex.parens")}
           </div>
           <button className="fix-btn rx-tofsm" onClick={insertToFsm} title={t("detail.regex.toFsmHint")}>
             <ArrowRight size={13} />
-            toFsm({regex.name}) — {t("detail.regex.toFsmLabel")}
+            toFsm({regex.name || "…"}) — {t("detail.regex.toFsmLabel")}
           </button>
         </div>
       </div>

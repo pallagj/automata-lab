@@ -139,7 +139,8 @@ export function serializeEntityDraft(d: EntityDraft): string {
   if (d.kind === "grammar") {
     const lines = [
       "Grammar:",
-      `  name: ${scalar(d.name)}`,
+      // an empty name leaves the definition unnamed
+      ...(d.name.trim() ? [`  name: ${scalar(d.name)}`] : []),
       `  charset: ${scalar(d.charset)}`,
       `  variables: ${scalar(d.states)}`,
       `  init: ${scalar(d.init)}`,
@@ -151,7 +152,7 @@ export function serializeEntityDraft(d: EntityDraft): string {
 
   const lines = [
     "Machine:",
-    `  name: ${scalar(d.name)}`,
+    ...(d.name.trim() ? [`  name: ${scalar(d.name)}`] : []),
     `  charset: ${scalar(d.charset)}`,
     `  states: ${scalar(d.states)}`,
     `  init: ${scalar(d.init)}`,
@@ -461,7 +462,7 @@ export const EntityForm: React.FC<Props> = ({ source, onChange }) => {
       <div className="ef-grid">
         <label>
           <span>{t("editor.form.name")}</span>
-          <input value={draft.name} onChange={(e) => setField("name", e.target.value)} placeholder="M" />
+          <input value={draft.name} onChange={(e) => setField("name", e.target.value)} placeholder={t("editor.cell.optionalName")} />
         </label>
         <label>
           <span>{t("editor.form.alphabet")}</span>

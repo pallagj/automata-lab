@@ -2,6 +2,7 @@ import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import i18n from "../i18n";
 import { STARTER_CELLS } from "./examples";
+import { cellName, uniqueName, usedNames, withName } from "./names";
 
 /**
  * Offline-first state: every worksheet lives in localStorage,
@@ -82,6 +83,8 @@ export interface AppState {
   deleteFolder: (name: string) => void;
 
   setCellSource: (cellId: string, source: string) => void;
+  /** the cell's name — an unnamed cell is given the first free `base`, `base2`, … first */
+  ensureCellName: (cellId: string, base: string) => string;
   addCell: (source?: string, afterCellId?: string | null) => void;
   removeCell: (cellId: string) => void;
   moveCellTo: (cellId: string, toIndex: number) => void;
@@ -245,6 +248,16 @@ export const useAppStore = create<AppState>()(
                 }
           )
         })),
+      ensureCellName: (cellId, base) => {
+        const ws = activeWorkspace(get());
+        const cell = ws.cells.find((c) => c.id === cellId);
+        if (!cell) return base;
+        const existing = cellName(cell.source);
+        if (existing) return existing;
+        const name = uniqueName(base, usedNames(ws.cells));
+        get().setCellSource(cellId, withName(cell.source, name));
+        return name;
+      },
       addCell: (source = "", afterCellId = null) => {
         const cell: Cell = { id: uid(), source };
         set((s) => ({

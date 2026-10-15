@@ -53,7 +53,7 @@
   "workspace": {
     "unparseableCell": {
       "title": "Értelmezhetetlen cella",
-      "detail": "A cella vagy YAML-definíció (Machine / Grammar kulccsal), vagy kifejezés („név = kifejezés” alakban) lehet."
+      "detail": "A cella vagy YAML-definíció (Machine / Grammar kulccsal), vagy kifejezés, opcionálisan névvel: „név = kifejezés”."
     },
     "duplicateDefinition": {
       "title": "Többszörös definíció: „{{name}}”",

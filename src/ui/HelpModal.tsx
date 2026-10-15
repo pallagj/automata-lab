@@ -30,8 +30,8 @@ export const HelpModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
 
         <h3>{t("help.expressions.heading")}</h3>
         <p>
-          {t("help.expressions.body1")} <code>name = expression</code>
-          {t("help.expressions.body2")}
+          {t("help.expressions.body1")} <code>[name =] expression</code>
+          {t("help.expressions.body2")} {t("help.expressions.optionalName")}
         </p>
         <table>
           <tbody>

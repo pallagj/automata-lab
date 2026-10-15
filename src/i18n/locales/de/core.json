@@ -53,7 +53,7 @@
   "workspace": {
     "unparseableCell": {
       "title": "Nicht interpretierbare Zelle",
-      "detail": "Eine Zelle ist entweder eine YAML-Definition (mit dem Schlüssel Machine / Grammar) oder ein Ausdruck (in der Form „Name = Ausdruck“)."
+      "detail": "Eine Zelle ist entweder eine YAML-Definition (mit dem Schlüssel Machine / Grammar) oder ein Ausdruck, optional mit Namen: „Name = Ausdruck“."
     },
     "duplicateDefinition": {
       "title": "Mehrfache Definition: „{{name}}“",

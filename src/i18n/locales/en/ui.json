@@ -163,7 +163,8 @@
         "equal": "equivalence check, with a counterexample",
         "conversions": "conversions between automaton ↔ grammar, grammar → pushdown automaton",
         "namedOps": "operations between named automata: concatenation, union, closure — letter literals only inside regex(…)"
-      }
+      },
+      "optionalName": "The name is optional: without one the result is still shown, it just can't be referenced from other cells — like an unnamed expression in Desmos."
     },
     "storages": {
       "heading": "Storages: stack, queue, tape",
@@ -420,8 +421,9 @@
       "backToForm": "Back to form editing",
       "expandToDefinition": "Expand into an editable definition",
       "deleteCell": "Delete cell",
-      "resultingAutomatonName": "Name of the resulting automaton",
-      "regexHint": "Regular expression — operators: | (or), * (closure), parentheses, ε (type eps; \\eps = the letters)"
+      "resultingAutomatonName": "Name of the regular expression",
+      "regexHint": "Regular expression — operators: | (or), * (closure), parentheses, ε (type eps; \\eps = the letters)",
+      "optionalName": "name (optional)"
     },
     "form": {
       "col": {

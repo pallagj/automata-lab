@@ -7,7 +7,8 @@ import {
   grammarAccepts,
   ruleToString
 } from "../../core/grammar/grammar";
-import { useAppStore } from "../../state/store";
+import { activeWorkspace, useAppStore } from "../../state/store";
+import { uniqueName, usedNames } from "../../state/names";
 import { tr } from "../../i18n/translate";
 import { Check, ChevronRight, HelpCircle, ListOrdered, Wand2, X } from "lucide-react";
 
@@ -23,6 +24,16 @@ export const GrammarView: React.FC<{ grammar: Grammar }> = ({ grammar }) => {
   const cls = useMemo(() => classify(grammar), [grammar]);
   const gen = useMemo(() => generateWords(grammar, 8, 36), [grammar]);
   const addCell = useAppStore((s) => s.addCell);
+  const activeCellId = useAppStore((s) => s.activeCellId);
+  const ensureCellName = useAppStore((s) => s.ensureCellName);
+
+  /** inserts `<prefix>_G = fn(G)` below; an unnamed grammar gets a name first */
+  const convert = (fn: "toFsm" | "toPda", prefix: string) => {
+    if (!activeCellId) return;
+    const source = grammar.name || ensureCellName(activeCellId, "G");
+    const used = usedNames(activeWorkspace(useAppStore.getState()).cells);
+    addCell(`${uniqueName(`${prefix}_${source}`, used)} = ${fn}(${source})`, activeCellId);
+  };
 
   const [test, setTest] = useState("");
   const testResult = useMemo(
@@ -43,7 +54,10 @@ export const GrammarView: React.FC<{ grammar: Grammar }> = ({ grammar }) => {
   return (
     <>
       <div className="card">
-        <div className="card-title">{t("detail.grammar.title")} — {grammar.name}</div>
+        <div className="card-title">
+          {t("detail.grammar.title")}
+          {grammar.name && ` — ${grammar.name}`}
+        </div>
         <div className="card-body">
           <div className="class-hero">
             <span className="big">{t(TYPE_KEYS[cls.type])}</span>
@@ -87,12 +101,12 @@ export const GrammarView: React.FC<{ grammar: Grammar }> = ({ grammar }) => {
 
           <div className="badges" style={{ marginTop: 14 }}>
             {cls.type === 3 && cls.direction === "right" && (
-              <button className="icon-btn" onClick={() => addCell(`M_${grammar.name} = toFsm(${grammar.name})`)}>
+              <button className="icon-btn" onClick={() => convert("toFsm", "M")}>
                 <Wand2 size={14} /> {t("detail.grammar.toFsm")}
               </button>
             )}
             {cls.reasons.type2.holds && (
-              <button className="icon-btn" onClick={() => addCell(`P_${grammar.name} = toPda(${grammar.name})`)}>
+              <button className="icon-btn" onClick={() => convert("toPda", "P")}>
                 <Wand2 size={14} /> {t("detail.grammar.toPda")}
               </button>
             )}
