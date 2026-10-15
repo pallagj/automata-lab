@@ -68,6 +68,8 @@ export const EditorColumn: React.FC<Props> = ({ workspace, results }) => {
   const setActiveCell = useAppStore((s) => s.setActiveCell);
   const activeCellId = useAppStore((s) => s.activeCellId);
   const [menuOpen, setMenuOpen] = useState(false);
+  /** the list is scrolled away from the top: the header casts a shadow over it, as in Desmos */
+  const [scrolled, setScrolled] = useState(false);
 
   /** like Desmos: fill an empty active cell, otherwise insert below it */
   const insert = (source: string) => {
@@ -82,7 +84,7 @@ export const EditorColumn: React.FC<Props> = ({ workspace, results }) => {
 
   return (
     <>
-      <div className="pane-head">
+      <div className={`pane-head ${scrolled ? "scrolled" : ""}`}>
         <span className="pane-title">{workspace.name}</span>
         <span className="pane-count">{t("editor.column.cellCount", { count: workspace.cells.length })}</span>
         <span className="spacer" />
@@ -112,7 +114,7 @@ export const EditorColumn: React.FC<Props> = ({ workspace, results }) => {
         </div>
       </div>
 
-      <div className="cell-list">
+      <div className="cell-list" onScroll={(e) => setScrolled(e.currentTarget.scrollTop > 0)}>
         {workspace.cells.map((cell, i) => (
           <CellEditor key={cell.id} cell={cell} index={i} result={results[i]} />
         ))}

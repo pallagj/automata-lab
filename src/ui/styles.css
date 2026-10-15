@@ -316,6 +316,8 @@ button {
   background: var(--panel);
   border: 1px solid var(--border);
   border-radius: var(--radius);
+  /* the header stays put; only the cell list below it scrolls */
+  overflow: visible;
 }
 
 /* panels must not shrink: if they do not fit, the column scrolls */
@@ -356,9 +358,9 @@ body.resizing {
 
 /* cell panel header: worksheet name + insert */
 .pane-head {
-  position: sticky;
-  top: 0;
+  position: relative;
   z-index: 20;
+  transition: box-shadow 0.15s;
   display: flex;
   align-items: center;
   gap: 8px;
@@ -401,9 +403,27 @@ body.resizing {
   vertical-align: -3px;
 }
 
+.pane-head.scrolled {
+  box-shadow: 0 6px 12px -8px rgba(0, 0, 0, 0.45);
+}
+
+/* the scrolling part of the cell panel: only the cells, with a thin scrollbar */
+.editor-col > .cell-list {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  border-radius: 0 0 var(--radius) var(--radius);
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+}
+
 .cell-list {
   display: flex;
   flex-direction: column;
+}
+
+.cell-list > * {
+  flex-shrink: 0;
 }
 
 .mobile-tabs {
