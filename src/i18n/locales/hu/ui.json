@@ -2,7 +2,8 @@
   "workspace": {
     "starterName": "Bemutató munkalap",
     "defaultName": "Munkalap {{index}}",
-    "importedName": "Importált munkalap"
+    "importedName": "Importált munkalap",
+    "copyName": "{{name}} (másolat)"
   },
   "app": {
     "title": "AutomataLab — Nyelvek és automaták",
@@ -11,14 +12,9 @@
     "visualization": "Vizualizáció"
   },
   "topbar": {
-    "selectWorksheet": "Munkalap választása",
     "newWorksheet": "Új munkalap",
-    "renameWorksheet": "Munkalap átnevezése",
-    "setFolder": "Munkalap mappába rendezése",
-    "deleteWorksheet": "Munkalap törlése",
     "loadExample": "Beépített példa-munkalap betöltése",
     "examples": "Példák",
-    "exampleWorksheets": "Példa-munkalapok",
     "exportWorksheet": "Munkalap mentése fájlba",
     "export": "Export",
     "importWorksheet": "Munkalap betöltése fájlból",
@@ -28,9 +24,90 @@
     "help": "Súgó",
     "language": "Nyelv",
     "importFailed": "Nem sikerült beolvasni a fájlt — érvényes .automata.json kell.",
-    "renamePrompt": "Munkalap új neve:",
-    "folderPrompt": "Melyik mappába kerüljön a munkalap? (üresen hagyva: mappán kívül)",
-    "deleteConfirm": "Biztosan törlöd a(z) „{{name}}” munkalapot?"
+    "worksheets": "Munkalapok",
+    "openWorksheets": "Munkalapjaid megnyitása",
+    "openFolder": "Mappa megnyitása",
+    "renameHint": "Kattints az átnevezéshez"
+  },
+  "browser": {
+    "title": "Munkalapok",
+    "tabs": {
+      "saved": "Mentett munkák",
+      "examples": "Példák"
+    },
+    "newWorksheet": "Új munkalap",
+    "moreNew": "További lehetőségek",
+    "newFolder": "Új mappa",
+    "importFile": "Importálás fájlból…",
+    "folderName": "Mappa neve",
+    "search": "Keresés cím alapján",
+    "clearSearch": "Keresés törlése",
+    "close": "Bezárás",
+    "more": "További műveletek",
+    "filter": "Rendezés és szűrés",
+    "gridView": "Rácsnézet",
+    "listView": "Listanézet",
+    "sortBy": "Rendezés",
+    "sort": {
+      "updated": "Utoljára szerkesztve",
+      "created": "Létrehozva",
+      "name": "Név"
+    },
+    "showOnly": "Csak amiben szerepel",
+    "clearFilters": "Szűrők törlése",
+    "kind": {
+      "fsm": "Véges automata",
+      "pda": "Veremautomata",
+      "tm": "Turing-gép",
+      "general": "Általános gép",
+      "grammar": "Nyelvtan",
+      "regex": "Reguláris kifejezés"
+    },
+    "columns": {
+      "name": "Név",
+      "contains": "Tartalom"
+    },
+    "items_one": "{{count}} munkalap",
+    "items_other": "{{count}} munkalap",
+    "exampleCells_one": "{{count}} cella",
+    "exampleCells_other": "{{count}} cella",
+    "current": "Megnyitva",
+    "select": "„{{name}}” kijelölése",
+    "clearSelection": "Kijelölés törlése ({{count}})",
+    "dragCount_one": "{{count}} munkalap",
+    "dragCount_other": "{{count}} munkalap",
+    "dropToRoot": "Engedd el itt, és kikerül a mappából",
+    "menu": {
+      "rename": "Átnevezés",
+      "move": "Áthelyezés mappába…",
+      "duplicate": "Duplikálás",
+      "delete": "Törlés"
+    },
+    "folderMenu": {
+      "rename": "Mappa átnevezése",
+      "delete": "Mappa törlése"
+    },
+    "move": {
+      "title": "Áthelyezés mappába",
+      "placeholder": "Keresés vagy új mappa neve",
+      "noFolder": "Mentett munkák (mappán kívül)",
+      "create": "„{{name}}” mappa létrehozása",
+      "hint": "Írj be egy nevet új mappa létrehozásához"
+    },
+    "empty": {
+      "saved": "Még nincs munkalapod — hozz létre egyet az „Új munkalap” gombbal.",
+      "folder": "Ez a mappa üres. Húzz ide munkalapokat, vagy használd az „Áthelyezés mappába…” menüt.",
+      "noMatch": "Semmi sem felel meg a keresésnek vagy a szűrőknek."
+    },
+    "toast": {
+      "moved_one": "{{count}} munkalap áthelyezve ide: „{{folder}}”",
+      "moved_other": "{{count}} munkalap áthelyezve ide: „{{folder}}”",
+      "deleted_one": "{{count}} munkalap törölve",
+      "deleted_other": "{{count}} munkalap törölve",
+      "folderDeleted": "A(z) „{{name}}” mappa törölve — a munkalapjai megmaradtak",
+      "duplicated": "Munkalap duplikálva"
+    },
+    "undo": "Visszavonás"
   },
   "examples": {
     "intro": {

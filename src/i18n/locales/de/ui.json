@@ -2,7 +2,8 @@
   "workspace": {
     "starterName": "Demo-Arbeitsblatt",
     "defaultName": "Arbeitsblatt {{index}}",
-    "importedName": "Importiertes Arbeitsblatt"
+    "importedName": "Importiertes Arbeitsblatt",
+    "copyName": "{{name}} (Kopie)"
   },
   "app": {
     "title": "AutomataLab — Sprachen und Automaten",
@@ -11,14 +12,9 @@
     "visualization": "Visualisierung"
   },
   "topbar": {
-    "selectWorksheet": "Arbeitsblatt auswählen",
     "newWorksheet": "Neues Arbeitsblatt",
-    "renameWorksheet": "Arbeitsblatt umbenennen",
-    "setFolder": "Arbeitsblatt in Ordner verschieben",
-    "deleteWorksheet": "Arbeitsblatt löschen",
     "loadExample": "Ein integriertes Beispiel-Arbeitsblatt laden",
     "examples": "Beispiele",
-    "exampleWorksheets": "Beispiel-Arbeitsblätter",
     "exportWorksheet": "Arbeitsblatt als Datei speichern",
     "export": "Export",
     "importWorksheet": "Arbeitsblatt aus Datei laden",
@@ -28,9 +24,90 @@
     "help": "Hilfe",
     "language": "Sprache",
     "importFailed": "Die Datei konnte nicht gelesen werden — eine gültige .automata.json wird benötigt.",
-    "renamePrompt": "Neuer Name für das Arbeitsblatt:",
-    "folderPrompt": "In welchen Ordner soll das Arbeitsblatt verschoben werden? (leer lassen für keinen Ordner)",
-    "deleteConfirm": "Arbeitsblatt „{{name}}“ wirklich löschen?"
+    "worksheets": "Arbeitsblätter",
+    "openWorksheets": "Deine Arbeitsblätter öffnen",
+    "openFolder": "Diesen Ordner öffnen",
+    "renameHint": "Zum Umbenennen klicken"
+  },
+  "browser": {
+    "title": "Arbeitsblätter",
+    "tabs": {
+      "saved": "Gespeicherte Arbeiten",
+      "examples": "Beispiele"
+    },
+    "newWorksheet": "Neues Arbeitsblatt",
+    "moreNew": "Weitere Optionen",
+    "newFolder": "Neuer Ordner",
+    "importFile": "Aus Datei importieren…",
+    "folderName": "Ordnername",
+    "search": "Nach Titel suchen",
+    "clearSearch": "Suche löschen",
+    "close": "Schließen",
+    "more": "Weitere Aktionen",
+    "filter": "Sortieren und filtern",
+    "gridView": "Rasteransicht",
+    "listView": "Listenansicht",
+    "sortBy": "Sortieren nach",
+    "sort": {
+      "updated": "Zuletzt bearbeitet",
+      "created": "Erstellt",
+      "name": "Name"
+    },
+    "showOnly": "Nur Arbeitsblätter mit",
+    "clearFilters": "Filter zurücksetzen",
+    "kind": {
+      "fsm": "Endlicher Automat",
+      "pda": "Kellerautomat",
+      "tm": "Turingmaschine",
+      "general": "Allgemeine Maschine",
+      "grammar": "Grammatik",
+      "regex": "Regulärer Ausdruck"
+    },
+    "columns": {
+      "name": "Name",
+      "contains": "Inhalt"
+    },
+    "items_one": "{{count}} Arbeitsblatt",
+    "items_other": "{{count}} Arbeitsblätter",
+    "exampleCells_one": "{{count}} Zelle",
+    "exampleCells_other": "{{count}} Zellen",
+    "current": "Geöffnet",
+    "select": "„{{name}}“ auswählen",
+    "clearSelection": "Auswahl aufheben ({{count}})",
+    "dragCount_one": "{{count}} Arbeitsblatt",
+    "dragCount_other": "{{count}} Arbeitsblätter",
+    "dropToRoot": "Hier ablegen, um es aus dem Ordner zu verschieben",
+    "menu": {
+      "rename": "Umbenennen",
+      "move": "In Ordner verschieben…",
+      "duplicate": "Duplizieren",
+      "delete": "Löschen"
+    },
+    "folderMenu": {
+      "rename": "Ordner umbenennen",
+      "delete": "Ordner löschen"
+    },
+    "move": {
+      "title": "In Ordner verschieben",
+      "placeholder": "Suchen oder neuen Ordner benennen",
+      "noFolder": "Gespeicherte Arbeiten (ohne Ordner)",
+      "create": "Ordner „{{name}}“ erstellen",
+      "hint": "Gib einen Namen ein, um einen neuen Ordner zu erstellen"
+    },
+    "empty": {
+      "saved": "Noch keine Arbeitsblätter — erstelle eines mit „Neues Arbeitsblatt“.",
+      "folder": "Dieser Ordner ist leer. Ziehe Arbeitsblätter hierher oder nutze „In Ordner verschieben…“.",
+      "noMatch": "Nichts passt zu deiner Suche oder deinen Filtern."
+    },
+    "toast": {
+      "moved_one": "{{count}} Arbeitsblatt nach „{{folder}}“ verschoben",
+      "moved_other": "{{count}} Arbeitsblätter nach „{{folder}}“ verschoben",
+      "deleted_one": "{{count}} Arbeitsblatt gelöscht",
+      "deleted_other": "{{count}} Arbeitsblätter gelöscht",
+      "folderDeleted": "Ordner „{{name}}“ gelöscht — die Arbeitsblätter bleiben erhalten",
+      "duplicated": "Arbeitsblatt dupliziert"
+    },
+    "undo": "Rückgängig"
   },
   "examples": {
     "intro": {

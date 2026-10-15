@@ -45,13 +45,13 @@ type DialogState =
   | { t: "state"; name: string | null; x: number; y: number }
   | { t: "edge"; from: string; to: string };
 
-interface LaidOutNode extends GraphNode {
+export interface LaidOutNode extends GraphNode {
   x: number;
   y: number;
   r: number;
 }
 
-interface LaidOutEdge extends GraphEdge {
+export interface LaidOutEdge extends GraphEdge {
   path: string;
   labelX: number;
   labelY: number;
@@ -61,7 +61,8 @@ function nodeRadius(label: string): number {
   return Math.max(22, 10 + label.length * 4.6);
 }
 
-function layout(
+/** dagre layout + edge geometry; manual positions in `overrides` win over the computed ones. */
+export function layoutGraph(
   spec: GraphSpec,
   overrides: Map<string, { x: number; y: number }>
 ): { nodes: LaidOutNode[]; edges: LaidOutEdge[]; bounds: [number, number, number, number] } {
@@ -167,7 +168,7 @@ export const GraphView: React.FC<Props> = ({ spec, onEdgeClick, className, cellI
     return m;
   }, [savedPos, livePos]);
 
-  const { nodes, edges, bounds } = useMemo(() => layout(spec, overrides), [spec, overrides]);
+  const { nodes, edges, bounds } = useMemo(() => layoutGraph(spec, overrides), [spec, overrides]);
   const [view, setView] = useState<[number, number, number, number] | null>(null);
   const svgRef = useRef<SVGSVGElement>(null);
   const dragRef = useRef<{ x: number; y: number; view: [number, number, number, number] } | null>(null);

@@ -2,7 +2,8 @@
   "workspace": {
     "starterName": "Demo worksheet",
     "defaultName": "Worksheet {{index}}",
-    "importedName": "Imported worksheet"
+    "importedName": "Imported worksheet",
+    "copyName": "{{name}} (copy)"
   },
   "app": {
     "title": "AutomataLab — Languages and Automata",
@@ -11,14 +12,9 @@
     "visualization": "Visualization"
   },
   "topbar": {
-    "selectWorksheet": "Select worksheet",
     "newWorksheet": "New worksheet",
-    "renameWorksheet": "Rename worksheet",
-    "setFolder": "Move worksheet to folder",
-    "deleteWorksheet": "Delete worksheet",
     "loadExample": "Load a built-in example worksheet",
     "examples": "Examples",
-    "exampleWorksheets": "Example worksheets",
     "exportWorksheet": "Save worksheet to file",
     "export": "Export",
     "importWorksheet": "Load worksheet from file",
@@ -28,9 +24,90 @@
     "help": "Help",
     "language": "Language",
     "importFailed": "Couldn't read the file — a valid .automata.json is required.",
-    "renamePrompt": "New name for the worksheet:",
-    "folderPrompt": "Which folder should the worksheet go in? (leave empty for no folder)",
-    "deleteConfirm": "Really delete the worksheet \"{{name}}\"?"
+    "worksheets": "Worksheets",
+    "openWorksheets": "Open your worksheets",
+    "openFolder": "Open this folder",
+    "renameHint": "Click to rename"
+  },
+  "browser": {
+    "title": "Worksheets",
+    "tabs": {
+      "saved": "Saved work",
+      "examples": "Examples"
+    },
+    "newWorksheet": "New worksheet",
+    "moreNew": "More options",
+    "newFolder": "New folder",
+    "importFile": "Import from file…",
+    "folderName": "Folder name",
+    "search": "Search by title",
+    "clearSearch": "Clear search",
+    "close": "Close",
+    "more": "More actions",
+    "filter": "Sort and filter",
+    "gridView": "Grid view",
+    "listView": "List view",
+    "sortBy": "Sort by",
+    "sort": {
+      "updated": "Last edited",
+      "created": "Created",
+      "name": "Name"
+    },
+    "showOnly": "Only worksheets containing",
+    "clearFilters": "Clear filters",
+    "kind": {
+      "fsm": "Finite automaton",
+      "pda": "Pushdown automaton",
+      "tm": "Turing machine",
+      "general": "General machine",
+      "grammar": "Grammar",
+      "regex": "Regular expression"
+    },
+    "columns": {
+      "name": "Name",
+      "contains": "Contains"
+    },
+    "items_one": "{{count}} worksheet",
+    "items_other": "{{count}} worksheets",
+    "exampleCells_one": "{{count}} cell",
+    "exampleCells_other": "{{count}} cells",
+    "current": "Open",
+    "select": "Select “{{name}}”",
+    "clearSelection": "Clear selection ({{count}})",
+    "dragCount_one": "{{count}} worksheet",
+    "dragCount_other": "{{count}} worksheets",
+    "dropToRoot": "Drop here to move out of the folder",
+    "menu": {
+      "rename": "Rename",
+      "move": "Move to folder…",
+      "duplicate": "Duplicate",
+      "delete": "Delete"
+    },
+    "folderMenu": {
+      "rename": "Rename folder",
+      "delete": "Delete folder"
+    },
+    "move": {
+      "title": "Move to folder",
+      "placeholder": "Search or name a new folder",
+      "noFolder": "Saved work (no folder)",
+      "create": "Create folder “{{name}}”",
+      "hint": "Type a name to create a new folder"
+    },
+    "empty": {
+      "saved": "No worksheets yet — create one with “New worksheet”.",
+      "folder": "This folder is empty. Drag worksheets here or use “Move to folder…”.",
+      "noMatch": "Nothing matches your search or filters."
+    },
+    "toast": {
+      "moved_one": "Moved {{count}} worksheet to “{{folder}}”",
+      "moved_other": "Moved {{count}} worksheets to “{{folder}}”",
+      "deleted_one": "Deleted {{count}} worksheet",
+      "deleted_other": "Deleted {{count}} worksheets",
+      "folderDeleted": "Folder “{{name}}” deleted — its worksheets were kept",
+      "duplicated": "Worksheet duplicated"
+    },
+    "undo": "Undo"
   },
   "examples": {
     "intro": {

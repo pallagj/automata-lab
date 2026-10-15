@@ -502,6 +502,79 @@ body.resizing {
   max-width: 200px;
 }
 
+/* active worksheet name in the header: folder crumb + click-to-rename title */
+.ws-title {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  min-width: 0;
+  max-width: 340px;
+}
+
+.ws-folder {
+  max-width: 130px;
+  padding: 5px 2px 5px 6px;
+  overflow: hidden;
+  background: none;
+  border: none;
+  border-radius: 6px;
+  color: var(--muted);
+  font-size: 14px;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  cursor: pointer;
+}
+
+.ws-folder:hover {
+  color: var(--accent);
+}
+
+.ws-sep {
+  margin-left: 5px;
+}
+
+.ws-name {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  padding: 5px 8px;
+  background: none;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  font-size: 14.5px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.ws-name span {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.ws-name svg {
+  flex: none;
+  color: var(--muted);
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+
+.ws-name:hover {
+  border-color: var(--border);
+}
+
+.ws-name:hover svg,
+.ws-name:focus-visible svg {
+  opacity: 1;
+}
+
+.ws-title .inline-input {
+  flex: none;
+  width: 220px;
+}
+
 .icon-btn {
   display: inline-flex;
   align-items: center;

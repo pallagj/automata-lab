@@ -1,50 +1,23 @@
 import React, { useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import {
-  activeWorkspace,
-  exportWorkspaceJSON,
-  useAppStore,
-  Workspace
-} from "../state/store";
-import {
-  Download,
-  FolderOpen,
-  HelpCircle,
-  Moon,
-  Pencil,
-  Plus,
-  Sparkles,
-  Sun,
-  Trash2,
-  Upload
-} from "lucide-react";
+import { activeWorkspace, exportWorkspaceJSON, useAppStore, Workspace } from "../state/store";
+import { Download, FolderOpen, HelpCircle, Moon, Pencil, Plus, Sparkles, Sun, Upload } from "lucide-react";
 import { HelpModal } from "./HelpModal";
 import { LanguageSwitcher } from "./LanguageSwitcher";
-import { EXAMPLE_WORKSHEETS, exampleWorksheetName } from "../state/examples";
+import { BrowserTab, InlineInput, WorksheetBrowser } from "./browser/WorksheetBrowser";
 
 export const TopBar: React.FC = () => {
   const { t } = useTranslation();
   const theme = useAppStore((s) => s.theme);
   const setTheme = useAppStore((s) => s.setTheme);
-  const workspaces = useAppStore((s) => s.workspaces);
   const ws = useAppStore(activeWorkspace);
-  const setActiveWorkspace = useAppStore((s) => s.setActiveWorkspace);
   const addWorkspace = useAppStore((s) => s.addWorkspace);
   const renameWorkspace = useAppStore((s) => s.renameWorkspace);
-  const setWorkspaceFolder = useAppStore((s) => s.setWorkspaceFolder);
-  const deleteWorkspace = useAppStore((s) => s.deleteWorkspace);
   const importWorkspace = useAppStore((s) => s.importWorkspace);
   const [helpOpen, setHelpOpen] = useState(false);
-  const [examplesOpen, setExamplesOpen] = useState(false);
+  const [browser, setBrowser] = useState<{ tab: BrowserTab; folder: string | null } | null>(null);
+  const [renaming, setRenaming] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
-
-  const loadExample = (name: string, cells: string[]) => {
-    importWorkspace({
-      name,
-      cells: cells.map((source) => ({ id: "", source }))
-    } as Workspace);
-    setExamplesOpen(false);
-  };
 
   const onExport = () => {
     const blob = new Blob([exportWorkspaceJSON(ws)], { type: "application/json" });
@@ -65,20 +38,6 @@ export const TopBar: React.FC = () => {
     }
   };
 
-  const onRename = () => {
-    const name = prompt(t("topbar.renamePrompt"), ws.name);
-    if (name && name.trim()) renameWorkspace(ws.id, name.trim());
-  };
-
-  const onSetFolder = () => {
-    const folder = prompt(t("topbar.folderPrompt"), ws.folder ?? "");
-    if (folder !== null) setWorkspaceFolder(ws.id, folder);
-  };
-
-  const onDelete = () => {
-    if (confirm(t("topbar.deleteConfirm", { name: ws.name }))) deleteWorkspace(ws.id);
-  };
-
   return (
     <header className="topbar">
       <div className="logo">
@@ -88,60 +47,54 @@ export const TopBar: React.FC = () => {
         </span>
       </div>
 
-      <select value={ws.id} onChange={(e) => setActiveWorkspace(e.target.value)} title={t("topbar.selectWorksheet")}>
-        {workspaces
-          .filter((w) => !w.folder)
-          .map((w) => (
-            <option key={w.id} value={w.id}>
-              {w.name}
-            </option>
-          ))}
-        {[...new Set(workspaces.filter((w) => w.folder).map((w) => w.folder!))].sort().map((folder) => (
-          <optgroup key={folder} label={`📁 ${folder}`}>
-            {workspaces
-              .filter((w) => w.folder === folder)
-              .map((w) => (
-                <option key={w.id} value={w.id}>
-                  {w.name}
-                </option>
-              ))}
-          </optgroup>
-        ))}
-      </select>
-
-      <button className="icon-btn" onClick={() => addWorkspace()} title={t("topbar.newWorksheet")}>
-        <Plus size={15} />
-      </button>
-      <button className="icon-btn" onClick={onRename} title={t("topbar.renameWorksheet")}>
-        <Pencil size={15} />
-      </button>
-      <button className="icon-btn" onClick={onSetFolder} title={t("topbar.setFolder")}>
+      <button
+        className="icon-btn"
+        onClick={() => setBrowser({ tab: "saved", folder: null })}
+        title={t("topbar.openWorksheets")}
+      >
         <FolderOpen size={15} />
-      </button>
-      <button className="icon-btn danger" onClick={onDelete} title={t("topbar.deleteWorksheet")}>
-        <Trash2 size={15} />
+        <span className="hide-sm">{t("topbar.worksheets")}</span>
       </button>
 
-      <div className="menu-anchor">
-        <button
-          className="icon-btn"
-          onClick={() => setExamplesOpen((o) => !o)}
-          title={t("topbar.loadExample")}
-        >
-          <Sparkles size={15} />
-          <span className="hide-sm">{t("topbar.examples")}</span>
-        </button>
-        {examplesOpen && (
-          <div className="menu insert-menu" onMouseLeave={() => setExamplesOpen(false)}>
-            <div className="menu-group">{t("topbar.exampleWorksheets")}</div>
-            {EXAMPLE_WORKSHEETS.map((e) => (
-              <button key={e.key} onClick={() => loadExample(exampleWorksheetName(t, e), e.cells)}>
-                {exampleWorksheetName(t, e)}
-              </button>
-            ))}
-          </div>
+      <div className="ws-title">
+        {ws.folder && (
+          <button
+            className="ws-folder"
+            onClick={() => setBrowser({ tab: "saved", folder: ws.folder ?? null })}
+            title={t("topbar.openFolder")}
+          >
+            {ws.folder}
+            <span className="ws-sep">/</span>
+          </button>
+        )}
+        {renaming ? (
+          <InlineInput
+            initial={ws.name}
+            onCommit={(name) => {
+              renameWorkspace(ws.id, name);
+              setRenaming(false);
+            }}
+            onCancel={() => setRenaming(false)}
+          />
+        ) : (
+          <button className="ws-name" onClick={() => setRenaming(true)} title={t("topbar.renameHint")}>
+            <span>{ws.name}</span>
+            <Pencil size={12} />
+          </button>
         )}
       </div>
+
+      <button className="icon-btn" onClick={() => addWorkspace(undefined, ws.folder)} title={t("topbar.newWorksheet")}>
+        <Plus size={15} />
+      </button>
+      <button
+        className="icon-btn"
+        onClick={() => setBrowser({ tab: "examples", folder: null })}
+        title={t("topbar.loadExample")}
+      >
+        <Sparkles size={15} />
+        <span className="hide-sm">{t("topbar.examples")}</span>
+      </button>
 
       <div className="spacer" />
 
@@ -179,6 +132,9 @@ export const TopBar: React.FC = () => {
       </button>
 
       {helpOpen && <HelpModal onClose={() => setHelpOpen(false)} />}
+      {browser && (
+        <WorksheetBrowser initialTab={browser.tab} initialFolder={browser.folder} onClose={() => setBrowser(null)} />
+      )}
     </header>
   );
 };

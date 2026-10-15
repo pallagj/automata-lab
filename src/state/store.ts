@@ -25,8 +25,22 @@ export interface Workspace {
 
 export type Theme = "dark" | "light";
 export type MobileTab = "code" | "view";
+export type BrowserView = "grid" | "list";
+export type BrowserSortKey = "updated" | "created" | "name";
+export interface BrowserSort {
+  key: BrowserSortKey;
+  asc: boolean;
+}
 
-interface AppState {
+/** The part of the state that worksheet-browser actions change — restored by undo. */
+export interface LibrarySnapshot {
+  workspaces: Workspace[];
+  folders: string[];
+  activeWorkspaceId: string;
+  activeCellId: string | null;
+}
+
+export interface AppState {
   workspaces: Workspace[];
   activeWorkspaceId: string;
   activeCellId: string | null;
@@ -38,6 +52,10 @@ interface AppState {
   layouts: Record<string, Record<string, { x: number; y: number }>>;
   /** "don't warn me again" for edits that change the machine kind */
   hideKindChangeWarning: boolean;
+  /** explicitly created folders (so a folder can exist while empty) */
+  folders: string[];
+  browserView: BrowserView;
+  browserSort: BrowserSort;
 
   setHideKindChangeWarning: (v: boolean) => void;
   setTheme: (t: Theme) => void;
@@ -46,12 +64,21 @@ interface AppState {
   setMobileTab: (t: MobileTab) => void;
   setActiveWorkspace: (id: string) => void;
   setActiveCell: (id: string | null) => void;
+  setBrowserView: (v: BrowserView) => void;
+  setBrowserSort: (s: BrowserSort) => void;
+  restoreSnapshot: (snap: LibrarySnapshot) => void;
 
-  addWorkspace: (name?: string) => void;
+  addWorkspace: (name?: string, folder?: string) => void;
   renameWorkspace: (id: string, name: string) => void;
-  setWorkspaceFolder: (id: string, folder: string) => void;
-  deleteWorkspace: (id: string) => void;
-  importWorkspace: (ws: Workspace) => void;
+  duplicateWorkspace: (id: string) => void;
+  deleteWorkspaces: (ids: string[]) => void;
+  importWorkspace: (ws: Workspace, folder?: string) => void;
+  /** moves worksheets into a folder (created if new); undefined = out of any folder */
+  moveWorkspaces: (ids: string[], folder: string | undefined) => void;
+  createFolder: (name: string) => void;
+  renameFolder: (from: string, to: string) => void;
+  /** deletes the folder; its worksheets move out of it, they are not deleted */
+  deleteFolder: (name: string) => void;
 
   setCellSource: (cellId: string, source: string) => void;
   addCell: (source?: string, afterCellId?: string | null) => void;
@@ -65,10 +92,11 @@ export function uid(): string {
   return `${Date.now().toString(36)}-${counter}-${Math.random().toString(36).slice(2, 7)}`;
 }
 
-function newWorkspace(name: string, sources: string[] = [""]): Workspace {
+function newWorkspace(name: string, sources: string[] = [""], folder?: string): Workspace {
   return {
     id: uid(),
     name,
+    folder,
     cells: sources.map((source) => ({ id: uid(), source })),
     createdAt: Date.now(),
     updatedAt: Date.now()
@@ -91,6 +119,9 @@ export const useAppStore = create<AppState>()(
       paneWidth: 420,
       layouts: {},
       hideKindChangeWarning: false,
+      folders: [],
+      browserView: "grid",
+      browserSort: { key: "updated", asc: false },
 
       setHideKindChangeWarning: (hideKindChangeWarning) => set({ hideKindChangeWarning }),
       setTheme: (theme) => set({ theme }),
@@ -108,10 +139,15 @@ export const useAppStore = create<AppState>()(
         set({ activeWorkspaceId: id, activeCellId: ws?.cells[0]?.id ?? null });
       },
       setActiveCell: (id) => set({ activeCellId: id }),
+      setBrowserView: (browserView) => set({ browserView }),
+      setBrowserSort: (browserSort) => set({ browserSort }),
+      restoreSnapshot: (snap) => set({ ...snap }),
 
-      addWorkspace: (name) => {
+      addWorkspace: (name, folder) => {
         const ws = newWorkspace(
-          name ?? i18n.t("workspace.defaultName", { ns: "ui", index: get().workspaces.length + 1 })
+          name ?? i18n.t("workspace.defaultName", { ns: "ui", index: get().workspaces.length + 1 }),
+          [""],
+          cleanFolder(folder)
         );
         set((s) => ({
           workspaces: [...s.workspaces, ws],
@@ -123,25 +159,65 @@ export const useAppStore = create<AppState>()(
         set((s) => ({
           workspaces: s.workspaces.map((w) => (w.id === id ? { ...w, name, updatedAt: Date.now() } : w))
         })),
-      setWorkspaceFolder: (id, folder) =>
-        set((s) => ({
-          workspaces: s.workspaces.map((w) =>
-            w.id === id ? { ...w, folder: folder.trim() || undefined, updatedAt: Date.now() } : w
-          )
-        })),
-      deleteWorkspace: (id) => {
-        const rest = get().workspaces.filter((w) => w.id !== id);
-        const list = rest.length > 0 ? rest : [newWorkspace(i18n.t("workspace.defaultName", { ns: "ui", index: 1 }))];
-        set({
-          workspaces: list,
-          activeWorkspaceId: list[0].id,
-          activeCellId: list[0].cells[0]?.id ?? null
+      duplicateWorkspace: (id) => {
+        const src = get().workspaces.find((w) => w.id === id);
+        if (!src) return;
+        const copy = newWorkspace(
+          i18n.t("workspace.copyName", { ns: "ui", name: src.name }),
+          src.cells.map((c) => c.source),
+          src.folder
+        );
+        set((s) => {
+          // pinned graph positions are keyed by cell id, so they are copied over too
+          const layouts = { ...s.layouts };
+          src.cells.forEach((c, i) => {
+            if (s.layouts[c.id]) layouts[copy.cells[i].id] = s.layouts[c.id];
+          });
+          const at = s.workspaces.findIndex((w) => w.id === id);
+          const workspaces = [...s.workspaces];
+          workspaces.splice(at + 1, 0, copy);
+          return { workspaces, layouts };
         });
       },
-      importWorkspace: (ws) => {
+      deleteWorkspaces: (ids) => {
+        const s = get();
+        const rest = s.workspaces.filter((w) => !ids.includes(w.id));
+        const list = rest.length > 0 ? rest : [newWorkspace(i18n.t("workspace.defaultName", { ns: "ui", index: 1 }))];
+        const keepActive = list.some((w) => w.id === s.activeWorkspaceId);
+        set({
+          workspaces: list,
+          ...(keepActive ? {} : { activeWorkspaceId: list[0].id, activeCellId: list[0].cells[0]?.id ?? null })
+        });
+      },
+      moveWorkspaces: (ids, folder) => {
+        const target = cleanFolder(folder);
+        set((s) => ({
+          folders: target && !s.folders.includes(target) ? [...s.folders, target] : s.folders,
+          workspaces: s.workspaces.map((w) => (ids.includes(w.id) ? { ...w, folder: target } : w))
+        }));
+      },
+      createFolder: (name) => {
+        const folder = cleanFolder(name);
+        if (folder) set((s) => (s.folders.includes(folder) ? {} : { folders: [...s.folders, folder] }));
+      },
+      renameFolder: (from, to) => {
+        const target = cleanFolder(to);
+        if (!target || target === from) return;
+        set((s) => ({
+          folders: [...new Set(s.folders.map((f) => (f === from ? target : f)).concat(target))],
+          workspaces: s.workspaces.map((w) => (w.folder === from ? { ...w, folder: target } : w))
+        }));
+      },
+      deleteFolder: (name) =>
+        set((s) => ({
+          folders: s.folders.filter((f) => f !== name),
+          workspaces: s.workspaces.map((w) => (w.folder === name ? { ...w, folder: undefined } : w))
+        })),
+      importWorkspace: (ws, folder) => {
         const safe: Workspace = {
           id: uid(),
           name: ws.name || i18n.t("workspace.importedName", { ns: "ui" }),
+          folder: cleanFolder(folder),
           cells: (ws.cells ?? []).map((c) => ({ id: uid(), source: String(c.source ?? "") })),
           createdAt: Date.now(),
           updatedAt: Date.now()
@@ -221,6 +297,26 @@ export const useAppStore = create<AppState>()(
     }
   )
 );
+
+function cleanFolder(folder: string | undefined): string | undefined {
+  return folder?.trim() || undefined;
+}
+
+/** Every folder: the explicitly created ones plus any a worksheet refers to, sorted by name. */
+export function allFolders(s: Pick<AppState, "folders" | "workspaces">): string[] {
+  const set = new Set(s.folders);
+  for (const w of s.workspaces) if (w.folder) set.add(w.folder);
+  return [...set].sort((a, b) => a.localeCompare(b));
+}
+
+export function librarySnapshot(s: AppState): LibrarySnapshot {
+  return {
+    workspaces: s.workspaces,
+    folders: s.folders,
+    activeWorkspaceId: s.activeWorkspaceId,
+    activeCellId: s.activeCellId
+  };
+}
 
 export function activeWorkspace(s: AppState): Workspace {
   return s.workspaces.find((w) => w.id === s.activeWorkspaceId) ?? s.workspaces[0];
