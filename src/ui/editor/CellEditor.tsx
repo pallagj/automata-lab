@@ -55,6 +55,23 @@ function cellKind(result: CellResult | undefined): ValueKind | null {
 /** Drag & drop between cells: the id of the cell being dragged. */
 let draggingId: string | null = null;
 
+/** Puts the caret at the end of a cell: its editor's text, or a form's last field. */
+function focusCellEnd(cellId: string) {
+  const el = document.querySelector<HTMLElement>(`[data-cell-id="${cellId}"]`);
+  if (!el) return;
+  const view = EditorView.findFromDOM(el);
+  if (view) {
+    view.focus();
+    view.dispatch({ selection: { anchor: view.state.doc.length } });
+    return;
+  }
+  const fields = el.querySelectorAll<HTMLInputElement>("input");
+  const last = fields[fields.length - 1];
+  if (!last) return;
+  last.focus();
+  last.setSelectionRange(last.value.length, last.value.length);
+}
+
 /** A proper warning badge for the gutter (not an emoji). */
 const SeverityBadge: React.FC<{ level: "error" | "warning" }> = ({ level }) => {
   return (
@@ -122,19 +139,29 @@ export const CellEditor: React.FC<Props> = ({ cell, index, result }) => {
   const extensions = useMemo(() => {
     if (isYaml) return [yaml(), epsilonInputHandler];
     const newCellOnEnter = { key: "Enter", run: () => (addCell("", cell.id), true) };
-    if (isNote)
-      return [
-        EditorView.lineWrapping,
-        // Backspace in an empty note turns it back into an empty expression cell
-        Prec.high(
-          keymap.of([
-            newCellOnEnter,
-            { key: "Backspace", run: (view) => view.state.doc.length === 0 && (setCellSource(cell.id, ""), true) }
-          ])
-        )
-      ];
-    return [regexEpsilonInputHandler, Prec.high(keymap.of([newCellOnEnter]))];
-  }, [isYaml, isNote, addCell, setCellSource, cell.id]);
+    // Backspace in an empty cell deletes it and goes on at the end of the cell above, as in Desmos;
+    // the first cell stays, and if it is an empty note it turns back into an expression cell
+    const backspaceWhenEmpty = {
+      key: "Backspace",
+      run: (view: EditorView) => {
+        if (view.state.doc.length > 0) return false;
+        const cells = activeWorkspace(useAppStore.getState()).cells;
+        const prev = cells[cells.findIndex((c) => c.id === cell.id) - 1];
+        if (prev) {
+          focusCellEnd(prev.id);
+          removeCell(cell.id);
+          setActiveCell(prev.id);
+          return true;
+        }
+        if (!isNote) return false;
+        setCellSource(cell.id, "");
+        return true;
+      }
+    };
+    const keys = Prec.high(keymap.of([newCellOnEnter, backspaceWhenEmpty]));
+    if (isNote) return [EditorView.lineWrapping, keys];
+    return [regexEpsilonInputHandler, keys];
+  }, [isYaml, isNote, addCell, removeCell, setActiveCell, setCellSource, cell.id]);
 
   // a new, empty cell (Enter, the ghost cell) takes the keyboard focus as soon as its editor exists;
   // an empty cell that becomes active later (e.g. by deleting the one below) gets it on the next frame
@@ -150,7 +177,7 @@ export const CellEditor: React.FC<Props> = ({ cell, index, result }) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isActive]);
 
-  // typing # (or Backspace in an empty note) switches modes and remounts the editor — the shown text
+  // typing # (or Backspace in an empty first note) switches modes and remounts the editor — the shown text
   // changes under it — so the new editor takes over the caret as soon as it exists, at the end of its text
   const wasNote = useRef(isNote);
   const caretMoves = useRef(false);
@@ -314,6 +341,7 @@ export const CellEditor: React.FC<Props> = ({ cell, index, result }) => {
   return (
     <div
       ref={cellRef}
+      data-cell-id={cell.id}
       className={`cell ${inline ? "inline" : "block"} ${isNote ? "note" : ""} ${isActive ? "active" : ""} ${hasError ? "has-error" : ""} ${
         dropPos ? `drop-${dropPos}` : ""
       }`}

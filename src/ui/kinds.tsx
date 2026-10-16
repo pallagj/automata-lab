@@ -8,8 +8,8 @@ import {
   Layers,
   ListTree,
   LucideIcon,
-  Regex,
-  StickyNote
+  Quote,
+  Regex
 } from "lucide-react";
 
 /** What a cell or worksheet holds. One plain, grey icon set used everywhere (cells, Insert menu, browser). */
@@ -24,7 +24,7 @@ const ICONS: Record<ValueKind, LucideIcon> = {
   regex: Regex,
   verdict: Equal,
   expression: FunctionSquare,
-  note: StickyNote
+  note: Quote
 };
 
 export const KindIcon: React.FC<{ kind: ValueKind; size?: number; title?: string }> = ({ kind, size = 16, title }) => {

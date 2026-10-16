@@ -517,17 +517,9 @@ body.resizing {
 }
 
 .topbar .logo {
-  display: flex;
-  align-items: center;
-  gap: 9px;
   font-weight: 800;
   font-size: 16.5px;
   letter-spacing: -0.2px;
-}
-
-.topbar .logo img {
-  width: 26px;
-  height: 26px;
 }
 
 .topbar .logo .accent {
@@ -606,12 +598,7 @@ body.resizing {
 }
 
 @media (max-width: 720px) {
-  .topbar .logo span {
-    display: none;
-  }
-}
-
-@media (max-width: 520px) {
+  /* no room for the name: the worksheet title and the settings share the bar */
   .topbar {
     grid-template-columns: minmax(0, 1fr) auto;
   }

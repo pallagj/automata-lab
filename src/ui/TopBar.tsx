@@ -121,10 +121,7 @@ export const TopBar: React.FC = () => {
       </div>
 
       <div className="logo">
-        <img src="/icon.svg" alt="" />
-        <span>
-          Automata<span className="accent">Lab</span>
-        </span>
+        Automata<span className="accent">Lab</span>
       </div>
 
       <div className="topbar-right">
