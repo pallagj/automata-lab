@@ -693,6 +693,11 @@ body.resizing {
   padding: 0 14px 14px 14px;
 }
 
+.note-text {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
 details.card > summary {
   list-style: none;
   cursor: pointer;
@@ -832,6 +837,20 @@ details.card[open] > summary .chev {
 
 .cell.inline .cell-editor {
   padding: 6px 4px 6px 8px;
+}
+
+/* a note reads as text, as in Desmos: the UI font, wrapped lines, no markers */
+.cell.note .cell-editor .cm-editor {
+  font-size: 14px;
+  color: var(--text-soft);
+}
+
+.cell.note .cell-editor .cm-scroller {
+  font-family: var(--font-sans);
+}
+
+.cell.note .cm-placeholder {
+  color: var(--muted);
 }
 
 /* definitions: the form / YAML block with the tools in a column on the right, ✕ on top */

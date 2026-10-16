@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import CodeMirror, { keymap, Prec, ReactCodeMirrorRef } from "@uiw/react-codemirror";
+import CodeMirror, { EditorView, keymap, Prec, ReactCodeMirrorRef } from "@uiw/react-codemirror";
 import { yaml } from "@codemirror/lang-yaml";
 import { useTranslation } from "react-i18next";
 import type { TFunction } from "i18next";
@@ -15,6 +15,7 @@ import { opApplicability, OpInfo, OPS } from "./ops";
 import { detectEntityKind, EntityForm, parseEntityDraft } from "./EntityForm";
 import { machineKindLabel } from "../machineLabels";
 import { epsilonInputHandler, regexEpsilonInputHandler } from "./epsilon";
+import { isNoteSource, noteSource, noteText } from "./note";
 import { KindIcon, ValueKind } from "../kinds";
 
 interface Props {
@@ -112,33 +113,57 @@ export const CellEditor: React.FC<Props> = ({ cell, index, result }) => {
       : null;
   const hasError = worst === "error";
   const isYaml = /^\s*[A-Za-z]+\s*:/.test(cell.source);
+  // a note is edited as plain text: its # markers stay in the source, out of sight
+  const isNote = isNoteSource(cell.source);
+  const text = isNote ? noteText(cell.source) : cell.source;
 
   // expressions and notes are one line, as in Desmos: Enter starts a new cell below (Shift+Enter still breaks
   // the line); YAML definitions are multi-line, so there Enter stays a newline
-  const extensions = useMemo(
-    () =>
-      isYaml
-        ? [yaml(), epsilonInputHandler]
-        : [
-            regexEpsilonInputHandler,
-            Prec.high(keymap.of([{ key: "Enter", run: () => (addCell("", cell.id), true) }]))
-          ],
-    [isYaml, addCell, cell.id]
-  );
+  const extensions = useMemo(() => {
+    if (isYaml) return [yaml(), epsilonInputHandler];
+    const newCellOnEnter = { key: "Enter", run: () => (addCell("", cell.id), true) };
+    if (isNote)
+      return [
+        EditorView.lineWrapping,
+        // Backspace in an empty note turns it back into an empty expression cell
+        Prec.high(
+          keymap.of([
+            newCellOnEnter,
+            { key: "Backspace", run: (view) => view.state.doc.length === 0 && (setCellSource(cell.id, ""), true) }
+          ])
+        )
+      ];
+    return [regexEpsilonInputHandler, Prec.high(keymap.of([newCellOnEnter]))];
+  }, [isYaml, isNote, addCell, setCellSource, cell.id]);
 
   // a new, empty cell (Enter, the ghost cell) takes the keyboard focus as soon as its editor exists;
   // an empty cell that becomes active later (e.g. by deleting the one below) gets it on the next frame
-  const autoFocus = useRef(isActive && cell.source === "").current;
+  const autoFocus = useRef(isActive && text === "").current;
   const cellRef = useRef<HTMLDivElement>(null);
   const cmRef = useRef<ReactCodeMirrorRef>(null);
   useEffect(() => {
-    if (!isActive || cell.source !== "") return;
+    if (!isActive || text !== "") return;
     const frame = requestAnimationFrame(() => {
       if (!cellRef.current?.contains(document.activeElement)) cmRef.current?.view?.focus();
     });
     return () => cancelAnimationFrame(frame);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isActive]);
+
+  // typing # (or Backspace in an empty note) switches modes and remounts the editor — the shown text
+  // changes under it — so the new editor takes over the caret as soon as it exists, at the end of its text
+  const wasNote = useRef(isNote);
+  const caretMoves = useRef(false);
+  if (wasNote.current !== isNote) {
+    wasNote.current = isNote;
+    caretMoves.current = isActive;
+  }
+  const onCreateEditor = (view: EditorView) => {
+    if (!caretMoves.current) return;
+    caretMoves.current = false;
+    view.focus();
+    view.dispatch({ selection: { anchor: view.state.doc.length } });
+  };
 
   const kind = cellKind(result);
   const kindLabel = result?.comment
@@ -289,7 +314,7 @@ export const CellEditor: React.FC<Props> = ({ cell, index, result }) => {
   return (
     <div
       ref={cellRef}
-      className={`cell ${inline ? "inline" : "block"} ${isActive ? "active" : ""} ${hasError ? "has-error" : ""} ${
+      className={`cell ${inline ? "inline" : "block"} ${isNote ? "note" : ""} ${isActive ? "active" : ""} ${hasError ? "has-error" : ""} ${
         dropPos ? `drop-${dropPos}` : ""
       }`}
       onFocusCapture={() => setActiveCell(cell.id)}
@@ -337,15 +362,18 @@ export const CellEditor: React.FC<Props> = ({ cell, index, result }) => {
           ) : (
             <div className="cell-editor">
               <CodeMirror
+                key={isNote ? "note" : "code"}
                 ref={cmRef}
                 autoFocus={autoFocus}
-                value={cell.source}
+                value={text}
                 theme={theme}
                 extensions={extensions}
-                onChange={(value) => setCellSource(cell.id, value)}
+                placeholder={isNote ? t("editor.cell.notePlaceholder") : undefined}
+                onChange={(value) => setCellSource(cell.id, isNote ? noteSource(value) : value)}
                 onFocus={() => setActiveCell(cell.id)}
+                onCreateEditor={onCreateEditor}
                 basicSetup={{
-                  lineNumbers: cell.source.split("\n").length > 3,
+                  lineNumbers: !isNote && cell.source.split("\n").length > 3,
                   foldGutter: false,
                   autocompletion: false,
                   highlightActiveLine: false,
@@ -357,17 +385,19 @@ export const CellEditor: React.FC<Props> = ({ cell, index, result }) => {
         </div>
 
         <div className="cell-tools">
-          <button
-            ref={opsBtnRef}
-            className="cell-tool"
-            title={t("editor.cell.operationsHint")}
-            onClick={(e) => {
-              e.stopPropagation();
-              opsOpen ? setOpsOpen(false) : openOpsMenu();
-            }}
-          >
-            <FunctionSquare size={15} />
-          </button>
+          {!isNote && (
+            <button
+              ref={opsBtnRef}
+              className="cell-tool"
+              title={t("editor.cell.operationsHint")}
+              onClick={(e) => {
+                e.stopPropagation();
+                opsOpen ? setOpsOpen(false) : openOpsMenu();
+              }}
+            >
+              <FunctionSquare size={15} />
+            </button>
+          )}
           {formAvailable && (
             <button
               className="cell-tool"

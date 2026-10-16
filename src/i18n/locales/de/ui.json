@@ -421,7 +421,8 @@
       "editYaml": "YAML-Code bearbeiten",
       "backToForm": "Zurück zur Formularbearbeitung",
       "expandToDefinition": "Zu einer bearbeitbaren Definition aufklappen",
-      "deleteCell": "Zelle löschen"
+      "deleteCell": "Zelle löschen",
+      "notePlaceholder": "Notiz — schreibe hier deine Erklärung"
     },
     "form": {
       "col": {
@@ -485,8 +486,7 @@
       "grammar": "Grammatik",
       "regex": "Regulärer Ausdruck",
       "expression": "Ausdruck / Operation",
-      "note": "Notiz",
-      "noteTemplate": "# Notiz\n# Eine mit # beginnende Zelle ist ein Kommentar — schreibe hier deine Erklärung."
+      "note": "Notiz"
     },
     "column": {
       "cellCount": "{{count}} Zellen",

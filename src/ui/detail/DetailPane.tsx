@@ -12,6 +12,7 @@ import { RegexView } from "./RegexView";
 import { VerdictView } from "./VerdictView";
 import { StepsPanel } from "./StepsPanel";
 import { DiagnosticsList, ResultNotes, useApplyFix } from "./DiagnosticsList";
+import { noteText } from "../editor/note";
 import { Info } from "lucide-react";
 
 /** Empty cell: a full canvas — double-click creates the first state. */
@@ -74,15 +75,11 @@ export const DetailPane: React.FC<{ result: CellResult | null }> = ({ result }) 
 
   if (result.comment) {
     const cell = ws.cells.find((c) => c.id === activeCellId);
-    const text = (cell?.source ?? "")
-      .split("\n")
-      .map((l) => l.replace(/^\s*#\s?/, ""))
-      .join("\n")
-      .trim();
+    const text = noteText(cell?.source ?? "").trim();
     return (
       <div className="card">
         <div className="card-title">{t("detail.note")}</div>
-        <p style={{ whiteSpace: "pre-wrap", margin: 0 }}>{text}</p>
+        <div className="card-body note-text">{text}</div>
       </div>
     );
   }

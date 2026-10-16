@@ -1,6 +1,5 @@
 import React, { useState } from "react";
 import { useTranslation } from "react-i18next";
-import type { TFunction } from "i18next";
 import { Workspace, useAppStore } from "../../state/store";
 import { CellResult } from "../../core/workspace";
 import { CellEditor } from "./CellEditor";
@@ -18,7 +17,7 @@ interface InsertOption {
   labelKey: string;
   icon: React.ReactNode;
   /** template; {NAME} is replaced by a unique name */
-  make: (used: Set<string>, t: TFunction) => string;
+  make: (used: Set<string>) => string;
 }
 
 /** Machines in order of power, then grammar, regex, and finally a free expression. */
@@ -57,7 +56,7 @@ const INSERT_OPTIONS: InsertOption[] = [
   {
     labelKey: "editor.insertMenu.note",
     icon: <KindIcon kind="note" size={15} />,
-    make: (_used, t) => t("editor.insertMenu.noteTemplate")
+    make: () => "# "
   }
 ];
 
@@ -102,7 +101,7 @@ export const EditorColumn: React.FC<Props> = ({ workspace, results }) => {
                 <button
                   key={opt.labelKey}
                   onClick={() => {
-                    insert(opt.make(usedNames(workspace.cells), t));
+                    insert(opt.make(usedNames(workspace.cells)));
                     setMenuOpen(false);
                   }}
                 >

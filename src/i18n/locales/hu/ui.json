@@ -421,7 +421,8 @@
       "editYaml": "YAML-kód szerkesztése",
       "backToForm": "Vissza az űrlapos szerkesztéshez",
       "expandToDefinition": "Kibontás szerkeszthető definícióvá",
-      "deleteCell": "Cella törlése"
+      "deleteCell": "Cella törlése",
+      "notePlaceholder": "Jegyzet — ide írhatsz magyarázatot"
     },
     "form": {
       "col": {
@@ -485,8 +486,7 @@
       "grammar": "Nyelvtan",
       "regex": "Reguláris kifejezés",
       "expression": "Kifejezés / művelet",
-      "note": "Jegyzet",
-      "noteTemplate": "# Jegyzet\n# A #-tal kezdődő cella megjegyzés — ide írhatsz magyarázatot."
+      "note": "Jegyzet"
     },
     "column": {
       "cellCount": "{{count}} cella",
