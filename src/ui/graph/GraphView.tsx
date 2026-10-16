@@ -87,6 +87,7 @@ const LOOP_PEAK = 2.16;
 const LOOP_GAP = 3;
 
 type Pt = { x: number; y: number };
+type Box = { x: number; y: number; w: number; h: number };
 
 /** the point of a circle's border in the direction of `toward` */
 function onCircle(c: Pt, toward: Pt, r: number): Pt {
@@ -96,33 +97,70 @@ function onCircle(c: Pt, toward: Pt, r: number): Pt {
   return { x: c.x + (dx / d) * r, y: c.y + (dy / d) * r };
 }
 
-/** A smooth path through every point (Catmull–Rom spline as cubic Béziers). */
-function smoothPath(p: Pt[]): string {
-  let d = `M ${p[0].x} ${p[0].y}`;
-  for (let i = 0; i < p.length - 1; i++) {
-    const p0 = p[i - 1] ?? p[i];
-    const p1 = p[i];
-    const p2 = p[i + 1];
-    const p3 = p[i + 2] ?? p2;
-    const c1 = { x: p1.x + (p2.x - p0.x) / 6, y: p1.y + (p2.y - p0.y) / 6 };
-    const c2 = { x: p2.x - (p3.x - p1.x) / 6, y: p2.y - (p3.y - p1.y) / 6 };
-    d += ` C ${c1.x} ${c1.y}, ${c2.x} ${c2.y}, ${p2.x} ${p2.y}`;
-  }
-  return d;
+/** An edge is a straight line, or a single arc for a back-and-forth pair: start, control point, end. */
+type Arc = { s: Pt; c: Pt; e: Pt };
+
+/** the arc from a to b, bent sideways by `bend` (0 = straight; > 0 = to the left of a→b) */
+function edgeArc(a: LaidOutNode, b: LaidOutNode, bend: number): Arc {
+  const dx = b.x - a.x;
+  const dy = b.y - a.y;
+  const d = Math.hypot(dx, dy) || 1;
+  const c = { x: (a.x + b.x) / 2 + (dy / d) * bend, y: (a.y + b.y) / 2 - (dx / d) * bend };
+  // the ends sit on the circles (+ room for the arrowhead at the target)
+  return { s: onCircle(a, c, a.r), c, e: onCircle(b, c, b.r + 7) };
 }
 
-/**
- * dagre layout + edge geometry; manual positions in `overrides` win over the computed ones.
- *
- * Labels sit on their own edge (the label box interrupts the line), so it is never a
- * question which edge a label belongs to. Between two states that dagre placed, the edge
- * follows dagre's route, which keeps clear of other states and reserves room for the label;
- * once a state has been moved by hand its edges fall back to a simple curve.
- */
-export function layoutGraph(
-  spec: GraphSpec,
-  overrides: Map<string, { x: number; y: number }>
-): { nodes: LaidOutNode[]; edges: LaidOutEdge[]; bounds: [number, number, number, number] } {
+function arcAt({ s, c, e }: Arc, t: number): Pt {
+  const u = 1 - t;
+  return { x: u * u * s.x + 2 * u * t * c.x + t * t * e.x, y: u * u * s.y + 2 * u * t * c.y + t * t * e.y };
+}
+
+const ARC_SAMPLES = 16;
+const arcPoints = (arc: Arc): Pt[] => Array.from({ length: ARC_SAMPLES + 1 }, (_, i) => arcAt(arc, i / ARC_SAMPLES));
+
+/** does the segment p→q cross the box (Liang–Barsky clipping)? */
+function segmentHitsBox(p: Pt, q: Pt, b: Box): boolean {
+  let t0 = 0;
+  let t1 = 1;
+  const dx = q.x - p.x;
+  const dy = q.y - p.y;
+  const clip = (den: number, num: number) => {
+    if (den === 0) return num >= 0;
+    const t = num / den;
+    if (den > 0) {
+      if (t < t0) return false;
+      if (t < t1) t1 = t;
+    } else {
+      if (t > t1) return false;
+      if (t > t0) t0 = t;
+    }
+    return true;
+  };
+  return (
+    clip(-dx, p.x - b.x) && clip(dx, b.x + b.w - p.x) && clip(-dy, p.y - b.y) && clip(dy, b.y + b.h - p.y)
+  );
+}
+
+const boxesOverlap = (a: Box, b: Box) =>
+  a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b.y < a.y + a.h;
+
+function boxHitsCircle(b: Box, c: LaidOutNode, margin: number): boolean {
+  const nx = Math.max(b.x, Math.min(c.x, b.x + b.w));
+  const ny = Math.max(b.y, Math.min(c.y, b.y + b.h));
+  return Math.hypot(nx - c.x, ny - c.y) < c.r + margin;
+}
+
+/** positions along its edge where a label is tried, best first */
+const LABEL_TS = [0.5, 0.42, 0.58, 0.34, 0.66, 0.26, 0.74];
+
+/** Where dagre puts the states, with the label and radius sizes it was given — independent of dragging. */
+export interface StatePlacement {
+  boxes: Map<string, { lines: string[]; w: number; h: number }>;
+  radii: Map<string, number>;
+  positions: Map<string, Pt>;
+}
+
+export function placeStates(spec: GraphSpec): StatePlacement {
   const g = new dagre.graphlib.Graph({ multigraph: true });
   g.setGraph({ rankdir: "LR", nodesep: 30, ranksep: 76, marginx: 24, marginy: 24 });
   g.setDefaultEdgeLabel(() => ({}));
@@ -144,6 +182,7 @@ export function layoutGraph(
     }
     g.setNode(n.id, { width, height });
   }
+  // the label sizes make dagre leave room for the labels between the ranks
   for (const e of spec.edges) {
     if (e.from !== e.to) {
       const b = boxes.get(e.id)!;
@@ -152,13 +191,32 @@ export function layoutGraph(
   }
   dagre.layout(g);
 
+  const positions = new Map(spec.nodes.map((n) => [n.id, { x: g.node(n.id)?.x ?? 0, y: g.node(n.id)?.y ?? 0 }]));
+  return { boxes, radii, positions };
+}
+
+/**
+ * dagre places the states; the edges are drawn here, with the same rule whether a
+ * state sits where dagre put it or where it was dragged, so the edges simply follow.
+ *
+ * Every edge is straight; only a back-and-forth pair is drawn as two arcs, one on each
+ * side. Labels sit on their own edge (the label box interrupts the line), so it is never
+ * a question which edge a label belongs to; each slides along its edge to a spot where it
+ * covers no state, no other label and no other edge, if there is one.
+ */
+export function layoutGraph(
+  spec: GraphSpec,
+  overrides: Map<string, { x: number; y: number }>,
+  placement: StatePlacement = placeStates(spec)
+): { nodes: LaidOutNode[]; edges: LaidOutEdge[]; bounds: [number, number, number, number] } {
+  const { boxes, radii, positions } = placement;
   const nodes: LaidOutNode[] = spec.nodes.map((n) => {
-    const pos = overrides.get(n.id) ?? g.node(n.id);
+    const pos = overrides.get(n.id) ?? positions.get(n.id);
     return { ...n, x: pos?.x ?? 0, y: pos?.y ?? 0, r: radii.get(n.id)! };
   });
   const byId = new Map(nodes.map((n) => [n.id, n]));
 
-  // back-and-forth edge pairs (for the fallback curve): how many, and their tallest label
+  // back-and-forth edge pairs: how many, and their tallest label
   const pairs = new Map<string, { count: number; h: number }>();
   for (const e of spec.edges) {
     if (e.from === e.to) continue;
@@ -167,60 +225,78 @@ export function layoutGraph(
     pairs.set(key, { count: p.count + 1, h: Math.max(p.h, boxes.get(e.id)!.h) });
   }
 
+  // 1. geometry: straight edges; a back-and-forth pair bends apart, each to its own left,
+  //    far enough for the two labels to pass each other
+  const arcs = new Map<string, Arc>();
+  for (const e of spec.edges) {
+    if (e.from === e.to) continue;
+    const pair = pairs.get([e.from, e.to].sort().join("→"))!;
+    const bend = pair.count > 1 ? Math.max(30, pair.h + 8) : 0;
+    arcs.set(e.id, edgeArc(byId.get(e.from)!, byId.get(e.to)!, bend));
+  }
+  const arcPts = new Map([...arcs].map(([id, arc]) => [id, arcPoints(arc)]));
+
+  // a self-loop and its label: labels of other edges keep off them
+  const loopBoxes: Box[] = [];
+  for (const e of spec.edges) {
+    if (e.from !== e.to) continue;
+    const a = byId.get(e.from)!;
+    const box = boxes.get(e.id)!;
+    loopBoxes.push({ x: a.x - 0.8 * a.r, y: a.y - LOOP_PEAK * a.r, w: 1.6 * a.r, h: (LOOP_PEAK - 0.8) * a.r });
+    if (box.w > 0)
+      loopBoxes.push({ x: a.x - box.w / 2, y: a.y - a.r * LOOP_PEAK - LOOP_GAP - box.h, w: box.w, h: box.h });
+  }
+
+  // 2. labels: self-loop labels are fixed above their loop, the others find a free spot on their edge
+  const placed: Box[] = [...loopBoxes];
+  const labelAt = new Map<string, Pt>();
+  for (const e of spec.edges) {
+    if (e.from !== e.to) continue;
+    const a = byId.get(e.from)!;
+    const box = boxes.get(e.id)!;
+    labelAt.set(e.id, { x: a.x, y: a.y - a.r * LOOP_PEAK - LOOP_GAP - box.h / 2 });
+  }
+  for (const e of spec.edges) {
+    if (e.from === e.to) continue;
+    const box = boxes.get(e.id)!;
+    let best: { p: Pt; score: number } | null = null;
+    for (const t of LABEL_TS) {
+      const p = arcAt(arcs.get(e.id)!, t);
+      const b = { x: p.x - box.w / 2, y: p.y - box.h / 2, w: box.w, h: box.h };
+      let score = 0;
+      for (const n of nodes) if (boxHitsCircle(b, n, 2)) score += 100;
+      for (const o of placed) if (boxesOverlap(b, o)) score += 10;
+      for (const [id, pts] of arcPts) {
+        if (id === e.id) continue;
+        for (let i = 0; i < pts.length - 1; i++)
+          if (segmentHitsBox(pts[i], pts[i + 1], b)) {
+            score += 1;
+            break;
+          }
+      }
+      if (!best || score < best.score) best = { p, score };
+      if (score === 0) break;
+    }
+    labelAt.set(e.id, best!.p);
+    if (box.w > 0) placed.push({ x: best!.p.x - box.w / 2, y: best!.p.y - box.h / 2, w: box.w, h: box.h });
+  }
+
   const extra: Pt[] = [];
   const edges: LaidOutEdge[] = spec.edges.map((e) => {
-    const a = byId.get(e.from)!;
-    const b = byId.get(e.to)!;
     const box = boxes.get(e.id)!;
-    const label = { lines: box.lines, labelW: box.w, labelH: box.h };
-
+    const { x: labelX, y: labelY } = labelAt.get(e.id)!;
+    const label = { lines: box.lines, labelX, labelY, labelW: box.w, labelH: box.h };
     if (e.from === e.to) {
       // self-loop: a circle above the node, the label above the loop
+      const a = byId.get(e.from)!;
       const r = a.r;
       const path = `M ${a.x - r * 0.5} ${a.y - r * 0.85} C ${a.x - r * 1.1} ${a.y - r * 2.6}, ${a.x + r * 1.1} ${a.y - r * 2.6}, ${a.x + r * 0.5} ${a.y - r * 0.85}`;
       extra.push({ x: a.x, y: a.y - r * LOOP_PEAK });
-      return { ...e, ...label, path, labelX: a.x, labelY: a.y - r * LOOP_PEAK - LOOP_GAP - box.h / 2 };
+      return { ...e, ...label, path };
     }
-
-    const routed = g.edge({ v: e.from, w: e.to, name: e.id }) as
-      | { points?: Pt[]; x?: number; y?: number }
-      | undefined;
-    if (!overrides.has(e.from) && !overrides.has(e.to) && routed?.points && routed.points.length >= 2) {
-      const pts = routed.points;
-      const n = pts.length;
-      // dagre clips at the node's box: re-anchor both ends on the circles (+ room for the arrowhead)
-      const p = [
-        onCircle(a, n > 2 ? pts[1] : b, a.r),
-        ...pts.slice(1, -1),
-        onCircle(b, n > 2 ? pts[n - 2] : a, b.r + 7)
-      ];
-      extra.push(...p);
-      const mid = routed.x !== undefined && routed.y !== undefined ? { x: routed.x, y: routed.y } : p[Math.floor(n / 2)];
-      return { ...e, ...label, path: smoothPath(p), labelX: mid.x, labelY: mid.y };
-    }
-
-    // fallback (a state was moved by hand): a straight edge, or curved apart from its reverse twin
-    const pair = pairs.get([e.from, e.to].sort().join("→"))!;
-    const dx = b.x - a.x;
-    const dy = b.y - a.y;
-    const dist = Math.hypot(dx, dy) || 1;
-    const ux = dx / dist;
-    const uy = dy / dist;
-    // the curve's middle moves 0.7·offset sideways: enough for the two labels to pass each other
-    const offset = pair.count > 1 ? Math.max(26, (pair.h / 2 + 4) / 0.7) : 0;
-    const px = -uy * offset;
-    const py = ux * offset;
-
-    const sx = a.x + ux * a.r + px * 0.4;
-    const sy = a.y + uy * a.r + py * 0.4;
-    const ex = b.x - ux * (b.r + 7) + px * 0.4;
-    const ey = b.y - uy * (b.r + 7) + py * 0.4;
-    const mx = (a.x + b.x) / 2 + px;
-    const my = (a.y + b.y) / 2 + py;
-
-    const path = `M ${sx} ${sy} Q ${mx} ${my} ${ex} ${ey}`;
-    // the label sits on the curve's middle point
-    return { ...e, ...label, path, labelX: (sx + 2 * mx + ex) / 4, labelY: (sy + 2 * my + ey) / 4 };
+    const { s, c, e: end } = arcs.get(e.id)!;
+    extra.push(...arcPts.get(e.id)!);
+    return { ...e, ...label, path: `M ${s.x} ${s.y} Q ${c.x} ${c.y} ${end.x} ${end.y}` };
   });
 
   let minX = Infinity,
@@ -262,7 +338,12 @@ export const GraphView: React.FC<Props> = ({ spec, onEdgeClick, className, cellI
     return m;
   }, [savedPos, livePos]);
 
-  const { nodes, edges, bounds } = useMemo(() => layoutGraph(spec, overrides), [spec, overrides]);
+  // dagre runs only when the graph changes; dragging a state just redraws the edges
+  const placement = useMemo(() => placeStates(spec), [spec]);
+  const { nodes, edges, bounds } = useMemo(
+    () => layoutGraph(spec, overrides, placement),
+    [spec, overrides, placement]
+  );
   const [view, setView] = useState<[number, number, number, number] | null>(null);
   const svgRef = useRef<SVGSVGElement>(null);
   const dragRef = useRef<{ x: number; y: number; view: [number, number, number, number] } | null>(null);
