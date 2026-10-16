@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { EPS } from "../../core/types";
+import { Diagnostic, EPS } from "../../core/types";
 import {
   analyzeMachine,
   hasInputHead,
@@ -24,6 +24,7 @@ import { GraphEdge, GraphSpec, GraphView } from "../graph/GraphView";
 import { useGraphEditing } from "../graph/editing";
 import { Stage, StagePanel } from "./Stage";
 import { StepsContent } from "./StepsPanel";
+import { notesPanel } from "./DiagnosticsList";
 import { TapeInput } from "./TapeInput";
 import { StepGroup } from "../../core/expr/expression";
 import { Check, Layers, ListTree, Play, RotateCcw, StepForward, Table2, Undo2, X } from "lucide-react";
@@ -70,9 +71,10 @@ const StorageCells: React.FC<{ type: "stack" | "queue" | "tape"; st: StorageStat
   );
 };
 
-export const MachineView: React.FC<{ machine: Machine; stepGroups?: StepGroup[] }> = ({
+export const MachineView: React.FC<{ machine: Machine; stepGroups?: StepGroup[]; diagnostics?: Diagnostic[] }> = ({
   machine: m,
-  stepGroups
+  stepGroups,
+  diagnostics
 }) => {
   const { t } = useTranslation();
   const { cellId, editing } = useGraphEditing();
@@ -288,6 +290,8 @@ export const MachineView: React.FC<{ machine: Machine; stepGroups?: StepGroup[] 
       content: <StepsContent stepGroups={stepGroups} />
     });
   }
+  const notes = notesPanel(diagnostics, t("detail.notes"));
+  if (notes) panels.unshift(notes);
 
   const featuredPos = featured?.pos ?? 0;
 

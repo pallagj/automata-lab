@@ -190,6 +190,7 @@
       "title": "Wie entstand das? — die Schritte des Algorithmus"
     },
     "note": "Notiz",
+    "notes": "Hinweise",
     "whyNotEvaluable": "Warum kann die Zelle nicht ausgewertet werden?",
     "emptyCanvas": {
       "doubleClick": "Doppelklick",

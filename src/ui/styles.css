@@ -234,6 +234,11 @@ button {
   user-select: none;
 }
 
+.stage-panel > summary .panel-count {
+  color: var(--muted);
+  font-weight: 600;
+}
+
 .stage-panel > summary::-webkit-details-marker {
   display: none;
 }
@@ -807,10 +812,6 @@ details.card[open] > summary .chev {
   color: var(--warning);
 }
 
-.gutter-warn.info {
-  color: var(--info);
-}
-
 .cell-main {
   position: relative;
   flex: 1;
@@ -1106,9 +1107,22 @@ details.card[open] > summary .chev {
   color: var(--warning);
 }
 
+/* an info is a quiet note, not an alert: grey like the cell icons */
 .diag.info {
-  background: var(--info-soft);
-  color: var(--info);
+  background: var(--panel-2);
+  color: var(--text-soft);
+}
+
+.diag.info .diag-icon {
+  color: var(--muted);
+}
+
+.stage-panel-body .diag {
+  margin: 0 0 6px 0;
+}
+
+.stage-panel-body .diag:last-child {
+  margin-bottom: 0;
 }
 
 .diag .diag-body {

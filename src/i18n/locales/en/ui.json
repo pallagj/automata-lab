@@ -190,6 +190,7 @@
       "title": "How was this built? — the algorithm's steps"
     },
     "note": "Note",
+    "notes": "Notes",
     "whyNotEvaluable": "Why can't this cell be evaluated?",
     "emptyCanvas": {
       "doubleClick": "Double-click",

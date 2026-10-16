@@ -55,16 +55,7 @@ function cellKind(result: CellResult | undefined): ValueKind | null {
 let draggingId: string | null = null;
 
 /** A proper warning badge for the gutter (not an emoji). */
-const SeverityBadge: React.FC<{ level: "error" | "warning" | "info" }> = ({ level }) => {
-  if (level === "info") {
-    return (
-      <svg viewBox="0 0 24 24" width="17" height="17" className={`gutter-warn ${level}`}>
-        <circle cx="12" cy="12" r="9.5" fill="currentColor" />
-        <circle cx="12" cy="7.6" r="1.5" fill="var(--panel)" />
-        <rect x="10.7" y="10.4" width="2.6" height="7" rx="1.3" fill="var(--panel)" />
-      </svg>
-    );
-  }
+const SeverityBadge: React.FC<{ level: "error" | "warning" }> = ({ level }) => {
   return (
     <svg viewBox="0 0 24 24" width="18" height="18" className={`gutter-warn ${level}`}>
       <path
@@ -113,13 +104,12 @@ export const CellEditor: React.FC<Props> = ({ cell, index, result }) => {
 
   const isActive = cell.id === activeCellId;
   const diagnostics = result?.diagnostics ?? [];
-  const worst: "error" | "warning" | "info" | null = diagnostics.some((d) => d.level === "error")
+  // the gutter flags problems only; infos are read as notes in the detail pane
+  const worst: "error" | "warning" | null = diagnostics.some((d) => d.level === "error")
     ? "error"
     : diagnostics.some((d) => d.level === "warning")
       ? "warning"
-      : diagnostics.length > 0
-        ? "info"
-        : null;
+      : null;
   const hasError = worst === "error";
   const isYaml = /^\s*[A-Za-z]+\s*:/.test(cell.source);
 

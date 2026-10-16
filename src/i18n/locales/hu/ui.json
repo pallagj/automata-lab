@@ -190,6 +190,7 @@
       "title": "Hogyan készült? — az algoritmus lépései"
     },
     "note": "Jegyzet",
+    "notes": "Megjegyzések",
     "whyNotEvaluable": "Miért nem értékelhető ki a cella?",
     "emptyCanvas": {
       "doubleClick": "Dupla kattintás",

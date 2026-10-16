@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { EPS, setName } from "../../core/types";
+import { Diagnostic, EPS, setName } from "../../core/types";
 import {
   analyzeFSM,
   enumerateWords,
@@ -14,6 +14,7 @@ import { GraphEdge, GraphSpec, GraphView } from "../graph/GraphView";
 import { useGraphEditing } from "../graph/editing";
 import { Stage, StagePanel } from "./Stage";
 import { StepsContent } from "./StepsPanel";
+import { notesPanel } from "./DiagnosticsList";
 import { TapeInput } from "./TapeInput";
 import { StepGroup } from "../../core/expr/expression";
 import {
@@ -28,7 +29,11 @@ import {
   X
 } from "lucide-react";
 
-export const FSMView: React.FC<{ fsm: FSM; stepGroups?: StepGroup[] }> = ({ fsm, stepGroups }) => {
+export const FSMView: React.FC<{ fsm: FSM; stepGroups?: StepGroup[]; diagnostics?: Diagnostic[] }> = ({
+  fsm,
+  stepGroups,
+  diagnostics
+}) => {
   const { t } = useTranslation();
   const { cellId, editing } = useGraphEditing();
   const analysis = useMemo(() => analyzeFSM(fsm), [fsm]);
@@ -272,6 +277,8 @@ export const FSMView: React.FC<{ fsm: FSM; stepGroups?: StepGroup[] }> = ({ fsm,
       content: <StepsContent stepGroups={stepGroups} />
     });
   }
+  const notes = notesPanel(diagnostics, t("detail.notes"));
+  if (notes) panels.unshift(notes);
 
   const bottom = (
     <>

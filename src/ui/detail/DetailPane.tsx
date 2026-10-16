@@ -11,7 +11,8 @@ import { machineToFSM } from "../../core/machine/machine";
 import { RegexView } from "./RegexView";
 import { VerdictView } from "./VerdictView";
 import { StepsPanel } from "./StepsPanel";
-import { DiagnosticsList } from "./DiagnosticsList";
+import { DiagnosticsList, ResultNotes, useApplyFix } from "./DiagnosticsList";
+import { Info } from "lucide-react";
 
 /** Empty cell: a full canvas — double-click creates the first state. */
 const EmptyCanvas: React.FC = () => {
@@ -64,8 +65,8 @@ const EmptyCanvas: React.FC = () => {
 export const DetailPane: React.FC<{ result: CellResult | null }> = ({ result }) => {
   const { t } = useTranslation();
   const activeCellId = useAppStore((s) => s.activeCellId);
-  const setCellSource = useAppStore((s) => s.setCellSource);
   const ws = useAppStore(activeWorkspace);
+  const applyFix = useApplyFix();
 
   if (!result || result.empty) {
     return <EmptyCanvas />;
@@ -87,13 +88,6 @@ export const DetailPane: React.FC<{ result: CellResult | null }> = ({ result }) 
   }
 
   if (!result.value) {
-    // the suggested fix replaces the active cell's expression
-    const applyFix = (code: string) => {
-      const cell = ws.cells.find((c) => c.id === activeCellId);
-      if (!cell) return;
-      const asg = /^\s*([A-Za-z][A-Za-z0-9_'′]*)\s*=/.exec(cell.source);
-      setCellSource(cell.id, asg ? `${asg[1]} = ${code}` : code);
-    };
     return (
       <div className="card">
         <div className="card-title">{t("detail.whyNotEvaluable")}</div>
@@ -105,12 +99,12 @@ export const DetailPane: React.FC<{ result: CellResult | null }> = ({ result }) 
   const v = result.value;
 
   // machines: canvas-first layout (the steps panel joins the floating panels)
-  if (v.kind === "fsm") return <FSMView fsm={v} stepGroups={result.stepGroups} />;
+  if (v.kind === "fsm") return <FSMView fsm={v} stepGroups={result.stepGroups} diagnostics={result.diagnostics} />;
   if (v.kind === "machine") {
     // storage-free machine: gets the full automaton view (analysis, words, timeline)
     const f = machineToFSM(v);
-    if (f) return <FSMView fsm={f} stepGroups={result.stepGroups} />;
-    return <MachineView machine={v} stepGroups={result.stepGroups} />;
+    if (f) return <FSMView fsm={f} stepGroups={result.stepGroups} diagnostics={result.diagnostics} />;
+    return <MachineView machine={v} stepGroups={result.stepGroups} diagnostics={result.diagnostics} />;
   }
 
   return (
@@ -118,6 +112,15 @@ export const DetailPane: React.FC<{ result: CellResult | null }> = ({ result }) 
       {v.kind === "grammar" && <GrammarView grammar={v} />}
       {v.kind === "regex" && <RegexView regex={v} />}
       {v.kind === "verdict" && <VerdictView verdict={v} />}
+      {result.diagnostics.length > 0 && (
+        <div className="card">
+          <div className="card-title">
+            <Info size={15} />
+            {t("detail.notes")}
+          </div>
+          <ResultNotes diagnostics={result.diagnostics} />
+        </div>
+      )}
       <StepsPanel stepGroups={result.stepGroups} />
     </>
   );
