@@ -23,7 +23,11 @@
     "toFsm": "automatává alakítás",
     "toPda": "veremautomatává alakítás",
     "toRegex": "reguláris kifejezéssé alakítás",
-    "equal": "ekvivalencia-vizsgálat"
+    "equal": "ekvivalencia-vizsgálat",
+    "unitfree": "egyszeres szabályok elhagyása",
+    "trim": "felesleges szimbólumok elhagyása",
+    "cnf": "Chomsky-normálformára hozás",
+    "cyk": "beletartozás-vizsgálat (CYK)"
   },
   "regex": {
     "error": {
@@ -428,6 +432,10 @@
     }
   },
   "grammar": {
+    "needsContextFree": {
+      "title": "Ez a művelet ({{op}}) csak környezetfüggetlen nyelvtanra alkalmazható",
+      "detail": "Minden szabály bal oldalán egyetlen változónak kell állnia — a Chomsky-osztályozás panel megmutatja, melyik szabály sérti ezt."
+    },
     "classify": {
       "leftNotSingleNonterminal": "a(z) {{rule}} szabály bal oldala nem egyetlen nemterminális",
       "notRightLinear": "a(z) {{rule}} szabály jobb oldala nem „terminálisok + legfeljebb egy záró nemterminális” alakú",
@@ -441,7 +449,10 @@
     "table": {
       "rule": "szabály",
       "transition": "átmenet",
-      "newRules": "új szabályok"
+      "newRules": "új szabályok",
+      "variable": "változó",
+      "terminal": "terminális",
+      "newVariable": "új változó"
     },
     "toFsm": {
       "needsRightLinear": {
@@ -499,6 +510,75 @@
         "title": "3. Új kezdőszimbólum az ε miatt",
         "detail": "Az eredeti nyelvben benne van az ε (a kezdőszimbólum elenyésző), ezért új {{s2}} kezdőszimbólumot vezetünk be: {{s2}} → {{start}} | ε. Így az ε-szabály csak a kezdőszimbólumon marad."
       }
+    },
+    "unitfree": {
+      "step1": {
+        "title": "1. Az egyszeres szabályok gráfja",
+        "detail": "Egyszeres szabályok (A → B): {{edges}}. U(A) az A-ból ezeken át elérhető változók halmaza (A-t is beleértve).",
+        "detailNone": "Nincs egyszeres szabály (A → B) — a nyelvtan változatlan marad."
+      },
+      "step2": {
+        "title": "2. Új szabályok",
+        "detail": "Az egyszeres szabályokat elhagyjuk, és minden A megkapja minden B ∈ U(A) többi B → β szabályát A → β alakban."
+      },
+      "epsilonFirst": {
+        "title": "A nyelvtanban még vannak ε-szabályok",
+        "detail": "Ha utólag hagyjuk el az ε-szabályokat, új egyszeres szabályok keletkezhetnek (A → BC-ből elenyésző C mellett A → B lesz), ezért a jegyzet előbb az ε-szabályokat hagyja el.",
+        "fix": "előbb ε-mentesítés"
+      }
+    },
+    "trim": {
+      "step1": {
+        "title": "1. Terminálódó változók",
+        "detail": "B₀ = Σ, és Bᵢ₊₁ hozzáveszi azokat az A változókat, amelyekhez van olyan A → α szabály, hogy α minden szimbóluma Bᵢ-ben van. A végső halmazon kívüli változókból nem vezethető le terminális szó, a szabályaikat elhagyjuk: {{removed}}.",
+        "detailNone": "B₀ = Σ, és Bᵢ₊₁ hozzáveszi azokat az A változókat, amelyekhez van olyan A → α szabály, hogy α minden szimbóluma Bᵢ-ben van. Minden változó terminálódik."
+      },
+      "step2": {
+        "title": "2. A kezdőszimbólumból elérhető szimbólumok",
+        "detail": "T₀ = {S}, és Tᵢ₊₁ hozzáveszi a Tᵢ-beli változók szabályainak jobb oldalán álló szimbólumokat. Nem elérhető, elhagyjuk: {{removed}}.",
+        "detailNone": "T₀ = {S}, és Tᵢ₊₁ hozzáveszi a Tᵢ-beli változók szabályainak jobb oldalán álló szimbólumokat. Minden megmaradt szimbólum elérhető."
+      },
+      "step3": {
+        "title": "Elhagyott szabályok",
+        "detail": "{{rules}}"
+      },
+      "emptyLanguage": {
+        "title": "A nyelv üres",
+        "detail": "A(z) {{start}} kezdőszimbólumból nem vezethető le terminális szó, így L(G) = ∅ — minden szabály felesleges."
+      }
+    },
+    "cnf": {
+      "needsEpsilonFree": {
+        "title": "A Chomsky-normálformához ε-mentes nyelvtan kell",
+        "detail": "A konstrukció feltételezi, hogy ε csak S → ε alakban fordul elő, és S nincs egyetlen jobb oldalon sem; előbb hagyd el az ε-szabályokat.",
+        "fix": "előbb ε-mentesítés"
+      },
+      "epsilonDropped": {
+        "title": "Az ε kimarad",
+        "detail": "Chomsky-normálformájú nyelvtan nem generálhatja az ε-t, ezért a(z) {{start}} → ε szabályt elhagyjuk: az eredmény L(G) \\ {ε}-t generálja."
+      },
+      "step2": {
+        "title": "Az ε-szabály elhagyása",
+        "detail": "A(z) {{start}} → ε szabályt elhagyjuk: Chomsky-normálformában nincs ε-szabály."
+      },
+      "step3": {
+        "title": "Változók a terminálisok helyett",
+        "detail": "Minden legalább 2 hosszú jobb oldalon az a terminálist egy új Xa változóra cseréljük, Xa → a szabállyal. (A változónevek egykarakteresek, ezért Xa egy szabad betűt kap.)"
+      },
+      "step4": {
+        "title": "A hosszú szabályok feldarabolása",
+        "detail": "A → B₁B₂…Bₖ (k > 2) helyett A → B₁C₁, C₁ → B₂C₂, …, Cₖ₋₂ → Bₖ₋₁Bₖ, új Cᵢ változókkal."
+      },
+      "already": {
+        "title": "Már Chomsky-normálformában van",
+        "detail": "Minden szabály A → a vagy A → BC alakú."
+      }
+    },
+    "cyk": {
+      "needsCNF": {
+        "title": "A CYK-hoz Chomsky-normálformájú nyelvtan kell",
+        "detail": "Minden szabálynak A → a vagy A → BC alakúnak kell lennie."
+      }
     }
   },
   "expression": {
@@ -527,6 +607,7 @@
       "machineHasStorage": "A(z) {{name}} gép nem alakítható véges automatává, mert tárolója van ({{storages}}) — csak a tárolómentes gép ekvivalens automatával",
       "toFsmExpects": "A toFsm() nyelvtant, reguláris kifejezést vagy tárolómentes gépet vár",
       "toPdaExpects": "A toPda() nyelvtant vár",
+      "needsGrammar": "{{op}}: nyelvtant vár, de {{kind}} érkezett",
       "invalidExpression": "Hibás kifejezés",
       "parseGeneric": "{{message}}. Példák: detM = det(M) · u = union(M1, M2) · r = regex((ab)*+ba) · e = equal(M1, M2)",
       "evaluationError": "Kiértékelési hiba",

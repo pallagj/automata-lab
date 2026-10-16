@@ -23,7 +23,11 @@
     "toFsm": "conversion to automaton",
     "toPda": "conversion to pushdown automaton",
     "toRegex": "conversion to regular expression",
-    "equal": "equivalence check"
+    "equal": "equivalence check",
+    "unitfree": "unit-rule elimination",
+    "trim": "removal of useless symbols",
+    "cnf": "conversion to Chomsky normal form",
+    "cyk": "membership test (CYK)"
   },
   "regex": {
     "error": {
@@ -428,6 +432,10 @@
     }
   },
   "grammar": {
+    "needsContextFree": {
+      "title": "This operation ({{op}}) applies to context-free grammars only",
+      "detail": "Every rule must have a single variable on its left-hand side — the Chomsky classification panel shows which rule breaks this."
+    },
     "classify": {
       "leftNotSingleNonterminal": "the left side of rule {{rule}} is not a single nonterminal",
       "notRightLinear": "the right side of rule {{rule}} is not of the form \"terminals + at most one trailing nonterminal\"",
@@ -441,7 +449,10 @@
     "table": {
       "rule": "rule",
       "transition": "transition",
-      "newRules": "new rules"
+      "newRules": "new rules",
+      "variable": "variable",
+      "terminal": "terminal",
+      "newVariable": "new variable"
     },
     "toFsm": {
       "needsRightLinear": {
@@ -499,6 +510,75 @@
         "title": "3. New start symbol because of ε",
         "detail": "The original language contains ε (the start symbol is nullable), so we introduce a new start symbol {{s2}}: {{s2}} → {{start}} | ε. This way the ε-rule remains only on the start symbol."
       }
+    },
+    "unitfree": {
+      "step1": {
+        "title": "1. The graph of unit rules",
+        "detail": "Unit rules (A → B): {{edges}}. U(A) is the set of variables reachable from A along them, A included.",
+        "detailNone": "There is no unit rule (A → B) — the grammar stays the same."
+      },
+      "step2": {
+        "title": "2. New rules",
+        "detail": "The unit rules are dropped, and every A gets the other rules B → β of each B ∈ U(A) as A → β."
+      },
+      "epsilonFirst": {
+        "title": "The grammar still has ε-rules",
+        "detail": "Removing the ε-rules afterwards can create new unit rules (A → BC with a nullable C gives A → B), so the lecture notes remove the ε-rules first.",
+        "fix": "ε-removal first"
+      }
+    },
+    "trim": {
+      "step1": {
+        "title": "1. Variables that derive a terminal word",
+        "detail": "B₀ = Σ, and Bᵢ₊₁ adds every A with a rule A → α whose symbols are all in Bᵢ. The variables outside the final set derive no terminal word; their rules are dropped: {{removed}}.",
+        "detailNone": "B₀ = Σ, and Bᵢ₊₁ adds every A with a rule A → α whose symbols are all in Bᵢ. Every variable derives a terminal word."
+      },
+      "step2": {
+        "title": "2. Symbols reachable from the start symbol",
+        "detail": "T₀ = {S}, and Tᵢ₊₁ adds every symbol on the right-hand side of a rule of a variable in Tᵢ. Unreachable, dropped: {{removed}}.",
+        "detailNone": "T₀ = {S}, and Tᵢ₊₁ adds every symbol on the right-hand side of a rule of a variable in Tᵢ. Every remaining symbol is reachable."
+      },
+      "step3": {
+        "title": "Dropped rules",
+        "detail": "{{rules}}"
+      },
+      "emptyLanguage": {
+        "title": "The language is empty",
+        "detail": "The start symbol {{start}} derives no terminal word, so L(G) = ∅ — every rule is useless."
+      }
+    },
+    "cnf": {
+      "needsEpsilonFree": {
+        "title": "The Chomsky normal form needs an ε-free grammar",
+        "detail": "The construction assumes that ε occurs only as S → ε with S on no right-hand side; remove the ε-rules first.",
+        "fix": "ε-removal first"
+      },
+      "epsilonDropped": {
+        "title": "ε is left out",
+        "detail": "A grammar in Chomsky normal form cannot generate ε, so the rule {{start}} → ε is dropped: the result generates L(G) \\ {ε}."
+      },
+      "step2": {
+        "title": "Dropping the ε-rule",
+        "detail": "The rule {{start}} → ε is dropped: there is no ε-rule in Chomsky normal form."
+      },
+      "step3": {
+        "title": "Variables for the terminals",
+        "detail": "In every right-hand side of length at least 2, a terminal a is replaced by a new variable Xa with the rule Xa → a. (Variable names are single characters, so Xa gets a free letter.)"
+      },
+      "step4": {
+        "title": "Breaking the long rules",
+        "detail": "A → B₁B₂…Bₖ (k > 2) becomes A → B₁C₁, C₁ → B₂C₂, …, Cₖ₋₂ → Bₖ₋₁Bₖ with new variables Cᵢ."
+      },
+      "already": {
+        "title": "Already in Chomsky normal form",
+        "detail": "Every rule is A → a or A → BC."
+      }
+    },
+    "cyk": {
+      "needsCNF": {
+        "title": "CYK needs a grammar in Chomsky normal form",
+        "detail": "Every rule must be A → a or A → BC."
+      }
     }
   },
   "expression": {
@@ -527,6 +607,7 @@
       "machineHasStorage": "{{name}} cannot be converted to a finite automaton because it has storage ({{storages}}) — only a storage-free machine has an equivalent automaton",
       "toFsmExpects": "toFsm() expects a grammar, a regular expression, or a storage-free machine",
       "toPdaExpects": "toPda() expects a grammar",
+      "needsGrammar": "{{op}}: expects a grammar, but got {{kind}}",
       "invalidExpression": "Invalid expression",
       "parseGeneric": "{{message}}. Examples: detM = det(M) · u = union(M1, M2) · r = regex((ab)*+ba) · e = equal(M1, M2)",
       "evaluationError": "Evaluation error",

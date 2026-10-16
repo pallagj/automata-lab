@@ -19,6 +19,7 @@ import {
 import { RegexDef, regexToNFA, regexValue } from "../fsm/regex";
 import { fsmToRegex } from "../fsm/toRegex";
 import { Grammar, grammarToFSM, grammarToPDA, fsmToGrammar, removeEpsilonRules } from "../grammar/grammar";
+import { removeUnitRules, removeUselessSymbols, toCNF } from "../grammar/normalForm";
 import { fsmToMachine, machineCaps, machineToFSM } from "../machine/machine";
 import { Definition } from "../parse/definitionParser";
 
@@ -30,7 +31,7 @@ import { Definition } from "../parse/definitionParser";
  *   - there are NO letter literals — letter sequences only inside regex(...)
  *   - functions: det, min, epsfree, complete, reachable, complement, union,
  *     intersect, difference, concat, star, reverse, clean, toGrammar, toFsm,
- *     toPda, toRegex, regex, equal
+ *     toPda, toRegex, regex, equal, unitfree, trim, cnf
  */
 
 /** Parse/evaluation errors of the expression language always carry an I18nText. */
@@ -77,7 +78,10 @@ export const FUNCTION_NAMES = [
   "toPda",
   "toRegex",
   "regex",
-  "equal"
+  "equal",
+  "unitfree",
+  "trim",
+  "cnf"
 ] as const;
 
 type FuncName = (typeof FUNCTION_NAMES)[number];
@@ -340,6 +344,12 @@ class Evaluator {
         );
     };
     const fsmArg = (i: number) => this.asFSM(this.evaluate(e.args[i]), e.fn);
+    const grammarArg = (i: number): Grammar => {
+      const v = this.evaluate(e.args[i]);
+      if (v.kind !== "grammar")
+        throw new ExprError(tx("expression.error.needsGrammar", { opKey: `opNames.${e.fn}`, kindKey: describeKind(v) }));
+      return v;
+    };
     const label = (base: string) => `${base}(${e.rawArgs.join(", ")})`;
 
     switch (e.fn) {
@@ -432,6 +442,15 @@ class Evaluator {
           );
         return this.take(label("regex"), regexValue(pattern));
       }
+      case "unitfree":
+        expectArgs(1);
+        return this.take(label("unitfree"), removeUnitRules(grammarArg(0)));
+      case "trim":
+        expectArgs(1);
+        return this.take(label("trim"), removeUselessSymbols(grammarArg(0)));
+      case "cnf":
+        expectArgs(1);
+        return this.take(label("cnf"), toCNF(grammarArg(0)));
       case "equal": {
         expectArgs(2);
         return this.take(label("equal"), checkEquivalence(fsmArg(0), fsmArg(1)));

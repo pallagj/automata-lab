@@ -130,6 +130,9 @@
     },
     "grammars": {
       "name": "Grammars and conversions"
+    },
+    "cfgNormalForms": {
+      "name": "Context-free grammars — normal forms and CYK"
     }
   },
   "help": {
@@ -156,6 +159,7 @@
         "det": "determinization (powerset construction, with steps)",
         "min": "minimization (partition refinement, with steps)",
         "epsfree": "ε-removal: the ε-transitions of an automaton, the ε-rules of a context-free grammar",
+        "grammarOps": "grammar transformations: unit rules, useless symbols, Chomsky normal form",
         "completeReachable": "completion with a trap state / removing unreachable states",
         "setOps": "set operations (product construction)",
         "langOps": "language operations",
@@ -302,7 +306,14 @@
       "generatedWords": "Generated words ({{count}}{{plus}})",
       "clickForDerivation": "Click to see the derivation",
       "noDerivableWords": "No derivable word found up to length 8.",
-      "moreWordsPossible": "…the language may be larger than this (the enumeration covers length 8)."
+      "moreWordsPossible": "…the language may be larger than this (the enumeration covers length 8).",
+      "cnfBadge": "Chomsky normal form",
+      "cykTitle": "CYK table",
+      "cykIntro": "Row j, column i holds the variables that derive the j letters long subword starting at the i-th letter; the word is derivable when the start symbol is in the top cell.",
+      "cykConverted": "The grammar is not in Chomsky normal form, so the table is computed on {{expr}}:",
+      "cykUnambiguous": "The word has exactly one derivation tree.",
+      "cykAmbiguous": "The word has {{count}} derivation trees — the grammar is ambiguous.",
+      "exact": "exact decision with the CYK algorithm"
     },
     "machine": {
       "kind": {
@@ -362,6 +373,7 @@
     "ops": {
       "groups": {
         "normalize": "Normalization",
+        "grammar": "Grammar transformations",
         "language": "Language operations",
         "conversion": "Conversion",
         "inspection": "Inspection"
@@ -372,6 +384,9 @@
       "reachable": "removing unreachable states",
       "min": "minimization (partition refinement)",
       "clean": "renaming states (A, B, C…)",
+      "unitfree": "removing unit rules (A → B)",
+      "trim": "removing useless symbols",
+      "cnf": "Chomsky normal form",
       "complement": "complement language",
       "union": "union (two automata)",
       "intersect": "intersection (two automata)",

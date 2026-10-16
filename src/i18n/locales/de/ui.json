@@ -130,6 +130,9 @@
     },
     "grammars": {
       "name": "Grammatiken und Umwandlungen"
+    },
+    "cfgNormalForms": {
+      "name": "Kontextfreie Grammatiken — Normalformen und CYK"
     }
   },
   "help": {
@@ -156,6 +159,7 @@
         "det": "Determinisierung (Potenzmengenkonstruktion, mit Schritten)",
         "min": "Minimierung (Partitionsverfeinerung, mit Schritten)",
         "epsfree": "ε-Elimination: die ε-Übergänge eines Automaten, die ε-Regeln einer kontextfreien Grammatik",
+        "grammarOps": "Grammatik-Umformungen: Kettenregeln, nutzlose Symbole, Chomsky-Normalform",
         "completeReachable": "Vervollständigung mit Fangzustand / Entfernen unerreichbarer Zustände",
         "setOps": "Mengenoperationen (Produktkonstruktion)",
         "langOps": "Sprachoperationen",
@@ -302,7 +306,14 @@
       "generatedWords": "Generierte Wörter ({{count}}{{plus}})",
       "clickForDerivation": "Klicken für die Ableitung",
       "noDerivableWords": "Kein ableitbares Wort bis Länge 8 gefunden.",
-      "moreWordsPossible": "…die Sprache kann größer sein (die Aufzählung reicht bis Länge 8)."
+      "moreWordsPossible": "…die Sprache kann größer sein (die Aufzählung reicht bis Länge 8).",
+      "cnfBadge": "Chomsky-Normalform",
+      "cykTitle": "CYK-Tabelle",
+      "cykIntro": "Zeile j, Spalte i enthält die Variablen, aus denen das beim i-ten Buchstaben beginnende Teilwort der Länge j ableitbar ist; das Wort ist ableitbar, wenn das Startsymbol in der obersten Zelle steht.",
+      "cykConverted": "Die Grammatik ist nicht in Chomsky-Normalform, daher wird die Tabelle mit {{expr}} berechnet:",
+      "cykUnambiguous": "Das Wort hat genau einen Ableitungsbaum.",
+      "cykAmbiguous": "Das Wort hat {{count}} verschiedene Ableitungsbäume — die Grammatik ist mehrdeutig.",
+      "exact": "exakte Entscheidung mit dem CYK-Algorithmus"
     },
     "machine": {
       "kind": {
@@ -362,6 +373,7 @@
     "ops": {
       "groups": {
         "normalize": "Normalisierung",
+        "grammar": "Grammatik-Umformungen",
         "language": "Sprachoperationen",
         "conversion": "Umwandlung",
         "inspection": "Prüfung"
@@ -372,6 +384,9 @@
       "reachable": "Entfernen unerreichbarer Zustände",
       "min": "Minimierung (Partitionsverfeinerung)",
       "clean": "Zustände umbenennen (A, B, C…)",
+      "unitfree": "Kettenregeln entfernen (A → B)",
+      "trim": "nutzlose Symbole entfernen",
+      "cnf": "Chomsky-Normalform",
       "complement": "Komplementsprache",
       "union": "Vereinigung (zwei Automaten)",
       "intersect": "Durchschnitt (zwei Automaten)",

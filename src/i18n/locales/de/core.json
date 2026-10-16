@@ -23,7 +23,11 @@
     "toFsm": "Umwandlung in einen Automaten",
     "toPda": "Umwandlung in einen Kellerautomaten",
     "toRegex": "Umwandlung in einen regulären Ausdruck",
-    "equal": "Äquivalenzprüfung"
+    "equal": "Äquivalenzprüfung",
+    "unitfree": "Elimination von Kettenregeln",
+    "trim": "Entfernen nutzloser Symbole",
+    "cnf": "Umwandlung in Chomsky-Normalform",
+    "cyk": "Wortproblem (CYK)"
   },
   "regex": {
     "error": {
@@ -428,6 +432,10 @@
     }
   },
   "grammar": {
+    "needsContextFree": {
+      "title": "Diese Operation ({{op}}) gilt nur für kontextfreie Grammatiken",
+      "detail": "Auf jeder linken Regelseite muss genau eine Variable stehen — das Chomsky-Klassifikationspanel zeigt, welche Regel das verletzt."
+    },
     "classify": {
       "leftNotSingleNonterminal": "die linke Seite der Regel {{rule}} ist kein einzelnes Nichtterminal",
       "notRightLinear": "die rechte Seite der Regel {{rule}} hat nicht die Form „Terminale + höchstens ein abschließendes Nichtterminal“",
@@ -441,7 +449,10 @@
     "table": {
       "rule": "Regel",
       "transition": "Übergang",
-      "newRules": "neue Regeln"
+      "newRules": "neue Regeln",
+      "variable": "Variable",
+      "terminal": "Terminal",
+      "newVariable": "neue Variable"
     },
     "toFsm": {
       "needsRightLinear": {
@@ -499,6 +510,75 @@
         "title": "3. Neues Startsymbol wegen ε",
         "detail": "Die ursprüngliche Sprache enthält ε (das Startsymbol ist löschbar), daher führen wir ein neues Startsymbol {{s2}} ein: {{s2}} → {{start}} | ε. So bleibt die ε-Regel nur beim Startsymbol."
       }
+    },
+    "unitfree": {
+      "step1": {
+        "title": "1. Der Graph der Kettenregeln",
+        "detail": "Kettenregeln (A → B): {{edges}}. U(A) ist die Menge der von A aus über sie erreichbaren Variablen (A eingeschlossen).",
+        "detailNone": "Es gibt keine Kettenregel (A → B) — die Grammatik bleibt unverändert."
+      },
+      "step2": {
+        "title": "2. Neue Regeln",
+        "detail": "Die Kettenregeln entfallen, und jedes A erhält die übrigen Regeln B → β jedes B ∈ U(A) als A → β."
+      },
+      "epsilonFirst": {
+        "title": "Die Grammatik hat noch ε-Regeln",
+        "detail": "Werden die ε-Regeln erst danach entfernt, können neue Kettenregeln entstehen (aus A → BC mit löschbarem C wird A → B), daher entfernt das Skript zuerst die ε-Regeln.",
+        "fix": "zuerst ε-Elimination"
+      }
+    },
+    "trim": {
+      "step1": {
+        "title": "1. Variablen, die ein Terminalwort ableiten",
+        "detail": "B₀ = Σ, und Bᵢ₊₁ nimmt jedes A hinzu, das eine Regel A → α hat, deren Symbole alle in Bᵢ liegen. Variablen außerhalb der Endmenge leiten kein Terminalwort ab; ihre Regeln entfallen: {{removed}}.",
+        "detailNone": "B₀ = Σ, und Bᵢ₊₁ nimmt jedes A hinzu, das eine Regel A → α hat, deren Symbole alle in Bᵢ liegen. Jede Variable leitet ein Terminalwort ab."
+      },
+      "step2": {
+        "title": "2. Vom Startsymbol erreichbare Symbole",
+        "detail": "T₀ = {S}, und Tᵢ₊₁ nimmt jedes Symbol auf der rechten Seite einer Regel einer Variablen aus Tᵢ hinzu. Nicht erreichbar, entfernt: {{removed}}.",
+        "detailNone": "T₀ = {S}, und Tᵢ₊₁ nimmt jedes Symbol auf der rechten Seite einer Regel einer Variablen aus Tᵢ hinzu. Jedes verbleibende Symbol ist erreichbar."
+      },
+      "step3": {
+        "title": "Entfernte Regeln",
+        "detail": "{{rules}}"
+      },
+      "emptyLanguage": {
+        "title": "Die Sprache ist leer",
+        "detail": "Aus dem Startsymbol {{start}} ist kein Terminalwort ableitbar, also L(G) = ∅ — jede Regel ist nutzlos."
+      }
+    },
+    "cnf": {
+      "needsEpsilonFree": {
+        "title": "Die Chomsky-Normalform braucht eine ε-freie Grammatik",
+        "detail": "Die Konstruktion setzt voraus, dass ε nur als S → ε vorkommt und S auf keiner rechten Seite steht; entferne zuerst die ε-Regeln.",
+        "fix": "zuerst ε-Elimination"
+      },
+      "epsilonDropped": {
+        "title": "ε entfällt",
+        "detail": "Eine Grammatik in Chomsky-Normalform kann ε nicht erzeugen, daher entfällt die Regel {{start}} → ε: das Ergebnis erzeugt L(G) \\ {ε}."
+      },
+      "step2": {
+        "title": "Entfernen der ε-Regel",
+        "detail": "Die Regel {{start}} → ε entfällt: in Chomsky-Normalform gibt es keine ε-Regel."
+      },
+      "step3": {
+        "title": "Variablen für die Terminale",
+        "detail": "In jeder rechten Seite der Länge mindestens 2 wird ein Terminal a durch eine neue Variable Xa mit der Regel Xa → a ersetzt. (Variablennamen sind einzelne Zeichen, daher erhält Xa einen freien Buchstaben.)"
+      },
+      "step4": {
+        "title": "Zerlegen der langen Regeln",
+        "detail": "A → B₁B₂…Bₖ (k > 2) wird zu A → B₁C₁, C₁ → B₂C₂, …, Cₖ₋₂ → Bₖ₋₁Bₖ mit neuen Variablen Cᵢ."
+      },
+      "already": {
+        "title": "Bereits in Chomsky-Normalform",
+        "detail": "Jede Regel hat die Form A → a oder A → BC."
+      }
+    },
+    "cyk": {
+      "needsCNF": {
+        "title": "CYK braucht eine Grammatik in Chomsky-Normalform",
+        "detail": "Jede Regel muss die Form A → a oder A → BC haben."
+      }
     }
   },
   "expression": {
@@ -527,6 +607,7 @@
       "machineHasStorage": "{{name}} lässt sich nicht in einen endlichen Automaten umwandeln, da es Speicher hat ({{storages}}) — nur eine speicherlose Maschine hat einen äquivalenten Automaten",
       "toFsmExpects": "toFsm() erwartet eine Grammatik, einen regulären Ausdruck oder eine speicherlose Maschine",
       "toPdaExpects": "toPda() erwartet eine Grammatik",
+      "needsGrammar": "{{op}}: erwartet eine Grammatik, aber {{kind}} wurde übergeben",
       "invalidExpression": "Ungültiger Ausdruck",
       "parseGeneric": "{{message}}. Beispiele: detM = det(M) · u = union(M1, M2) · r = regex((ab)*+ba) · e = equal(M1, M2)",
       "evaluationError": "Auswertungsfehler",

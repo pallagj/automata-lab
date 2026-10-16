@@ -48,6 +48,10 @@ export const HelpModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
               <td>{t("help.expressions.ops.epsfree")}</td>
             </tr>
             <tr>
+              <td><code>unitfree(G)</code>, <code>trim(G)</code>, <code>cnf(G)</code></td>
+              <td>{t("help.expressions.ops.grammarOps")}</td>
+            </tr>
+            <tr>
               <td><code>complete(M)</code>, <code>reachable(M)</code></td>
               <td>{t("help.expressions.ops.completeReachable")}</td>
             </tr>

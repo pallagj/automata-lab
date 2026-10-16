@@ -47,6 +47,19 @@ describe("operation menu applicability", () => {
     expect(cs.reason?.key).toBe("grammar.epsfree.needsContextFree.title");
   });
 
+  it("the grammar transformations check their preconditions", () => {
+    expect(opApplicability(op("unitfree"), cfg).ok).toBe(true);
+    expect(opApplicability(op("trim"), cfg).ok).toBe(true);
+    const cnf = opApplicability(op("cnf"), cfg);
+    expect(cnf.ok).toBe(false);
+    expect(cnf.reason?.key).toBe("grammar.cnf.needsEpsilonFree.title");
+    expect(cnf.fixChain).toBe("cnf(epsfree(G))");
+    for (const name of ["unitfree", "trim", "cnf"]) {
+      expect(opApplicability(op(name), csg).ok, name).toBe(false);
+      expect(opApplicability(op(name), fsm).ok, name).toBe(false);
+    }
+  });
+
   it("toRegex applies to a finite automaton, not to a pushdown automaton", () => {
     expect(opApplicability(op("toRegex"), fsm).ok).toBe(true);
     expect(opApplicability(op("toRegex"), pda).ok).toBe(false);
@@ -71,7 +84,7 @@ describe("example worksheets", () => {
       const rs = evaluateCells(ws.cells);
       rs.forEach((r, i) => {
         expect(r.diagnostics.filter((d) => d.level === "error"), `${ws.key} cell ${i + 1}`).toEqual([]);
-        expect(r.value, `${ws.key} cell ${i + 1}`).not.toBeNull();
+        if (!r.comment) expect(r.value, `${ws.key} cell ${i + 1}`).not.toBeNull();
       });
     }
   });

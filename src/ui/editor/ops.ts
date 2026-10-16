@@ -22,7 +22,8 @@ import {
 } from "../../core/fsm/ops";
 import { regexToNFA } from "../../core/fsm/regex";
 import { fsmToRegex } from "../../core/fsm/toRegex";
-import { fsmToGrammar, grammarToFSM, grammarToPDA, removeEpsilonRules } from "../../core/grammar/grammar";
+import { fsmToGrammar, Grammar, grammarToFSM, grammarToPDA, removeEpsilonRules } from "../../core/grammar/grammar";
+import { removeUnitRules, removeUselessSymbols, toCNF } from "../../core/grammar/normalForm";
 import { machineCaps, machineToFSM } from "../../core/machine/machine";
 import { I18nText, OpResult } from "../../core/types";
 import { ExprValue } from "../../core/expr/expression";
@@ -56,6 +57,10 @@ export const OPS: OpInfo[] = [
   { groupKey: "editor.ops.groups.language", name: "concat", descKey: "editor.ops.concat", args: 2, input: "fsm" },
   { groupKey: "editor.ops.groups.language", name: "star", descKey: "editor.ops.star", args: 1, input: "fsm" },
   { groupKey: "editor.ops.groups.language", name: "reverse", descKey: "editor.ops.reverse", args: 1, input: "fsm" },
+
+  { groupKey: "editor.ops.groups.grammar", name: "unitfree", descKey: "editor.ops.unitfree", args: 1, input: "grammar" },
+  { groupKey: "editor.ops.groups.grammar", name: "trim", descKey: "editor.ops.trim", args: 1, input: "grammar" },
+  { groupKey: "editor.ops.groups.grammar", name: "cnf", descKey: "editor.ops.cnf", args: 1, input: "grammar" },
 
   { groupKey: "editor.ops.groups.conversion", name: "toRegex", descKey: "editor.ops.toRegex", args: 1, input: "fsm" },
   { groupKey: "editor.ops.groups.conversion", name: "toGrammar", descKey: "editor.ops.toGrammar", args: 1, input: "fsm" },
@@ -144,6 +149,21 @@ function dryRunFsmOp(op: string, f: FSM): Applicability {
   }
 }
 
+function dryRunGrammarOp(op: string, g: Grammar): OpResult<unknown> {
+  switch (op) {
+    case "toPda":
+      return grammarToPDA(g);
+    case "unitfree":
+      return removeUnitRules(g);
+    case "trim":
+      return removeUselessSymbols(g);
+    case "cnf":
+      return toCNF(g);
+    default:
+      return grammarToFSM(g);
+  }
+}
+
 /**
  * Is the operation applicable to the given cell's value? On an empty cell everything
  * is allowed (a template is inserted); otherwise the actual core algorithm's
@@ -171,7 +191,7 @@ export function opApplicability(op: OpInfo, value: ExprValue | Definition | null
   if (op.input === "grammar") {
     if (kind !== "grammar")
       return { ok: false, reason: ux("editor.ops.reason.expectsGrammar", { kindKey: describeValue(value).key }) };
-    return fromDryRun(op.name === "toPda" ? grammarToPDA(value) : grammarToFSM(value));
+    return fromDryRun(dryRunGrammarOp(op.name, value));
   }
 
   // op.input === "fsm"

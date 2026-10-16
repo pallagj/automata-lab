@@ -130,6 +130,9 @@
     },
     "grammars": {
       "name": "Nyelvtanok és konverziók"
+    },
+    "cfgNormalForms": {
+      "name": "Környezetfüggetlen nyelvtanok — normálformák és CYK"
     }
   },
   "help": {
@@ -156,6 +159,7 @@
         "det": "determinizálás (hatványhalmaz-konstrukció, lépésekkel)",
         "min": "minimalizálás (partíciófinomítás, lépésekkel)",
         "epsfree": "ε-mentesítés: automata ε-átmenetei, környezetfüggetlen nyelvtan ε-szabályai",
+        "grammarOps": "nyelvtan-átalakítások: egyszeres szabályok, felesleges szimbólumok, Chomsky-normálforma",
         "completeReachable": "teljessé tétel csapdaállapottal / elérhetetlen állapotok elhagyása",
         "setOps": "halmazműveletek (szorzat-konstrukció)",
         "langOps": "nyelvműveletek",
@@ -302,7 +306,14 @@
       "generatedWords": "Generált szavak ({{count}}{{plus}})",
       "clickForDerivation": "Kattints a levezetéshez",
       "noDerivableWords": "Nem található levezethető szó 8 hosszig.",
-      "moreWordsPossible": "…a nyelv ennél bővebb lehet (a felsorolás 8 hosszig terjed)."
+      "moreWordsPossible": "…a nyelv ennél bővebb lehet (a felsorolás 8 hosszig terjed).",
+      "cnfBadge": "Chomsky-normálforma",
+      "cykTitle": "CYK-táblázat",
+      "cykIntro": "A j. sor i. cellájában azok a változók állnak, amelyekből az i. betűtől induló, j hosszú részszó levezethető; a szó akkor vezethető le, ha a kezdőszimbólum a legfelső cellában van.",
+      "cykConverted": "A nyelvtan nem Chomsky-normálformájú, ezért a táblázat a(z) {{expr}} nyelvtanon készült:",
+      "cykUnambiguous": "A szónak pontosan egy levezetési fája van.",
+      "cykAmbiguous": "A szónak {{count}} különböző levezetési fája van — a nyelvtan nem egyértelmű.",
+      "exact": "pontos döntés a CYK-algoritmussal"
     },
     "machine": {
       "kind": {
@@ -362,6 +373,7 @@
     "ops": {
       "groups": {
         "normalize": "Normalizálás",
+        "grammar": "Nyelvtan-átalakítások",
         "language": "Nyelvműveletek",
         "conversion": "Konverzió",
         "inspection": "Vizsgálat"
@@ -372,6 +384,9 @@
       "reachable": "elérhetetlen állapotok elhagyása",
       "min": "minimalizálás (partíciófinomítás)",
       "clean": "állapotok átnevezése (A, B, C…)",
+      "unitfree": "egyszeres szabályok elhagyása (A → B)",
+      "trim": "felesleges szimbólumok elhagyása",
+      "cnf": "Chomsky-normálforma",
       "complement": "komplementer nyelv",
       "union": "unió (két automata)",
       "intersect": "metszet (két automata)",

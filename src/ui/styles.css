@@ -1718,6 +1718,45 @@ table.t td.state-cell.accept {
 
 /* ====== Grammar view ====== */
 
+.cyk-note {
+  color: var(--text-soft);
+  font-size: 13px;
+  margin-bottom: 8px;
+}
+
+.cyk-rules {
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 16px;
+  margin-top: 4px;
+}
+
+table.t.cyk {
+  width: auto;
+}
+
+table.t.cyk td.void {
+  border: none;
+}
+
+table.t.cyk td.hit {
+  color: var(--success);
+  font-weight: 700;
+}
+
+table.t.cyk tr.cyk-word td {
+  font-weight: 700;
+  text-align: center;
+  border: none;
+}
+
+table.t.cyk tr.cyk-word th {
+  background: none;
+  border: none;
+}
+
 .rule-list {
   font-family: var(--font-mono);
   font-size: 14.5px;

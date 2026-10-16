@@ -258,6 +258,39 @@ export const EXAMPLE_WORKSHEETS: ExampleWorksheet[] = [
     - cB -> Bc
     - bB -> bb`
     ]
+  },
+  {
+    key: "cfgNormalForms",
+    name: "Context-free grammars — normal forms and CYK",
+    cells: [
+      "# The order of the lecture notes: ε-rules, unit rules, useless symbols, then the Chomsky normal form.",
+      `Grammar:
+  name: G
+  charset: a, b
+  variables: S, A, B, C, D
+  init: S
+  rules:
+    - S -> ABCD
+    - A -> CD | AC
+    - B -> Cb
+    - C -> a | ε
+    - D -> bD | ε`,
+      "E = epsfree(G)",
+      "U = unitfree(E)",
+      "T = trim(U)",
+      "N = cnf(T)",
+      "# A grammar in Chomsky normal form: type a word into its derivability test to see the CYK table (try baaba).",
+      `Grammar:
+  name: K
+  charset: a, b
+  variables: S, A, B, C
+  init: S
+  rules:
+    - S -> AB | BC
+    - A -> BA | a
+    - B -> CC | b
+    - C -> AB | a`
+    ]
   }
 ];
 

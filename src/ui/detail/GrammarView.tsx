@@ -7,10 +7,12 @@ import {
   grammarAccepts,
   ruleToString
 } from "../../core/grammar/grammar";
+import { cykMembership, Membership } from "../../core/grammar/cyk";
+import { isCNF } from "../../core/grammar/normalForm";
 import { activeWorkspace, useAppStore } from "../../state/store";
 import { uniqueName, usedNames } from "../../state/names";
 import { tr } from "../../i18n/translate";
-import { Check, ChevronRight, HelpCircle, ListOrdered, Wand2, X } from "lucide-react";
+import { Check, ChevronRight, Grid3x3, HelpCircle, ListOrdered, Wand2, X } from "lucide-react";
 
 const TYPE_KEYS: Record<number, string> = {
   3: "detail.grammar.type3",
@@ -36,10 +38,22 @@ export const GrammarView: React.FC<{ grammar: Grammar }> = ({ grammar }) => {
   };
 
   const [test, setTest] = useState("");
-  const testResult = useMemo(
-    () => (test === "" ? null : grammarAccepts(grammar, test)),
-    [grammar, test]
+  // context-free: an exact decision with CYK; otherwise a bounded search for a derivation
+  const membership = useMemo(
+    () => (test === "" || !cls.reasons.type2.holds ? null : cykMembership(grammar, test).value!),
+    [grammar, test, cls]
   );
+  const testResult = useMemo(() => {
+    if (test === "") return null;
+    if (!membership) return grammarAccepts(grammar, test);
+    // a derivation to show, when the bounded search finds one
+    const search = membership.accepted ? grammarAccepts(grammar, test) : null;
+    return {
+      verdict: membership.accepted ? ("yes" as const) : ("no" as const),
+      derivation: search?.verdict === "yes" ? search.derivation : undefined
+    };
+  }, [grammar, test, membership]);
+  const cnfForm = useMemo(() => isCNF(grammar), [grammar]);
   const [openDerivation, setOpenDerivation] = useState<string | null>(null);
 
   const byLeft = useMemo(() => {
@@ -67,6 +81,7 @@ export const GrammarView: React.FC<{ grammar: Grammar }> = ({ grammar }) => {
             >
               {cls.epsilonFree ? t("detail.grammar.epsilonFreeForm") : t("detail.grammar.epsilonRuled")}
             </span>
+            {cnfForm && <span className="badge accent">{t("detail.grammar.cnfBadge")}</span>}
             {cls.type === 3 && (
               <span className="badge accent">{cls.direction === "right" ? t("detail.grammar.rightLinear") : t("detail.grammar.leftLinear")}</span>
             )}
@@ -163,6 +178,9 @@ export const GrammarView: React.FC<{ grammar: Grammar }> = ({ grammar }) => {
               </span>
             )}
           </div>
+          {membership && (
+            <div style={{ marginTop: 6, fontSize: 12.5, color: "var(--muted)" }}>{t("detail.grammar.exact")}</div>
+          )}
           {testResult?.derivation && (
             <div className="derivation">
               {testResult.derivation.map((f, i) => (
@@ -175,6 +193,8 @@ export const GrammarView: React.FC<{ grammar: Grammar }> = ({ grammar }) => {
           )}
         </div>
       </div>
+
+      {membership?.table && <CykCard membership={membership} grammarName={grammar.name || "G"} epsilonFree={cls.epsilonFree} />}
 
       <details className="card" open>
         <summary className="card-title">
@@ -221,5 +241,77 @@ export const GrammarView: React.FC<{ grammar: Grammar }> = ({ grammar }) => {
         </div>
       </details>
     </>
+  );
+};
+
+/** The CYK triangle as in the lecture notes: the longest subword on top, the letters below. */
+const CykCard: React.FC<{ membership: Membership; grammarName: string; epsilonFree: boolean }> = ({
+  membership,
+  grammarName,
+  epsilonFree
+}) => {
+  const { t } = useTranslation();
+  const { table, cnf, converted } = membership;
+  if (!table || !cnf) return null;
+  const n = table.word.length;
+  const expr = epsilonFree ? `cnf(${grammarName})` : `cnf(epsfree(${grammarName}))`;
+  const rules = new Map<string, string[]>();
+  for (const r of cnf.rules) rules.set(r.left, [...(rules.get(r.left) ?? []), r.right]);
+  return (
+    <div className="card">
+      <div className="card-title">
+        <Grid3x3 size={15} />
+        {t("detail.grammar.cykTitle")}
+      </div>
+      <div className="card-body">
+        <div className="cyk-note">{t("detail.grammar.cykIntro")}</div>
+        {converted && (
+          <div className="cyk-note">
+            {t("detail.grammar.cykConverted", { expr })}
+            <div className="cyk-rules">
+              {[...rules].map(([left, rights]) => (
+                <span key={left}>
+                  {left} → {rights.join(" | ")}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+        <div className="t-wrap">
+          <table className="t cyk">
+            <tbody>
+              {Array.from({ length: n }, (_, k) => n - 1 - k).map((j) => (
+                <tr key={j}>
+                  <th>{j + 1}</th>
+                  {Array.from({ length: n }, (_, i) => {
+                    const cell = table.cells[j][i];
+                    if (!cell) return <td key={i} className="void" />;
+                    const hit = j === n - 1 && cell.has(cnf.start);
+                    return (
+                      <td key={i} className={hit ? "hit" : undefined}>
+                        {cell.size > 0 ? [...cell.keys()].join(", ") : "–"}
+                      </td>
+                    );
+                  })}
+                </tr>
+              ))}
+              <tr className="cyk-word">
+                <th />
+                {table.word.map((c, i) => (
+                  <td key={i}>{c}</td>
+                ))}
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        {!converted && table.accepted && (
+          <div className="cyk-note" style={{ marginTop: 8 }}>
+            {table.trees === 1n
+              ? t("detail.grammar.cykUnambiguous")
+              : t("detail.grammar.cykAmbiguous", { count: table.trees.toString() })}
+          </div>
+        )}
+      </div>
+    </div>
   );
 };
