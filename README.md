@@ -17,14 +17,16 @@ an app; everything runs locally, no account needed.
   clickable edges to explore NFA branches, and enumeration of accepted words.
 - **Smart operations with explanations:** `det`, `min`, `epsfree`, `complete`, `reachable`,
   `complement`, `union`, `intersect`, `difference`, `concat`, `star`, `reverse`, `regex`, `equal`,
-  `toGrammar`, `toFsm`, `toPda`. When a precondition is missing (e.g. determinisation needs an
+  `toGrammar`, `toRegex`, `toFsm`, `toPda`. When a precondition is missing (e.g. determinisation needs an
   ε-free automaton), the app **explains why** and inserts the fix chain with one click
   (e.g. `min(complete(det(epsfree(M))))`).
 - **"How was it built?" panel:** the recorded steps of each algorithm — powerset table, partition
-  refinement rounds, ε-closures, product construction table.
+  refinement rounds, ε-closures, product construction table, the r(p, q, t) tables of the
+  automaton → regular expression conversion, the nullable rounds of grammar ε-removal.
 - **Equivalence check with a counterexample:** `equal(A, B)` returns the shortest distinguishing word.
 - **Regular expressions** as values of their own: syntax tree, word test, sample matching words,
-  and `toFsm()` via the Thompson construction.
+  and `toFsm()` via the Thompson construction. The way back, `toRegex(M)`, uses the r(p, q, t)
+  dynamic programming of the lecture notes, simplifying with identities that always hold.
 - **Pushdown automata:** true nondeterministic simulation over configuration sets, stack display,
   acceptance by empty stack or by final state.
 - **Turing machines:** tape visualisation, step-by-step execution, nondeterminism detection and
@@ -34,8 +36,8 @@ an app; everything runs locally, no account needed.
   the `Machine:` key (e.g. a two-stack machine for `aⁿbⁿcⁿ`, a queue automaton), with unified
   simulation and determinism analysis; automaton operations are gated by capability.
 - **Grammars:** exact Chomsky classification — for every level it shows *which rule violates the
-  condition and why*; word generation with derivations, derivability test, ε-rule elimination,
-  RG ↔ NFA and CFG → PDA conversions.
+  condition and why*; word generation with derivations, derivability test, ε-rule elimination
+  (`epsfree(G)`), RG ↔ NFA and CFG → PDA conversions.
 - **Desmos-style worksheets:** a column of cells holding expressions, regexes, machines, grammars
   and `#` notes; drag & drop reordering, an operation menu that checks applicability up front,
   and a form editor or YAML code view for definitions. Names are optional, as in Desmos: `det(M1)` or

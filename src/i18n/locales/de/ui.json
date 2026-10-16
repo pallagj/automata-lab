@@ -155,13 +155,13 @@
       "ops": {
         "det": "Determinisierung (Potenzmengenkonstruktion, mit Schritten)",
         "min": "Minimierung (Partitionsverfeinerung, mit Schritten)",
-        "epsfree": "ε-Elimination",
+        "epsfree": "ε-Elimination: die ε-Übergänge eines Automaten, die ε-Regeln einer kontextfreien Grammatik",
         "completeReachable": "Vervollständigung mit Fangzustand / Entfernen unerreichbarer Zustände",
         "setOps": "Mengenoperationen (Produktkonstruktion)",
         "langOps": "Sprachoperationen",
         "regex": "ein regulärer Ausdruck als Wert — toFsm() wandelt ihn in einen Automaten um",
         "equal": "Äquivalenzprüfung mit Gegenbeispiel",
-        "conversions": "Umwandlungen Automat ↔ Grammatik, Grammatik → Kellerautomat",
+        "conversions": "Umwandlungen Automat ↔ Grammatik, Automat → regulärer Ausdruck, Grammatik → Kellerautomat",
         "namedOps": "Operationen zwischen benannten Automaten: Verkettung, Vereinigung, Abschluss — Buchstaben-Literale nur innerhalb von regex(…)"
       },
       "optionalName": "Der Name ist optional: Ohne ihn wird das Ergebnis trotzdem angezeigt, es kann nur nicht aus anderen Zellen referenziert werden — wie ein unbenannter Ausdruck in Desmos."
@@ -366,7 +366,7 @@
         "conversion": "Umwandlung",
         "inspection": "Prüfung"
       },
-      "epsfree": "ε-Elimination",
+      "epsfree": "ε-Elimination (Automat oder kontextfreie Grammatik)",
       "det": "Determinisierung (Potenzmengenkonstruktion)",
       "complete": "Vervollständigung mit Fangzustand",
       "reachable": "Entfernen unerreichbarer Zustände",
@@ -382,6 +382,7 @@
       "toGrammar": "Automat → reguläre Grammatik",
       "toFsm": "Grammatik / Regex → endlicher Automat",
       "toPda": "Grammatik → Kellerautomat",
+      "toRegex": "Automat → regulärer Ausdruck (r(p, q, t)-Verfahren)",
       "equal": "Äquivalenzprüfung mit Gegenbeispiel",
       "kind": {
         "fsm": "endlicher Automat",

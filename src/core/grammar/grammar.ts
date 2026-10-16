@@ -402,55 +402,74 @@ export function removeEpsilonRules(g: Grammar): OpResult<Grammar> {
     ]);
   }
   const steps: AlgoStep[] = [];
-  const diags: Diagnostic[] = [];
+  const setText = (s: Set<string>) => `{${g.nonterminals.filter((x) => s.has(x)).join(", ")}}`;
 
-  // 1. nullable nonterminals
-  const nullable = new Set<string>();
-  let changed = true;
-  while (changed) {
-    changed = false;
-    for (const r of g.rules) {
-      if (nullable.has(r.left)) continue;
-      if (r.right === "" || [...r.right].every((c) => nullable.has(c))) {
-        nullable.add(r.left);
-        changed = true;
-      }
-    }
+  // 1. nullable nonterminals, round by round:
+  //    N1 = {A : A → ε},  N(i+1) = N(i) ∪ {A : A → α, every symbol of α is in N(i)}
+  let nullable = new Set(g.rules.filter((r) => r.right === "").map((r) => r.left));
+  const rounds = [new Set(nullable)];
+  while (true) {
+    const next = new Set(nullable);
+    for (const r of g.rules) if ([...r.right].every((c) => nullable.has(c))) next.add(r.left);
+    rounds.push(next);
+    if (next.size === nullable.size) break;
+    nullable = next;
   }
   steps.push({
     title: tx("grammar.epsfree.step1.title"),
     detail:
       nullable.size === 0
         ? tx("grammar.epsfree.step1.detailNone")
-        : tx("grammar.epsfree.step1.detailSome", { nullable: [...nullable].join(", ") })
+        : tx("grammar.epsfree.step1.detailSome", { nullable: setText(nullable), rounds: rounds.length }),
+    table:
+      nullable.size === 0
+        ? undefined
+        : { headers: ["i", "Nᵢ"], rows: rounds.map((s, i) => [String(i + 1), setText(s)]) }
   });
 
-  if (nullable.size === 0) return okResult({ ...g, rules: g.rules.map((r) => ({ ...r })) }, diags, steps);
+  if (nullable.size === 0) return okResult({ ...g, rules: g.rules.map((r) => ({ ...r })) }, [], steps);
 
-  // 2. extend the rules: drop every subset of nullable occurrences
-  const newRules = new Set<string>();
+  // 2. every variant of each rule with some of its nullable occurrences dropped — by the
+  //    number of dropped symbols, then by position — except ε itself and A → A
+  const rules: GrammarRule[] = [];
+  const seen = new Set<string>();
+  const add = (left: string, right: string) => {
+    const key = `${left}→${right}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    rules.push({ left, right });
+    return true;
+  };
+  const rows: string[][] = [];
   for (const r of g.rules) {
-    if (r.right === "") continue;
-    const positions = [...r.right].map((c, i) => ({ c, i })).filter((x) => nullable.has(x.c));
-    const n = positions.length;
-    for (let mask = 0; mask < 1 << n; mask++) {
-      const drop = new Set<number>();
-      for (let j = 0; j < n; j++) if (mask & (1 << j)) drop.add(positions[j].i);
-      const right = [...r.right].filter((_, i) => !drop.has(i)).join("");
-      if (right !== "") newRules.add(`${r.left}→${right}`);
+    if (r.right === "") {
+      rows.push([ruleToString(r), "—"]);
+      continue;
     }
+    const positions = [...r.right].flatMap((c, i) => (nullable.has(c) ? [i] : []));
+    const variants: string[] = [];
+    for (const drop of subsetsBySize(positions)) {
+      const right = [...r.right].filter((_, i) => !drop.includes(i)).join("");
+      if (right === "" || right === r.left || variants.includes(right)) continue;
+      variants.push(right);
+      add(r.left, right);
+    }
+    rows.push([ruleToString(r), variants.length ? `${r.left} → ${variants.join(" | ")}` : "—"]);
   }
+  steps.push({
+    title: tx("grammar.epsfree.step2.title"),
+    detail: tx("grammar.epsfree.step2.detail"),
+    table: { headers: [tx("grammar.table.rule"), tx("grammar.table.newRules")], rows }
+  });
 
-  // 3. if ε was in the language: new start symbol S' → S | ε
-  const generatesEps = nullable.has(g.start);
+  // 3. if ε was in the language: a new start symbol S′ → S | ε
   let start = g.start;
   let nonterminals = [...g.nonterminals];
-  if (generatesEps) {
-    const candidates = "ZYXWVU".split("").filter((c) => !g.nonterminals.includes(c) && !g.terminals.includes(c));
-    const s2 = candidates[0] ?? "Ş";
+  if (nullable.has(g.start)) {
+    const used = new Set([...g.nonterminals, ...g.terminals]);
+    const s2 = [..."ZYXWVUTRQPONMLKJIHGFEDCBAΓΔΘΛΞΠΦΨΩ"].find((c) => !used.has(c))!;
     nonterminals = [s2, ...nonterminals];
-    newRules.add(`${s2}→${g.start}`);
-    newRules.add(`${s2}→`);
+    rules.unshift({ left: s2, right: g.start }, { left: s2, right: "" });
     start = s2;
     steps.push({
       title: tx("grammar.epsfree.step3.title"),
@@ -458,22 +477,22 @@ export function removeEpsilonRules(g: Grammar): OpResult<Grammar> {
     });
   }
 
-  const rules: GrammarRule[] = [...newRules].map((s) => {
-    const [left, right] = s.split("→");
-    return { left, right };
-  });
-
-  steps.splice(1, 0, {
-    title: tx("grammar.epsfree.step2.title"),
-    detail: tx("grammar.epsfree.step2.detail"),
-    table: {
-      headers: [tx("grammar.table.newRules")],
-      rows: rules.slice(0, 30).map((r) => [ruleToString(r)])
-    }
-  });
-
   const out: Grammar = { kind: "grammar", name: g.name, terminals: [...g.terminals], nonterminals, start, rules };
-  return okResult(out, diags, steps);
+  return okResult(out, [], steps);
+}
+
+/** Every subset of the items: by size, and lexicographically by position within a size. */
+function subsetsBySize<T>(items: T[]): T[][] {
+  const out: T[][] = [];
+  const pick = (from: number, size: number, acc: T[]) => {
+    if (acc.length === size) {
+      out.push(acc);
+      return;
+    }
+    for (let i = from; i < items.length; i++) pick(i + 1, size, [...acc, items[i]]);
+  };
+  for (let size = 0; size <= items.length; size++) pick(0, size, []);
+  return out;
 }
 
 /** (Bounded) test of whether a word is derivable. */

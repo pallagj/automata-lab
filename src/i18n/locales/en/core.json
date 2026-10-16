@@ -22,6 +22,7 @@
     "toGrammar": "conversion to grammar",
     "toFsm": "conversion to automaton",
     "toPda": "conversion to pushdown automaton",
+    "toRegex": "conversion to regular expression",
     "equal": "equivalence check"
   },
   "regex": {
@@ -379,6 +380,36 @@
         "detail": "Every transition's direction is reversed, an ε-transition leads from the new start state ({{start}}) to the original accepting states, and the original start state becomes the sole accepting state. L(Mᴿ) = { wᴿ : w ∈ L(M) }."
       }
     },
+    "toRegex": {
+      "numbering": {
+        "title": "Numbering the states",
+        "detail": "The states are numbered 1…{{n}}; the start state {{start}} gets 1. r(p, q, t) describes the words that lead from state p to state q while every intermediate state is among 1…t."
+      },
+      "base": {
+        "title": "r(p, q, 0) — no intermediate state",
+        "detail": "The letters on the p → q edges, plus ε when p = q (and for an ε-edge); ∅ when there is nothing."
+      },
+      "round": {
+        "title": "r(p, q, {{t}}) — passing through state {{state}} is allowed too",
+        "detail": "r(p, q, {{t}}) = r(p, q, {{prev}}) + r(p, {{t}}, {{prev}}) r({{t}}, {{t}}, {{prev}})* r({{t}}, q, {{prev}}) — the word either avoids state {{t}}, or reaches it, returns to it any number of times and then leaves for q. Simplified with identities such as ∅ + r = r, r∅ = ∅, (a + ε)* = a*, (a + ε)a* = a* and b + a*b = a*b."
+      },
+      "result": {
+        "title": "Result",
+        "detail": "The language is the union of r(1, q, {{n}}) over the accepting states q: {{terms}} = {{regex}}",
+        "detailNone": "There is no accepting state, so the language is empty: ∅."
+      },
+      "tooLarge": {
+        "title": "The regular expression grows too large",
+        "detail": "At step t = {{t}} (of {{n}}) an expression grew longer than {{limit}} characters. Minimize the automaton first — toRegex(min(…)) — for a much shorter expression."
+      },
+      "multiCharSymbol": {
+        "title": "The symbol “{{symbol}}” is longer than one character",
+        "detail": "In a regular expression every letter is a single character, so every symbol of the alphabet must be one character long."
+      },
+      "table": {
+        "number": "number"
+      }
+    },
     "clean": {
       "step": {
         "title": "Renaming the states",
@@ -458,11 +489,11 @@
       "step1": {
         "title": "1. Nullable nonterminals",
         "detailNone": "No nullable nonterminal — the grammar is already ε-free.",
-        "detailSome": "Nullable (derivable to ε): {{nullable}}. A is nullable if A → ε, or A → α and every letter of α is nullable."
+        "detailSome": "N₁ holds the nonterminals with an ε-rule; N(i+1) adds every A that has a rule A → α where every symbol of α is already in N(i). It stops when a round adds nothing. Nullable (derivable to ε): {{nullable}}."
       },
       "step2": {
         "title": "2. Extending the rules",
-        "detail": "For every rule, we build every variant where some subset of its nullable nonterminals is dropped (unless the whole right side would vanish). The ε-rules are then discarded."
+        "detail": "Every rule is replaced by all of its variants in which some of the nullable nonterminals are dropped — except the empty right-hand side and the useless A → A. The ε-rules themselves are discarded."
       },
       "step3": {
         "title": "3. New start symbol because of ε",

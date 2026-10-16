@@ -22,6 +22,7 @@
     "toGrammar": "Umwandlung in eine Grammatik",
     "toFsm": "Umwandlung in einen Automaten",
     "toPda": "Umwandlung in einen Kellerautomaten",
+    "toRegex": "Umwandlung in einen regulären Ausdruck",
     "equal": "Äquivalenzprüfung"
   },
   "regex": {
@@ -379,6 +380,36 @@
         "detail": "Die Richtung jedes Übergangs wird umgekehrt, vom neuen Startzustand ({{start}}) führt ein ε-Übergang zu den ursprünglichen akzeptierenden Zuständen, und der ursprüngliche Startzustand wird der einzige akzeptierende. L(Mᴿ) = { wᴿ : w ∈ L(M) }."
       }
     },
+    "toRegex": {
+      "numbering": {
+        "title": "Nummerierung der Zustände",
+        "detail": "Die Zustände werden mit 1…{{n}} nummeriert; der Startzustand {{start}} erhält die 1. r(p, q, t) beschreibt die Wörter, die von Zustand p nach Zustand q führen, wobei jeder Zwischenzustand unter 1…t liegt."
+      },
+      "base": {
+        "title": "r(p, q, 0) — kein Zwischenzustand",
+        "detail": "Die Buchstaben auf den Kanten p → q, ergänzt um ε für p = q (und für eine ε-Kante); ∅, wenn es keine gibt."
+      },
+      "round": {
+        "title": "r(p, q, {{t}}) — auch Zustand {{state}} darf durchlaufen werden",
+        "detail": "r(p, q, {{t}}) = r(p, q, {{prev}}) + r(p, {{t}}, {{prev}}) r({{t}}, {{t}}, {{prev}})* r({{t}}, q, {{prev}}) — das Wort meidet Zustand {{t}} entweder, oder es erreicht ihn, kehrt beliebig oft zu ihm zurück und geht dann nach q. Vereinfacht mit Identitäten wie ∅ + r = r, r∅ = ∅, (a + ε)* = a*, (a + ε)a* = a* und b + a*b = a*b."
+      },
+      "result": {
+        "title": "Ergebnis",
+        "detail": "Die Sprache ist die Vereinigung von r(1, q, {{n}}) über die akzeptierenden Zustände q: {{terms}} = {{regex}}",
+        "detailNone": "Es gibt keinen akzeptierenden Zustand, die Sprache ist also leer: ∅."
+      },
+      "tooLarge": {
+        "title": "Der reguläre Ausdruck wird zu groß",
+        "detail": "Im Schritt t = {{t}} (von {{n}}) wurde ein Ausdruck länger als {{limit}} Zeichen. Minimiere den Automaten zuerst — toRegex(min(…)) — für einen viel kürzeren Ausdruck."
+      },
+      "multiCharSymbol": {
+        "title": "Das Symbol „{{symbol}}“ ist länger als ein Zeichen",
+        "detail": "In einem regulären Ausdruck ist jeder Buchstabe ein einzelnes Zeichen, daher muss jedes Symbol des Alphabets genau ein Zeichen lang sein."
+      },
+      "table": {
+        "number": "Nummer"
+      }
+    },
     "clean": {
       "step": {
         "title": "Umbenennen der Zustände",
@@ -458,11 +489,11 @@
       "step1": {
         "title": "1. Löschbare Nichtterminale",
         "detailNone": "Kein löschbares Nichtterminal — die Grammatik ist bereits ε-frei.",
-        "detailSome": "Löschbar (auf ε ableitbar): {{nullable}}. A ist löschbar, wenn A → ε, oder A → α und jeder Buchstabe von α löschbar ist."
+        "detailSome": "N₁ enthält die Nichtterminale mit einer ε-Regel; N(i+1) fügt jedes A hinzu, das eine Regel A → α hat, bei der jedes Symbol von α schon in N(i) liegt. Das Verfahren endet, wenn eine Runde nichts hinzufügt. Löschbar (auf ε ableitbar): {{nullable}}."
       },
       "step2": {
         "title": "2. Erweiterung der Regeln",
-        "detail": "Aus jeder Regel werden alle Varianten gebildet, bei denen eine Teilmenge ihrer löschbaren Nichtterminale weggelassen wird (außer wenn die gesamte rechte Seite verschwände). Die ε-Regeln werden anschließend verworfen."
+        "detail": "Jede Regel wird durch alle ihre Varianten ersetzt, in denen ein Teil der löschbaren Nichtterminale weggelassen wird — außer der leeren rechten Seite und der nutzlosen Regel A → A. Die ε-Regeln selbst entfallen."
       },
       "step3": {
         "title": "3. Neues Startsymbol wegen ε",

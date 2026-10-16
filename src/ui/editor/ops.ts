@@ -21,7 +21,8 @@ import {
   unionEpsilon
 } from "../../core/fsm/ops";
 import { regexToNFA } from "../../core/fsm/regex";
-import { fsmToGrammar, grammarToFSM, grammarToPDA } from "../../core/grammar/grammar";
+import { fsmToRegex } from "../../core/fsm/toRegex";
+import { fsmToGrammar, grammarToFSM, grammarToPDA, removeEpsilonRules } from "../../core/grammar/grammar";
 import { machineCaps, machineToFSM } from "../../core/machine/machine";
 import { I18nText, OpResult } from "../../core/types";
 import { ExprValue } from "../../core/expr/expression";
@@ -56,6 +57,7 @@ export const OPS: OpInfo[] = [
   { groupKey: "editor.ops.groups.language", name: "star", descKey: "editor.ops.star", args: 1, input: "fsm" },
   { groupKey: "editor.ops.groups.language", name: "reverse", descKey: "editor.ops.reverse", args: 1, input: "fsm" },
 
+  { groupKey: "editor.ops.groups.conversion", name: "toRegex", descKey: "editor.ops.toRegex", args: 1, input: "fsm" },
   { groupKey: "editor.ops.groups.conversion", name: "toGrammar", descKey: "editor.ops.toGrammar", args: 1, input: "fsm" },
   { groupKey: "editor.ops.groups.conversion", name: "toFsm", descKey: "editor.ops.toFsm", args: 1, input: "grammar" },
   { groupKey: "editor.ops.groups.conversion", name: "toPda", descKey: "editor.ops.toPda", args: 1, input: "grammar" },
@@ -133,6 +135,8 @@ function dryRunFsmOp(op: string, f: FSM): Applicability {
       return fromDryRun(cleanFSM(f));
     case "toGrammar":
       return fromDryRun(fsmToGrammar(f));
+    case "toRegex":
+      return fromDryRun(fsmToRegex(f));
     case "equal":
       return fromDryRun(checkEquivalence(f, f));
     default:
@@ -160,6 +164,9 @@ export function opApplicability(op: OpInfo, value: ExprValue | Definition | null
     if (!conv.ok) return { ok: false, reason: ux("editor.ops.reason.invalidRegex") };
     return dryRunFsmOp(op.name, conv.value!);
   }
+
+  // epsfree on a grammar: ε-rule elimination, the grammar stays a grammar
+  if (kind === "grammar" && op.name === "epsfree") return fromDryRun(removeEpsilonRules(value));
 
   if (op.input === "grammar") {
     if (kind !== "grammar")

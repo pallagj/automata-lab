@@ -155,13 +155,13 @@
       "ops": {
         "det": "determinizálás (hatványhalmaz-konstrukció, lépésekkel)",
         "min": "minimalizálás (partíciófinomítás, lépésekkel)",
-        "epsfree": "ε-mentesítés",
+        "epsfree": "ε-mentesítés: automata ε-átmenetei, környezetfüggetlen nyelvtan ε-szabályai",
         "completeReachable": "teljessé tétel csapdaállapottal / elérhetetlen állapotok elhagyása",
         "setOps": "halmazműveletek (szorzat-konstrukció)",
         "langOps": "nyelvműveletek",
         "regex": "reguláris kifejezés mint érték — automatává a toFsm() alakítja",
         "equal": "ekvivalencia-vizsgálat, ellenpéldával",
-        "conversions": "konverziók automata ↔ nyelvtan, nyelvtan → veremautomata",
+        "conversions": "konverziók automata ↔ nyelvtan, automata → reguláris kifejezés, nyelvtan → veremautomata",
         "namedOps": "műveletek nevesített automaták között: összefűzés, unió, lezárás — betű-literálok csak a regex(…) belsejében"
       },
       "optionalName": "A név elhagyható: nélküle is megjelenik az eredmény, csak más cellából nem lehet rá hivatkozni — mint a névtelen kifejezések a Desmosban."
@@ -366,7 +366,7 @@
         "conversion": "Konverzió",
         "inspection": "Vizsgálat"
       },
-      "epsfree": "ε-mentesítés",
+      "epsfree": "ε-mentesítés (automata vagy környezetfüggetlen nyelvtan)",
       "det": "determinizálás (hatványhalmaz-konstrukció)",
       "complete": "teljessé tétel csapdaállapottal",
       "reachable": "elérhetetlen állapotok elhagyása",
@@ -382,6 +382,7 @@
       "toGrammar": "automata → reguláris nyelvtan",
       "toFsm": "nyelvtan / regex → véges automata",
       "toPda": "nyelvtan → veremautomata",
+      "toRegex": "automata → reguláris kifejezés (r(p, q, t) módszer)",
       "equal": "ekvivalencia-vizsgálat ellenpéldával",
       "kind": {
         "fsm": "véges automata",

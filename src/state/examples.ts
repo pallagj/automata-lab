@@ -60,6 +60,17 @@ const ENFA_A_OR_B = `Machine:
     - A a A
     - B b B`;
 
+const DFA_HAS_B = `Machine:
+  name: HasB
+  charset: a, b
+  states: 1, 2
+  init: "1"
+  accept: "2"
+  transitions:
+    - 1 a 1
+    - 1 b 2
+    - 2 . 2`;
+
 export const EXAMPLE_WORKSHEETS: ExampleWorksheet[] = [
   {
     key: "intro",
@@ -84,7 +95,9 @@ export const EXAMPLE_WORKSHEETS: ExampleWorksheet[] = [
       "A = toFsm(R)",
       "DR = min(det(epsfree(A)))",
       NFA_M1,
-      "Same = equal(A, M1)"
+      "Same = equal(A, M1)",
+      DFA_HAS_B,
+      "RB = toRegex(HasB)"
     ]
   },
   {
@@ -234,6 +247,7 @@ export const EXAMPLE_WORKSHEETS: ExampleWorksheet[] = [
   rules:
     - S -> aSb | ε`,
       "P = toPda(G2)",
+      "E2 = epsfree(G2)",
       `Grammar:
   name: G1
   charset: a, b, c

@@ -155,13 +155,13 @@
       "ops": {
         "det": "determinization (powerset construction, with steps)",
         "min": "minimization (partition refinement, with steps)",
-        "epsfree": "ε-removal",
+        "epsfree": "ε-removal: the ε-transitions of an automaton, the ε-rules of a context-free grammar",
         "completeReachable": "completion with a trap state / removing unreachable states",
         "setOps": "set operations (product construction)",
         "langOps": "language operations",
         "regex": "a regular expression as a value — toFsm() turns it into an automaton",
         "equal": "equivalence check, with a counterexample",
-        "conversions": "conversions between automaton ↔ grammar, grammar → pushdown automaton",
+        "conversions": "conversions between automaton ↔ grammar, automaton → regular expression, grammar → pushdown automaton",
         "namedOps": "operations between named automata: concatenation, union, closure — letter literals only inside regex(…)"
       },
       "optionalName": "The name is optional: without one the result is still shown, it just can't be referenced from other cells — like an unnamed expression in Desmos."
@@ -366,7 +366,7 @@
         "conversion": "Conversion",
         "inspection": "Inspection"
       },
-      "epsfree": "ε-removal",
+      "epsfree": "ε-removal (automaton or context-free grammar)",
       "det": "determinization (powerset construction)",
       "complete": "completion with a trap state",
       "reachable": "removing unreachable states",
@@ -382,6 +382,7 @@
       "toGrammar": "automaton → regular grammar",
       "toFsm": "grammar / regex → finite automaton",
       "toPda": "grammar → pushdown automaton",
+      "toRegex": "automaton → regular expression (r(p, q, t) method)",
       "equal": "equivalence check with a counterexample",
       "kind": {
         "fsm": "finite automaton",

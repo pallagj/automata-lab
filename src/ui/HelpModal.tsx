@@ -44,7 +44,7 @@ export const HelpModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
               <td>{t("help.expressions.ops.min")}</td>
             </tr>
             <tr>
-              <td><code>epsfree(M)</code></td>
+              <td><code>epsfree(M)</code>, <code>epsfree(G)</code></td>
               <td>{t("help.expressions.ops.epsfree")}</td>
             </tr>
             <tr>
@@ -68,7 +68,7 @@ export const HelpModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
               <td>{t("help.expressions.ops.equal")}</td>
             </tr>
             <tr>
-              <td><code>toGrammar(M)</code>, <code>toFsm(G)</code>, <code>toPda(G)</code></td>
+              <td><code>toGrammar(M)</code>, <code>toRegex(M)</code>, <code>toFsm(G)</code>, <code>toPda(G)</code></td>
               <td>{t("help.expressions.ops.conversions")}</td>
             </tr>
             <tr>

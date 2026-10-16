@@ -17,6 +17,7 @@ import {
   unionEpsilon
 } from "../fsm/ops";
 import { RegexDef, regexToNFA, regexValue } from "../fsm/regex";
+import { fsmToRegex } from "../fsm/toRegex";
 import { Grammar, grammarToFSM, grammarToPDA, fsmToGrammar, removeEpsilonRules } from "../grammar/grammar";
 import { fsmToMachine, machineCaps, machineToFSM } from "../machine/machine";
 import { Definition } from "../parse/definitionParser";
@@ -29,7 +30,7 @@ import { Definition } from "../parse/definitionParser";
  *   - there are NO letter literals — letter sequences only inside regex(...)
  *   - functions: det, min, epsfree, complete, reachable, complement, union,
  *     intersect, difference, concat, star, reverse, clean, toGrammar, toFsm,
- *     toPda, regex, equal
+ *     toPda, toRegex, regex, equal
  */
 
 /** Parse/evaluation errors of the expression language always carry an I18nText. */
@@ -74,6 +75,7 @@ export const FUNCTION_NAMES = [
   "toGrammar",
   "toFsm",
   "toPda",
+  "toRegex",
   "regex",
   "equal"
 ] as const;
@@ -347,9 +349,13 @@ class Evaluator {
       case "min":
         expectArgs(1);
         return this.take(label("min"), minimize(fsmArg(0)));
-      case "epsfree":
+      case "epsfree": {
         expectArgs(1);
-        return this.take(label("epsfree"), removeEpsilon(fsmArg(0)));
+        // a grammar keeps being a grammar: ε-rule elimination instead of ε-transition removal
+        const v = this.evaluate(e.args[0]);
+        if (v.kind === "grammar") return this.take(label("epsfree"), removeEpsilonRules(v));
+        return this.take(label("epsfree"), removeEpsilon(this.asFSM(v, "epsfree")));
+      }
       case "complete":
         expectArgs(1, 2);
         return this.take(label("complete"), complete(fsmArg(0), e.args.length > 1 ? e.rawArgs[1] : undefined));
@@ -403,6 +409,9 @@ class Evaluator {
         if (v.kind !== "grammar") throw new ExprError(tx("expression.error.toFsmExpects"));
         return this.take(label("toFsm"), grammarToFSM(v));
       }
+      case "toRegex":
+        expectArgs(1);
+        return this.take(label("toRegex"), fsmToRegex(fsmArg(0)));
       case "toPda": {
         expectArgs(1);
         const v = this.evaluate(e.args[0]);

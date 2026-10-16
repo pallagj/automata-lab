@@ -22,6 +22,7 @@
     "toGrammar": "nyelvtanná alakítás",
     "toFsm": "automatává alakítás",
     "toPda": "veremautomatává alakítás",
+    "toRegex": "reguláris kifejezéssé alakítás",
     "equal": "ekvivalencia-vizsgálat"
   },
   "regex": {
@@ -379,6 +380,36 @@
         "detail": "Minden átmenet irányát megfordítjuk, az új kezdőállapotból ({{start}}) ε-átmenet vezet az eredeti elfogadó állapotokba, és az eredeti kezdőállapot lesz az egyetlen elfogadó. L(Mᴿ) = { wᴿ : w ∈ L(M) }."
       }
     },
+    "toRegex": {
+      "numbering": {
+        "title": "Az állapotok megszámozása",
+        "detail": "Az állapotokat 1…{{n}} számozzuk, a(z) {{start}} kezdőállapot kapja az 1-et. r(p, q, t) azokat a szavakat írja le, amelyekkel a p állapotból a q-ba jutunk úgy, hogy minden közbenső állapot az 1…t közül kerül ki."
+      },
+      "base": {
+        "title": "r(p, q, 0) — nincs közbenső állapot",
+        "detail": "A p → q éleken álló betűk, p = q esetén (és ε-élnél) ε-nal kiegészítve; ∅, ha nincs ilyen."
+      },
+      "round": {
+        "title": "r(p, q, {{t}}) — a(z) {{state}} állapoton is áthaladhatunk",
+        "detail": "r(p, q, {{t}}) = r(p, q, {{prev}}) + r(p, {{t}}, {{prev}}) r({{t}}, {{t}}, {{prev}})* r({{t}}, q, {{prev}}) — a szó vagy elkerüli a(z) {{t}} állapotot, vagy eljut bele, néhányszor (akár nullaszor) visszatér oda, majd továbbmegy q-ba. Egyszerűsítve a szokásos azonosságokkal, pl. ∅ + r = r, r∅ = ∅, (a + ε)* = a*, (a + ε)a* = a*, b + a*b = a*b."
+      },
+      "result": {
+        "title": "Eredmény",
+        "detail": "A nyelv az r(1, q, {{n}}) kifejezések összege az elfogadó q állapotokra: {{terms}} = {{regex}}",
+        "detailNone": "Nincs elfogadó állapot, így a nyelv üres: ∅."
+      },
+      "tooLarge": {
+        "title": "A reguláris kifejezés túl nagyra nő",
+        "detail": "A t = {{t}}. lépésben (összesen {{n}}) egy kifejezés hosszabb lett {{limit}} karakternél. Előbb minimalizáld az automatát — toRegex(min(…)) —, így sokkal rövidebb kifejezést kapsz."
+      },
+      "multiCharSymbol": {
+        "title": "A(z) „{{symbol}}” szimbólum egy karakternél hosszabb",
+        "detail": "A reguláris kifejezésben minden betű egyetlen karakter, ezért az ábécé minden szimbólumának egy karakter hosszúnak kell lennie."
+      },
+      "table": {
+        "number": "sorszám"
+      }
+    },
     "clean": {
       "step": {
         "title": "Állapotok átnevezése",
@@ -456,17 +487,17 @@
         "detail": "A pontos okért nézd meg a Chomsky-osztályozás panelt."
       },
       "step1": {
-        "title": "1. Törölhető nemterminálisok",
-        "detailNone": "Nincs törölhető nemterminális — a nyelvtan már ε-mentes.",
-        "detailSome": "Törölhető (ε-re levezethető): {{nullable}}. Egy A törölhető, ha A → ε, vagy A → α és α minden betűje törölhető."
+        "title": "1. Elenyésző változók",
+        "detailNone": "Nincs elenyésző változó — a nyelvtan már ε-mentes.",
+        "detailSome": "N₁ az ε-szabállyal rendelkező változókból áll; N(i+1) ehhez hozzáveszi azokat az A változókat, amelyekre van olyan A → α szabály, hogy α minden betűje már N(i)-ben van. Ha egy kör nem bővít, az eljárás leáll. Elenyésző (ε-ra levezethető): {{nullable}}."
       },
       "step2": {
         "title": "2. Szabályok bővítése",
-        "detail": "Minden szabályból elkészítjük az összes olyan változatot, ahol a törölhető nemterminálisok egy részhalmazát elhagyjuk (kivéve ha a teljes jobb oldal eltűnne). Ezután az ε-szabályokat elhagyjuk."
+        "detail": "Minden szabály helyett felvesszük az összes olyan változatát, amelyben az elenyésző változók egy részét elhagyjuk — kivéve az üres jobb oldalt és a haszontalan A → A szabályt. Magukat az ε-szabályokat elhagyjuk."
       },
       "step3": {
         "title": "3. Új kezdőszimbólum az ε miatt",
-        "detail": "Az eredeti nyelvben benne van az ε (a kezdőszimbólum törölhető), ezért új {{s2}} kezdőszimbólumot vezetünk be: {{s2}} → {{start}} | ε. Így az ε-szabály csak a kezdőszimbólumon marad."
+        "detail": "Az eredeti nyelvben benne van az ε (a kezdőszimbólum elenyésző), ezért új {{s2}} kezdőszimbólumot vezetünk be: {{s2}} → {{start}} | ε. Így az ε-szabály csak a kezdőszimbólumon marad."
       }
     }
   },
