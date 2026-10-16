@@ -103,6 +103,15 @@
   user-select: none;
 }
 
+/* the label box interrupts its own edge, so it is clear which edge it belongs to */
+.graph-label-bg {
+  fill: var(--graph-bg);
+}
+
+.graph-label-bg.editable {
+  cursor: pointer;
+}
+
 .graph-edge.active .graph-edge-label {
   fill: var(--accent);
   font-weight: 700;
@@ -287,14 +296,8 @@
   color: var(--accent);
 }
 
-/* larger hit area on the edge label — only the label edits */
-.graph-label-hit {
-  fill: transparent;
-  cursor: pointer;
-}
-
 /* signal over the label that it is editable */
-.graph-edge.editable .graph-label-hit:hover ~ .graph-edge-label,
+.graph-edge.editable .graph-label-bg:hover ~ .graph-edge-label,
 .graph-edge.editable .graph-edge-label.editable:hover {
   fill: var(--accent);
   font-weight: 700;

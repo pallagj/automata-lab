@@ -290,10 +290,54 @@ Machine:
 });
 
 describe("edge labels", () => {
-  it("custom machines get a label split into segments", () => {
+  const labels = (src: string) => {
+    const m = parseMachine(src).value!;
+    return m.transitions.map((t) => machineTransitionLabel(m, t));
+  };
+
+  it("custom machines name each storage and leave out untouched ones", () => {
     const m = parseMachine(TWO_STACKS).value!;
-    const t = m.transitions.find((x) => x.from === "qb" && x.input === "b")!;
-    expect(machineTransitionLabel(m, t)).toBe("b ‖ A / ε ‖ ε / B");
+    const label = (from: string, input: string) =>
+      machineTransitionLabel(m, m.transitions.find((x) => x.from === from && x.input === input)!);
+    expect(label("qb", "b")).toBe("b; v1: A/ε; v2: ε/B");
+    expect(label("qa", "a")).toBe("a; v1: ε/A");
+    expect(label("qa", "ε")).toBe("ε");
+  });
+
+  it("pushdown automata use the definition's pop/push notation", () => {
+    expect(
+      labels(`
+Machine:
+  charset: a, b
+  states: q0, q1
+  init: q0
+  accept: q1
+  storages:
+    stack: stack
+  transitions:
+    - q0 a Z/AZ q0
+    - q0 b A/ε q1
+`)
+    ).toEqual(["a, Z/AZ", "b, A/ε"]);
+  });
+
+  it("Turing machines show read/write and the move arrow of the form, never a second arrow", () => {
+    expect(
+      labels(`
+Machine:
+  charset: 0, 1
+  states: r, c, d
+  init: r
+  accept: d
+  input: tape
+  storages:
+    tape: tape
+  transitions:
+    - r 1/0 < c
+    - c 0/& > c
+    - c _/1 = d
+`)
+    ).toEqual(["1/0, ←", "0/0, →", "_/1, •"]);
   });
 });
 

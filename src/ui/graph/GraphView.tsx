@@ -53,32 +53,101 @@ export interface LaidOutNode extends GraphNode {
 
 export interface LaidOutEdge extends GraphEdge {
   path: string;
+  /** the label's lines (one transition per line) */
+  lines: string[];
+  /** centre and size of the label box */
   labelX: number;
   labelY: number;
+  labelW: number;
+  labelH: number;
 }
 
 function nodeRadius(label: string): number {
   return Math.max(22, 10 + label.length * 4.6);
 }
 
-/** dagre layout + edge geometry; manual positions in `overrides` win over the computed ones. */
+/* edge-label metrics: 12.5px monospace (see .graph-edge-label) */
+const LABEL_CHAR_W = 7.6;
+const LABEL_LINE_H = 15;
+const LABEL_PAD_X = 6;
+const LABEL_PAD_Y = 2;
+/** baseline of a line, measured from the line's top */
+const LABEL_BASELINE = LABEL_LINE_H / 2 + 4.3;
+
+/** The label box: a "\n" in the label starts a new line. */
+function labelBox(label: string): { lines: string[]; w: number; h: number } {
+  const lines = label === "" ? [] : label.split("\n");
+  if (lines.length === 0) return { lines, w: 0, h: 0 };
+  const chars = Math.max(...lines.map((l) => [...l].length));
+  return { lines, w: chars * LABEL_CHAR_W + LABEL_PAD_X * 2, h: lines.length * LABEL_LINE_H + LABEL_PAD_Y * 2 };
+}
+
+/** Self-loop drawn above the node; its peak is LOOP_PEAK·r above the centre. */
+const LOOP_PEAK = 2.16;
+const LOOP_GAP = 3;
+
+type Pt = { x: number; y: number };
+
+/** the point of a circle's border in the direction of `toward` */
+function onCircle(c: Pt, toward: Pt, r: number): Pt {
+  const dx = toward.x - c.x;
+  const dy = toward.y - c.y;
+  const d = Math.hypot(dx, dy) || 1;
+  return { x: c.x + (dx / d) * r, y: c.y + (dy / d) * r };
+}
+
+/** A smooth path through every point (Catmull–Rom spline as cubic Béziers). */
+function smoothPath(p: Pt[]): string {
+  let d = `M ${p[0].x} ${p[0].y}`;
+  for (let i = 0; i < p.length - 1; i++) {
+    const p0 = p[i - 1] ?? p[i];
+    const p1 = p[i];
+    const p2 = p[i + 1];
+    const p3 = p[i + 2] ?? p2;
+    const c1 = { x: p1.x + (p2.x - p0.x) / 6, y: p1.y + (p2.y - p0.y) / 6 };
+    const c2 = { x: p2.x - (p3.x - p1.x) / 6, y: p2.y - (p3.y - p1.y) / 6 };
+    d += ` C ${c1.x} ${c1.y}, ${c2.x} ${c2.y}, ${p2.x} ${p2.y}`;
+  }
+  return d;
+}
+
+/**
+ * dagre layout + edge geometry; manual positions in `overrides` win over the computed ones.
+ *
+ * Labels sit on their own edge (the label box interrupts the line), so it is never a
+ * question which edge a label belongs to. Between two states that dagre placed, the edge
+ * follows dagre's route, which keeps clear of other states and reserves room for the label;
+ * once a state has been moved by hand its edges fall back to a simple curve.
+ */
 export function layoutGraph(
   spec: GraphSpec,
   overrides: Map<string, { x: number; y: number }>
 ): { nodes: LaidOutNode[]; edges: LaidOutEdge[]; bounds: [number, number, number, number] } {
   const g = new dagre.graphlib.Graph({ multigraph: true });
-  g.setGraph({ rankdir: "LR", nodesep: 34, ranksep: 56, marginx: 24, marginy: 24 });
+  g.setGraph({ rankdir: "LR", nodesep: 30, ranksep: 76, marginx: 24, marginy: 24 });
   g.setDefaultEdgeLabel(() => ({}));
+
+  const boxes = new Map(spec.edges.map((e) => [e.id, labelBox(e.label)]));
 
   const radii = new Map<string, number>();
   for (const n of spec.nodes) {
     const r = nodeRadius(n.label);
     radii.set(n.id, r);
-    g.setNode(n.id, { width: r * 2, height: r * 2 });
+    // a self-loop and its label stand above the node: reserve the room (symmetrically, as dagre centres nodes)
+    let width = r * 2;
+    let height = r * 2;
+    for (const e of spec.edges) {
+      if (e.from !== n.id || e.to !== n.id) continue;
+      const b = boxes.get(e.id)!;
+      width = Math.max(width, b.w);
+      height = Math.max(height, 2 * (r * LOOP_PEAK + LOOP_GAP + b.h));
+    }
+    g.setNode(n.id, { width, height });
   }
   for (const e of spec.edges) {
     if (e.from !== e.to) {
-      g.setEdge(e.from, e.to, { width: e.label.length * 7, height: 18, labelpos: "c" }, e.id);
+      const b = boxes.get(e.id)!;
+      g.setEdge(e.from, e.to, { width: b.w, height: b.h, labelpos: "c" }, e.id);
     }
   }
   dagre.layout(g);
@@ -89,35 +158,56 @@ export function layoutGraph(
   });
   const byId = new Map(nodes.map((n) => [n.id, n]));
 
-  // tell apart identical (from,to) pairs and back-and-forth edge pairs with curvature
-  const pairCount = new Map<string, number>();
+  // back-and-forth edge pairs (for the fallback curve): how many, and their tallest label
+  const pairs = new Map<string, { count: number; h: number }>();
   for (const e of spec.edges) {
     if (e.from === e.to) continue;
     const key = [e.from, e.to].sort().join("→");
-    pairCount.set(key, (pairCount.get(key) ?? 0) + 1);
+    const p = pairs.get(key) ?? { count: 0, h: 0 };
+    pairs.set(key, { count: p.count + 1, h: Math.max(p.h, boxes.get(e.id)!.h) });
   }
 
+  const extra: Pt[] = [];
   const edges: LaidOutEdge[] = spec.edges.map((e) => {
     const a = byId.get(e.from)!;
     const b = byId.get(e.to)!;
+    const box = boxes.get(e.id)!;
+    const label = { lines: box.lines, labelW: box.w, labelH: box.h };
 
     if (e.from === e.to) {
-      // self-loop: a circle above the node
+      // self-loop: a circle above the node, the label above the loop
       const r = a.r;
       const path = `M ${a.x - r * 0.5} ${a.y - r * 0.85} C ${a.x - r * 1.1} ${a.y - r * 2.6}, ${a.x + r * 1.1} ${a.y - r * 2.6}, ${a.x + r * 0.5} ${a.y - r * 0.85}`;
-      return { ...e, path, labelX: a.x, labelY: a.y - r * 2.45 };
+      extra.push({ x: a.x, y: a.y - r * LOOP_PEAK });
+      return { ...e, ...label, path, labelX: a.x, labelY: a.y - r * LOOP_PEAK - LOOP_GAP - box.h / 2 };
     }
 
-    const key = [e.from, e.to].sort().join("→");
-    const both = (pairCount.get(key) ?? 1) > 1;
+    const routed = g.edge({ v: e.from, w: e.to, name: e.id }) as
+      | { points?: Pt[]; x?: number; y?: number }
+      | undefined;
+    if (!overrides.has(e.from) && !overrides.has(e.to) && routed?.points && routed.points.length >= 2) {
+      const pts = routed.points;
+      const n = pts.length;
+      // dagre clips at the node's box: re-anchor both ends on the circles (+ room for the arrowhead)
+      const p = [
+        onCircle(a, n > 2 ? pts[1] : b, a.r),
+        ...pts.slice(1, -1),
+        onCircle(b, n > 2 ? pts[n - 2] : a, b.r + 7)
+      ];
+      extra.push(...p);
+      const mid = routed.x !== undefined && routed.y !== undefined ? { x: routed.x, y: routed.y } : p[Math.floor(n / 2)];
+      return { ...e, ...label, path: smoothPath(p), labelX: mid.x, labelY: mid.y };
+    }
 
+    // fallback (a state was moved by hand): a straight edge, or curved apart from its reverse twin
+    const pair = pairs.get([e.from, e.to].sort().join("→"))!;
     const dx = b.x - a.x;
     const dy = b.y - a.y;
     const dist = Math.hypot(dx, dy) || 1;
     const ux = dx / dist;
     const uy = dy / dist;
-    // perpendicular offset when there is a reverse edge too
-    const offset = both ? 26 : 0;
+    // the curve's middle moves 0.7·offset sideways: enough for the two labels to pass each other
+    const offset = pair.count > 1 ? Math.max(26, (pair.h / 2 + 4) / 0.7) : 0;
     const px = -uy * offset;
     const py = ux * offset;
 
@@ -129,22 +219,26 @@ export function layoutGraph(
     const my = (a.y + b.y) / 2 + py;
 
     const path = `M ${sx} ${sy} Q ${mx} ${my} ${ex} ${ey}`;
-    return { ...e, path, labelX: mx, labelY: my - 7 };
+    // the label sits on the curve's middle point
+    return { ...e, ...label, path, labelX: (sx + 2 * mx + ex) / 4, labelY: (sy + 2 * my + ey) / 4 };
   });
 
   let minX = Infinity,
     minY = Infinity,
     maxX = -Infinity,
     maxY = -Infinity;
-  for (const n of nodes) {
-    minX = Math.min(minX, n.x - n.r - 30);
-    minY = Math.min(minY, n.y - n.r * 3);
-    maxX = Math.max(maxX, n.x + n.r + 30);
-    maxY = Math.max(maxY, n.y + n.r + 30);
-  }
+  const grow = (x0: number, y0: number, x1: number, y1: number) => {
+    minX = Math.min(minX, x0);
+    minY = Math.min(minY, y0);
+    maxX = Math.max(maxX, x1);
+    maxY = Math.max(maxY, y1);
+  };
+  for (const n of nodes) grow(n.x - n.r - 30, n.y - n.r - 30, n.x + n.r + 30, n.y + n.r + 30);
   for (const e of edges) {
-    minY = Math.min(minY, e.labelY - 20);
+    if (e.lines.length > 0)
+      grow(e.labelX - e.labelW / 2 - 8, e.labelY - e.labelH / 2 - 8, e.labelX + e.labelW / 2 + 8, e.labelY + e.labelH / 2 + 8);
   }
+  for (const p of extra) grow(p.x - 8, p.y - 8, p.x + 8, p.y + 8);
   if (!isFinite(minX)) {
     minX = 0;
     minY = 0;
@@ -190,37 +284,34 @@ export const GraphView: React.FC<Props> = ({ spec, onEdgeClick, className, cellI
     setView(null);
   }, [structKey]);
 
-  // canvas size for the zoom limit of the automatic fit
-  const [size, setSize] = useState<{ w: number; h: number } | null>(null);
+  // canvas size for the zoom limit of the automatic fit, and the strip the editing hint covers
+  const hintRef = useRef<HTMLDivElement>(null);
+  const [size, setSize] = useState<{ w: number; h: number; hint: number } | null>(null);
   // useLayoutEffect + immediate measurement: the size is known before the first paint,
   // so the unlimited (over-zoomed) fit never flashes for a frame
   useLayoutEffect(() => {
     const el = svgRef.current;
     if (!el) return;
-    const measure = () => setSize({ w: el.clientWidth, h: el.clientHeight });
+    const hint = hintRef.current;
+    const measure = () =>
+      setSize({ w: el.clientWidth, h: el.clientHeight, hint: hint ? hint.offsetHeight + 14 : 0 });
     measure();
     const ro = new ResizeObserver(measure);
     ro.observe(el);
+    if (hint) ro.observe(hint);
     return () => ro.disconnect();
-  }, []);
+  }, [!!editing]);
 
-  // automatic fit with an upper zoom limit: a small graph on a big canvas must not be huge
+  // automatic fit with an upper zoom limit: a small graph on a big canvas must not be huge;
+  // the graph is centred in the area above the editing hint, so the hint never hides a label
   const MAX_FIT_SCALE = 1.3;
   const fitted = useMemo<[number, number, number, number]>(() => {
-    let [x, y, w, h] = bounds;
-    if (size) {
-      const needW = size.w / MAX_FIT_SCALE;
-      const needH = size.h / MAX_FIT_SCALE;
-      if (w < needW) {
-        x -= (needW - w) / 2;
-        w = needW;
-      }
-      if (h < needH) {
-        y -= (needH - h) / 2;
-        h = needH;
-      }
-    }
-    return [x, y, w, h];
+    const [x, y, w, h] = bounds;
+    if (!size || size.w === 0 || size.h === 0) return [x, y, w, h];
+    const availH = Math.max(size.h / 2, size.h - size.hint);
+    const scale = Math.min(MAX_FIT_SCALE, size.w / w, availH / h);
+    const vw = size.w / scale;
+    return [x - (vw - w) / 2, y - (availH / scale - h) / 2, vw, size.h / scale];
   }, [bounds, size]);
 
   const vb = view ?? fitted;
@@ -417,33 +508,44 @@ export const GraphView: React.FC<Props> = ({ spec, onEdgeClick, className, cellI
           >
             <path d={e.path} className="graph-edge-hit" fill="none" />
             <path d={e.path} className="graph-edge-line" fill="none" markerEnd={e.active ? "url(#arrow-active)" : "url(#arrow)"} />
-            {editing && (
-              <rect
-                x={e.labelX - (e.label.length * 7.2) / 2 - 8}
-                y={e.labelY - 15}
-                width={e.label.length * 7.2 + 16}
-                height={22}
-                className="graph-label-hit"
-                onClick={(ev) => {
-                  ev.stopPropagation();
-                  setDialog({ t: "edge", from: e.from, to: e.to });
-                }}
-              />
+            {e.lines.length > 0 && (
+              <>
+                <rect
+                  x={e.labelX - e.labelW / 2}
+                  y={e.labelY - e.labelH / 2}
+                  width={e.labelW}
+                  height={e.labelH}
+                  rx={4}
+                  className={`graph-label-bg ${editing ? "editable" : ""}`}
+                  onClick={(ev) => {
+                    if (editing) {
+                      ev.stopPropagation();
+                      setDialog({ t: "edge", from: e.from, to: e.to });
+                    }
+                  }}
+                />
+                <text
+                  className={`graph-edge-label ${editing ? "editable" : ""}`}
+                  textAnchor="middle"
+                  onClick={(ev) => {
+                    if (editing) {
+                      ev.stopPropagation();
+                      setDialog({ t: "edge", from: e.from, to: e.to });
+                    }
+                  }}
+                >
+                  {e.lines.map((line, i) => (
+                    <tspan
+                      key={i}
+                      x={e.labelX}
+                      y={e.labelY - e.labelH / 2 + LABEL_PAD_Y + i * LABEL_LINE_H + LABEL_BASELINE}
+                    >
+                      {line}
+                    </tspan>
+                  ))}
+                </text>
+              </>
             )}
-            <text
-              x={e.labelX}
-              y={e.labelY}
-              className={`graph-edge-label ${editing ? "editable" : ""}`}
-              textAnchor="middle"
-              onClick={(ev) => {
-                if (editing) {
-                  ev.stopPropagation();
-                  setDialog({ t: "edge", from: e.from, to: e.to });
-                }
-              }}
-            >
-              {e.label}
-            </text>
           </g>
         ))}
 
@@ -537,7 +639,7 @@ export const GraphView: React.FC<Props> = ({ spec, onEdgeClick, className, cellI
       </div>
 
       {editing && (
-        <div className="graph-hint">
+        <div className="graph-hint" ref={hintRef}>
           {t("graph.editingHint")}
         </div>
       )}

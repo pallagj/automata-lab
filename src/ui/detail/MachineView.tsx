@@ -183,7 +183,8 @@ export const MachineView: React.FC<{ machine: Machine; stepGroups?: StepGroup[];
         id: key,
         from: g.from,
         to: g.to,
-        label: g.labels.join("  ·  "),
+        // one transition per line, as in the textbooks
+        label: g.labels.join("\n"),
         active: g.active,
         clickable: g.active
       }))

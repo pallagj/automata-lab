@@ -136,7 +136,9 @@ function texEscape(s: string): string {
     .replaceAll("ε", "$\\varepsilon$")
     .replaceAll("␣", "\\textvisiblespace{}")
     .replaceAll("∅", "$\\emptyset$")
-    .replaceAll("→", "$\\rightarrow$");
+    .replaceAll("→", "$\\rightarrow$")
+    .replaceAll("←", "$\\leftarrow$")
+    .replaceAll("•", "$\\bullet$");
 }
 
 /** TikZ code in the textbook automaton style (tikz automata library). */
@@ -171,10 +173,13 @@ export function toTikz(nodes: ExportNode[], edges: ExportEdge[]): string {
   const edgeLines = edges.map((e) => {
     const a = ids.get(e.from);
     const b = ids.get(e.to);
-    const label = texEscape(e.label);
-    if (e.from === e.to) return `    (${a}) edge[loop above] node {${label}} (${a})`;
+    // a multi-line label (one transition per line) becomes a centred TikZ node with \\ breaks
+    const rows = e.label.split("\n");
+    const label = rows.map(texEscape).join(" \\\\ ");
+    const node = rows.length > 1 ? "node[align=center]" : "node";
+    if (e.from === e.to) return `    (${a}) edge[loop above] ${node} {${label}} (${a})`;
     const opts = pairs.has(`${e.to}→${e.from}`) ? "[bend left=18]" : "";
-    return `    (${a}) edge${opts} node {${label}} (${b})`;
+    return `    (${a}) edge${opts} ${node} {${label}} (${b})`;
   });
   if (edgeLines.length > 0) {
     lines.push("  \\path");

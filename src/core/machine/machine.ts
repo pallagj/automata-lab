@@ -410,22 +410,36 @@ export function fsmToMachine(f: FSM): Machine {
 
 const showEps = (s: string) => (s === "" ? EPS : s);
 
+/** The same arrows the move picker of the form shows (→ right · ← left · • stay). */
+export const MOVE_ARROW = { R: "→", L: "←", S: "•" } as const;
+
+/**
+ * One storage operation in the notation of the definition: stack `pop/push`,
+ * queue `out/in`, tape `read/write, move` — `_` is the blank, as it is typed.
+ */
 export function storageOpLabel(op: StorageOp): string {
   switch (op.type) {
     case "stack":
-      return `${op.pop} / ${showEps(op.push)}`;
+      return `${op.pop}/${showEps(op.push)}`;
     case "queue":
-      return `${op.take} / ${showEps(op.put)}`;
-    case "tape": {
-      const r = op.read === TAPE_BLANK ? "␣" : op.read;
-      const w = op.write === TAPE_BLANK ? "␣" : op.write;
-      const mv = op.move === "R" ? "→" : op.move === "L" ? "←" : "·";
-      return r === w ? `${r}, ${mv}` : `${r} → ${w}, ${mv}`;
-    }
+      return `${op.take}/${showEps(op.put)}`;
+    case "tape":
+      return `${op.read}/${op.write}, ${MOVE_ARROW[op.move]}`;
   }
 }
 
-/** Edge label for the graph: the textbook form for preset machines, segments otherwise. */
+/** A stack/queue operation that neither inspects nor changes the storage (ε/ε). */
+function isNoOp(op: StorageOp): boolean {
+  if (op.type === "stack") return op.pop === EPS && op.push === "";
+  if (op.type === "queue") return op.take === EPS && op.put === "";
+  return false;
+}
+
+/**
+ * Edge label for the graph: the textbook form for preset machines; for custom
+ * machines the input symbol, then each storage's operation named by its id
+ * (operations that leave a storage untouched are left out).
+ */
 export function machineTransitionLabel(m: Machine, t: MachineTransition): string {
   const caps = machineCaps(m);
   if (caps.isFSMLike) return t.input;
@@ -433,8 +447,10 @@ export function machineTransitionLabel(m: Machine, t: MachineTransition): string
   if (caps.isTMLike) return storageOpLabel(t.ops[0]);
   const parts: string[] = [];
   if (hasInputHead(m)) parts.push(t.input);
-  parts.push(...t.ops.map(storageOpLabel));
-  return parts.join(" ‖ ");
+  t.ops.forEach((op, i) => {
+    if (!isNoOp(op)) parts.push(`${m.storages[i].id}: ${storageOpLabel(op)}`);
+  });
+  return parts.length > 0 ? parts.join("; ") : EPS;
 }
 
 /** The visible slice of the tape + the head's relative position (for display). */
