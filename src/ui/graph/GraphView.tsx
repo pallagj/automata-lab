@@ -1,5 +1,5 @@
 import dagre from "@dagrejs/dagre";
-import React, { useLayoutEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Check, Copy, Download, FileImage, FileType } from "lucide-react";
 import { useAppStore } from "../../state/store";
@@ -60,6 +60,9 @@ export interface LaidOutEdge extends GraphEdge {
   labelY: number;
   labelW: number;
   labelH: number;
+  /** the edge's geometry and where on it (0…1) the label sits — absent for a self-loop */
+  arc?: Arc;
+  labelT?: number;
 }
 
 function nodeRadius(label: string): number {
@@ -98,7 +101,7 @@ function onCircle(c: Pt, toward: Pt, r: number): Pt {
 }
 
 /** An edge is a straight line, or a single arc for a back-and-forth pair: start, control point, end. */
-type Arc = { s: Pt; c: Pt; e: Pt };
+export type Arc = { s: Pt; c: Pt; e: Pt };
 
 /** the arc from a to b, bent sideways by `bend` (0 = straight; > 0 = to the left of a→b) */
 function edgeArc(a: LaidOutNode, b: LaidOutNode, bend: number): Arc {
@@ -110,7 +113,7 @@ function edgeArc(a: LaidOutNode, b: LaidOutNode, bend: number): Arc {
   return { s: onCircle(a, c, a.r), c, e: onCircle(b, c, b.r + 7) };
 }
 
-function arcAt({ s, c, e }: Arc, t: number): Pt {
+export function arcAt({ s, c, e }: Arc, t: number): Pt {
   const u = 1 - t;
   return { x: u * u * s.x + 2 * u * t * c.x + t * t * e.x, y: u * u * s.y + 2 * u * t * c.y + t * t * e.y };
 }
@@ -250,6 +253,7 @@ export function layoutGraph(
   // 2. labels: self-loop labels are fixed above their loop, the others find a free spot on their edge
   const placed: Box[] = [...loopBoxes];
   const labelAt = new Map<string, Pt>();
+  const labelTs = new Map<string, number>();
   for (const e of spec.edges) {
     if (e.from !== e.to) continue;
     const a = byId.get(e.from)!;
@@ -259,7 +263,7 @@ export function layoutGraph(
   for (const e of spec.edges) {
     if (e.from === e.to) continue;
     const box = boxes.get(e.id)!;
-    let best: { p: Pt; score: number } | null = null;
+    let best: { p: Pt; t: number; score: number } | null = null;
     for (const t of LABEL_TS) {
       const p = arcAt(arcs.get(e.id)!, t);
       const b = { x: p.x - box.w / 2, y: p.y - box.h / 2, w: box.w, h: box.h };
@@ -274,10 +278,11 @@ export function layoutGraph(
             break;
           }
       }
-      if (!best || score < best.score) best = { p, score };
+      if (!best || score < best.score) best = { p, t, score };
       if (score === 0) break;
     }
     labelAt.set(e.id, best!.p);
+    labelTs.set(e.id, best!.t);
     if (box.w > 0) placed.push({ x: best!.p.x - box.w / 2, y: best!.p.y - box.h / 2, w: box.w, h: box.h });
   }
 
@@ -294,9 +299,16 @@ export function layoutGraph(
       extra.push({ x: a.x, y: a.y - r * LOOP_PEAK });
       return { ...e, ...label, path };
     }
-    const { s, c, e: end } = arcs.get(e.id)!;
+    const arc = arcs.get(e.id)!;
+    const { s, c, e: end } = arc;
     extra.push(...arcPts.get(e.id)!);
-    return { ...e, ...label, path: `M ${s.x} ${s.y} Q ${c.x} ${c.y} ${end.x} ${end.y}` };
+    return {
+      ...e,
+      ...label,
+      path: `M ${s.x} ${s.y} Q ${c.x} ${c.y} ${end.x} ${end.y}`,
+      arc,
+      labelT: labelTs.get(e.id)
+    };
   });
 
   let minX = Infinity,
@@ -324,6 +336,55 @@ export function layoutGraph(
   return { nodes, edges, bounds: [minX, minY, maxX - minX, maxY - minY] };
 }
 
+/** time constant of the label glide (ms): about 3× this until it settles */
+const LABEL_EASE_MS = 70;
+
+/**
+ * Where each label is shown along its edge (0…1). When the layout moves a label to
+ * another free spot, it glides there along its edge instead of jumping; while an edge
+ * itself moves (a state is dragged) the label stays on it all the way.
+ */
+function useGlidingLabelTs(edges: LaidOutEdge[]): Map<string, number> {
+  const shown = useRef(new Map<string, number>());
+  const [, redraw] = useState(0);
+
+  // a new edge shows its label right where the layout put it
+  for (const e of edges) if (e.labelT !== undefined && !shown.current.has(e.id)) shown.current.set(e.id, e.labelT);
+
+  useEffect(() => {
+    const ids = new Set(edges.map((e) => e.id));
+    for (const id of [...shown.current.keys()]) if (!ids.has(id)) shown.current.delete(id);
+
+    const reduced = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false;
+    const settled = () => edges.every((e) => e.labelT === undefined || shown.current.get(e.id) === e.labelT);
+    if (settled()) return;
+    if (reduced) {
+      for (const e of edges) if (e.labelT !== undefined) shown.current.set(e.id, e.labelT);
+      redraw((n) => n + 1);
+      return;
+    }
+
+    let frame = 0;
+    let last = performance.now();
+    const tick = (now: number) => {
+      const k = 1 - Math.exp(-Math.min(64, now - last) / LABEL_EASE_MS);
+      last = now;
+      for (const e of edges) {
+        if (e.labelT === undefined) continue;
+        const cur = shown.current.get(e.id) ?? e.labelT;
+        const next = cur + (e.labelT - cur) * k;
+        shown.current.set(e.id, Math.abs(e.labelT - next) < 0.002 ? e.labelT : next);
+      }
+      redraw((n) => n + 1);
+      if (!settled()) frame = requestAnimationFrame(tick);
+    };
+    frame = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(frame);
+  }, [edges]);
+
+  return shown.current;
+}
+
 export const GraphView: React.FC<Props> = ({ spec, onEdgeClick, className, cellId, editing, exportName }) => {
   const { t } = useTranslation();
   const savedPos = useAppStore((s) => (cellId ? s.layouts[cellId] : undefined));
@@ -344,6 +405,12 @@ export const GraphView: React.FC<Props> = ({ spec, onEdgeClick, className, cellI
     () => layoutGraph(spec, overrides, placement),
     [spec, overrides, placement]
   );
+  const labelTs = useGlidingLabelTs(edges);
+  /** where a label is drawn right now: on its edge at the gliding position */
+  const labelPos = (e: LaidOutEdge): Pt => {
+    const t = labelTs.get(e.id);
+    return e.arc && t !== undefined ? arcAt(e.arc, t) : { x: e.labelX, y: e.labelY };
+  };
   const [view, setView] = useState<[number, number, number, number] | null>(null);
   const svgRef = useRef<SVGSVGElement>(null);
   const dragRef = useRef<{ x: number; y: number; view: [number, number, number, number] } | null>(null);
@@ -581,54 +648,57 @@ export const GraphView: React.FC<Props> = ({ spec, onEdgeClick, className, cellI
           </marker>
         </defs>
 
-        {edges.map((e) => (
-          <g
-            key={e.id}
-            className={`graph-edge ${e.active ? "active" : ""} ${e.clickable ? "clickable" : ""} ${editing ? "editable" : ""}`}
-            onClick={() => e.clickable && onEdgeClick?.(e)}
-          >
-            <path d={e.path} className="graph-edge-hit" fill="none" />
-            <path d={e.path} className="graph-edge-line" fill="none" markerEnd={e.active ? "url(#arrow-active)" : "url(#arrow)"} />
-            {e.lines.length > 0 && (
-              <>
-                <rect
-                  x={e.labelX - e.labelW / 2}
-                  y={e.labelY - e.labelH / 2}
-                  width={e.labelW}
-                  height={e.labelH}
-                  rx={4}
-                  className={`graph-label-bg ${editing ? "editable" : ""}`}
-                  onClick={(ev) => {
-                    if (editing) {
-                      ev.stopPropagation();
-                      setDialog({ t: "edge", from: e.from, to: e.to });
-                    }
-                  }}
-                />
-                <text
-                  className={`graph-edge-label ${editing ? "editable" : ""}`}
-                  textAnchor="middle"
-                  onClick={(ev) => {
-                    if (editing) {
-                      ev.stopPropagation();
-                      setDialog({ t: "edge", from: e.from, to: e.to });
-                    }
-                  }}
-                >
-                  {e.lines.map((line, i) => (
-                    <tspan
-                      key={i}
-                      x={e.labelX}
-                      y={e.labelY - e.labelH / 2 + LABEL_PAD_Y + i * LABEL_LINE_H + LABEL_BASELINE}
-                    >
-                      {line}
-                    </tspan>
-                  ))}
-                </text>
-              </>
-            )}
-          </g>
-        ))}
+        {edges.map((e) => {
+          const lp = labelPos(e);
+          return (
+            <g
+              key={e.id}
+              className={`graph-edge ${e.active ? "active" : ""} ${e.clickable ? "clickable" : ""} ${editing ? "editable" : ""}`}
+              onClick={() => e.clickable && onEdgeClick?.(e)}
+            >
+              <path d={e.path} className="graph-edge-hit" fill="none" />
+              <path d={e.path} className="graph-edge-line" fill="none" markerEnd={e.active ? "url(#arrow-active)" : "url(#arrow)"} />
+              {e.lines.length > 0 && (
+                <>
+                  <rect
+                    x={lp.x - e.labelW / 2}
+                    y={lp.y - e.labelH / 2}
+                    width={e.labelW}
+                    height={e.labelH}
+                    rx={4}
+                    className={`graph-label-bg ${editing ? "editable" : ""}`}
+                    onClick={(ev) => {
+                      if (editing) {
+                        ev.stopPropagation();
+                        setDialog({ t: "edge", from: e.from, to: e.to });
+                      }
+                    }}
+                  />
+                  <text
+                    className={`graph-edge-label ${editing ? "editable" : ""}`}
+                    textAnchor="middle"
+                    onClick={(ev) => {
+                      if (editing) {
+                        ev.stopPropagation();
+                        setDialog({ t: "edge", from: e.from, to: e.to });
+                      }
+                    }}
+                  >
+                    {e.lines.map((line, i) => (
+                      <tspan
+                        key={i}
+                        x={lp.x}
+                        y={lp.y - e.labelH / 2 + LABEL_PAD_Y + i * LABEL_LINE_H + LABEL_BASELINE}
+                      >
+                        {line}
+                      </tspan>
+                    ))}
+                  </text>
+                </>
+              )}
+            </g>
+          );
+        })}
 
         {connectLine && (
           <line
