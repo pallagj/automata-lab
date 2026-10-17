@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import CodeMirror, { EditorView, keymap, Prec, ReactCodeMirrorRef } from "@uiw/react-codemirror";
 import { yaml } from "@codemirror/lang-yaml";
@@ -167,6 +167,18 @@ export const CellEditor: React.FC<Props> = ({ cell, index, result }) => {
     const exprDigits = subscripts((state, pos) => !insideRegex(state.doc.sliceString(0, pos)));
     return [regexEpsilonInputHandler, exprDigits, keys];
   }, [isYaml, isNote, addCell, removeCell, setActiveCell, setCellSource, cell.id]);
+
+  // the editor is reconfigured whenever basicSetup or onChange is a new object (see
+  // @uiw/react-codemirror's useCodeMirror), so both change only when they really do
+  const lineNumbers = !isNote && cell.source.split("\n").length > 3;
+  const basicSetup = useMemo(
+    () => ({ lineNumbers, foldGutter: false, autocompletion: false, highlightActiveLine: false, highlightActiveLineGutter: false }),
+    [lineNumbers]
+  );
+  const onSourceChange = useCallback(
+    (value: string) => setCellSource(cell.id, isNote ? noteSource(value) : value),
+    [setCellSource, cell.id, isNote]
+  );
 
   // a new, empty cell (Enter, the ghost cell) takes the keyboard focus as soon as its editor exists;
   // an empty cell that becomes active later (e.g. by deleting the one below) gets it on the next frame
@@ -402,16 +414,10 @@ export const CellEditor: React.FC<Props> = ({ cell, index, result }) => {
                 theme={theme}
                 extensions={extensions}
                 placeholder={isNote ? t("editor.cell.notePlaceholder") : undefined}
-                onChange={(value) => setCellSource(cell.id, isNote ? noteSource(value) : value)}
+                onChange={onSourceChange}
                 onFocus={() => setActiveCell(cell.id)}
                 onCreateEditor={onCreateEditor}
-                basicSetup={{
-                  lineNumbers: !isNote && cell.source.split("\n").length > 3,
-                  foldGutter: false,
-                  autocompletion: false,
-                  highlightActiveLine: false,
-                  highlightActiveLineGutter: false
-                }}
+                basicSetup={basicSetup}
               />
             </div>
           )}

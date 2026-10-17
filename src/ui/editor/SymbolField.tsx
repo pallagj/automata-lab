@@ -1,4 +1,4 @@
-import React, { useMemo, useRef } from "react";
+import React, { useCallback, useMemo, useRef } from "react";
 import CodeMirror, { EditorState, EditorView, keymap, Prec } from "@uiw/react-codemirror";
 import { useAppStore } from "../../state/store";
 import { subscripts } from "./subscript";
@@ -23,6 +23,23 @@ const epsilonEverywhere = EditorView.inputHandler.of((view, from, to, text) => {
   return true;
 });
 
+/**
+ * The editor is reconfigured whenever its basicSetup object or onChange function is a
+ * new one (see @uiw/react-codemirror's useCodeMirror) — with dozens of fields in a form
+ * that happened on every keystroke. So both stay the same objects for the field's life.
+ */
+const BASIC_SETUP = {
+  lineNumbers: false,
+  foldGutter: false,
+  highlightActiveLine: false,
+  highlightActiveLineGutter: false,
+  autocompletion: false,
+  closeBrackets: false,
+  bracketMatching: false,
+  highlightSelectionMatches: false,
+  searchKeymap: false
+};
+
 export const SymbolField: React.FC<{
   value: string;
   onChange: (value: string) => void;
@@ -42,6 +59,9 @@ export const SymbolField: React.FC<{
   digitsRef.current = digits;
   const enterRef = useRef(onEnter);
   enterRef.current = onEnter;
+  const changeRef = useRef(onChange);
+  changeRef.current = onChange;
+  const change = useCallback((v: string) => changeRef.current(v), []);
   const extensions = useMemo(
     () => [
       singleLine,
@@ -58,23 +78,13 @@ export const SymbolField: React.FC<{
     <CodeMirror
       className={`sym-field ${className ?? ""}`}
       value={value}
-      onChange={onChange}
+      onChange={change}
       theme={theme}
       extensions={extensions}
       placeholder={placeholder}
       autoFocus={autoFocus}
       indentWithTab={false}
-      basicSetup={{
-        lineNumbers: false,
-        foldGutter: false,
-        highlightActiveLine: false,
-        highlightActiveLineGutter: false,
-        autocompletion: false,
-        closeBrackets: false,
-        bracketMatching: false,
-        highlightSelectionMatches: false,
-        searchKeymap: false
-      }}
+      basicSetup={BASIC_SETUP}
     />
   );
 };
