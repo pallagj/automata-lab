@@ -1,5 +1,6 @@
 import { Diagnostic, err, tx, warn } from "./types";
 import { Definition, parseDefinition } from "./parse/definitionParser";
+import { suggestName } from "./symbols";
 import {
   collectDependencies,
   evaluateExpression,
@@ -77,6 +78,13 @@ export function evaluateCells(sources: string[]): CellResult[] {
     const asg = splitAssignment(trimmed);
     if (asg !== null) {
       results[i].isExpression = true;
+      if (asg.name === null) {
+        // EvenA = …: names are single letters with a subscript, as in Desmos
+        results[i].diagnostics.push(
+          err(tx("definitionParser.badName.title", { name: asg.rawName }), tx("definitionParser.badName.detail", { suggestion: suggestName(asg.rawName) }))
+        );
+        return;
+      }
       results[i].name = asg.name;
       exprCells.push({ index: i, name: asg.name, expr: asg.expr });
       registerName(asg.name, i);

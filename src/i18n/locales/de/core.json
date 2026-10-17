@@ -140,7 +140,15 @@
         "title": "Die linke Regelseite enthält kein Nichtterminal: „{{line}}“",
         "detail": "In einer generativen Grammatik muss die linke Seite mindestens ein Nichtterminal enthalten."
       },
-      "unknownSymbolRight": "Unbekanntes Symbol auf der rechten Regelseite: „{{symbol}}“"
+      "unknownSymbolRight": "Unbekanntes Symbol auf der rechten Regelseite: „{{symbol}}“",
+      "terminalNotOneChar": {
+        "title": "Das Terminal „{{symbol}}“ ist länger als ein Zeichen",
+        "detail": "Terminale sind die Zeichen der Wörter, also jeweils ein einzelnes Zeichen. Variablen dürfen Indizes haben: X_a, C_1."
+      },
+      "ambiguousSubscript": {
+        "title": "„{{text}}“ ist mehrdeutig",
+        "detail": "Es kann die Variable {{name}} oder die Symbole {{separate}} sein. Schreibe {{name}} mit _ für die Variable oder trenne die Symbole mit einem Leerzeichen. ({{line}})"
+      }
     },
     "yamlSyntaxError": {
       "titleAtLine": "YAML-Syntaxfehler (Zeile {{line}})",
@@ -187,7 +195,15 @@
       "badQueueOp": {
         "title": "Ungültige Speicheroperation: „{{tokens}}“ ({{storageId}})",
         "detail": "Zeile: „{{line}}“. Warteschlangen-Form: ENTNEHMEN/EINFÜGEN — z. B. „A/BA“; ε (oder eps) für nichts."
+      },
+      "oneSymbol": {
+        "title": "„{{tokens}}“ ist mehr als ein Symbol ({{storageId}})",
+        "detail": "Eine Operation nimmt ein einzelnes Symbol vom Speicher (oder ε für nichts). Ein Symbol mit Index schreibt man mit _, etwa {{example}}. ({{line}})"
       }
+    },
+    "badName": {
+      "title": "„{{name}}“ ist kein Name",
+      "detail": "Ein Name ist ein einzelner Buchstabe mit optionalem Index, wie in Desmos — zum Beispiel {{suggestion}}. Mit _ beginnt der Index; Ziffern direkt nach dem Buchstaben kommen von selbst hinein (M1 ist M₁)."
     }
   },
   "ops": {
@@ -451,8 +467,7 @@
       "transition": "Übergang",
       "newRules": "neue Regeln",
       "variable": "Variable",
-      "terminal": "Terminal",
-      "newVariable": "neue Variable"
+      "terminal": "Terminal"
     },
     "toFsm": {
       "needsRightLinear": {
@@ -465,17 +480,13 @@
       }
     },
     "fsmToGrammar": {
-      "tooManyStates": {
-        "title": "Zu viele Zustände für die Umwandlung in eine Grammatik",
-        "detail": "Der Automat hat {{count}} Zustände; die einbuchstabige Nichtterminal-Notation erlaubt höchstens {{max}} Zustände. Durch Minimierung lässt sich die Zustandsanzahl verringern."
-      },
       "renamed": {
-        "title": "Die Zustände erhielten Nichtterminal-Buchstaben",
+        "title": "Einige Zustände erhielten A_q-Variablennamen",
         "detail": "{{mapping}}"
       },
       "step": {
-        "title": "NFA → rechtslineare Grammatik",
-        "detail": "Aus jedem Übergang q →a p wird die Regel Q → aP, aus jedem akzeptierenden Zustand q die Regel Q → ε. Die entstehende Grammatik ist vom Typ 3 und erzeugt dieselbe Sprache."
+        "title": "NEA → rechtslineare Grammatik",
+        "detail": "Jeder Zustand q erhält eine Variable A_q — den eigenen Namen des Zustands, wenn dieser schon ein gültiger Variablenname ist. Jeder Übergang q →a p wird zur Regel A_q → aA_p, und jeder akzeptierende Zustand q ergibt A_q → ε. Die Grammatik ist vom Typ 3 und erzeugt dieselbe Sprache."
       }
     },
     "toPda": {
@@ -563,7 +574,7 @@
       },
       "step3": {
         "title": "Variablen für die Terminale",
-        "detail": "In jeder rechten Seite der Länge mindestens 2 wird ein Terminal a durch eine neue Variable Xa mit der Regel Xa → a ersetzt. (Variablennamen sind einzelne Zeichen, daher erhält Xa einen freien Buchstaben.)"
+        "detail": "In jeder rechten Seite der Länge mindestens 2 wird ein Terminal a durch eine neue Variable X_a mit der Regel X_a → a ersetzt."
       },
       "step4": {
         "title": "Zerlegen der langen Regeln",
@@ -609,9 +620,10 @@
       "toPdaExpects": "toPda() erwartet eine Grammatik",
       "needsGrammar": "{{op}}: erwartet eine Grammatik, aber {{kind}} wurde übergeben",
       "invalidExpression": "Ungültiger Ausdruck",
-      "parseGeneric": "{{message}}. Beispiele: detM = det(M) · u = union(M1, M2) · r = regex((ab)*+ba) · e = equal(M1, M2)",
+      "parseGeneric": "{{message}}. Beispiele: D = det(M) · U = union(M_1, M_2) · R = regex((ab)*+ba) · E = equal(M_1, M_2)",
       "evaluationError": "Auswertungsfehler",
-      "evalGeneric": "{{message}}"
+      "evalGeneric": "{{message}}",
+      "multiLetterName": "„{{word}}“ ist kein Name: ein Name ist ein einzelner Buchstabe mit optionalem Index, etwa {{suggestion}} (Position {{pos}})"
     },
     "eval": {
       "unknownName": "Unbekannter Name: „{{name}}“",
@@ -629,7 +641,7 @@
     },
     "regexNameInside": {
       "title": "{{names}} in regex(…) sind nur Buchstaben",
-      "detail": "Ein regulärer Ausdruck kann nicht auf andere Definitionen verweisen — hier bedeutet {{name}} die Buchstaben {{letters}}. Um ihn mit der Definition {{name}} zu kombinieren, tu das außerhalb des Ausdrucks, z. B. {{name}} + regex(…) oder union({{name}}, …)."
+      "detail": "Ein regulärer Ausdruck kann nicht auf andere Definitionen verweisen — hier bedeutet {{name}} die Buchstaben {{letters}}. Um ihn mit der Definition {{name}} zu kombinieren, tu das außerhalb des Ausdrucks, z. B. {{name}} + regex(…) oder union({{name}}, …). Für den regulären Ausdruck des Automaten {{name}} nimm toRegex({{name}})."
     }
   }
 }

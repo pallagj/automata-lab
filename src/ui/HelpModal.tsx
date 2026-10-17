@@ -1,4 +1,5 @@
 import React from "react";
+import { rich } from "./Rich";
 import { useTranslation } from "react-i18next";
 import { X } from "lucide-react";
 
@@ -27,6 +28,9 @@ export const HelpModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
           {t("help.machines.body3")}
         </p>
         <pre>{t("help.machines.example")}</pre>
+
+        <h3>{t("help.names.heading")}</h3>
+        <p>{rich(t("help.names.body"))}</p>
 
         <h3>{t("help.expressions.heading")}</h3>
         <p>

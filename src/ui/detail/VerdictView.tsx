@@ -1,4 +1,5 @@
 import React from "react";
+import { rich } from "../Rich";
 import { useTranslation } from "react-i18next";
 import { EquivalenceVerdict } from "../../core/fsm/ops";
 
@@ -10,7 +11,7 @@ export const VerdictView: React.FC<{ verdict: EquivalenceVerdict }> = ({ verdict
       <div className="verdict-card">
         <div className="mark">{verdict.equal ? "🟰" : "≠"}</div>
         <h2>
-          {verdict.machineA} {verdict.equal ? "≡" : "≢"} {verdict.machineB}
+          {rich(verdict.machineA)} {verdict.equal ? "≡" : "≢"} {rich(verdict.machineB)}
         </h2>
         {verdict.equal ? (
           <p style={{ color: "var(--text-soft)" }}>
@@ -25,9 +26,9 @@ export const VerdictView: React.FC<{ verdict: EquivalenceVerdict }> = ({ verdict
             </p>
             <div className="ce">{verdict.counterexample!.word}</div>
             <p style={{ color: "var(--text-soft)", fontSize: 13.5 }}>
-              {t("detail.verdict.counterexample1")} <b>{verdict.counterexample!.acceptedBy}</b>
+              {t("detail.verdict.counterexample1")} <b>{rich(verdict.counterexample!.acceptedBy)}</b>
               {t("detail.verdict.counterexample2")}{" "}
-              <b>{verdict.counterexample!.rejectedBy}</b>
+              <b>{rich(verdict.counterexample!.rejectedBy)}</b>
               {t("detail.verdict.counterexample3")}
             </p>
           </>

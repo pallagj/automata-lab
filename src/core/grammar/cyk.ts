@@ -30,7 +30,7 @@ export function cyk(g: Grammar, input: string): OpResult<CykTable> {
   cells.push(
     word.map((c) => {
       const m = new Map<string, bigint>();
-      for (const r of g.rules) if (r.right === c) add(m, r.left, 1n);
+      for (const r of g.rules) if (r.right.length === 1 && r.right[0] === c) add(m, r.left[0], 1n);
       return sortCell(m);
     })
   );
@@ -46,7 +46,7 @@ export function cyk(g: Grammar, input: string): OpResult<CykTable> {
         for (const r of binary) {
           const b = left.get(r.right[0]);
           const c = right.get(r.right[1]);
-          if (b !== undefined && c !== undefined) add(m, r.left, b * c);
+          if (b !== undefined && c !== undefined) add(m, r.left[0], b * c);
         }
       }
       row.push(sortCell(m));
@@ -76,7 +76,7 @@ export function cykMembership(g: Grammar, input: string): OpResult<Membership> {
     ]);
   const epsFree = cls.epsilonFree ? g : removeEpsilonRules(g).value!;
   if (input === "") {
-    const accepted = epsFree.rules.some((r) => r.left === epsFree.start && r.right === "");
+    const accepted = epsFree.rules.some((r) => r.left[0] === epsFree.start && r.right.length === 0);
     return okResult({ accepted, table: null, cnf: null, converted: false });
   }
   const converted = !isCNF(g);

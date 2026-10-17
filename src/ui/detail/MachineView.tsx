@@ -29,12 +29,14 @@ import { TapeInput } from "./TapeInput";
 import { StepGroup } from "../../core/expr/expression";
 import { Check, Layers, ListTree, Play, RotateCcw, StepForward, Table2, Undo2, X } from "lucide-react";
 import { machineKindLabel } from "../machineLabels";
+import { rich } from "../Rich";
+import { showSymbols } from "../../core/symbols";
 
 const MAX_RUN_LEVELS = 300;
 
 /** Compact text of a storage's content for the configuration list. */
 function storageText(st: StorageState): string {
-  if (typeof st === "string") return st || "ε";
+  if (Array.isArray(st)) return showSymbols(st);
   const w = tapeWindow(st, 8);
   return w.cells.map((c, i) => (i === w.headIndex ? `[${c}]` : c)).join("");
 }
@@ -54,17 +56,17 @@ const StorageCells: React.FC<{ type: "stack" | "queue" | "tape"; st: StorageStat
       </div>
     );
   }
-  const content = st as string;
+  const content = st as string[];
   return (
     <div className="tape">
       {content.length === 0 && <span className="tape-cell empty">ε</span>}
-      {[...content].map((c, i) => (
+      {content.map((c, i) => (
         <span
           key={i}
           className={`tape-cell ${i === 0 ? "head" : ""}`}
           title={i === 0 ? (type === "stack" ? t("detail.machine.top") : t("detail.machine.front")) : undefined}
         >
-          {c}
+          {rich(c)}
         </span>
       ))}
     </div>
@@ -195,14 +197,14 @@ export const MachineView: React.FC<{ machine: Machine; stepGroups?: StepGroup[];
     <>
       <span className="stage-title">
         {machineKindLabel(t, caps)}
-        {m.name && ` — ${m.name}`}
+        {m.name && <> — {rich(m.name)}</>}
       </span>
       <span className="badge accent">{t("detail.fsm.stateCount", { count: m.states.length })}</span>
       {m.storages
-        .filter((s) => s.init !== "")
+        .filter((s) => s.init.length > 0)
         .map((s) => (
           <span key={s.id} className="badge accent" title={t("detail.machine.initialContentHint", { id: s.id })}>
-            {t("detail.machine.initial")} {s.id}: {s.init}
+            {t("detail.machine.initial")} {s.id}: {rich(showSymbols(s.init))}
           </span>
         ))}
       <span
@@ -266,12 +268,12 @@ export const MachineView: React.FC<{ machine: Machine; stepGroups?: StepGroup[];
             <tbody>
               {m.transitions.map((t, i) => (
                 <tr key={i}>
-                  <td>{t.from}</td>
+                  <td>{rich(t.from)}</td>
                   {head && <td>{t.input}</td>}
                   {t.ops.map((op, j) => (
-                    <td key={j}>{storageOpLabel(op)}</td>
+                    <td key={j}>{rich(storageOpLabel(op))}</td>
                   ))}
-                  <td>{t.to}</td>
+                  <td>{rich(t.to)}</td>
                 </tr>
               ))}
             </tbody>
@@ -390,7 +392,7 @@ export const MachineView: React.FC<{ machine: Machine; stepGroups?: StepGroup[];
                   {s.id}
                   {s.type === "stack" ? ` (${t("detail.machine.topLeft")}) ` : s.type === "queue" ? ` (${t("detail.machine.frontLeft")}) ` : " "}
                 </span>
-                {storageText(c.storages[j])}
+                {rich(storageText(c.storages[j]))}
               </span>
             ))}
           </div>

@@ -6,6 +6,9 @@ import { useTranslation } from "react-i18next";
 import type { TFunction } from "i18next";
 import { activeWorkspace, Cell, useAppStore } from "../../state/store";
 import { uniqueName, usedNames } from "../../state/names";
+import { splitAssignment } from "../../core/expr/expression";
+import { subscripts, yamlDigits } from "./subscript";
+import { withSubscript } from "../../core/symbols";
 import { CellResult } from "../../core/workspace";
 import { DiagnosticsList } from "../detail/DiagnosticsList";
 import { Code2, FileCode2, FunctionSquare, SlidersHorizontal, X } from "lucide-react";
@@ -14,7 +17,7 @@ import { machineCaps } from "../../core/machine/machine";
 import { opApplicability, OpInfo, OPS } from "./ops";
 import { detectEntityKind, EntityForm, parseEntityDraft } from "./EntityForm";
 import { machineKindLabel } from "../machineLabels";
-import { epsilonInputHandler, regexEpsilonInputHandler } from "./epsilon";
+import { epsilonInputHandler, insideRegex, regexEpsilonInputHandler } from "./epsilon";
 import { isNoteSource, noteSource, noteText } from "./note";
 import { KindIcon, ValueKind } from "../kinds";
 
@@ -137,7 +140,7 @@ export const CellEditor: React.FC<Props> = ({ cell, index, result }) => {
   // expressions and notes are one line, as in Desmos: Enter starts a new cell below (Shift+Enter still breaks
   // the line); YAML definitions are multi-line, so there Enter stays a newline
   const extensions = useMemo(() => {
-    if (isYaml) return [yaml(), epsilonInputHandler];
+    if (isYaml) return [yaml(), epsilonInputHandler, subscripts(yamlDigits)];
     const newCellOnEnter = { key: "Enter", run: () => (addCell("", cell.id), true) };
     // Backspace in an empty cell deletes it and goes on at the end of the cell above, as in Desmos;
     // the first cell stays, and if it is an empty note it turns back into an expression cell
@@ -160,7 +163,9 @@ export const CellEditor: React.FC<Props> = ({ cell, index, result }) => {
     };
     const keys = Prec.high(keymap.of([newCellOnEnter, backspaceWhenEmpty]));
     if (isNote) return [EditorView.lineWrapping, keys];
-    return [regexEpsilonInputHandler, keys];
+    // names in expressions: M1 is M₁ (inside regex(…) digits are letters of the pattern)
+    const exprDigits = subscripts((state, pos) => !insideRegex(state.doc.sliceString(0, pos)));
+    return [regexEpsilonInputHandler, exprDigits, keys];
   }, [isYaml, isNote, addCell, removeCell, setActiveCell, setCellSource, cell.id]);
 
   // a new, empty cell (Enter, the ghost cell) takes the keyboard focus as soon as its editor exists;
@@ -246,10 +251,10 @@ export const CellEditor: React.FC<Props> = ({ cell, index, result }) => {
     setOpsOpen(false);
     const src = cell.source.trim();
     const second = op.args === 2 ? ", " : "";
-    const asg = /^\s*([A-Za-z][A-Za-z0-9_'′]*)\s*=\s*([\s\S]+)$/.exec(src);
+    const asg = splitAssignment(src);
     if (asg) {
       // named expression cell: wrap the right-hand side
-      setCellSource(cell.id, `${asg[1]} = ${op.name}(${asg[2].trim()}${second})`);
+      setCellSource(cell.id, `${asg.rawName} = ${op.name}(${asg.expr}${second})`);
     } else if (result?.isExpression) {
       // unnamed expression cell: wrap the whole expression
       setCellSource(cell.id, `${op.name}(${src}${second})`);
@@ -257,7 +262,7 @@ export const CellEditor: React.FC<Props> = ({ cell, index, result }) => {
       // YAML definition: a new expression cell below, referring to the definition by name
       const name = ensureCellName(cell.id, result.value.kind === "grammar" ? "G" : "M");
       const used = usedNames(activeWorkspace(useAppStore.getState()).cells);
-      addCell(`${uniqueName(`${name}_${op.name}`, used)} = ${op.name}(${name}${second})`, cell.id);
+      addCell(`${uniqueName(withSubscript(name, op.name), used)} = ${op.name}(${name}${second})`, cell.id);
     } else {
       // empty / uninterpretable cell: an expression template
       setCellSource(cell.id, `${op.name}(${second})`);

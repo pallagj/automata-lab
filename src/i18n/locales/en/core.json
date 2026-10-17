@@ -140,7 +140,15 @@
         "title": "The left side of the rule contains no nonterminal: \"{{line}}\"",
         "detail": "In a generative grammar, the left side must contain at least one nonterminal."
       },
-      "unknownSymbolRight": "Unknown symbol on the right side of the rule: \"{{symbol}}\""
+      "unknownSymbolRight": "Unknown symbol on the right side of the rule: \"{{symbol}}\"",
+      "terminalNotOneChar": {
+        "title": "The terminal “{{symbol}}” is longer than one character",
+        "detail": "Terminals are the characters of the words, so each is a single character. Variables may have subscripts: X_a, C_1."
+      },
+      "ambiguousSubscript": {
+        "title": "“{{text}}” is ambiguous",
+        "detail": "It could be the variable {{name}} or the symbols {{separate}}. Write {{name}} with _ for the variable, or separate the symbols with a space. ({{line}})"
+      }
     },
     "yamlSyntaxError": {
       "titleAtLine": "YAML syntax error (line {{line}})",
@@ -187,7 +195,15 @@
       "badQueueOp": {
         "title": "Invalid storage operation: \"{{tokens}}\" ({{storageId}})",
         "detail": "Line: \"{{line}}\". Queue form: TAKE/PUT — e.g. \"A/BA\"; ε (or eps) for nothing."
+      },
+      "oneSymbol": {
+        "title": "“{{tokens}}” is more than one symbol ({{storageId}})",
+        "detail": "An operation takes a single symbol off the storage (or ε for nothing). A symbol with a subscript is written with _, like {{example}}. ({{line}})"
       }
+    },
+    "badName": {
+      "title": "“{{name}}” is not a name",
+      "detail": "A name is a single letter with an optional subscript, as in Desmos — for example {{suggestion}}. Type _ to start the subscript; digits right after the letter go there by themselves (M1 is M₁)."
     }
   },
   "ops": {
@@ -451,8 +467,7 @@
       "transition": "transition",
       "newRules": "new rules",
       "variable": "variable",
-      "terminal": "terminal",
-      "newVariable": "new variable"
+      "terminal": "terminal"
     },
     "toFsm": {
       "needsRightLinear": {
@@ -465,17 +480,13 @@
       }
     },
     "fsmToGrammar": {
-      "tooManyStates": {
-        "title": "Too many states to convert into a grammar",
-        "detail": "The automaton has {{count}} states; the single-character nonterminal notation allows at most {{max}} states. Minimization can reduce the number of states."
-      },
       "renamed": {
-        "title": "The states were given nonterminal letters",
+        "title": "Some states got A_q variable names",
         "detail": "{{mapping}}"
       },
       "step": {
         "title": "NFA → right-linear grammar",
-        "detail": "Every transition q →a p becomes the rule Q → aP, and every accepting state q gives the rule Q → ε. The resulting grammar is type 3 and generates the same language."
+        "detail": "Every state q gets a variable A_q — the state's own name when it already is a valid variable name. Every transition q →a p becomes the rule A_q → aA_p, and every accepting state q gives A_q → ε. The resulting grammar is type 3 and generates the same language."
       }
     },
     "toPda": {
@@ -563,7 +574,7 @@
       },
       "step3": {
         "title": "Variables for the terminals",
-        "detail": "In every right-hand side of length at least 2, a terminal a is replaced by a new variable Xa with the rule Xa → a. (Variable names are single characters, so Xa gets a free letter.)"
+        "detail": "In every right-hand side of length at least 2, a terminal a is replaced by a new variable X_a with the rule X_a → a."
       },
       "step4": {
         "title": "Breaking the long rules",
@@ -609,9 +620,10 @@
       "toPdaExpects": "toPda() expects a grammar",
       "needsGrammar": "{{op}}: expects a grammar, but got {{kind}}",
       "invalidExpression": "Invalid expression",
-      "parseGeneric": "{{message}}. Examples: detM = det(M) · u = union(M1, M2) · r = regex((ab)*+ba) · e = equal(M1, M2)",
+      "parseGeneric": "{{message}}. Examples: D = det(M) · U = union(M_1, M_2) · R = regex((ab)*+ba) · E = equal(M_1, M_2)",
       "evaluationError": "Evaluation error",
-      "evalGeneric": "{{message}}"
+      "evalGeneric": "{{message}}",
+      "multiLetterName": "“{{word}}” is not a name: a name is a single letter with an optional subscript, like {{suggestion}} (position {{pos}})"
     },
     "eval": {
       "unknownName": "Unknown name: \"{{name}}\"",
@@ -629,7 +641,7 @@
     },
     "regexNameInside": {
       "title": "{{names}} in regex(…) is just letters",
-      "detail": "A regular expression can't refer to other definitions — here {{name}} means the letters {{letters}}. To combine it with the definition {{name}}, do it outside the regex, e.g. {{name}} + regex(…) or union({{name}}, …)."
+      "detail": "A regular expression can't refer to other definitions — here {{name}} means the letters {{letters}}. To combine it with the definition {{name}}, do it outside the regex, e.g. {{name}} + regex(…) or union({{name}}, …). For the regular expression of the automaton {{name}}, use toRegex({{name}})."
     }
   }
 }

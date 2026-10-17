@@ -44,9 +44,14 @@ an app; everything runs locally, no account needed.
   table and the number of derivation trees (more than one proves the grammar ambiguous).
 - **Desmos-style worksheets:** a column of cells holding expressions, regexes, machines, grammars
   and `#` notes; drag & drop reordering, an operation menu that checks applicability up front,
-  and a form editor or YAML code view for definitions. Names are optional, as in Desmos: `det(M1)` or
+  and a form editor or YAML code view for definitions. Names are optional, as in Desmos: `det(M_1)` or
   `regex(a+b)` on their own are shown right away; name a cell only to reference it elsewhere. Type `eps` and it turns into `ε`, Desmos-style
   (`\eps` keeps the letters).
+- **Desmos-style names:** a name is a single letter with an optional subscript — `M`, `M_1`, `X_a`,
+  `M_{even}` — for cells, grammar variables and stack symbols alike, shown with real subscripts.
+  Typing works as in Desmos: `_` opens a subscript and → leaves it, digits right after a letter go
+  there by themselves (`M1` becomes M₁), and `AB` in an expression is A concatenated with B. State
+  names stay free labels (`AB`, `00`, `{A,B}`); automaton → grammar gives them `A_q` variables.
 - **Worksheet browser:** all your worksheets as cards with live graph previews (or a sortable list),
   search, sort and filter by what they contain, folders, multi-select, drag & drop into folders,
   duplicate/rename/move/delete with undo, and a gallery of ready-made example worksheets.
@@ -68,7 +73,7 @@ A cell can define a machine in YAML:
 
 ```yaml
 Machine:
-  name: M1
+  name: M_1
   charset: a, b
   states: S, A, F
   init: S
@@ -82,9 +87,9 @@ Machine:
 and the following cells can transform it with expressions:
 
 ```
-D = det(M1)
-Min = min(D)
-E = equal(M1, Min)
+D = det(M_1)
+N = min(D)
+E = equal(M_1, N)
 ```
 
 Adding `storages:` turns the same `Machine` into a pushdown automaton, a Turing machine or a custom

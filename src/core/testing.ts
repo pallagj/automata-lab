@@ -62,9 +62,9 @@ export function randomCFG(random: () => number): Grammar {
     const count = 1 + Math.floor(random() * 3);
     for (let i = 0; i < count; i++) {
       const len = random() < 0.25 ? 0 : 1 + Math.floor(random() * 3);
-      let right = "";
-      for (let j = 0; j < len; j++) right += symbols[Math.floor(random() * symbols.length)];
-      if (!rules.some((r) => r.left === left && r.right === right)) rules.push({ left, right });
+      const right: string[] = [];
+      for (let j = 0; j < len; j++) right.push(symbols[Math.floor(random() * symbols.length)]);
+      if (!rules.some((r) => r.left[0] === left && r.right.join(" ") === right.join(" "))) rules.push({ left: [left], right });
     }
   }
   return { kind: "grammar", name: "G", terminals, nonterminals, start: "S", rules };
@@ -89,7 +89,7 @@ export function cfgWordsUpTo(g: Grammar, maxLength: number): Set<string> {
         acc = next;
         if (acc.size === 0) break;
       }
-      const target = words.get(r.left)!;
+      const target = words.get(r.left[0])!;
       for (const w of acc)
         if (!target.has(w)) {
           target.add(w);

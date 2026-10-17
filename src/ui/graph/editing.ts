@@ -68,7 +68,7 @@ function suggestStateName(used: Set<string>): string {
 export { suggestStateName };
 
 /** The dialog's fields: input symbol + the sub-fields of each storage's operation. */
-export function edgeFieldsFor(t: TFunction, hasHead: boolean, storages: StorageSpec[]): EdgeField[] {
+export function edgeFieldsFor(t: TFunction, hasHead: boolean, storages: Pick<StorageSpec, "id" | "type">[]): EdgeField[] {
   const fields: EdgeField[] = [];
   if (hasHead) fields.push({ label: t("graph.edgeFields.symbol"), placeholder: "a", widget: "text" });
   for (const s of storages) {
@@ -88,7 +88,7 @@ export function edgeFieldsFor(t: TFunction, hasHead: boolean, storages: StorageS
 }
 
 /** line tokens (without from/to) → dialog field values */
-export function tokensToFields(hasHead: boolean, storages: StorageSpec[], tokens: string[]): string[] {
+export function tokensToFields(hasHead: boolean, storages: Pick<StorageSpec, "id" | "type">[], tokens: string[]): string[] {
   const out: string[] = [];
   let i = 0;
   if (hasHead) out.push(tokens[i++] ?? "");
@@ -105,7 +105,7 @@ export function tokensToFields(hasHead: boolean, storages: StorageSpec[], tokens
 }
 
 /** dialog field values → line tokens (without from/to) */
-export function fieldsToTokens(hasHead: boolean, storages: StorageSpec[], fields: string[]): string[] {
+export function fieldsToTokens(hasHead: boolean, storages: Pick<StorageSpec, "id" | "type">[], fields: string[]): string[] {
   const out: string[] = [];
   let i = 0;
   if (hasHead) out.push(fields[i++] ?? "");

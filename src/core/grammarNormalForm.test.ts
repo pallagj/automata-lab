@@ -23,10 +23,10 @@ ${rules
   return r.value!;
 };
 
-/** Right-hand sides per left-hand side, sorted ("" = ε). */
+/** Right-hand sides per left-hand side, written side by side and sorted ("" = ε). */
 const ruleSets = (g: Grammar) => {
   const out: Record<string, string[]> = {};
-  for (const r of g.rules) (out[r.left] ??= []).push(r.right);
+  for (const r of g.rules) (out[r.left.join("")] ??= []).push(r.right.join(""));
   for (const k of Object.keys(out)) out[k].sort();
   return out;
 };
@@ -35,7 +35,7 @@ const words = (g: Grammar, maxLength = 6) => sorted(cfgWordsUpTo(g, maxLength));
 const withoutEpsilon = (ws: string[]) => ws.filter((w) => w !== "");
 
 const nonterminalSet = (g: Grammar) => new Set(g.nonterminals);
-const isUnit = (g: Grammar) => (r: Grammar["rules"][number]) => r.right.length === 1 && nonterminalSet(g).has(r.right);
+const isUnit = (g: Grammar) => (r: Grammar["rules"][number]) => r.right.length === 1 && nonterminalSet(g).has(r.right[0]);
 
 /**
  * Shortest terminal word length per variable (Infinity = derives no terminal word),
@@ -46,8 +46,8 @@ function shortest(g: Grammar): Map<string, number> {
   const symLen = (c: string) => len.get(c) ?? 1;
   for (let round = 0; round <= g.nonterminals.length + 1; round++)
     for (const r of g.rules) {
-      const l = [...r.right].reduce((s, c) => s + symLen(c), 0);
-      if (l < len.get(r.left)!) len.set(r.left, l);
+      const l = r.right.reduce((s, c) => s + symLen(c), 0);
+      if (l < len.get(r.left[0])!) len.set(r.left[0], l);
     }
   return len;
 }
@@ -59,7 +59,7 @@ function reachableSymbols(g: Grammar): Set<string> {
   while (stack.length) {
     const A = stack.pop()!;
     for (const r of g.rules)
-      if (r.left === A)
+      if (r.left[0] === A)
         for (const c of r.right)
           if (!seen.has(c)) {
             seen.add(c);
@@ -75,18 +75,19 @@ function reachableSymbols(g: Grammar): Set<string> {
  */
 function countLeftmost(g: Grammar, word: string): number {
   const nt = nonterminalSet(g);
+  const target = [...word];
   let count = 0;
-  const go = (form: string) => {
-    if (form.length > word.length) return; // no rule shortens
-    const i = [...form].findIndex((c) => nt.has(c));
+  const go = (form: string[]) => {
+    if (form.length > target.length) return; // no rule shortens
+    const i = form.findIndex((c) => nt.has(c));
     if (i === -1) {
-      if (form === word) count++;
+      if (form.join("") === word) count++;
       return;
     }
-    if (form.slice(0, i) !== word.slice(0, i)) return;
-    for (const r of g.rules) if (r.left === form[i]) go(form.slice(0, i) + r.right + form.slice(i + 1));
+    for (let k = 0; k < i; k++) if (form[k] !== target[k]) return;
+    for (const r of g.rules) if (r.left[0] === form[i]) go([...form.slice(0, i), ...r.right, ...form.slice(i + 1)]);
   };
-  go(g.start);
+  go([g.start]);
   return count;
 }
 
@@ -204,7 +205,7 @@ describe("useless symbols (6.3.3)", () => {
     ]);
     expect(r.steps[1].detail!.params).toEqual({ removed: "A, b" });
     const out = r.value!;
-    expect(out.rules).toEqual([{ left: "S", right: "a" }]);
+    expect(out.rules).toEqual([{ left: ["S"], right: ["a"] }]);
     expect(out.nonterminals).toEqual(["S"]);
     expect(out.terminals).toEqual(["a"]);
   });
@@ -213,7 +214,7 @@ describe("useless symbols (6.3.3)", () => {
     const g = grammar("S", "S, A, B", "S -> AB | a\nA -> B | b");
     const out = removeUselessSymbols(g).value!;
     // the reversed order would keep A → b
-    expect(out.rules.some((r) => r.left === "A")).toBe(false);
+    expect(out.rules.some((r) => r.left[0] === "A")).toBe(false);
   });
 
   it("an empty language keeps only the start symbol", () => {
@@ -260,27 +261,27 @@ describe("useless symbols (6.3.3)", () => {
 });
 
 describe("Chomsky normal form (6.4.1)", () => {
-  it("the lecture-note example (6.26), with free letters for Xa and the Ci", () => {
+  it("the lecture-note example (6.26), with the notes' X_a and C_i", () => {
     const g = grammar("S", "S", "S -> aSa | bSb | c", "a, b, c");
     const r = toCNF(g);
     const out = r.value!;
     expect(out.rules).toEqual([
-      { left: "S", right: "AC" },
-      { left: "C", right: "SA" },
-      { left: "S", right: "BD" },
-      { left: "D", right: "SB" },
-      { left: "S", right: "c" },
-      { left: "A", right: "a" },
-      { left: "B", right: "b" }
+      { left: ["S"], right: ["X_a", "C_1"] },
+      { left: ["C_1"], right: ["S", "X_a"] },
+      { left: ["S"], right: ["X_b", "C_2"] },
+      { left: ["C_2"], right: ["S", "X_b"] },
+      { left: ["S"], right: ["c"] },
+      { left: ["X_a"], right: ["a"] },
+      { left: ["X_b"], right: ["b"] }
     ]);
-    expect(out.nonterminals).toEqual(["S", "A", "B", "C", "D"]);
+    expect(out.nonterminals).toEqual(["S", "X_a", "X_b", "C_1", "C_2"]);
     expect(r.steps.find((s) => s.title.key === "grammar.cnf.step3.title")!.table!.rows).toEqual([
-      ["a", "Xa = A", "A → a"],
-      ["b", "Xb = B", "B → b"]
+      ["a", "X_a → a"],
+      ["b", "X_b → b"]
     ]);
     expect(r.steps.find((s) => s.title.key === "grammar.cnf.step4.title")!.table!.rows).toEqual([
-      ["S → ASA", "S → AC, C → SA"],
-      ["S → BSB", "S → BD, D → SB"]
+      ["S → X_aSX_a", "S → X_aC_1, C_1 → SX_a"],
+      ["S → X_bSX_b", "S → X_bC_2, C_2 → SX_b"]
     ]);
     expect(isCNF(out)).toBe(true);
     expect(words(out, 9)).toEqual(words(g, 9));
@@ -301,15 +302,12 @@ describe("Chomsky normal form (6.4.1)", () => {
     expect(words(r.value!, 10)).toEqual(withoutEpsilon(words(g, 10)));
   });
 
-  it("new names never clash, even when every Latin capital is taken", () => {
-    const vars = [..."ABCDEFGHIJKLMNOPQRSTUVWXYZ"];
-    const rules = ["S -> aABb", ...vars.filter((v) => v !== "S").map((v) => `${v} -> a`)].join("\n");
-    const g = grammar("S", vars.join(", "), rules);
+  it("new names never clash with the grammar's own X_a or C_1", () => {
+    const g = grammar("S", "S, X_a, C_1, C_2", "S -> aX_aC_1b\nX_a -> a\nC_1 -> b\nC_2 -> a");
     const out = toCNF(g).value!;
     expect(isCNF(out)).toBe(true);
     expect(new Set(out.nonterminals).size).toBe(out.nonterminals.length);
-    for (const v of out.nonterminals) expect(g.terminals).not.toContain(v);
-    expect(out.nonterminals.length).toBe(26 + 2 + 2); // Xa, Xb and two chain variables
+    expect(out.nonterminals).toEqual(["S", "X_a", "C_1", "C_2", "X′_a", "X_b", "C_3", "C_4"]);
     expect(words(out, 5)).toEqual(words(g, 5));
   });
 

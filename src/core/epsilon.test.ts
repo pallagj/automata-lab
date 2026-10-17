@@ -32,15 +32,15 @@ describe("ε in grammars", () => {
   it("is the identity of concatenation and works in any alphabet", () => {
     const g = grammar("    - S -> εA | aSb | eps | Aeps\n    - A -> b");
     expect(g.ok).toBe(true);
-    expect(g.value!.rules.map((r) => r.right)).toEqual(["A", "aSb", "", "A", "b"]);
+    expect(g.value!.rules.map((r) => r.right.join(""))).toEqual(["A", "aSb", "", "A", "b"]);
     const eps = grammar("    - S -> eps | \\eps", "e, p, s");
-    expect(eps.value!.rules.map((r) => r.right)).toEqual(["", "eps"]);
+    expect(eps.value!.rules.map((r) => r.right)).toEqual([[], ["e", "p", "s"]]);
   });
 
   it("writes literal e·p·s back escaped so it survives a round trip", () => {
     const g = grammar("    - S -> \\eps | eps", "e, p, s").value!;
     const back = parseGrammar(serializeDefinition(g)).value!;
-    expect(back.rules.map((r) => r.right)).toEqual(["eps", ""]);
+    expect(back.rules.map((r) => r.right)).toEqual([["e", "p", "s"], []]);
   });
 });
 
@@ -58,13 +58,13 @@ describe("ε in machines", () => {
     - q0 eps Z/Aeps q1
     - q0 a Z/epsilon q0`).value!;
     expect(m.transitions[0].input).toBe("ε");
-    expect(m.transitions[0].ops[0]).toEqual({ type: "stack", pop: "Z", push: "A" });
-    expect(m.transitions[1].ops[0]).toEqual({ type: "stack", pop: "Z", push: "" });
+    expect(m.transitions[0].ops[0]).toEqual({ type: "stack", pop: "Z", push: ["A"] });
+    expect(m.transitions[1].ops[0]).toEqual({ type: "stack", pop: "Z", push: [] });
   });
 
-  it("never touches names", () => {
+  it("never touches state names", () => {
     const m = parseMachine(`Machine:
-  name: steps
+  name: P
   charset: a
   states: steps, keeps
   init: steps

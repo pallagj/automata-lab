@@ -22,6 +22,7 @@ import { Grammar, grammarToFSM, grammarToPDA, fsmToGrammar, removeEpsilonRules }
 import { removeUnitRules, removeUselessSymbols, toCNF } from "../grammar/normalForm";
 import { fsmToMachine, machineCaps, machineToFSM } from "../machine/machine";
 import { Definition } from "../parse/definitionParser";
+import { canonicalLabel, canonicalName, formatIdent, readIdent, suggestName } from "../symbols";
 
 /**
  * Expression language: name = expression
@@ -173,73 +174,139 @@ class ExprParser {
       this.pos++;
       return e;
     }
-    if (/[A-Za-z0-9_ε$]/.test(c)) {
-      // read an identifier
-      const start = this.pos;
-      while (this.pos < this.src.length && /[A-Za-z0-9_'′ε$]/.test(this.src[this.pos])) this.pos++;
-      const word = this.src.slice(start, this.pos);
-      this.skipWs();
-      if (this.peek() === "(" && (FUNCTION_NAMES as readonly string[]).includes(word)) {
-        // function call
-        this.pos++;
-        const args: Expr[] = [];
-        const rawArgs: string[] = [];
-        if (word === "regex") {
-          // the regex body is read raw up to the closing parenthesis
-          let depth = 1;
-          const start2 = this.pos;
-          while (this.pos < this.src.length && depth > 0) {
-            if (this.src[this.pos] === "(") depth++;
-            if (this.src[this.pos] === ")") depth--;
-            if (depth > 0) this.pos++;
-          }
-          if (depth !== 0) this.error(tx("expression.error.missingCloseParenRegex", { pos: this.pos + 1 }));
-          rawArgs.push(this.src.slice(start2, this.pos).trim());
-          args.push({ t: "lit", c: EPS }); // placeholder, evaluation uses rawArgs
-          this.pos++; // ')'
-          return { t: "call", fn: "regex", args, rawArgs };
-        }
+    if (/\p{L}/u.test(c)) {
+      const fn = functionAt(this.src, this.pos);
+      if (fn) {
+        this.pos += fn.length;
         this.skipWs();
-        if (this.peek() === ")") {
-          this.pos++;
-        } else {
-          while (true) {
-            const argStart = this.pos;
-            // second argument of regex() and complete(): also kept as raw text
-            const arg = this.parseUnion();
-            rawArgs.push(this.src.slice(argStart, this.pos).trim());
-            args.push(arg);
-            this.skipWs();
-            if (this.peek() === ",") {
-              this.pos++;
-              continue;
-            }
-            if (this.peek() === ")") {
-              this.pos++;
-              break;
-            }
-            this.error(tx("expression.error.missingCommaOrParen", { pos: this.pos + 1 }));
-          }
-        }
-        return { t: "call", fn: word as FuncName, args, rawArgs };
+        if (this.peek() === "(") return this.parseCall(fn);
+        this.error(tx("expression.error.functionNeedsParen", { word: fn, pos: this.pos + 1 }));
       }
-      // only a known name or function is allowed — there are no letter literals
-      if (this.knownNames.has(word)) return { t: "var", name: word };
-      if ((FUNCTION_NAMES as readonly string[]).includes(word))
-        this.error(tx("expression.error.functionNeedsParen", { word, pos: this.pos + 1 }));
-      this.error(tx("expression.error.unknownName", { word, pos: this.pos + 1 }));
+      // a name: one letter with its primes and subscript — so AB is A concatenated with B
+      const start = this.pos;
+      const r = readIdent(this.src, this.pos, true);
+      if (r) {
+        const name = formatIdent(r.ident);
+        if (this.knownNames.has(name)) {
+          this.pos = r.end;
+          return { t: "var", name };
+        }
+        // an unknown word of several letters is most likely a name written the old way
+        const word = /^[\p{L}\p{N}]+/u.exec(this.src.slice(start))![0];
+        if ([...word].length > 1 && r.ident.sub === "")
+          this.error(tx("expression.error.multiLetterName", { word, suggestion: suggestName(word), pos: start + 1 }));
+        this.error(tx("expression.error.unknownName", { word: name, pos: start + 1 }));
+      }
     }
     this.error(tx("expression.error.unparseableChar", { char: c, pos: this.pos + 1 }));
   }
+
+  /** A call of `fn`, with the position at its "(". */
+  parseCall(fn: FuncName): Expr {
+    this.pos++; // (
+    const args: Expr[] = [];
+    const rawArgs: string[] = [];
+    if (fn === "regex") {
+      // the regex body is read raw up to the closing parenthesis
+      let depth = 1;
+      const start = this.pos;
+      while (this.pos < this.src.length && depth > 0) {
+        if (this.src[this.pos] === "(") depth++;
+        if (this.src[this.pos] === ")") depth--;
+        if (depth > 0) this.pos++;
+      }
+      if (depth !== 0) this.error(tx("expression.error.missingCloseParenRegex", { pos: this.pos + 1 }));
+      rawArgs.push(this.src.slice(start, this.pos).trim());
+      args.push({ t: "lit", c: EPS }); // placeholder, evaluation uses rawArgs
+      this.pos++; // ')'
+      return { t: "call", fn, args, rawArgs };
+    }
+    this.skipWs();
+    if (this.peek() === ")") {
+      this.pos++;
+      return { t: "call", fn, args, rawArgs };
+    }
+    while (true) {
+      const argStart = this.pos;
+      // the second argument of complete() is a state name: also kept as raw text
+      const arg = fn === "complete" && args.length === 1 ? this.rawArgument() : this.parseUnion();
+      rawArgs.push(this.src.slice(argStart, this.pos).trim());
+      args.push(arg);
+      this.skipWs();
+      if (this.peek() === ",") {
+        this.pos++;
+        continue;
+      }
+      if (this.peek() === ")") {
+        this.pos++;
+        break;
+      }
+      this.error(tx("expression.error.missingCommaOrParen", { pos: this.pos + 1 }));
+    }
+    return { t: "call", fn, args, rawArgs };
+  }
+
+  /** Raw text up to the next top-level "," or ")" (a state name is a free label). */
+  rawArgument(): Expr {
+    while (this.pos < this.src.length && this.src[this.pos] !== "," && this.src[this.pos] !== ")") this.pos++;
+    return { t: "lit", c: EPS };
+  }
 }
 
-/** Variable names referenced in an expression (for evaluation order). */
+/** The texts in a regex pattern that read as worksheet names (M, R1 = R_1), each once. */
+function namesInPattern(pattern: string, names: Set<string>): string[] {
+  const found: string[] = [];
+  for (let i = 0; i < pattern.length; ) {
+    const r = /\p{L}/u.test(pattern[i]) ? readIdent(pattern, i, true) : null;
+    if (!r) {
+      i++;
+      continue;
+    }
+    const text = pattern.slice(i, r.end);
+    if (names.has(formatIdent(r.ident)) && !found.includes(text)) found.push(text);
+    i = r.end;
+  }
+  return found;
+}
+
+/** The function name at `pos`, when one starts there (as a whole word). */
+function functionAt(src: string, pos: number): FuncName | null {
+  for (const fn of FUNCTIONS_LONGEST_FIRST) {
+    if (src.startsWith(fn, pos) && !/[\p{L}\p{N}_]/u.test(src[pos + fn.length] ?? "")) return fn;
+  }
+  return null;
+}
+const FUNCTIONS_LONGEST_FIRST = [...FUNCTION_NAMES].sort((a, b) => b.length - a.length);
+
+/** Names referenced in an expression (for evaluation order). */
 export function collectDependencies(src: string, knownNames: Set<string>): Set<string> {
   const deps = new Set<string>();
-  const re = /[A-Za-z0-9_'′]+/g;
-  let m: RegExpExecArray | null;
-  while ((m = re.exec(src)) !== null) {
-    if (knownNames.has(m[0]) && !(FUNCTION_NAMES as readonly string[]).includes(m[0])) deps.add(m[0]);
+  for (let pos = 0; pos < src.length; ) {
+    const fn = /\p{L}/u.test(src[pos]) ? functionAt(src, pos) : null;
+    if (fn === "regex") {
+      // a regex is a pattern of letters, not names: skip its body
+      let depth = 0;
+      pos += fn.length;
+      while (pos < src.length) {
+        if (src[pos] === "(") depth++;
+        if (src[pos] === ")" && --depth === 0) break;
+        pos++;
+      }
+      pos++;
+      continue;
+    }
+    if (fn) {
+      pos += fn.length;
+      continue;
+    }
+    const r = /\p{L}/u.test(src[pos]) ? readIdent(src, pos, true) : null;
+    if (r) {
+      const name = formatIdent(r.ident);
+      if (knownNames.has(name)) deps.add(name);
+      pos = r.end;
+      continue;
+    }
+    pos++;
   }
   return deps;
 }
@@ -368,7 +435,7 @@ class Evaluator {
       }
       case "complete":
         expectArgs(1, 2);
-        return this.take(label("complete"), complete(fsmArg(0), e.args.length > 1 ? e.rawArgs[1] : undefined));
+        return this.take(label("complete"), complete(fsmArg(0), e.args.length > 1 ? canonicalLabel(e.rawArgs[1]) : undefined));
       case "reachable":
         expectArgs(1);
         return this.take(label("reachable"), reachable(fsmArg(0)));
@@ -432,7 +499,7 @@ class Evaluator {
         expectArgs(1);
         // a regex is a self-contained pattern: a name inside it is just letters — say so, since it looks like a reference
         const pattern = e.rawArgs[0];
-        const named = [...new Set(pattern.match(/[A-Za-z][A-Za-z0-9_'′]*/g) ?? [])].filter((w) => this.names.has(w));
+        const named = namesInPattern(pattern, this.names);
         if (named.length > 0)
           this.diagnostics.push(
             warn(
@@ -510,8 +577,9 @@ export function evaluateExpression(
 }
 
 /** Splits "name = expression". */
-export function splitAssignment(source: string): { name: string; expr: string } | null {
-  const m = /^\s*([A-Za-z][A-Za-z0-9_'′]*)\s*=\s*([\s\S]+)$/.exec(source.trim());
+export function splitAssignment(source: string): { name: string | null; rawName: string; expr: string } | null {
+  const m = /^\s*([^\s=(),]+)\s*=\s*([\s\S]+)$/.exec(source.trim());
   if (!m) return null;
-  return { name: m[1], expr: m[2].trim() };
+  // name: the canonical form (M1 → M_1), null when the left side is not a name
+  return { name: canonicalName(m[1]), rawName: m[1], expr: m[2].trim() };
 }

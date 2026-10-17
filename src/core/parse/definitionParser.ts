@@ -11,6 +11,7 @@ import {
 } from "../machine/machine";
 import { Grammar, GrammarRule } from "../grammar/grammar";
 import { symbolString } from "../epsilon";
+import { canonicalLabel, canonicalName, formatIdent, parseIdent, suggestName, symbolTokens } from "../symbols";
 
 /**
  * Parses YAML-based definitions with friendly, precise error messages.
@@ -126,8 +127,15 @@ function parseYamlBody(source: string, expectedKeys: string[]): OpResult<ParsedB
     ]);
   }
   const b = body as Record<string, unknown>;
-  const name = String(b["name"] ?? "").trim();
+  const raw = String(b["name"] ?? "").trim();
+  const name = raw === "" ? "" : canonicalName(raw);
+  if (name === null) return failResult([badName(raw)]);
   return okResult({ name, body: b, key });
+}
+
+/** A name that breaks the one-letter rule, with the name we would suggest instead. */
+function badName(raw: string): Diagnostic {
+  return err(tx("definitionParser.badName.title", { name: raw }), tx("definitionParser.badName.detail", { suggestion: suggestName(raw) }));
 }
 
 function requireField(
@@ -201,7 +209,7 @@ export function parseStorageEntry(id: string, raw: unknown): OpResult<StorageSpe
   const type = STORAGE_TYPES[typeRaw];
   if (!type) return bad();
   if (init === undefined) init = type === "stack" ? STACK_DEFAULT_INIT : "";
-  return okResult({ id, type, init: symbolString(init) });
+  return okResult({ id, type, init: symbolTokens(init) });
 }
 
 /** how many tokens a storage occupies in a transition line */
@@ -260,9 +268,18 @@ function parseStorageOp(
     ]);
   }
   const [aRaw, bRaw] = tok.split("/");
-  const a = normEps(aRaw);
-  const b = symbolString(bRaw);
-  return okResult(
+  // the symbol taken off is a single symbol (or ε: nothing is taken)
+  const taken = symbolTokens(aRaw);
+  if (taken.length > 1)
+    return failResult([
+      err(
+        tx("definitionParser.storageOp.oneSymbol.title", { tokens: aRaw, storageId: spec.id }),
+        tx("definitionParser.storageOp.oneSymbol.detail", { line, example: formatIdent({ base: "Z", primes: 0, sub: "0" }) })
+      )
+    ]);
+  const a = taken[0] ?? EPS;
+  const b = symbolTokens(bRaw ?? "");
+  return okResult<StorageOp>(
     spec.type === "stack" ? { type: "stack", pop: a, push: b } : { type: "queue", take: a, put: b }
   );
 }
@@ -300,9 +317,10 @@ export function parseMachine(source: string): OpResult<Machine> {
   }
 
   const alphabet = parseList(body["charset"], "charset", diags);
-  const states = parseList(body["states"], "states", diags);
-  const accept = parseList(body["accept"], "accept", diags);
-  const start = String(body["init"]).trim();
+  // a state label that is a name is canonical (q0 = q_0); see canonicalLabel
+  const states = parseList(body["states"], "states", diags).map(canonicalLabel);
+  const accept = parseList(body["accept"], "accept", diags).map(canonicalLabel);
+  const start = canonicalLabel(String(body["init"]));
 
   const stateSet = new Set(states);
   if (!stateSet.has(start))
@@ -374,8 +392,9 @@ export function parseMachine(source: string): OpResult<Machine> {
         )
       ]);
     }
-    const from = parts[0];
-    const to = parts[parts.length - 1];
+    const from = parts[0] === "." ? "." : canonicalLabel(parts[0]);
+    const last = parts[parts.length - 1];
+    const to = last === "." || last === "&" ? last : canonicalLabel(last);
     if (from !== "." && !stateSet.has(from))
       return failResult([
         err(tx("definitionParser.machine.unknownFromState", { state: from }), tx("definitionParser.line", { line }))
@@ -500,9 +519,21 @@ export function parseGrammar(source: string): OpResult<Grammar> {
     if (d) return failResult([d]);
   }
 
+  // terminals are the characters of the words; variables are names (S, A, X_a, C_1, S′)
   const terminals = parseList(body["charset"], "charset", diags);
-  const nonterminals = parseList(body["variables"], "variables", diags);
-  const start = String(body["init"]).trim();
+  const long = terminals.find((t) => [...t].length !== 1);
+  if (long !== undefined)
+    return failResult([
+      err(tx("definitionParser.grammar.terminalNotOneChar.title", { symbol: long }), tx("definitionParser.grammar.terminalNotOneChar.detail"))
+    ]);
+  const nonterminals: string[] = [];
+  for (const raw of parseList(body["variables"], "variables", diags)) {
+    const v = canonicalName(raw);
+    if (v === null) return failResult([badName(raw)]);
+    nonterminals.push(v);
+  }
+  const startRaw = String(body["init"]).trim();
+  const start = canonicalName(startRaw) ?? startRaw;
 
   if (!nonterminals.includes(start))
     return failResult([err(tx("definitionParser.grammar.startNotInNonterminals", { start }))]);
@@ -517,16 +548,63 @@ export function parseGrammar(source: string): OpResult<Grammar> {
     ]);
 
   const known = new Set([...terminals, ...nonterminals]);
+  const nt = new Set(nonterminals);
+  const term = new Set(terminals);
+
+  /**
+   * The symbols of one rule side. As a convenience for typed text, a letter followed by
+   * digits is the variable with that subscript when such a variable exists (S1 → S_1) —
+   * unless the digits are terminals too, then the text is ambiguous.
+   */
+  const readSide = (text: string, line: string): OpResult<string[]> => {
+    const out: string[] = [];
+    // a space separates: S 1 is never S_1
+    for (const chunk of text.trim().split(/\s+/)) {
+      const r = readChunk(symbolTokens(chunk), line);
+      if (!r.ok) return r;
+      out.push(...r.value!);
+    }
+    return okResult(out);
+  };
+  const readChunk = (tokens: string[], line: string): OpResult<string[]> => {
+    const out: string[] = [];
+    for (let i = 0; i < tokens.length; i++) {
+      const id = parseIdent(tokens[i], false);
+      let j = i + 1;
+      while (j < tokens.length && /^[0-9]$/.test(tokens[j])) j++;
+      if (id && id.sub === "" && j > i + 1) {
+        const digits = tokens.slice(i + 1, j);
+        const merged = formatIdent({ ...id, sub: digits.join("") });
+        if (nt.has(merged)) {
+          if (known.has(tokens[i]) && digits.every((d) => term.has(d)))
+            return failResult([
+              err(
+                tx("definitionParser.grammar.ambiguousSubscript.title", { text: tokens.slice(i, j).join("") }),
+                tx("definitionParser.grammar.ambiguousSubscript.detail", { name: merged, separate: tokens.slice(i, j).join(" "), line })
+              )
+            ]);
+          out.push(merged);
+          i = j - 1;
+          continue;
+        }
+      }
+      out.push(tokens[i]);
+    }
+    return okResult(out);
+  };
+
   const rules: GrammarRule[] = [];
   const lines = parseList(body["rules"], "rules", diags, false);
   for (const line of lines) {
-    const m = /^(.+?)(?:->|→)(.*)$/.exec(line.replaceAll(" ", ""));
+    const m = /^(.+?)(?:->|→)(.*)$/.exec(line);
     if (!m) {
       return failResult([
         err(tx("definitionParser.grammar.invalidRule.title", { line }), tx("definitionParser.grammar.invalidRule.detail"))
       ]);
     }
-    const left = m[1];
+    const leftR = readSide(m[1], line);
+    if (!leftR.ok) return failResult(leftR.diagnostics);
+    const left = leftR.value!;
     for (const c of left)
       if (!known.has(c))
         return failResult([
@@ -535,7 +613,7 @@ export function parseGrammar(source: string): OpResult<Grammar> {
             tx("definitionParser.grammar.ruleDetail", { line })
           )
         ]);
-    if (![...left].some((c) => nonterminals.includes(c)))
+    if (!left.some((c) => nt.has(c)))
       return failResult([
         err(
           tx("definitionParser.grammar.leftMissingNonterminal.title", { line }),
@@ -544,7 +622,9 @@ export function parseGrammar(source: string): OpResult<Grammar> {
       ]);
 
     for (const alt of m[2].split("|")) {
-      const right = symbolString(alt);
+      const rightR = readSide(alt, line);
+      if (!rightR.ok) return failResult(rightR.diagnostics);
+      const right = rightR.value!;
       for (const c of right)
         if (!known.has(c))
           return failResult([

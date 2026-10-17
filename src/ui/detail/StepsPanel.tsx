@@ -1,4 +1,5 @@
 import React from "react";
+import { rich } from "../Rich";
 import { useTranslation } from "react-i18next";
 import { StepGroup } from "../../core/expr/expression";
 import { AlgoStep } from "../../core/types";
@@ -9,15 +10,15 @@ const Step: React.FC<{ step: AlgoStep }> = ({ step }) => {
   const { t } = useTranslation();
   return (
   <div className="step">
-    <div className="step-title">{tr(t, step.title)}</div>
-    {step.detail && <div className="step-detail">{tr(t, step.detail)}</div>}
+    <div className="step-title">{rich(tr(t, step.title))}</div>
+    {step.detail && <div className="step-detail">{rich(tr(t, step.detail))}</div>}
     {step.table && (
       <div className="t-wrap">
         <table className="t">
           <thead>
             <tr>
               {step.table.headers.map((h, i) => (
-                <th key={i}>{tr(t, h)}</th>
+                <th key={i}>{rich(tr(t, h))}</th>
               ))}
             </tr>
           </thead>
@@ -25,7 +26,7 @@ const Step: React.FC<{ step: AlgoStep }> = ({ step }) => {
             {step.table.rows.map((row, i) => (
               <tr key={i}>
                 {row.map((c, j) => (
-                  <td key={j}>{c}</td>
+                  <td key={j}>{rich(c)}</td>
                 ))}
               </tr>
             ))}

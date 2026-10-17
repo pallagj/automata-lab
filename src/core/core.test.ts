@@ -389,7 +389,7 @@ Grammar:
 `).value!;
     const r = removeEpsilonRules(g);
     expect(r.ok).toBe(true);
-    expect(r.value!.rules.every((x) => x.right !== "" || x.left === r.value!.start)).toBe(true);
+    expect(r.value!.rules.every((x) => x.right.length > 0 || x.left[0] === r.value!.start)).toBe(true);
     expect(grammarAccepts(r.value!, "ab").verdict).toBe("yes");
     expect(grammarAccepts(r.value!, "aab").verdict).toBe("yes");
   });
@@ -438,7 +438,8 @@ Machine:
     expect(ser).toContain("Machine:");
     expect(ser).toContain("stack: stack");
     // the eps alias is written back as ε
-    expect(ser).toContain("- q0 ε Z/Z q1");
+    // q0 is the name q₀: written canonically
+    expect(ser).toContain("- q_0 ε Z/Z q_1");
     expect(ser).not.toContain("$");
     const back = parseMachine(ser).value!;
     for (const w of ["", "a", "aa"]) {
@@ -537,8 +538,8 @@ describe("worksheet evaluation", () => {
     - 0 a 1
     - 1 b 2`,
       "D = det(M)",
-      "MD = min(D)",
-      "V = equal(M, MD)"
+      "N = min(D)",
+      "V = equal(M, N)"
     ];
     const rs = evaluateCells(cells);
     expect(rs[0].value?.kind).toBe("machine");
@@ -725,7 +726,7 @@ describe("unnamed cells", () => {
 
 describe("names inside a regex", () => {
   it("are letters, with a warning that they are not references", () => {
-    const rs = evaluateCells(["R1 = regex(ab)", "X = regex(R1|b)", "Y = regex(ab|b)", "Z = regex(Later)", "Later = regex(a)"]);
+    const rs = evaluateCells(["R1 = regex(ab)", "X = regex(R1|b)", "Y = regex(ab|b)", "Z = regex(L)", "L = regex(a)"]);
     expect(rs[1].value?.kind).toBe("regex");
     expect(rs[1].diagnostics.map((d) => d.title.key)).toContain("expression.regexNameInside.title");
     expect(rs[1].diagnostics.find((d) => d.level === "warning")?.title.params?.names).toBe("R1");

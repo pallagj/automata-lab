@@ -16,7 +16,7 @@ import { serializeMachine } from "../parse/serialize";
 
 const TWO_STACKS = `
 Machine:
-  name: AnBnCn
+  name: M_{abc}
   charset: a, b, c
   states: qa, qb, qc, ok
   init: qa
@@ -67,7 +67,7 @@ describe("general machine — queue automaton", () => {
   // a^n b^n with a queue: the a's are enqueued, the b's dequeue them (FIFO)
   const m = parseMachine(`
 Machine:
-  name: AnBnQueue
+  name: Q
   charset: a, b
   states: collect, consume
   init: collect
@@ -93,7 +93,7 @@ Machine:
     const c0 = initialMachineConfig(m, "ab");
     const after = stepMachineConfigs(m, [c0], "ab");
     const collecting = after.find((c) => c.state === "collect");
-    expect(collecting?.storages[0]).toBe("A");
+    expect(collecting?.storages[0]).toEqual(["A"]);
   });
 });
 
@@ -101,7 +101,7 @@ describe("general machine — tape input (TM-like)", () => {
   // rewrites the word to b's, then halts accepting at the end of the tape
   const m = parseMachine(`
 Machine:
-  name: Rewrite
+  name: R
   charset: a, b
   states: run, done
   init: run
@@ -126,7 +126,7 @@ Machine:
   it("an accepting state alone is not enough: it decides only on halting", () => {
     const loop = parseMachine(`
 Machine:
-  name: Sweep
+  name: W
   charset: a
   states: s
   init: s
@@ -146,7 +146,7 @@ describe("determinism analysis", () => {
   it("reports no false positive for a deterministic stack machine", () => {
     const m = parseMachine(`
 Machine:
-  name: Det
+  name: D
   charset: a, b
   states: q
   init: q
@@ -171,7 +171,7 @@ Machine:
   it("transitions expecting different stack tops do not clash", () => {
     const m = parseMachine(`
 Machine:
-  name: D2
+  name: D_2
   charset: a
   states: q
   init: q
@@ -189,7 +189,7 @@ Machine:
 describe("capabilities: storage-free machine = finite automaton", () => {
   const m = parseMachine(`
 Machine:
-  name: EndsB
+  name: E
   charset: a, b
   states: N, B
   init: N
@@ -234,7 +234,7 @@ Machine:
       init: ""
   transitions: []
 `).value!;
-    expect(m.storages.map((s) => s.init)).toEqual(["Z", "XY", ""]);
+    expect(m.storages.map((s) => s.init)).toEqual([["Z"], ["X", "Y"], []]);
   });
 });
 
@@ -242,7 +242,7 @@ describe("error reporting", () => {
   it("a transition with the wrong token count gives a clear error", () => {
     const r = parseMachine(`
 Machine:
-  name: Broken
+  name: B
   charset: a
   states: q
   init: q
@@ -260,7 +260,7 @@ Machine:
   it("unknown storage type", () => {
     const r = parseMachine(`
 Machine:
-  name: Broken
+  name: B
   charset: a
   states: q
   init: q
@@ -276,7 +276,7 @@ Machine:
   it("the input field must be head or a storage id", () => {
     const r = parseMachine(`
 Machine:
-  name: Broken
+  name: B
   charset: a
   states: q
   init: q
@@ -345,7 +345,7 @@ describe("$ is an ordinary symbol", () => {
   it("works as a bottom-of-stack marker", () => {
     const r = parseMachine(`
 Machine:
-  name: Bottom
+  name: B
   charset: a, b
   states: q0, q1, q2
   init: q0

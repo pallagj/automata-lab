@@ -40,7 +40,7 @@ const INSERT_OPTIONS: InsertOption[] = [
   {
     labelKey: "editor.insertMenu.machine",
     icon: <KindIcon kind="general" size={15} />,
-    make: (used) => CELL_TEMPLATES.machine.replace("name: Custom", `name: ${uniqueName("Custom", used)}`)
+    make: (used) => CELL_TEMPLATES.machine.replace("name: C", `name: ${uniqueName("C", used)}`)
   },
   {
     labelKey: "editor.insertMenu.grammar",

@@ -14,7 +14,7 @@ export interface ExampleWorksheet {
 }
 
 const NFA_M1 = `Machine:
-  name: M1
+  name: M_1
   charset: a, b
   states: S, A, F
   init: S
@@ -25,7 +25,7 @@ const NFA_M1 = `Machine:
     - A b F`;
 
 const DFA_EVEN_A = `Machine:
-  name: EvenA
+  name: E
   charset: a, b
   states: E, O
   init: E
@@ -37,7 +37,7 @@ const DFA_EVEN_A = `Machine:
     - O b O`;
 
 const DFA_ENDS_B = `Machine:
-  name: EndsB
+  name: B
   charset: a, b
   states: N, B
   init: N
@@ -49,7 +49,7 @@ const DFA_ENDS_B = `Machine:
     - B b B`;
 
 const ENFA_A_OR_B = `Machine:
-  name: AorB
+  name: N
   charset: a, b
   states: S, A, B
   init: S
@@ -61,7 +61,7 @@ const ENFA_A_OR_B = `Machine:
     - B b B`;
 
 const DFA_HAS_B = `Machine:
-  name: HasB
+  name: H
   charset: a, b
   states: 1, 2
   init: "1"
@@ -75,16 +75,16 @@ export const EXAMPLE_WORKSHEETS: ExampleWorksheet[] = [
   {
     key: "intro",
     name: "Intro — determinization and minimization",
-    cells: [NFA_M1, "D = det(M1)", "Min = min(D)", "E = equal(M1, Min)"]
+    cells: [NFA_M1, "D = det(M_1)", "M_2 = min(D)", "E = equal(M_1, M_2)"]
   },
   {
     key: "epsilonFree",
     name: "ε-removal step by step",
     cells: [
       ENFA_A_OR_B,
-      "F = epsfree(AorB)",
+      "F = epsfree(N)",
       "D = det(F)",
-      "Min = min(complete(D))"
+      "M = min(complete(D))"
     ]
   },
   {
@@ -93,11 +93,11 @@ export const EXAMPLE_WORKSHEETS: ExampleWorksheet[] = [
     cells: [
       "R = regex((a|b)*abb)",
       "A = toFsm(R)",
-      "DR = min(det(epsfree(A)))",
+      "D = min(det(epsfree(A)))",
       NFA_M1,
-      "Same = equal(A, M1)",
+      "E = equal(A, M_1)",
       DFA_HAS_B,
-      "RB = toRegex(HasB)"
+      "R_H = toRegex(H)"
     ]
   },
   {
@@ -106,10 +106,10 @@ export const EXAMPLE_WORKSHEETS: ExampleWorksheet[] = [
     cells: [
       DFA_EVEN_A,
       DFA_ENDS_B,
-      "Intersection = intersect(EvenA, EndsB)",
-      "Union = union(EvenA, EndsB)",
-      "Difference = difference(EvenA, EndsB)",
-      "Complement = complement(EvenA)"
+      "I = intersect(E, B)",
+      "U = union(E, B)",
+      "D = difference(E, B)",
+      "C = complement(E)"
     ]
   },
   {
@@ -117,7 +117,7 @@ export const EXAMPLE_WORKSHEETS: ExampleWorksheet[] = [
     name: "Pushdown automata",
     cells: [
       `Machine:
-  name: AnBn
+  name: P
   charset: a, b
   states: q0, q1, q2
   init: q0
@@ -132,7 +132,7 @@ export const EXAMPLE_WORKSHEETS: ExampleWorksheet[] = [
     - q1 ε Z/Z q2
     - q0 ε Z/Z q2`,
       `Machine:
-  name: Palindrome
+  name: P_{pal}
   charset: a, b
   states: read, match, done
   init: read
@@ -153,7 +153,7 @@ export const EXAMPLE_WORKSHEETS: ExampleWorksheet[] = [
     name: "Turing machines",
     cells: [
       `Machine:
-  name: Palindrome
+  name: T
   charset: a, b
   states: start, sawA, sawB, matchA, matchB, back, ok
   init: start
@@ -176,7 +176,7 @@ export const EXAMPLE_WORKSHEETS: ExampleWorksheet[] = [
     - back ./& < back
     - back _/& > start`,
       `Machine:
-  name: Increment
+  name: T_{inc}
   charset: 0, 1
   states: right, carry, done
   init: right
@@ -197,7 +197,7 @@ export const EXAMPLE_WORKSHEETS: ExampleWorksheet[] = [
     name: "Custom machines — two stacks, a queue",
     cells: [
       `Machine:
-  name: AnBnCn
+  name: M
   charset: a, b, c
   states: qa, qb, qc, ok
   init: qa
@@ -213,7 +213,7 @@ export const EXAMPLE_WORKSHEETS: ExampleWorksheet[] = [
     - qc c ε/ε B/ε qc
     - qc ε Z/ε Z/ε ok`,
       `Machine:
-  name: AnBnQueue
+  name: Q
   charset: a, b
   states: collect, consume
   init: collect
@@ -231,25 +231,25 @@ export const EXAMPLE_WORKSHEETS: ExampleWorksheet[] = [
     name: "Grammars and conversions",
     cells: [
       `Grammar:
-  name: G3
+  name: G_3
   charset: a, b
   variables: S, A
   init: S
   rules:
     - S -> aS | bA
     - A -> bA | b`,
-      "F = toFsm(G3)",
+      "F = toFsm(G_3)",
       `Grammar:
-  name: G2
+  name: G_2
   charset: a, b
   variables: S
   init: S
   rules:
     - S -> aSb | ε`,
-      "P = toPda(G2)",
-      "E2 = epsfree(G2)",
+      "P = toPda(G_2)",
+      "E = epsfree(G_2)",
       `Grammar:
-  name: G1
+  name: G_1
   charset: a, b, c
   variables: S, B
   init: S
@@ -338,7 +338,7 @@ export const CELL_TEMPLATES: Record<string, string> = {
   rules:
     - S -> aS | b`,
   machine: `Machine:
-  name: Custom
+  name: C
   charset: a, b
   states: q0, q1
   init: q0

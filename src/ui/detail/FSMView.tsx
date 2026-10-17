@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
+import { rich } from "../Rich";
 import { useTranslation } from "react-i18next";
 import { Diagnostic, EPS, setName } from "../../core/types";
 import {
@@ -136,7 +137,7 @@ export const FSMView: React.FC<{ fsm: FSM; stepGroups?: StepGroup[]; diagnostics
     <>
       <span className="stage-title">
         {t("detail.fsm.title")}
-        {fsm.name && ` — ${fsm.name}`}
+        {fsm.name && <> — {rich(fsm.name)}</>}
       </span>
       <span className="badge accent">{t("detail.fsm.stateCount", { count: fsm.states.length })}</span>
       <span
@@ -215,11 +216,11 @@ export const FSMView: React.FC<{ fsm: FSM; stepGroups?: StepGroup[]; diagnostics
                 <tr key={s}>
                   <td className={`state-cell ${fsm.accept.includes(s) ? "accept" : ""}`}>
                     {s === fsm.start ? "→ " : ""}
-                    {s}
+                    {rich(s)}
                     {fsm.accept.includes(s) ? " ✓" : ""}
                   </td>
                   {symbols.map((c) => (
-                    <td key={c}>{[...(tm.get(s)?.get(c) ?? [])].join(", ") || "—"}</td>
+                    <td key={c}>{rich([...(tm.get(s)?.get(c) ?? [])].join(", ")) || "—"}</td>
                   ))}
                 </tr>
               ))}

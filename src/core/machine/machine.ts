@@ -1,5 +1,6 @@
 import { EPS } from "../types";
 import { FSM } from "../fsm/fsm";
+import { showSymbols } from "../symbols";
 
 /**
  * General machine model: finite control + configurable storages.
@@ -21,14 +22,17 @@ export type StorageType = "stack" | "queue" | "tape";
 export interface StorageSpec {
   id: string;
   type: StorageType;
-  /** initial content of a stack/queue (stack: left end is the top; queue: left end is the front) */
-  init: string;
+  /**
+   * initial content, symbol by symbol (stack: the first is the top; queue: the first is
+   * the front); stack and queue symbols are names like Z, Z_0, X_a or single characters
+   */
+  init: string[];
 }
 
 /** An operation on one storage — its type follows the storage's type. */
 export type StorageOp =
-  | { type: "stack"; pop: string; push: string } // pop: EPS = does not inspect/pop
-  | { type: "queue"; take: string; put: string } // take: EPS = does not read from the front
+  | { type: "stack"; pop: string; push: string[] } // pop: EPS = does not inspect/pop; push: the new top first
+  | { type: "queue"; take: string; put: string[] } // take: EPS = does not read from the front
   | { type: "tape"; read: string; write: string; move: "L" | "R" | "S" };
 
 export interface MachineTransition {
@@ -60,7 +64,8 @@ export interface TapeState {
   head: number;
 }
 
-export type StorageState = string | TapeState;
+/** a stack or queue as a list of symbols (top / front first), or a tape */
+export type StorageState = string[] | TapeState;
 
 export interface MachineConfig {
   state: string;
@@ -79,9 +84,9 @@ export function hasInputHead(m: Machine): boolean {
 /* Configurations                                                      */
 /* ------------------------------------------------------------------ */
 
-function emptyTape(content: string): TapeState {
+function emptyTape(content: string[]): TapeState {
   const cells = new Map<number, string>();
-  [...content].forEach((c, i) => {
+  content.forEach((c, i) => {
     if (c !== TAPE_BLANK) cells.set(i, c);
   });
   return { cells, head: 0 };
@@ -89,7 +94,7 @@ function emptyTape(content: string): TapeState {
 
 export function initialMachineConfig(m: Machine, input: string): MachineConfig {
   const storages: StorageState[] = m.storages.map((s) => {
-    const content = m.input === s.id ? input + s.init : s.init;
+    const content = m.input === s.id ? [...input, ...s.init] : [...s.init];
     return s.type === "tape" ? emptyTape(content) : content;
   });
   return { state: m.start, pos: 0, storages, steps: 0 };
@@ -102,7 +107,7 @@ export function readTapeCell(t: TapeState, pos: number): string {
 export function machineConfigKey(c: MachineConfig): string {
   const parts = [c.state, String(c.pos)];
   for (const s of c.storages) {
-    if (typeof s === "string") parts.push(s);
+    if (Array.isArray(s)) parts.push(s.join("\u0001"));
     else {
       const ks = [...s.cells.keys()].sort((a, b) => a - b);
       parts.push(`${s.head}@` + ks.map((k) => `${k}:${s.cells.get(k)}`).join(","));
@@ -118,15 +123,15 @@ export function machineConfigKey(c: MachineConfig): string {
 function applyOp(op: StorageOp, st: StorageState): StorageState | null {
   switch (op.type) {
     case "stack": {
-      const s = st as string;
-      if (op.pop === EPS) return op.push + s;
-      if (s.length > 0 && s[0] === op.pop) return op.push + s.slice(1);
+      const s = st as string[];
+      if (op.pop === EPS) return [...op.push, ...s];
+      if (s.length > 0 && s[0] === op.pop) return [...op.push, ...s.slice(1)];
       return null;
     }
     case "queue": {
-      const s = st as string;
-      if (op.take === EPS) return s + op.put;
-      if (s.length > 0 && s[0] === op.take) return s.slice(1) + op.put;
+      const s = st as string[];
+      if (op.take === EPS) return [...s, ...op.put];
+      if (s.length > 0 && s[0] === op.take) return [...s.slice(1), ...op.put];
       return null;
     }
     case "tape": {
@@ -184,7 +189,7 @@ export function isAcceptingMachineConfig(m: Machine, c: MachineConfig, input: st
   if (hasInputHead(m)) {
     if (c.pos !== input.length) return false;
     if (m.acceptMode === "emptyStorages")
-      return c.storages.every((s, i) => m.storages[i].type === "tape" || (s as string).length === 0);
+      return c.storages.every((s, i) => m.storages[i].type === "tape" || (s as string[]).length === 0);
     return m.accept.includes(c.state);
   }
   if (!m.accept.includes(c.state)) return false;
@@ -230,7 +235,7 @@ export function runMachine(
 
   const tooBig = (c: MachineConfig) =>
     c.storages.some((s, i) =>
-      m.storages[i].type === "tape" ? false : (s as string).length > maxStorage
+      m.storages[i].type === "tape" ? false : (s as string[]).length > maxStorage
     );
 
   if (isAcceptingMachineConfig(m, start.config, input)) {
@@ -408,8 +413,6 @@ export function fsmToMachine(f: FSM): Machine {
 /* Labels                                                              */
 /* ------------------------------------------------------------------ */
 
-const showEps = (s: string) => (s === "" ? EPS : s);
-
 /** The same arrows the move picker of the form shows (→ right · ← left · • stay). */
 export const MOVE_ARROW = { R: "→", L: "←", S: "•" } as const;
 
@@ -420,9 +423,9 @@ export const MOVE_ARROW = { R: "→", L: "←", S: "•" } as const;
 export function storageOpLabel(op: StorageOp): string {
   switch (op.type) {
     case "stack":
-      return `${op.pop}/${showEps(op.push)}`;
+      return `${op.pop}/${showSymbols(op.push)}`;
     case "queue":
-      return `${op.take}/${showEps(op.put)}`;
+      return `${op.take}/${showSymbols(op.put)}`;
     case "tape":
       return `${op.read}/${op.write}, ${MOVE_ARROW[op.move]}`;
   }
@@ -430,8 +433,8 @@ export function storageOpLabel(op: StorageOp): string {
 
 /** A stack/queue operation that neither inspects nor changes the storage (ε/ε). */
 function isNoOp(op: StorageOp): boolean {
-  if (op.type === "stack") return op.pop === EPS && op.push === "";
-  if (op.type === "queue") return op.take === EPS && op.put === "";
+  if (op.type === "stack") return op.pop === EPS && op.push.length === 0;
+  if (op.type === "queue") return op.take === EPS && op.put.length === 0;
   return false;
 }
 

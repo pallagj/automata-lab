@@ -1,4 +1,5 @@
 import React, { useId, useMemo } from "react";
+import { rich, svgRich } from "../Rich";
 import { useTranslation } from "react-i18next";
 import { useAppStore } from "../../state/store";
 import { GraphSpec, layoutGraph } from "../graph/GraphView";
@@ -29,7 +30,7 @@ export const WorksheetThumb: React.FC<{ preview: PreviewContent; labels?: boolea
   if (preview.t === "lines")
     return (
       <div className="thumb thumb-lines">
-        <pre>{preview.lines.join("\n")}</pre>
+        <pre>{rich(preview.lines.join("\n"))}</pre>
       </div>
     );
 
@@ -61,7 +62,7 @@ export const WorksheetThumb: React.FC<{ preview: PreviewContent; labels?: boolea
             {n.accept && <circle r={n.r - 5} className="thumb-node" />}
             {labels && (
               <text className="thumb-label" dy="0.35em">
-                {n.label}
+                {svgRich(n.label)}
               </text>
             )}
           </g>

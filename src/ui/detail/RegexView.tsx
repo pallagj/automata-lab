@@ -1,9 +1,11 @@
 import React, { useMemo, useState } from "react";
+import { rich } from "../Rich";
 import { useTranslation } from "react-i18next";
 import { RegexDef, RegexNodeInfo, regexToNFA, regexTree } from "../../core/fsm/regex";
 import { acceptsFSM, enumerateWords } from "../../core/fsm/fsm";
 import { useAppStore, activeWorkspace } from "../../state/store";
 import { uniqueName, usedNames } from "../../state/names";
+import { withSubscript } from "../../core/symbols";
 import { tr } from "../../i18n/translate";
 import { ArrowRight, Check, X } from "lucide-react";
 
@@ -50,7 +52,7 @@ export const RegexView: React.FC<{ regex: RegexDef }> = ({ regex }) => {
     // an unnamed regex gets a name first, so the new cell can refer to it
     const source = regex.name || ensureCellName(activeCellId, "R");
     const used = usedNames(activeWorkspace(useAppStore.getState()).cells);
-    addCell(`${uniqueName(`${source}_fsm`, used)} = toFsm(${source})`, activeCellId);
+    addCell(`${uniqueName(withSubscript(source, "fsm"), used)} = toFsm(${source})`, activeCellId);
   };
 
   return (
@@ -58,7 +60,7 @@ export const RegexView: React.FC<{ regex: RegexDef }> = ({ regex }) => {
       <div className="card">
         <div className="card-title">
           {t("detail.regex.title")}
-          {regex.name && ` — ${regex.name}`}
+          {regex.name && <> — {rich(regex.name)}</>}
         </div>
         <div className="card-body">
           <div className="rx-pattern">{regex.pattern === "" ? "ε" : regex.pattern}</div>
@@ -68,7 +70,7 @@ export const RegexView: React.FC<{ regex: RegexDef }> = ({ regex }) => {
           </div>
           <button className="fix-btn rx-tofsm" onClick={insertToFsm} title={t("detail.regex.toFsmHint")}>
             <ArrowRight size={13} />
-            toFsm({regex.name || "…"}) — {t("detail.regex.toFsmLabel")}
+            toFsm({regex.name ? rich(regex.name) : "…"}) — {t("detail.regex.toFsmLabel")}
           </button>
         </div>
       </div>

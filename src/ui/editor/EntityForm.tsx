@@ -4,12 +4,13 @@ import yaml from "js-yaml";
 import { useTranslation } from "react-i18next";
 import type { TFunction } from "i18next";
 import { Plus, TriangleAlert, X } from "lucide-react";
-import { Machine, machineCaps, MachineCaps, StorageSpec, StorageType } from "../../core/machine/machine";
+import { Machine, machineCaps, MachineCaps, StorageType } from "../../core/machine/machine";
+import { symbolsText } from "../../core/symbols";
+import { SymbolField } from "./SymbolField";
 import { parseStorageEntry } from "../../core/parse/definitionParser";
 import { useAppStore } from "../../state/store";
 import { machineKindLabel } from "../machineLabels";
 import { EPS } from "../../core/types";
-import { epsilonChange } from "./epsilon";
 
 /**
  * Interactive entity editor: the machine/grammar can be entered in a form
@@ -33,7 +34,7 @@ export interface EntityDraft {
   acceptMode: string;
   /** "head" (read head) or the id of a storage */
   input: string;
-  storages: StorageSpec[];
+  storages: DraftStorage[];
   /** transitions / rules split into parts (tokens) */
   rows: string[][];
 }
@@ -51,7 +52,14 @@ export function detectEntityKind(source: string): EntityKind | null {
   return m ? (KIND_BY_KEY[m[1]] ?? null) : null;
 }
 
-export function draftStorages(d: EntityDraft): StorageSpec[] {
+/** A storage as the form edits it: the initial content as typed. */
+export interface DraftStorage {
+  id: string;
+  type: StorageType;
+  init: string;
+}
+
+export function draftStorages(d: EntityDraft): DraftStorage[] {
   return d.kind === "machine" ? d.storages : [];
 }
 
@@ -96,7 +104,7 @@ export function parseEntityDraft(source: string): EntityDraft | null {
   if (typeof body !== "object" || body === null) return null;
   const b = body as Record<string, unknown>;
 
-  const storages: StorageSpec[] = [];
+  const storages: DraftStorage[] = [];
   if (kind === "machine") {
     const raw = b["storages"];
     if (raw !== undefined && raw !== null) {
@@ -104,7 +112,7 @@ export function parseEntityDraft(source: string): EntityDraft | null {
       for (const [id, v] of Object.entries(raw as Record<string, unknown>)) {
         const r = parseStorageEntry(id.trim(), v);
         if (!r.ok) return null;
-        storages.push(r.value!);
+        storages.push({ ...r.value!, init: symbolsText(r.value!.init) });
       }
     }
   }
@@ -241,7 +249,7 @@ function draftKindCaps(d: EntityDraft): MachineCaps {
     accept: [],
     acceptMode: "finalState",
     input: d.input,
-    storages: d.storages,
+    storages: d.storages.map((s) => ({ ...s, init: [] })),
     transitions: []
   };
   return machineCaps(probe);
@@ -362,7 +370,7 @@ export const EntityForm: React.FC<Props> = ({ source, onChange }) => {
   };
 
   /** the token(s) that leave the given storage untouched in a transition line */
-  const noOpTokens = (s: StorageSpec): string[] => (s.type === "tape" ? ["./&", "="] : [`${EPS}/${EPS}`]);
+  const noOpTokens = (s: DraftStorage): string[] => (s.type === "tape" ? ["./&", "="] : [`${EPS}/${EPS}`]);
 
   /**
    * When the storages or the input change, the existing rows are rearranged: the
@@ -422,14 +430,14 @@ export const EntityForm: React.FC<Props> = ({ source, onChange }) => {
     else update(next);
   };
 
-  const setStorages = (storages: StorageSpec[]) => {
+  const setStorages = (storages: DraftStorage[]) => {
     const next: EntityDraft = { ...draft, storages };
     // if the input pointed at a deleted storage, fall back to the read head
     if (next.input !== "head" && !storages.some((s) => s.id === next.input)) next.input = "head";
     commitStructural(next);
   };
 
-  const setStorage = (i: number, patch: Partial<StorageSpec>) => {
+  const setStorage = (i: number, patch: Partial<DraftStorage>) => {
     const prev = draft.storages[i];
     const updated = { ...prev, ...patch };
     // on a type change the default initial content follows too, if it was the default
@@ -456,13 +464,14 @@ export const EntityForm: React.FC<Props> = ({ source, onChange }) => {
   const removeRow = (i: number) => update({ ...draft, rows: draft.rows.filter((_, k) => k !== i) });
 
   const k = draft.kind;
+  const terminals = draft.charset.split(",").map((c) => c.trim());
 
   return (
     <div className="entity-form" onClick={(e) => e.stopPropagation()}>
       <div className="ef-grid">
         <label>
           <span>{t("editor.form.name")}</span>
-          <input value={draft.name} onChange={(e) => setField("name", e.target.value)} placeholder={t("editor.form.name")} />
+          <SymbolField value={draft.name} onChange={(v) => setField("name", v)} digits placeholder={t("editor.form.name")} />
         </label>
         <label>
           <span>{t("editor.form.alphabet")}</span>
@@ -470,16 +479,16 @@ export const EntityForm: React.FC<Props> = ({ source, onChange }) => {
         </label>
         <label>
           <span>{k === "grammar" ? t("editor.form.variables") : t("editor.form.states")}</span>
-          <input value={draft.states} onChange={(e) => setField("states", e.target.value)} placeholder="S, A" />
+          <SymbolField value={draft.states} onChange={(v) => setField("states", v)} digits placeholder="S, A" />
         </label>
         <label>
           <span>{k === "grammar" ? t("editor.form.startVariable") : t("editor.form.startState")}</span>
-          <input value={draft.init} onChange={(e) => setField("init", e.target.value)} placeholder="S" />
+          <SymbolField value={draft.init} onChange={(v) => setField("init", v)} digits placeholder="S" />
         </label>
         {k === "machine" && (
           <label>
             <span>{t("editor.form.accepting")}</span>
-            <input value={draft.accept} onChange={(e) => setField("accept", e.target.value)} placeholder="A" />
+            <SymbolField value={draft.accept} onChange={(v) => setField("accept", v)} digits placeholder="A" />
           </label>
         )}
         {k === "machine" && draft.storages.length > 0 && (
@@ -533,11 +542,12 @@ export const EntityForm: React.FC<Props> = ({ source, onChange }) => {
                   </option>
                 ))}
               </select>
-              <input
+              <SymbolField
                 value={s.init}
-                onChange={(e) => epsilonChange(e, (init) => setStorage(i, { init }))}
+                onChange={(init) => setStorage(i, { init })}
+                digits={false}
+                epsilon
                 placeholder={s.type === "tape" ? t("editor.form.tapeInitPlaceholder") : t("editor.form.initialContentPlaceholder")}
-                spellCheck={false}
               />
               <button
                 className="ef-remove"
@@ -567,16 +577,16 @@ export const EntityForm: React.FC<Props> = ({ source, onChange }) => {
               cols[j]?.widget === "move" ? (
                 <MoveSelect key={j} value={part} onChange={(v) => setRow(i, j, v)} />
               ) : (
-                <input
+                <SymbolField
                   key={j}
                   value={part}
-                  onChange={(e) =>
-                    // the ε shortcut is for symbols: grammar right sides and the middle columns of a
-                    // transition — never the state names (first and last column) or a rule's left side
-                    (k === "grammar" ? j === 1 : j > 0 && j < row.length - 1)
-                      ? epsilonChange(e, (v) => setRow(i, j, v))
-                      : setRow(i, j, e.target.value)
-                  }
+                  onChange={(v) => setRow(i, j, v)}
+                  // the ε shortcut is for symbols: grammar right sides and the middle columns of a
+                  // transition — never the state names (first and last column) or a rule's left side
+                  epsilon={k === "grammar" ? j === 1 : j > 0 && j < row.length - 1}
+                  // digits go to subscripts in names: state columns, and grammar variables unless the
+                  // digit is a terminal (S → 0S1)
+                  digits={k === "grammar" ? (ch) => !terminals.includes(ch) : j === 0 || j === row.length - 1}
                   placeholder={cols[j]?.placeholder ?? ""}
                   className={k === "grammar" && j === 1 ? "wide" : ""}
                 />

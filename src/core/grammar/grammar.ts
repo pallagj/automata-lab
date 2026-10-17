@@ -12,10 +12,12 @@ import {
 } from "../types";
 import { FSM, makeFSM, transMap } from "../fsm/fsm";
 import { Machine } from "../machine/machine";
+import { canonicalName, formatIdent, Ident, parseIdent, showSymbols, subscriptText } from "../symbols";
 
 /**
- * Generative grammar. An empty right-hand side "" stands for ε.
- * Symbols are single characters (nonterminals are typically upper-case).
+ * Generative grammar. Terminals are single characters; variables are names in the
+ * sense of core/symbols.ts (S, A, X_a, C_1, S′). A rule's sides are lists of symbols —
+ * an empty right-hand side stands for ε.
  */
 export interface Grammar {
   kind: "grammar";
@@ -27,12 +29,28 @@ export interface Grammar {
 }
 
 export interface GrammarRule {
-  left: string;
-  right: string; // "" = ε
+  /** a context-free rule has a single variable here */
+  left: string[];
+  /** [] = ε */
+  right: string[];
 }
 
 export function ruleToString(r: GrammarRule): string {
-  return `${r.left} → ${r.right === "" ? EPS : r.right}`;
+  return `${showSymbols(r.left)} → ${showSymbols(r.right)}`;
+}
+
+/** Key of a symbol list for sets and maps. */
+export const symbolsKey = (s: string[]) => s.join("\u0001");
+
+/** A variable name not used yet: the base, then with more and more primes (S, S′, S′′, …). */
+export function freshVariable(base: Ident, used: Set<string>): string {
+  for (let primes = base.primes; ; primes++) {
+    const name = formatIdent({ ...base, primes });
+    if (!used.has(name)) {
+      used.add(name);
+      return name;
+    }
+  }
 }
 
 /* ------------------------------------------------------------------ */
@@ -58,24 +76,25 @@ export function classify(g: Grammar): Classification {
   const nt = new Set(g.nonterminals);
   const term = new Set(g.terminals);
 
-  const isTerminalWord = (w: string) => [...w].every((c) => term.has(c));
+  const allTerminals = (w: string[]) => w.every((c) => term.has(c));
+  const singleVariable = (r: GrammarRule) => r.left.length === 1 && nt.has(r.left[0]);
 
   /* --- type 3: right-linear (A → uB | u, u a terminal word) or left-linear --- */
   const v3right: I18nText[] = [];
   const v3left: I18nText[] = [];
   for (const r of g.rules) {
-    if (!nt.has(r.left) || r.left.length !== 1) {
+    if (!singleVariable(r)) {
       const violation = tx("grammar.classify.leftNotSingleNonterminal", { rule: ruleToString(r) });
       v3right.push(violation);
       v3left.push(violation);
       continue;
     }
     const w = r.right;
-    if (w === "") continue; // ε-rule — handled by the ε-freeness check
+    if (w.length === 0) continue; // ε-rule — handled by the ε-freeness check
     // right-linear: terminals, with at most one nonterminal at the end
-    const rOk = isTerminalWord(w) || (isTerminalWord(w.slice(0, -1)) && nt.has(w[w.length - 1]));
+    const rOk = allTerminals(w) || (allTerminals(w.slice(0, -1)) && nt.has(w[w.length - 1]));
     if (!rOk) v3right.push(tx("grammar.classify.notRightLinear", { rule: ruleToString(r) }));
-    const lOk = isTerminalWord(w) || (nt.has(w[0]) && isTerminalWord(w.slice(1)));
+    const lOk = allTerminals(w) || (nt.has(w[0]) && allTerminals(w.slice(1)));
     if (!lOk) v3left.push(tx("grammar.classify.notLeftLinear", { rule: ruleToString(r) }));
   }
   const type3right = v3right.length === 0;
@@ -85,18 +104,17 @@ export function classify(g: Grammar): Classification {
   /* --- type 2: context-free (A → α) --- */
   const v2: I18nText[] = [];
   for (const r of g.rules) {
-    if (!nt.has(r.left) || r.left.length !== 1) {
-      v2.push(tx("grammar.classify.leftNotSingleNonterminal", { rule: ruleToString(r) }));
-    }
+    if (!singleVariable(r)) v2.push(tx("grammar.classify.leftNotSingleNonterminal", { rule: ruleToString(r) }));
   }
   const type2 = v2.length === 0;
 
   /* --- type 1: context-sensitive / monotone (|α| ≤ |β|, except S → ε if S never occurs on a right-hand side) --- */
   const v1: I18nText[] = [];
   const startOnRight = g.rules.some((r) => r.right.includes(g.start));
+  const isStartEps = (r: GrammarRule) => r.right.length === 0 && r.left.length === 1 && r.left[0] === g.start;
   for (const r of g.rules) {
-    if (r.right === "") {
-      if (r.left === g.start) {
+    if (r.right.length === 0) {
+      if (isStartEps(r)) {
         if (startOnRight) v1.push(tx("grammar.classify.startEpsilonNotAllowed"));
       } else {
         v1.push(tx("grammar.classify.deletingRule", { rule: ruleToString(r) }));
@@ -107,9 +125,9 @@ export function classify(g: Grammar): Classification {
       v1.push(
         tx("grammar.classify.shortens", {
           rule: ruleToString(r),
-          left: r.left,
+          left: showSymbols(r.left),
           leftLen: r.left.length,
-          right: r.right,
+          right: showSymbols(r.right),
           rightLen: r.right.length
         })
       );
@@ -120,8 +138,8 @@ export function classify(g: Grammar): Classification {
   /* --- ε-freeness --- */
   const epsilonIssues: I18nText[] = [];
   for (const r of g.rules) {
-    if (r.right === "") {
-      if (r.left !== g.start) epsilonIssues.push(tx("grammar.classify.epsilonNotOnStart", { rule: ruleToString(r) }));
+    if (r.right.length === 0) {
+      if (!isStartEps(r)) epsilonIssues.push(tx("grammar.classify.epsilonNotOnStart", { rule: ruleToString(r) }));
       else if (startOnRight) epsilonIssues.push(tx("grammar.classify.startOnRightWithEpsilon"));
     }
   }
@@ -153,6 +171,35 @@ export function classify(g: Grammar): Classification {
 }
 
 /* ------------------------------------------------------------------ */
+/* Sentential forms                                                    */
+/* ------------------------------------------------------------------ */
+
+/** Where `part` occurs in `form` from position `from` on (-1: nowhere). */
+function indexOfSymbols(form: string[], part: string[], from: number): number {
+  outer: for (let i = from; i + part.length <= form.length; i++) {
+    for (let j = 0; j < part.length; j++) if (form[i + j] !== part[j]) continue outer;
+    return i;
+  }
+  return -1;
+}
+
+/** Every form one rule application away (CF rules at the leftmost variable, other rules anywhere). */
+function successors(g: Grammar, nt: Set<string>, form: string[], leftmostOnly: boolean): string[][] {
+  const out: string[][] = [];
+  const first = form.findIndex((c) => nt.has(c));
+  if (first === -1) return out;
+  for (const r of g.rules) {
+    if (leftmostOnly && r.left.length === 1 && nt.has(r.left[0])) {
+      if (r.left[0] === form[first]) out.push([...form.slice(0, first), ...r.right, ...form.slice(first + 1)]);
+      continue;
+    }
+    for (let at = indexOfSymbols(form, r.left, 0); at !== -1; at = indexOfSymbols(form, r.left, at + 1))
+      out.push([...form.slice(0, at), ...r.right, ...form.slice(at + r.left.length)]);
+  }
+  return out;
+}
+
+/* ------------------------------------------------------------------ */
 /* Word generation with derivations                                   */
 /* ------------------------------------------------------------------ */
 
@@ -171,51 +218,30 @@ export function generateWords(
   const words: GeneratedWord[] = [];
   const seenWords = new Set<string>();
   const seenForms = new Set<string>([g.start]);
-  let frontier: { form: string; path: string[] }[] = [{ form: g.start, path: [g.start] }];
+  let frontier: { form: string[]; path: string[] }[] = [{ form: [g.start], path: [g.start] }];
   let formCount = 1;
   let exhaustive = true;
 
-  const countNT = (w: string) => [...w].filter((c) => nt.has(c)).length;
+  const countNT = (w: string[]) => w.filter((c) => nt.has(c)).length;
 
   while (frontier.length > 0 && words.length < maxCount && formCount < maxForms) {
-    const next: { form: string; path: string[] }[] = [];
+    const next: { form: string[]; path: string[] }[] = [];
     for (const { form, path } of frontier) {
-      // leftmost derivation: rewrite the first nonterminal
-      const idx = [...form].findIndex((c) => nt.has(c));
-      if (idx === -1) continue;
-      const A = form[idx];
-      for (const r of g.rules) {
-        // for context-sensitive rules: the left-hand side may match anywhere
-        if (r.left.length === 1 && nt.has(r.left)) {
-          if (r.left !== A) continue;
-          const newForm = form.slice(0, idx) + r.right + form.slice(idx + 1);
-          consider(newForm, path);
-        } else {
-          // general rule: at every occurrence
-          let from = 0;
-          while (true) {
-            const at = form.indexOf(r.left, from);
-            if (at === -1) break;
-            const newForm = form.slice(0, at) + r.right + form.slice(at + r.left.length);
-            consider(newForm, path);
-            from = at + 1;
-          }
-        }
-      }
-
-      function consider(newForm: string, path: string[]) {
+      // leftmost derivation for context-free rules; other rules may match anywhere
+      for (const newForm of successors(g, nt, form, true)) {
         // prune: if the terminal part is already too long it cannot fit the limit
-        const termLen = newForm.length - countNT(newForm);
-        if (termLen > maxLength) return;
-        if (newForm.length > maxLength + 4) return; // sentential form limit
-        if (seenForms.has(newForm)) return;
-        seenForms.add(newForm);
+        if (newForm.length - countNT(newForm) > maxLength) continue;
+        if (newForm.length > maxLength + 4) continue; // sentential form limit
+        const key = symbolsKey(newForm);
+        if (seenForms.has(key)) continue;
+        seenForms.add(key);
         formCount++;
-        const newPath = [...path, newForm];
+        const newPath = [...path, newForm.join("")];
         if (countNT(newForm) === 0) {
-          if (newForm.length <= maxLength && !seenWords.has(newForm)) {
-            seenWords.add(newForm);
-            words.push({ word: newForm, derivation: newPath });
+          const word = newForm.join("");
+          if (!seenWords.has(word)) {
+            seenWords.add(word);
+            words.push({ word, derivation: newPath });
           }
         } else {
           next.push({ form: newForm, path: newPath });
@@ -246,44 +272,46 @@ export function grammarToFSM(g: Grammar): OpResult<FSM> {
   const states = [...g.nonterminals, acceptState];
   const accept = [acceptState];
   const transitions: { from: string; symbol: string; to: string }[] = [];
-  const steps: AlgoStep[] = [];
   const rows: string[][] = [];
+  // intermediate states for rules with several terminals: q_1, q_2, … not taken yet
+  let counter = 0;
+  const freshState = () => {
+    let name: string;
+    do name = formatIdent({ base: "q", primes: 0, sub: String(++counter) });
+    while (states.includes(name));
+    states.push(name);
+    return name;
+  };
 
   for (const r of g.rules) {
-    if (r.right === "") {
-      if (!accept.includes(r.left)) accept.push(r.left);
-      rows.push([ruleToString(r), `${r.left} → ✓`]);
+    const A = r.left[0];
+    if (r.right.length === 0) {
+      if (!accept.includes(A)) accept.push(A);
+      rows.push([ruleToString(r), `${A} → ✓`]);
       continue;
     }
     const last = r.right[r.right.length - 1];
     const isNT = g.nonterminals.includes(last);
     const symbols = isNT ? r.right.slice(0, -1) : r.right;
     const target = isNT ? last : acceptState;
-    // multi-character terminal part: intermediate states
-    let from = r.left;
-    for (let i = 0; i < symbols.length; i++) {
-      const isLast = i === symbols.length - 1;
-      let to: string;
-      if (isLast) to = target;
-      else {
-        to = `${r.left}${rows.length}_${i}`;
-        states.push(to);
-      }
-      transitions.push({ from, symbol: symbols[i], to });
+    let from = A;
+    symbols.forEach((a, i) => {
+      const to = i === symbols.length - 1 ? target : freshState();
+      transitions.push({ from, symbol: a, to });
       from = to;
-    }
-    if (symbols.length === 0 && isNT) {
-      // chain rule of the form A → B: ε-transition
-      transitions.push({ from: r.left, symbol: EPS, to: target });
-    }
-    rows.push([ruleToString(r), isNT ? `${r.left} —${symbols || EPS}→ ${target}` : `${r.left} —${symbols}→ ${acceptState}`]);
+    });
+    // chain rule of the form A → B: ε-transition
+    if (symbols.length === 0) transitions.push({ from: A, symbol: EPS, to: target });
+    rows.push([ruleToString(r), `${A} —${showSymbols(symbols)}→ ${target}`]);
   }
 
-  steps.push({
-    title: tx("grammar.toFsm.step.title"),
-    detail: tx("grammar.toFsm.step.detail"),
-    table: { headers: [tx("grammar.table.rule"), tx("grammar.table.transition")], rows }
-  });
+  const steps: AlgoStep[] = [
+    {
+      title: tx("grammar.toFsm.step.title"),
+      detail: tx("grammar.toFsm.step.detail"),
+      table: { headers: [tx("grammar.table.rule"), tx("grammar.table.transition")], rows }
+    }
+  ];
 
   const fsm = makeFSM({
     name: g.name,
@@ -296,41 +324,43 @@ export function grammarToFSM(g: Grammar): OpResult<FSM> {
   return okResult(fsm, [], steps);
 }
 
-/** NFA → right-linear grammar */
+/**
+ * NFA → right-linear grammar (lecture notes, Theorem 4.20). Every state q gets a variable:
+ * the state's own name when that is a valid variable name (S, A, q_0), otherwise A_q —
+ * the state's label in the subscript (A_{00}, A_{A,B}).
+ */
 export function fsmToGrammar(f: FSM): OpResult<Grammar> {
   const diags: Diagnostic[] = [];
-  // state → nonterminal letter mapping
-  const letters = "SABCDEFGHIJKLMNOPQRTUVWXYZ";
-  const mapName = new Map<string, string>();
   const order = [f.start, ...f.states.filter((s) => s !== f.start)];
-  if (order.length > letters.length) {
-    return failResult([
-      err(
-        tx("grammar.fsmToGrammar.tooManyStates.title"),
-        tx("grammar.fsmToGrammar.tooManyStates.detail", { count: order.length, max: letters.length })
-      )
-    ]);
+  const used = new Set<string>(f.alphabet);
+  const mapName = new Map<string, string>();
+  // the states whose names can stay first, so that renamed ones never take their names
+  for (const s of order) {
+    const own = canonicalName(s);
+    if (own !== null && !used.has(own) && parseIdent(s, false) !== null) {
+      used.add(own);
+      mapName.set(s, own);
+    }
   }
-  order.forEach((s, i) => mapName.set(s, letters[i]));
+  for (const s of order) {
+    if (mapName.has(s)) continue;
+    const sub = subscriptText(s) || String(order.indexOf(s) + 1);
+    mapName.set(s, freshVariable({ base: "A", primes: 0, sub }, used));
+  }
+  const v = (s: string) => mapName.get(s)!;
 
   const rules: GrammarRule[] = [];
   for (const t of f.transitions) {
-    if (t.symbol === EPS) {
-      rules.push({ left: mapName.get(t.from)!, right: mapName.get(t.to)! });
-    } else {
-      rules.push({ left: mapName.get(t.from)!, right: t.symbol + mapName.get(t.to)! });
-    }
+    rules.push({ left: [v(t.from)], right: t.symbol === EPS ? [v(t.to)] : [t.symbol, v(t.to)] });
   }
-  for (const a of f.accept) {
-    rules.push({ left: mapName.get(a)!, right: "" });
-  }
+  for (const a of f.accept) rules.push({ left: [v(a)], right: [] });
 
-  const renames = order.filter((s) => s !== mapName.get(s));
-  if (renames.length)
+  const renamed = order.filter((s) => s !== v(s));
+  if (renamed.length)
     diags.push(
       info(
         tx("grammar.fsmToGrammar.renamed.title"),
-        tx("grammar.fsmToGrammar.renamed.detail", { mapping: order.map((s) => `${s} ↦ ${mapName.get(s)}`).join(", ") })
+        tx("grammar.fsmToGrammar.renamed.detail", { mapping: renamed.map((s) => `${s} ↦ ${v(s)}`).join(", ") })
       )
     );
 
@@ -338,14 +368,18 @@ export function fsmToGrammar(f: FSM): OpResult<Grammar> {
     kind: "grammar",
     name: f.name,
     terminals: [...f.alphabet],
-    nonterminals: order.map((s) => mapName.get(s)!),
-    start: mapName.get(f.start)!,
+    nonterminals: order.map(v),
+    start: v(f.start),
     rules
   };
   return okResult(g, diags, [
     {
       title: tx("grammar.fsmToGrammar.step.title"),
-      detail: tx("grammar.fsmToGrammar.step.detail")
+      detail: tx("grammar.fsmToGrammar.step.detail"),
+      table: {
+        headers: [tx("ops.table.state"), tx("grammar.table.variable")],
+        rows: order.map((s) => [s, v(s)])
+      }
     }
   ]);
 }
@@ -363,11 +397,11 @@ export function grammarToPDA(g: Grammar): OpResult<Machine> {
   const transitions: Machine["transitions"] = [];
   // nonterminal on top of the stack: apply a rule
   for (const r of g.rules) {
-    transitions.push({ from: q, input: EPS, to: q, ops: [{ type: "stack", pop: r.left, push: r.right }] });
+    transitions.push({ from: q, input: EPS, to: q, ops: [{ type: "stack", pop: r.left[0], push: [...r.right] }] });
   }
   // terminal on top of the stack: match it against the input
   for (const a of g.terminals) {
-    transitions.push({ from: q, input: a, to: q, ops: [{ type: "stack", pop: a, push: "" }] });
+    transitions.push({ from: q, input: a, to: q, ops: [{ type: "stack", pop: a, push: [] }] });
   }
 
   const pda: Machine = {
@@ -379,7 +413,7 @@ export function grammarToPDA(g: Grammar): OpResult<Machine> {
     accept: [],
     acceptMode: "emptyStorages",
     input: "head",
-    storages: [{ id: "stack", type: "stack", init: g.start }],
+    storages: [{ id: "stack", type: "stack", init: [g.start] }],
     transitions
   };
 
@@ -406,11 +440,11 @@ export function removeEpsilonRules(g: Grammar): OpResult<Grammar> {
 
   // 1. nullable nonterminals, round by round:
   //    N1 = {A : A → ε},  N(i+1) = N(i) ∪ {A : A → α, every symbol of α is in N(i)}
-  let nullable = new Set(g.rules.filter((r) => r.right === "").map((r) => r.left));
+  let nullable = new Set(g.rules.filter((r) => r.right.length === 0).map((r) => r.left[0]));
   const rounds = [new Set(nullable)];
   while (true) {
     const next = new Set(nullable);
-    for (const r of g.rules) if ([...r.right].every((c) => nullable.has(c))) next.add(r.left);
+    for (const r of g.rules) if (r.right.every((c) => nullable.has(c))) next.add(r.left[0]);
     rounds.push(next);
     if (next.size === nullable.size) break;
     nullable = next;
@@ -427,34 +461,33 @@ export function removeEpsilonRules(g: Grammar): OpResult<Grammar> {
         : { headers: ["i", "Nᵢ"], rows: rounds.map((s, i) => [String(i + 1), setText(s)]) }
   });
 
-  if (nullable.size === 0) return okResult({ ...g, rules: g.rules.map((r) => ({ ...r })) }, [], steps);
+  if (nullable.size === 0) return okResult(copyGrammar(g), [], steps);
 
   // 2. every variant of each rule with some of its nullable occurrences dropped — by the
   //    number of dropped symbols, then by position — except ε itself and A → A
   const rules: GrammarRule[] = [];
   const seen = new Set<string>();
-  const add = (left: string, right: string) => {
-    const key = `${left}→${right}`;
-    if (seen.has(key)) return false;
-    seen.add(key);
-    rules.push({ left, right });
-    return true;
-  };
   const rows: string[][] = [];
   for (const r of g.rules) {
-    if (r.right === "") {
+    if (r.right.length === 0) {
       rows.push([ruleToString(r), "—"]);
       continue;
     }
-    const positions = [...r.right].flatMap((c, i) => (nullable.has(c) ? [i] : []));
-    const variants: string[] = [];
+    const A = r.left[0];
+    const positions = r.right.flatMap((c, i) => (nullable.has(c) ? [i] : []));
+    const variants: string[][] = [];
     for (const drop of subsetsBySize(positions)) {
-      const right = [...r.right].filter((_, i) => !drop.includes(i)).join("");
-      if (right === "" || right === r.left || variants.includes(right)) continue;
+      const right = r.right.filter((_, i) => !drop.includes(i));
+      if (right.length === 0 || (right.length === 1 && right[0] === A)) continue;
+      if (variants.some((v) => symbolsKey(v) === symbolsKey(right))) continue;
       variants.push(right);
-      add(r.left, right);
+      const key = `${A}\u0002${symbolsKey(right)}`;
+      if (!seen.has(key)) {
+        seen.add(key);
+        rules.push({ left: [A], right });
+      }
     }
-    rows.push([ruleToString(r), variants.length ? `${r.left} → ${variants.join(" | ")}` : "—"]);
+    rows.push([ruleToString(r), variants.length ? `${A} → ${variants.map(showSymbols).join(" | ")}` : "—"]);
   }
   steps.push({
     title: tx("grammar.epsfree.step2.title"),
@@ -467,9 +500,10 @@ export function removeEpsilonRules(g: Grammar): OpResult<Grammar> {
   let nonterminals = [...g.nonterminals];
   if (nullable.has(g.start)) {
     const used = new Set([...g.nonterminals, ...g.terminals]);
-    const s2 = [..."ZYXWVUTRQPONMLKJIHGFEDCBAΓΔΘΛΞΠΦΨΩ"].find((c) => !used.has(c))!;
+    const base = parseIdent(g.start) ?? { base: "S", primes: 0, sub: "" };
+    const s2 = freshVariable({ ...base, primes: base.primes + 1 }, used);
     nonterminals = [s2, ...nonterminals];
-    rules.unshift({ left: s2, right: g.start }, { left: s2, right: "" });
+    rules.unshift({ left: [s2], right: [g.start] }, { left: [s2], right: [] });
     start = s2;
     steps.push({
       title: tx("grammar.epsfree.step3.title"),
@@ -479,6 +513,15 @@ export function removeEpsilonRules(g: Grammar): OpResult<Grammar> {
 
   const out: Grammar = { kind: "grammar", name: g.name, terminals: [...g.terminals], nonterminals, start, rules };
   return okResult(out, [], steps);
+}
+
+export function copyGrammar(g: Grammar): Grammar {
+  return {
+    ...g,
+    terminals: [...g.terminals],
+    nonterminals: [...g.nonterminals],
+    rules: g.rules.map((r) => ({ left: [...r.left], right: [...r.right] }))
+  };
 }
 
 /** Every subset of the items: by size, and lexicographically by position within a size. */
@@ -502,40 +545,33 @@ export function grammarAccepts(
   maxForms = 30000
 ): { verdict: "yes" | "no" | "unknown"; derivation?: string[] } {
   const nt = new Set(g.nonterminals);
-  const target = word;
-  const countNT = (w: string) => [...w].filter((c) => nt.has(c)).length;
+  const target = [...word];
+  const targetKey = symbolsKey(target);
+  const countNT = (w: string[]) => w.filter((c) => nt.has(c)).length;
   // actual monotonicity (not the course-convention class): only then can the
   // sentential form length be safely pruned to the target word length
   const monotone = g.rules.every((r) => r.right.length >= r.left.length);
 
   const seen = new Set<string>([g.start]);
-  let frontier: { form: string; path: string[] }[] = [{ form: g.start, path: [g.start] }];
+  let frontier: { form: string[]; path: string[] }[] = [{ form: [g.start], path: [g.start] }];
   let forms = 1;
   let truncated = false;
 
-  if (g.start === target && countNT(target) === 0) return { verdict: "yes", derivation: [g.start] };
-
   while (frontier.length > 0 && forms < maxForms) {
-    const next: { form: string; path: string[] }[] = [];
+    const next: { form: string[]; path: string[] }[] = [];
     for (const { form, path } of frontier) {
-      for (const r of g.rules) {
-        let from = 0;
-        while (true) {
-          const at = form.indexOf(r.left, from);
-          if (at === -1) break;
-          const newForm = form.slice(0, at) + r.right + form.slice(at + r.left.length);
-          from = at + 1;
-          const termLen = newForm.length - countNT(newForm);
-          if (monotone && newForm.length > Math.max(target.length, 1)) continue;
-          if (termLen > target.length) continue;
-          if (newForm.length > target.length + 6) continue;
-          if (seen.has(newForm)) continue;
-          seen.add(newForm);
-          forms++;
-          const newPath = [...path, newForm];
-          if (newForm === target) return { verdict: "yes", derivation: newPath };
-          if (countNT(newForm) > 0) next.push({ form: newForm, path: newPath });
-        }
+      for (const newForm of successors(g, nt, form, false)) {
+        const termLen = newForm.length - countNT(newForm);
+        if (monotone && newForm.length > Math.max(target.length, 1)) continue;
+        if (termLen > target.length) continue;
+        if (newForm.length > target.length + 6) continue;
+        const key = symbolsKey(newForm);
+        if (seen.has(key)) continue;
+        seen.add(key);
+        forms++;
+        const newPath = [...path, newForm.join("")];
+        if (key === targetKey && countNT(newForm) === 0) return { verdict: "yes", derivation: newPath };
+        if (countNT(newForm) > 0) next.push({ form: newForm, path: newPath });
       }
     }
     frontier = next;

@@ -140,7 +140,15 @@
         "title": "A szabály bal oldala nem tartalmaz nemterminálist: „{{line}}”",
         "detail": "Generatív nyelvtanban a bal oldalon legalább egy nemterminálisnak kell lennie."
       },
-      "unknownSymbolRight": "Ismeretlen jel a szabály jobb oldalán: „{{symbol}}”"
+      "unknownSymbolRight": "Ismeretlen jel a szabály jobb oldalán: „{{symbol}}”",
+      "terminalNotOneChar": {
+        "title": "A(z) „{{symbol}}” terminális egy karakternél hosszabb",
+        "detail": "A terminálisok a szavak karakterei, így mindegyik egyetlen karakter. A változóknak lehet alsó indexük: X_a, C_1."
+      },
+      "ambiguousSubscript": {
+        "title": "„{{text}}” nem egyértelmű",
+        "detail": "Jelentheti a(z) {{name}} változót vagy a(z) {{separate}} szimbólumokat. A változóhoz írd _-sal: {{name}}, különben válaszd el a szimbólumokat szóközzel. ({{line}})"
+      }
     },
     "yamlSyntaxError": {
       "titleAtLine": "YAML-szintaxishiba ({{line}}. sor)",
@@ -187,7 +195,15 @@
       "badQueueOp": {
         "title": "Hibás tárolóművelet: „{{tokens}}” ({{storageId}})",
         "detail": "Sor: „{{line}}”. Sor-alak: KIVESZ/BETESZ — pl. „A/BA”; semmihez ε (vagy eps)."
+      },
+      "oneSymbol": {
+        "title": "„{{tokens}}” több szimbólum ({{storageId}})",
+        "detail": "Egy művelet egyetlen szimbólumot vesz le a tárolóról (vagy ε-t, ha semmit). Az alsó indexes szimbólumot _-sal írd, pl. {{example}}. ({{line}})"
       }
+    },
+    "badName": {
+      "title": "„{{name}}” nem név",
+      "detail": "A név egyetlen betű, opcionális alsó indexszel, ahogy a Desmosban — például {{suggestion}}. Az _ leütésével kezdődik az alsó index; a betű utáni számjegyek maguktól oda kerülnek (M1 = M₁)."
     }
   },
   "ops": {
@@ -451,8 +467,7 @@
       "transition": "átmenet",
       "newRules": "új szabályok",
       "variable": "változó",
-      "terminal": "terminális",
-      "newVariable": "új változó"
+      "terminal": "terminális"
     },
     "toFsm": {
       "needsRightLinear": {
@@ -465,17 +480,13 @@
       }
     },
     "fsmToGrammar": {
-      "tooManyStates": {
-        "title": "Túl sok állapot a nyelvtanná alakításhoz",
-        "detail": "Az automata {{count}} állapotú; az egykarakteres nemterminális-jelölés legfeljebb {{max}} állapotot enged. Minimalizálással csökkenthető az állapotszám."
-      },
       "renamed": {
-        "title": "Az állapotok nemterminális-betűket kaptak",
+        "title": "Néhány állapot A_q változónevet kapott",
         "detail": "{{mapping}}"
       },
       "step": {
         "title": "NFA → jobblineáris nyelvtan",
-        "detail": "Minden q →a p átmenetből Q → aP szabály, minden elfogadó q állapotból Q → ε szabály. Az így kapott nyelvtan 3. típusú, és ugyanazt a nyelvet generálja."
+        "detail": "Minden q állapot kap egy A_q változót — az állapot saját nevét, ha az már érvényes változónév. Minden q →a p átmenetből A_q → aA_p szabály lesz, minden elfogadó q állapotból A_q → ε. Az eredmény 3. típusú, és ugyanazt a nyelvet generálja."
       }
     },
     "toPda": {
@@ -563,7 +574,7 @@
       },
       "step3": {
         "title": "Változók a terminálisok helyett",
-        "detail": "Minden legalább 2 hosszú jobb oldalon az a terminálist egy új Xa változóra cseréljük, Xa → a szabállyal. (A változónevek egykarakteresek, ezért Xa egy szabad betűt kap.)"
+        "detail": "Minden legalább 2 hosszú jobb oldalon az a terminálist egy új X_a változóra cseréljük, X_a → a szabállyal."
       },
       "step4": {
         "title": "A hosszú szabályok feldarabolása",
@@ -609,9 +620,10 @@
       "toPdaExpects": "A toPda() nyelvtant vár",
       "needsGrammar": "{{op}}: nyelvtant vár, de {{kind}} érkezett",
       "invalidExpression": "Hibás kifejezés",
-      "parseGeneric": "{{message}}. Példák: detM = det(M) · u = union(M1, M2) · r = regex((ab)*+ba) · e = equal(M1, M2)",
+      "parseGeneric": "{{message}}. Példák: D = det(M) · U = union(M_1, M_2) · R = regex((ab)*+ba) · E = equal(M_1, M_2)",
       "evaluationError": "Kiértékelési hiba",
-      "evalGeneric": "{{message}}"
+      "evalGeneric": "{{message}}",
+      "multiLetterName": "„{{word}}” nem név: a név egyetlen betű, opcionális alsó indexszel, pl. {{suggestion}} ({{pos}}. pozíció)"
     },
     "eval": {
       "unknownName": "Ismeretlen név: „{{name}}”",
@@ -629,7 +641,7 @@
     },
     "regexNameInside": {
       "title": "A regex(…)-en belül a(z) {{names}} csak betűk",
-      "detail": "Reguláris kifejezés nem hivatkozhat más definíciókra — itt a(z) {{name}} a(z) {{letters}} betűket jelenti. Ha a(z) {{name}} definícióval akarod kombinálni, azt a regexen kívül teheted meg, pl. {{name}} + regex(…) vagy union({{name}}, …)."
+      "detail": "Reguláris kifejezés nem hivatkozhat más definíciókra — itt a(z) {{name}} a(z) {{letters}} betűket jelenti. Ha a(z) {{name}} definícióval akarod kombinálni, azt a regexen kívül teheted meg, pl. {{name}} + regex(…) vagy union({{name}}, …). A(z) {{name}} automata reguláris kifejezéséhez használd a toRegex({{name}}) függvényt."
     }
   }
 }

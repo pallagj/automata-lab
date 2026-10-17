@@ -1,10 +1,10 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
 import { Plus, Trash2, X } from "lucide-react";
 import { EdgeField, EdgeMiddle, StatePatch } from "./editing";
 import { MoveSelect } from "../editor/EntityForm";
-import { epsilonChange } from "../editor/epsilon";
+import { SymbolField } from "../editor/SymbolField";
 
 /** Editor dialogs for the graph (state / transition). */
 
@@ -51,13 +51,6 @@ export const StateDialog: React.FC<StateDialogProps> = ({ mode, initial, onSave,
   const [isInit, setIsInit] = useState(initial.isInit);
   const [isAccept, setIsAccept] = useState(initial.isAccept);
   const [error, setError] = useState<string | null>(null);
-  const nameRef = useRef<HTMLInputElement>(null);
-
-  useEffect(() => {
-    nameRef.current?.focus();
-    nameRef.current?.select();
-  }, []);
-
   const save = () => {
     const err = onSave({ name: name.trim(), isInit, isAccept });
     if (err) setError(err);
@@ -72,13 +65,7 @@ export const StateDialog: React.FC<StateDialogProps> = ({ mode, initial, onSave,
       <div className="gd-body">
         <label className="gd-field">
           <span>{t("editor.form.name")}</span>
-          <input
-            ref={nameRef}
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && save()}
-            spellCheck={false}
-          />
+          <SymbolField value={name} onChange={setName} digits onEnter={save} autoFocus />
         </label>
         <label className="gd-check">
           <input type="checkbox" checked={isInit} onChange={(e) => setIsInit(e.target.checked)} />
@@ -162,13 +149,14 @@ export const EdgeDialog: React.FC<EdgeDialogProps> = ({ fields, from, to, initia
                 fields[j]?.widget === "move" ? (
                   <MoveSelect key={j} value={val} onChange={(v) => setCell(i, j, v)} />
                 ) : (
-                  <input
+                  <SymbolField
                     key={j}
                     value={val}
                     placeholder={fields[j].placeholder}
-                    onChange={(e) => epsilonChange(e, (v) => setCell(i, j, v))}
-                    onKeyDown={(e) => e.key === "Enter" && save()}
-                    spellCheck={false}
+                    onChange={(v) => setCell(i, j, v)}
+                    digits={false}
+                    epsilon
+                    onEnter={save}
                   />
                 )
               )}

@@ -17,25 +17,26 @@ ${rules
   .map((l) => `    - ${l.trim()}`)
   .join("\n")}`).value!;
 
-/** Right-hand sides per left-hand side, in rule order ("" = ε). */
+/** Right-hand sides per left-hand side, in rule order, written side by side ("" = ε). */
 const byLeft = (g: Grammar) => {
   const out: Record<string, string[]> = {};
-  for (const r of g.rules) (out[r.left] ??= []).push(r.right);
+  for (const r of g.rules) (out[r.left.join("")] ??= []).push(r.right.join(""));
   return out;
 };
 
 /** The invariants every result must satisfy (lecture notes, 6.3.1 and Theorem 6.14). */
 function expectEpsilonFree(original: Grammar, out: Grammar) {
   for (const r of out.rules) {
-    if (r.right === "") {
-      expect(r.left, "an ε-rule may only stay on a new start symbol").toBe(out.start);
+    if (r.right.length === 0) {
+      expect(r.left, "an ε-rule may only stay on a new start symbol").toEqual([out.start]);
       expect(out.start).not.toBe(original.start);
     }
     // the algorithm never creates an A → A rule (an ε-free input is returned unchanged)
-    if (r.right === r.left) expect(original.rules, `created ${r.left} → ${r.right}`).toContainEqual(r);
+    if (r.right.length === 1 && r.right[0] === r.left[0])
+      expect(original.rules, `created ${r.left} → ${r.right}`).toContainEqual(r);
   }
   expect(out.rules.some((r) => r.right.includes(out.start) && out.start !== original.start)).toBe(false);
-  const keys = out.rules.map((r) => `${r.left}→${r.right}`);
+  const keys = out.rules.map((r) => `${r.left.join(" ")}→${r.right.join(" ")}`);
   expect(new Set(keys).size, "no duplicate rules").toBe(keys.length);
   const c = classify(out);
   expect(c.epsilonFree).toBe(true);
@@ -110,23 +111,24 @@ describe("grammar ε-rule elimination", () => {
     const g = grammar("S", "S", "S -> aSb | ε");
     const r = removeEpsilonRules(g);
     const out = r.value!;
-    expect(out.start).toBe("Z");
-    expect(out.nonterminals).toEqual(["Z", "S"]);
-    expect(byLeft(out)).toEqual({ Z: ["S", ""], S: ["aSb", "ab"] });
+    // S′, as in the lecture notes
+    expect(out.start).toBe("S′");
+    expect(out.nonterminals).toEqual(["S′", "S"]);
+    expect(byLeft(out)).toEqual({ "S′": ["S", ""], S: ["aSb", "ab"] });
     expect(r.steps.map((s) => s.title.key)).toEqual([
       "grammar.epsfree.step1.title",
       "grammar.epsfree.step2.title",
       "grammar.epsfree.step3.title"
     ]);
-    expect(r.steps[2].detail).toEqual({ key: "grammar.epsfree.step3.detail", params: { s2: "Z", start: "S" } });
+    expect(r.steps[2].detail).toEqual({ key: "grammar.epsfree.step3.detail", params: { s2: "S′", start: "S" } });
     expectEpsilonFree(g, out);
     expectSameLanguage(g, out, 10);
   });
 
   it("the new start symbol is a fresh one", () => {
-    const g = grammar("S", "S, Z", "S -> Z | a\nZ -> ε");
+    const g = grammar("S", "S, S'", "S -> S' | a\nS' -> ε");
     const out = removeEpsilonRules(g).value!;
-    expect(out.start).toBe("Y");
+    expect(out.start).toBe("S′′");
     expectEpsilonFree(g, out);
     expectSameLanguage(g, out);
   });
@@ -152,7 +154,7 @@ describe("grammar ε-rule elimination", () => {
     const g = grammar("S", "S, A", "S -> AA | a\nA -> ε | b");
     const out = removeEpsilonRules(g).value!;
     expect(byLeft(out).S).toEqual(["AA", "A", "a"]);
-    expect(out.rules.some((r) => r.left === r.right)).toBe(false);
+    expect(out.rules.some((r) => r.right.length === 1 && r.right[0] === r.left[0])).toBe(false);
     expectEpsilonFree(g, out);
     expectSameLanguage(g, out);
   });
@@ -206,7 +208,7 @@ describe("epsfree on a grammar in a worksheet", () => {
     const rs = evaluateCells([src, "E = epsfree(G)"]);
     const out = rs[1].value as Grammar;
     expect(out.kind).toBe("grammar");
-    expect(out.rules.filter((r) => r.right === "")).toEqual([{ left: out.start, right: "" }]);
+    expect(out.rules.filter((r) => r.right.length === 0)).toEqual([{ left: [out.start], right: [] }]);
     expect(rs[1].stepGroups.map((g) => g.operation)).toEqual(["epsfree(G)"]);
     expectSameLanguage(rs[0].value as Grammar, out, 8);
   });

@@ -3,6 +3,7 @@
  * and lecture notes.
  */
 import i18n from "../../i18n";
+import { texNames } from "../Rich";
 
 export interface ExportNode {
   id: string;
@@ -165,7 +166,7 @@ export function toTikz(nodes: ExportNode[], edges: ExportEdge[]): string {
     if (n.accept) opts.push("accepting");
     const x = fmt(n.x / PX_PER_CM);
     const y = fmt(-n.y / PX_PER_CM);
-    lines.push(`  \\node[${opts.join(", ")}] (${ids.get(n.id)}) at (${x},${y}) {${texEscape(n.label)}};`);
+    lines.push(`  \\node[${opts.join(", ")}] (${ids.get(n.id)}) at (${x},${y}) {${texNames(n.label, texEscape)}};`);
   }
 
   // back-and-forth edge pairs: bent edges
@@ -175,7 +176,7 @@ export function toTikz(nodes: ExportNode[], edges: ExportEdge[]): string {
     const b = ids.get(e.to);
     // a multi-line label (one transition per line) becomes a centred TikZ node with \\ breaks
     const rows = e.label.split("\n");
-    const label = rows.map(texEscape).join(" \\\\ ");
+    const label = rows.map((r) => texNames(r, texEscape)).join(" \\\\ ");
     const node = rows.length > 1 ? "node[align=center]" : "node";
     if (e.from === e.to) return `    (${a}) edge[loop above] ${node} {${label}} (${a})`;
     const opts = pairs.has(`${e.to}→${e.from}`) ? "[bend left=18]" : "";

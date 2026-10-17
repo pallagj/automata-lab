@@ -8,6 +8,8 @@ import {
   ruleToString
 } from "../../core/grammar/grammar";
 import { cykMembership, Membership } from "../../core/grammar/cyk";
+import { showSymbols, withSubscript } from "../../core/symbols";
+import { rich } from "../Rich";
 import { isCNF } from "../../core/grammar/normalForm";
 import { activeWorkspace, useAppStore } from "../../state/store";
 import { uniqueName, usedNames } from "../../state/names";
@@ -34,7 +36,7 @@ export const GrammarView: React.FC<{ grammar: Grammar }> = ({ grammar }) => {
     if (!activeCellId) return;
     const source = grammar.name || ensureCellName(activeCellId, "G");
     const used = usedNames(activeWorkspace(useAppStore.getState()).cells);
-    addCell(`${uniqueName(`${prefix}_${source}`, used)} = ${fn}(${source})`, activeCellId);
+    addCell(`${uniqueName(withSubscript(prefix, source), used)} = ${fn}(${source})`, activeCellId);
   };
 
   const [test, setTest] = useState("");
@@ -59,8 +61,9 @@ export const GrammarView: React.FC<{ grammar: Grammar }> = ({ grammar }) => {
   const byLeft = useMemo(() => {
     const m = new Map<string, string[]>();
     for (const r of grammar.rules) {
-      if (!m.has(r.left)) m.set(r.left, []);
-      m.get(r.left)!.push(r.right === "" ? "ε" : r.right);
+      const left = showSymbols(r.left);
+      if (!m.has(left)) m.set(left, []);
+      m.get(left)!.push(showSymbols(r.right));
     }
     return m;
   }, [grammar]);
@@ -70,7 +73,7 @@ export const GrammarView: React.FC<{ grammar: Grammar }> = ({ grammar }) => {
       <div className="card">
         <div className="card-title">
           {t("detail.grammar.title")}
-          {grammar.name && ` — ${grammar.name}`}
+          {grammar.name && <> — {rich(grammar.name)}</>}
         </div>
         <div className="card-body">
           <div className="class-hero">
@@ -94,7 +97,7 @@ export const GrammarView: React.FC<{ grammar: Grammar }> = ({ grammar }) => {
             <span className="why">
               {cls.reasons.type3.holds
                 ? t("detail.grammar.type3Holds")
-                : cls.reasons.type3.violations[0] ? tr(t, cls.reasons.type3.violations[0]) : t("detail.grammar.notLinear")}
+                : cls.reasons.type3.violations[0] ? rich(tr(t, cls.reasons.type3.violations[0])) : t("detail.grammar.notLinear")}
             </span>
             <span className="lvl" style={{ color: cls.reasons.type2.holds ? "var(--success)" : "var(--muted)" }}>
               {cls.reasons.type2.holds ? "✓" : "✗"} {t("detail.grammar.type2Short")}
@@ -102,7 +105,7 @@ export const GrammarView: React.FC<{ grammar: Grammar }> = ({ grammar }) => {
             <span className="why">
               {cls.reasons.type2.holds
                 ? t("detail.grammar.type2Holds")
-                : tr(t, cls.reasons.type2.violations[0])}
+                : rich(tr(t, cls.reasons.type2.violations[0]))}
             </span>
             <span className="lvl" style={{ color: cls.reasons.type1.holds ? "var(--success)" : "var(--muted)" }}>
               {cls.reasons.type1.holds ? "✓" : "✗"} {t("detail.grammar.type1Short")}
@@ -110,7 +113,7 @@ export const GrammarView: React.FC<{ grammar: Grammar }> = ({ grammar }) => {
             <span className="why">
               {cls.reasons.type1.holds
                 ? t("detail.grammar.type1Holds")
-                : tr(t, cls.reasons.type1.violations[0])}
+                : rich(tr(t, cls.reasons.type1.violations[0]))}
             </span>
           </div>
 
@@ -134,12 +137,12 @@ export const GrammarView: React.FC<{ grammar: Grammar }> = ({ grammar }) => {
         <div className="card-body rule-list">
           {[...byLeft.entries()].map(([left, rights]) => (
             <div key={left}>
-              <span className="nt">{left}</span> → {rights.join(" | ")}
+              <span className="nt">{rich(left)}</span> → {rich(rights.join(" | "))}
             </div>
           ))}
           <div style={{ marginTop: 6, fontSize: 12.5, color: "var(--muted)", fontFamily: "var(--font-sans)" }}>
-            {t("detail.grammar.startSymbol")}: {grammar.start} · {t("detail.grammar.terminals")}: {grammar.terminals.join(", ")} · {t("detail.grammar.nonterminals")}:{" "}
-            {grammar.nonterminals.join(", ")}
+            {t("detail.grammar.startSymbol")}: {rich(grammar.start)} · {t("detail.grammar.terminals")}: {grammar.terminals.join(", ")} · {t("detail.grammar.nonterminals")}:{" "}
+            {rich(grammar.nonterminals.join(", "))}
           </div>
         </div>
       </div>
@@ -186,7 +189,7 @@ export const GrammarView: React.FC<{ grammar: Grammar }> = ({ grammar }) => {
               {testResult.derivation.map((f, i) => (
                 <span key={i}>
                   {i > 0 && " ⇒ "}
-                  {i === testResult.derivation!.length - 1 ? <b>{f || "ε"}</b> : f || "ε"}
+                  {i === testResult.derivation!.length - 1 ? <b>{f || "ε"}</b> : rich(f || "ε")}
                 </span>
               ))}
             </div>
@@ -227,7 +230,7 @@ export const GrammarView: React.FC<{ grammar: Grammar }> = ({ grammar }) => {
                   {w.derivation.map((f, i) => (
                     <span key={i}>
                       {i > 0 && " ⇒ "}
-                      {i === w.derivation.length - 1 ? <b>{f || "ε"}</b> : f || "ε"}
+                      {i === w.derivation.length - 1 ? <b>{f || "ε"}</b> : rich(f || "ε")}
                     </span>
                   ))}
                 </div>
@@ -256,7 +259,7 @@ const CykCard: React.FC<{ membership: Membership; grammarName: string; epsilonFr
   const n = table.word.length;
   const expr = epsilonFree ? `cnf(${grammarName})` : `cnf(epsfree(${grammarName}))`;
   const rules = new Map<string, string[]>();
-  for (const r of cnf.rules) rules.set(r.left, [...(rules.get(r.left) ?? []), r.right]);
+  for (const r of cnf.rules) rules.set(r.left[0], [...(rules.get(r.left[0]) ?? []), showSymbols(r.right)]);
   return (
     <div className="card">
       <div className="card-title">
@@ -270,9 +273,7 @@ const CykCard: React.FC<{ membership: Membership; grammarName: string; epsilonFr
             {t("detail.grammar.cykConverted", { expr })}
             <div className="cyk-rules">
               {[...rules].map(([left, rights]) => (
-                <span key={left}>
-                  {left} → {rights.join(" | ")}
-                </span>
+                <span key={left}>{rich(`${left} → ${rights.join(" | ")}`)}</span>
               ))}
             </div>
           </div>
@@ -289,7 +290,7 @@ const CykCard: React.FC<{ membership: Membership; grammarName: string; epsilonFr
                     const hit = j === n - 1 && cell.has(cnf.start);
                     return (
                       <td key={i} className={hit ? "hit" : undefined}>
-                        {cell.size > 0 ? [...cell.keys()].join(", ") : "–"}
+                        {cell.size > 0 ? rich([...cell.keys()].join(", ")) : "–"}
                       </td>
                     );
                   })}

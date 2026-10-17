@@ -1,4 +1,5 @@
 import dagre from "@dagrejs/dagre";
+import { displayLength, svgRich } from "../Rich";
 import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Check, Copy, Download, FileImage, FileType } from "lucide-react";
@@ -66,7 +67,7 @@ export interface LaidOutEdge extends GraphEdge {
 }
 
 function nodeRadius(label: string): number {
-  return Math.max(22, 10 + label.length * 4.6);
+  return Math.max(22, 10 + displayLength(label) * 4.6);
 }
 
 /* edge-label metrics: 12.5px monospace (see .graph-edge-label) */
@@ -81,7 +82,7 @@ const LABEL_BASELINE = LABEL_LINE_H / 2 + 4.3;
 function labelBox(label: string): { lines: string[]; w: number; h: number } {
   const lines = label === "" ? [] : label.split("\n");
   if (lines.length === 0) return { lines, w: 0, h: 0 };
-  const chars = Math.max(...lines.map((l) => [...l].length));
+  const chars = Math.max(...lines.map(displayLength));
   return { lines, w: chars * LABEL_CHAR_W + LABEL_PAD_X * 2, h: lines.length * LABEL_LINE_H + LABEL_PAD_Y * 2 };
 }
 
@@ -690,7 +691,7 @@ export const GraphView: React.FC<Props> = ({ spec, onEdgeClick, className, cellI
                         x={lp.x}
                         y={lp.y - e.labelH / 2 + LABEL_PAD_Y + i * LABEL_LINE_H + LABEL_BASELINE}
                       >
-                        {line}
+                        {svgRich(line)}
                       </tspan>
                     ))}
                   </text>
@@ -730,7 +731,7 @@ export const GraphView: React.FC<Props> = ({ spec, onEdgeClick, className, cellI
             <circle r={n.r} className="graph-node-circle" />
             {n.accept && <circle r={n.r - 4.5} className="graph-node-accept" />}
             <text className="graph-node-label" textAnchor="middle" dominantBaseline="central">
-              {n.label}
+              {svgRich(n.label)}
             </text>
             {editing && (
               <>
