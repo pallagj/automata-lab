@@ -3,6 +3,8 @@
 :root {
   --font-sans: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, "SF Mono", "Cascadia Code", Menlo, Consolas, monospace;
+  /* expression cells, as in Desmos: Times, or a metric-compatible clone where it is missing */
+  --font-math: "Times New Roman", Times, "Liberation Serif", "Nimbus Roman", "Nimbus Roman No9 L", "STIX Two Text", serif;
   --radius: 14px;
   --radius-sm: 9px;
 }
@@ -824,6 +826,54 @@ details.card[open] > summary .chev {
 
 .cell.inline .cell-editor {
   padding: 6px 4px 6px 8px;
+}
+
+/* an expression reads as mathematics, as in Desmos (editor/mathStyle.ts) */
+.cell.expr .cell-editor .cm-editor {
+  font-size: 19px;
+}
+
+.cell.expr .cell-editor .cm-scroller,
+.cell.expr .cell-editor .cm-content {
+  font-family: var(--font-math);
+}
+
+.cm-m-var {
+  font-style: italic;
+}
+
+.cm-m-eq.cm-m-pl {
+  margin-left: 0.28em;
+}
+
+.cm-m-eq.cm-m-pr {
+  margin-right: 0.28em;
+}
+
+.cm-m-bin.cm-m-pl {
+  margin-left: 0.2em;
+}
+
+.cm-m-bin.cm-m-pr {
+  margin-right: 0.2em;
+}
+
+.cm-m-comma.cm-m-pr {
+  margin-right: 0.22em;
+}
+
+/* the Kleene star sits up, as a superscript */
+.cm-m-star {
+  font-size: 0.8em;
+  vertical-align: 0.4em;
+  line-height: 0;
+}
+
+/* M1 typed without _ is M₁ too */
+.cm-m-sub {
+  font-size: 0.72em;
+  vertical-align: -0.3em;
+  line-height: 0;
 }
 
 /* a note reads as text, as in Desmos: the UI font, wrapped lines, no markers */

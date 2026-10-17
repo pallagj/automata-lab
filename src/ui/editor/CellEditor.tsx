@@ -8,6 +8,7 @@ import { activeWorkspace, Cell, useAppStore } from "../../state/store";
 import { uniqueName, usedNames } from "../../state/names";
 import { splitAssignment } from "../../core/expr/expression";
 import { subscripts, yamlDigits } from "./subscript";
+import { mathStyle } from "./mathStyle";
 import { withSubscript } from "../../core/symbols";
 import { CellResult } from "../../core/workspace";
 import { DiagnosticsList } from "../detail/DiagnosticsList";
@@ -165,7 +166,7 @@ export const CellEditor: React.FC<Props> = ({ cell, index, result }) => {
     if (isNote) return [EditorView.lineWrapping, keys];
     // names in expressions: M1 is M₁ (inside regex(…) digits are letters of the pattern)
     const exprDigits = subscripts((state, pos) => !insideRegex(state.doc.sliceString(0, pos)));
-    return [regexEpsilonInputHandler, exprDigits, keys];
+    return [regexEpsilonInputHandler, exprDigits, mathStyle, keys];
   }, [isYaml, isNote, addCell, removeCell, setActiveCell, setCellSource, cell.id]);
 
   // the editor is reconfigured whenever basicSetup or onChange is a new object (see
@@ -359,7 +360,7 @@ export const CellEditor: React.FC<Props> = ({ cell, index, result }) => {
     <div
       ref={cellRef}
       data-cell-id={cell.id}
-      className={`cell ${inline ? "inline" : "block"} ${isNote ? "note" : ""} ${isActive ? "active" : ""} ${hasError ? "has-error" : ""} ${
+      className={`cell ${inline ? "inline" : "block"} ${isNote ? "note" : ""} ${inline && !isNote ? "expr" : ""} ${isActive ? "active" : ""} ${hasError ? "has-error" : ""} ${
         dropPos ? `drop-${dropPos}` : ""
       }`}
       onFocusCapture={() => setActiveCell(cell.id)}
