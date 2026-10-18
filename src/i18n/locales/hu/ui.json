@@ -490,6 +490,7 @@
       "tapeInitPlaceholder": "(a bemenet kerülhet rá)",
       "initialContentPlaceholder": "kezdőtartalom",
       "deleteStorage": "Tároló törlése",
+      "configHint": "A gép beállításai: tárolók, bemenet, elfogadás",
       "addStorageHint": "Veremmel veremautomata, szalaggal Turing-gép, többel egyedi gép",
       "addStorage": "tároló hozzáadása (verem / sor / szalag)",
       "newStorage": "új tároló",

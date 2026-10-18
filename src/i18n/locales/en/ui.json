@@ -490,6 +490,7 @@
       "tapeInitPlaceholder": "(the input may go here)",
       "initialContentPlaceholder": "initial content",
       "deleteStorage": "Delete storage",
+      "configHint": "The machine's setup: storages, input, acceptance",
       "addStorageHint": "A stack makes a pushdown automaton, a tape a Turing machine, more makes a custom machine",
       "addStorage": "add storage (stack / queue / tape)",
       "newStorage": "new storage",

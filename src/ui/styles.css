@@ -1765,12 +1765,54 @@ details.card[open] > summary .chev {
 }
 
 /* storage editor in the entity form */
-.ef-storages {
+/* the machine's setup (storages, input, acceptance): one line saying what it is, opened on demand */
+.ef-config {
   display: flex;
   flex-direction: column;
   margin-top: 8px;
   padding-top: 8px;
   border-top: 1px dashed var(--border-soft);
+}
+
+.ef-config-toggle {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px;
+  background: none;
+  border: none;
+  border-radius: 7px;
+  padding: 3px 4px;
+  color: var(--text-soft);
+  font-family: var(--font-sans);
+  font-size: 12.5px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.ef-config-toggle:hover {
+  color: var(--text);
+  background: var(--bg-soft);
+}
+
+.ef-config-toggle svg {
+  flex: none;
+  transition: transform 0.15s;
+}
+
+.ef-config-toggle.open svg {
+  transform: rotate(90deg);
+}
+
+.ef-config-toggle span + span::before {
+  content: "·";
+  margin-right: 4px;
+  color: var(--muted);
+}
+
+.ef-config > .ef-grid {
+  margin: 4px 0 6px;
 }
 
 .ef-storage-row {

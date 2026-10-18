@@ -3,7 +3,7 @@ import { createPortal } from "react-dom";
 import yaml from "js-yaml";
 import { useTranslation } from "react-i18next";
 import type { TFunction } from "i18next";
-import { Plus, TriangleAlert, X } from "lucide-react";
+import { ChevronRight, Plus, TriangleAlert, X } from "lucide-react";
 import { Machine, machineCaps, MachineCaps, StorageType } from "../../core/machine/machine";
 import { symbolsText } from "../../core/symbols";
 import { SymbolField } from "./SymbolField";
@@ -11,6 +11,7 @@ import { fieldsToTokens, tokensToFields } from "./opFields";
 import { parseStorageEntry } from "../../core/parse/definitionParser";
 import { useAppStore } from "../../state/store";
 import { machineKindLabel } from "../machineLabels";
+import { rich } from "../Rich";
 import { EPS } from "../../core/types";
 
 /**
@@ -332,6 +333,24 @@ function draftKindCaps(d: EntityDraft): MachineCaps {
   return machineCaps(probe);
 }
 
+/**
+ * The machine's setup in one line: its kind — which implies the input (a read head, or
+ * the input written onto the tape) — and only what differs from that kind's defaults.
+ */
+function configSummary(t: TFunction, d: EntityDraft): string[] {
+  const caps = draftKindCaps(d);
+  const parts = [machineKindLabel(t, caps)];
+  if (caps.kind === "general")
+    parts.push(
+      `${t("editor.form.input")}: ${d.input === "head" ? t("editor.form.readHead") : t("editor.form.writtenToStorage", { id: d.input })}`
+    );
+  for (const s of d.storages)
+    if (s.init !== defaultInit(s.type)) parts.push(`${t("editor.form.initialContent")} (${s.id}): ${s.init || EPS}`);
+  if (d.input === "head" && d.storages.length > 0 && d.acceptMode === "emptyStorages")
+    parts.push(`${t("editor.form.acceptance")}: ${t("editor.form.acceptEmptyStorages")}`);
+  return parts;
+}
+
 /* ------------------- machine-kind change warning dialog ------------------- */
 
 interface KindChangeRequest {
@@ -540,6 +559,8 @@ export const EntityForm: React.FC<Props> = ({ source, onChange }) => {
   };
   const cols = rowColumns(t, draft);
   const formLabels = useAppStore((s) => s.formLabels);
+  // the machine's setup is clear from its kind, so it stays folded into one line until asked for
+  const [configOpen, setConfigOpen] = useState(false);
   const addRow = () => update({ ...draft, rows: [...draft.rows, emptyRow(cols, draft.kind === "grammar")] });
   const removeRow = (i: number) => update({ ...draft, rows: draft.rows.filter((_, k) => k !== i) });
 
@@ -576,35 +597,46 @@ export const EntityForm: React.FC<Props> = ({ source, onChange }) => {
             <SymbolField value={draft.accept} onChange={(v) => setField("accept", v)} digits placeholder="A" />
           </label>
         )}
-        {k === "machine" && draft.storages.length > 0 && (
-          <>
-            <label className="ef-choice">
-              <span>{t("editor.form.input")}</span>
-              <select value={draft.input} onChange={(e) => setField("input", e.target.value)}>
-                <option value="head">{t("editor.form.readHead")}</option>
-                {draft.storages.map((s) => (
-                  <option key={s.id} value={s.id}>
-                    {t("editor.form.writtenToStorage", { id: s.id })}
-                  </option>
-                ))}
-              </select>
-            </label>
-            {draft.input === "head" && (
-              <label className="ef-choice">
-                <span>{t("editor.form.acceptance")}</span>
-                <select value={draft.acceptMode} onChange={(e) => setField("acceptMode", e.target.value)}>
-                  <option value="finalState">{t("editor.form.acceptFinalState")}</option>
-                  <option value="emptyStorages">{t("editor.form.acceptEmptyStorages")}</option>
-                </select>
-              </label>
-            )}
-          </>
-        )}
       </div>
 
       {k === "machine" && (
-        <div className="ef-storages">
-          {draft.storages.length > 0 && (
+        <div className="ef-config">
+          <button
+            className={`ef-config-toggle ${configOpen ? "open" : ""}`}
+            onClick={() => setConfigOpen(!configOpen)}
+            aria-expanded={configOpen}
+            title={t("editor.form.configHint")}
+          >
+            <ChevronRight size={13} />
+            {configSummary(t, draft).map((part, i) => (
+              <span key={i}>{rich(part)}</span>
+            ))}
+          </button>
+          {configOpen && draft.storages.length > 0 && (
+            <div className="ef-grid">
+              <label className="ef-choice">
+                <span>{t("editor.form.input")}</span>
+                <select value={draft.input} onChange={(e) => setField("input", e.target.value)}>
+                  <option value="head">{t("editor.form.readHead")}</option>
+                  {draft.storages.map((s) => (
+                    <option key={s.id} value={s.id}>
+                      {t("editor.form.writtenToStorage", { id: s.id })}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              {draft.input === "head" && (
+                <label className="ef-choice">
+                  <span>{t("editor.form.acceptance")}</span>
+                  <select value={draft.acceptMode} onChange={(e) => setField("acceptMode", e.target.value)}>
+                    <option value="finalState">{t("editor.form.acceptFinalState")}</option>
+                    <option value="emptyStorages">{t("editor.form.acceptEmptyStorages")}</option>
+                  </select>
+                </label>
+              )}
+            </div>
+          )}
+          {configOpen && draft.storages.length > 0 && (
             <div className="ef-storage-row ef-storage-head">
               <span>{t("editor.form.storage")}</span>
               <span>{t("editor.form.type")}</span>
@@ -612,7 +644,7 @@ export const EntityForm: React.FC<Props> = ({ source, onChange }) => {
               <span />
             </div>
           )}
-          {draft.storages.map((s, i) => (
+          {configOpen && draft.storages.map((s, i) => (
             <div className="ef-storage-row" key={i}>
               <input
                 value={s.id}
@@ -643,9 +675,11 @@ export const EntityForm: React.FC<Props> = ({ source, onChange }) => {
               </button>
             </div>
           ))}
-          <button className="ef-add" onClick={addStorage} title={t("editor.form.addStorageHint")}>
-            <Plus size={13} /> {draft.storages.length === 0 ? t("editor.form.addStorage") : t("editor.form.newStorage")}
-          </button>
+          {configOpen && (
+            <button className="ef-add" onClick={addStorage} title={t("editor.form.addStorageHint")}>
+              <Plus size={13} /> {draft.storages.length === 0 ? t("editor.form.addStorage") : t("editor.form.newStorage")}
+            </button>
+          )}
         </div>
       )}
 

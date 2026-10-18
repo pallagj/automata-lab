@@ -490,6 +490,7 @@
       "tapeInitPlaceholder": "(die Eingabe kann hierauf kommen)",
       "initialContentPlaceholder": "Anfangsinhalt",
       "deleteStorage": "Speicher löschen",
+      "configHint": "Einrichtung der Maschine: Speicher, Eingabe, Akzeptanz",
       "addStorageHint": "Ein Keller ergibt einen Kellerautomaten, ein Band eine Turingmaschine, mehr eine eigene Maschine",
       "addStorage": "Speicher hinzufügen (Keller / Warteschlange / Band)",
       "newStorage": "neuer Speicher",
