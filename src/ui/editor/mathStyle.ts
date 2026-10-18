@@ -21,7 +21,18 @@ const FUNCTIONS_LONGEST_FIRST = [...FUNCTION_NAMES].sort((a, b) => b.length - a.
 const isLetter = (c: string | undefined) => c !== undefined && c !== EPS && /^\p{L}$/u.test(c);
 const isDigit = (c: string | undefined) => c !== undefined && /^[0-9]$/.test(c);
 
-export function mathTokens(text: string): MathToken[] {
+export interface MathOptions {
+  /** recognise function names (det, min, regex(…)) — off in form fields, where a state may be called min */
+  functions: boolean;
+  /** show the digits right after a letter as its subscript (M1 = M₁) — off in form fields, where in S → 0S1 the 1 is a terminal */
+  implicitSubscripts: boolean;
+}
+
+const EXPRESSION: MathOptions = { functions: true, implicitSubscripts: true };
+/** form fields: letters italic, digits and the rest upright, nothing else read into the text */
+export const FIELD: MathOptions = { functions: false, implicitSubscripts: false };
+
+export function mathTokens(text: string, options: MathOptions = EXPRESSION): MathToken[] {
   const out: MathToken[] = [];
   const blank = (i: number) => i < 0 || i >= text.length || /\s/.test(text[i]);
   /** an operator gets space on a side only where none was typed */
@@ -57,14 +68,16 @@ export function mathTokens(text: string): MathToken[] {
       continue;
     }
     if (isLetter(c)) {
-      const fn = FUNCTIONS_LONGEST_FIRST.find((f) => text.startsWith(f, i) && !/[\p{L}\p{N}_]/u.test(text[i + f.length] ?? ""));
+      const fn = options.functions
+        ? FUNCTIONS_LONGEST_FIRST.find((f) => text.startsWith(f, i) && !/[\p{L}\p{N}_]/u.test(text[i + f.length] ?? ""))
+        : undefined;
       if (fn) {
         out.push({ from: i, to: i + fn.length, cls: "fn" });
         regexNext = fn === "regex";
         i += fn.length;
         continue;
       }
-      const r = readIdent(text, i, true);
+      const r = readIdent(text, i, options.implicitSubscripts);
       if (!r) {
         out.push({ from: i, to: i + 1, cls: "var" });
         i++;
@@ -95,22 +108,28 @@ export function mathTokens(text: string): MathToken[] {
   return out;
 }
 
-function decorations(view: EditorView): DecorationSet {
+function decorations(view: EditorView, options: MathOptions): DecorationSet {
   const b = new RangeSetBuilder<Decoration>();
-  for (const t of mathTokens(view.state.doc.toString()))
+  for (const t of mathTokens(view.state.doc.toString(), options))
     b.add(t.from, t.to, Decoration.mark({ class: t.cls.split(" ").map((c) => `cm-m-${c}`).join(" ") }));
   return b.finish();
 }
 
-export const mathStyle = ViewPlugin.fromClass(
-  class {
-    decorations: DecorationSet;
-    constructor(view: EditorView) {
-      this.decorations = decorations(view);
-    }
-    update(u: ViewUpdate) {
-      if (u.docChanged) this.decorations = decorations(u.view);
-    }
-  },
-  { decorations: (v) => v.decorations }
-);
+const plugin = (options: MathOptions) =>
+  ViewPlugin.fromClass(
+    class {
+      decorations: DecorationSet;
+      constructor(view: EditorView) {
+        this.decorations = decorations(view, options);
+      }
+      update(u: ViewUpdate) {
+        if (u.docChanged) this.decorations = decorations(u.view, options);
+      }
+    },
+    { decorations: (v) => v.decorations }
+  );
+
+/** expression cells */
+export const mathStyle = plugin(EXPRESSION);
+/** the fields of the form and the graph dialogs */
+export const fieldStyle = plugin(FIELD);

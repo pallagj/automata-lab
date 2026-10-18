@@ -475,7 +475,7 @@ export const EntityForm: React.FC<Props> = ({ source, onChange }) => {
         </label>
         <label>
           <span>{t("editor.form.alphabet")}</span>
-          <input value={draft.charset} onChange={(e) => setField("charset", e.target.value)} placeholder="a, b" />
+          <SymbolField value={draft.charset} onChange={(v) => setField("charset", v)} digits={false} placeholder="a, b" />
         </label>
         <label>
           <span>{k === "grammar" ? t("editor.form.variables") : t("editor.form.states")}</span>

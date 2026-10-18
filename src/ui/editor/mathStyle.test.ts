@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { mathTokens } from "./mathStyle";
+import { FIELD, mathTokens } from "./mathStyle";
 
 /** "text|cls" pairs, for readable expectations. */
 const show = (text: string) => mathTokens(text).map((t) => `${text.slice(t.from, t.to)}|${t.cls}`);
@@ -47,5 +47,23 @@ describe("expression cells set as mathematics", () => {
 
   it("a name that starts like a function is still a name", () => {
     expect(show("determ")).toEqual(["d|var", "e|var", "t|var", "e|var", "r|var", "m|var"]);
+  });
+});
+
+describe("form fields", () => {
+  const field = (text: string) => mathTokens(text, FIELD).map((t) => `${text.slice(t.from, t.to)}|${t.cls}`);
+
+  it("every letter is italic, function names are not special", () => {
+    expect(field("min")).toEqual(["m|var", "i|var", "n|var"]);
+    expect(field("E, O")).toEqual(["E|var", ",|op comma", "O|var"]);
+  });
+
+  it("digits stay upright and on the line: in S → 0S1 the 1 is a terminal", () => {
+    expect(field("0S1")).toEqual(["0|num", "S|var", "1|num"]);
+    expect(field("q_{0}")).toEqual(["q|var", "0|num"]);
+  });
+
+  it("stack operations: letters italic, the rest plain", () => {
+    expect(field("Z/AZ")).toEqual(["Z|var", "A|var", "Z|var"]);
   });
 });

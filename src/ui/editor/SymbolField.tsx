@@ -2,6 +2,7 @@ import React, { useCallback, useMemo, useRef } from "react";
 import CodeMirror, { EditorState, EditorView, keymap, Prec } from "@uiw/react-codemirror";
 import { useAppStore } from "../../state/store";
 import { subscripts } from "./subscript";
+import { fieldStyle } from "./mathStyle";
 import { epsilonAt } from "./epsilon";
 
 /**
@@ -65,6 +66,7 @@ export const SymbolField: React.FC<{
   const extensions = useMemo(
     () => [
       singleLine,
+      fieldStyle,
       subscripts((_state, _pos, ch) => {
         const d = digitsRef.current;
         return typeof d === "function" ? d(ch) : d;
