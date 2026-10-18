@@ -567,6 +567,11 @@
     "view": {
       "form": "Formular",
       "code": "YAML-Code"
+    },
+    "formLabels": "Beschriftung im Formular",
+    "labels": {
+      "symbols": "Notation: Σ, Q, q₀, F, δ",
+      "words": "Wörter: Alphabet, Zustände, …"
     }
   }
 }

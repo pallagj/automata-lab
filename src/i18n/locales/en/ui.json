@@ -567,6 +567,11 @@
     "view": {
       "form": "form",
       "code": "YAML code"
+    },
+    "formLabels": "Form labels",
+    "labels": {
+      "symbols": "notation: Σ, Q, q₀, F, δ",
+      "words": "words: Alphabet, States, …"
     }
   }
 }

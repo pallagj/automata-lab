@@ -7,6 +7,7 @@ import { Plus, TriangleAlert, X } from "lucide-react";
 import { Machine, machineCaps, MachineCaps, StorageType } from "../../core/machine/machine";
 import { symbolsText } from "../../core/symbols";
 import { SymbolField } from "./SymbolField";
+import { fieldsToTokens, tokensToFields } from "./opFields";
 import { parseStorageEntry } from "../../core/parse/definitionParser";
 import { useAppStore } from "../../state/store";
 import { machineKindLabel } from "../machineLabels";
@@ -221,6 +222,83 @@ function emptyRow(cols: RowColumn[], isGrammar: boolean): string[] {
   if (isGrammar) return ["", ""];
   return cols.map((c) => (c.widget === "move" ? ">" : ""));
 }
+
+/**
+ * A transition in the lecture notes' notation, its parts as fields:
+ * δ(q, a) = p · δ(q, a, Z) = (p, γ) · δ(q, a) = (p, b, D). The YAML row behind it is
+ * rebuilt from the fields (editor/opFields.ts).
+ */
+const DeltaRow: React.FC<{
+  row: string[];
+  hasHead: boolean;
+  storages: DraftStorage[];
+  onChange: (row: string[]) => void;
+}> = ({ row, hasHead, storages, onChange }) => {
+  const from = row[0] ?? "";
+  const to = row.length > 1 ? row[row.length - 1] : "";
+  const fields = tokensToFields(hasHead, storages, row.slice(1, -1));
+  const setField = (n: number, v: string) => {
+    const next = [...fields];
+    next[n] = v;
+    onChange([from, ...fieldsToTokens(hasHead, storages, next), to]);
+  };
+
+  // a state, a single symbol, a word pushed onto a storage, a head move — each its own width
+  type Part = { key: string; value: string; set: (v: string) => void; placeholder: string; kind: "state" | "symbol" | "word" | "move" };
+  const part = (n: number, placeholder: string, kind: Part["kind"]): Part => ({
+    key: `f${n}`,
+    value: fields[n] ?? "",
+    set: (v) => setField(n, v),
+    placeholder,
+    kind
+  });
+  const args: Part[] = [{ key: "from", value: from, set: (v) => onChange([v, ...row.slice(1)]), placeholder: "q", kind: "state" }];
+  const results: Part[] = [{ key: "to", value: to, set: (v) => onChange([...row.slice(0, -1), v]), placeholder: "p", kind: "state" }];
+  let n = 0;
+  if (hasHead) args.push(part(n++, "a", "symbol"));
+  for (const s of storages) {
+    if (s.type === "tape") {
+      args.push(part(n++, "a", "symbol"));
+      results.push(part(n++, "b", "symbol"));
+      results.push(part(n++, ">", "move"));
+    } else {
+      args.push(part(n++, s.type === "stack" ? "Z" : "A", "symbol"));
+      results.push(part(n++, s.type === "stack" ? "AZ" : "BA", "word"));
+    }
+  }
+
+  const field = (p: Part) =>
+    p.kind === "move" ? (
+      <MoveSelect key={p.key} value={p.value} onChange={p.set} />
+    ) : (
+      <SymbolField
+        key={p.key}
+        value={p.value}
+        onChange={p.set}
+        digits={p.kind === "state"}
+        epsilon={p.kind !== "state"}
+        placeholder={p.placeholder}
+        className={`ef-${p.kind}`}
+      />
+    );
+  const list = (ps: Part[]) => ps.flatMap((p, i) => (i === 0 ? [field(p)] : [<span key={`c${i}`} className="ef-op">,</span>, field(p)]));
+  return (
+    <>
+      <span className="ef-op ef-delta">δ(</span>
+      {list(args)}
+      <span className="ef-op">) =</span>
+      {results.length === 1 ? (
+        field(results[0])
+      ) : (
+        <>
+          <span className="ef-op">(</span>
+          {list(results)}
+          <span className="ef-op">)</span>
+        </>
+      )}
+    </>
+  );
+};
 
 /** Move picker: arrows only, text would not fit anyway. */
 export const MoveSelect: React.FC<{
@@ -455,45 +533,53 @@ export const EntityForm: React.FC<Props> = ({ source, onChange }) => {
     setStorages([...draft.storages, { id: freshStorageId(used), type: "stack", init: "Z" }]);
   };
 
+  const setRowParts = (i: number, parts: string[]) =>
+    update({ ...draft, rows: draft.rows.map((r, k) => (k === i ? parts : r)) });
   const setRow = (i: number, j: number, value: string) => {
     const rows = draft.rows.map((r, k) => (k === i ? r.map((p, l) => (l === j ? value : p)) : r));
     update({ ...draft, rows });
   };
   const cols = rowColumns(t, draft);
+  const formLabels = useAppStore((s) => s.formLabels);
   const addRow = () => update({ ...draft, rows: [...draft.rows, emptyRow(cols, draft.kind === "grammar")] });
   const removeRow = (i: number) => update({ ...draft, rows: draft.rows.filter((_, k) => k !== i) });
 
   const k = draft.kind;
   const terminals = draft.charset.split(",").map((c) => c.trim());
+  // with the notes' symbols a transition reads δ(q, a) = p and a rule A → α — except for
+  // machines with several storages, which have no such notation (and would not fit)
+  const symbols = formLabels === "symbols";
+  const delta = symbols && k === "machine" && draft.storages.length <= 1;
+  const arrow = symbols && k === "grammar";
 
   return (
-    <div className="entity-form" onClick={(e) => e.stopPropagation()}>
+    <div className={`entity-form ${symbols ? "ef-symbols" : ""}`} onClick={(e) => e.stopPropagation()}>
       <div className="ef-grid">
-        <label>
+        <label className="ef-wide" title={t("editor.form.name")}>
           <span>{t("editor.form.name")}</span>
           <SymbolField value={draft.name} onChange={(v) => setField("name", v)} digits placeholder={t("editor.form.name")} />
         </label>
-        <label>
-          <span>{t("editor.form.alphabet")}</span>
+        <label title={t("editor.form.alphabet")}>
+          <span data-sym="Σ">{t("editor.form.alphabet")}</span>
           <SymbolField value={draft.charset} onChange={(v) => setField("charset", v)} digits={false} placeholder="a, b" />
         </label>
-        <label>
-          <span>{k === "grammar" ? t("editor.form.variables") : t("editor.form.states")}</span>
+        <label title={k === "grammar" ? t("editor.form.variables") : t("editor.form.states")}>
+          <span data-sym={k === "grammar" ? "V" : "Q"}>{k === "grammar" ? t("editor.form.variables") : t("editor.form.states")}</span>
           <SymbolField value={draft.states} onChange={(v) => setField("states", v)} digits placeholder="S, A" />
         </label>
-        <label>
-          <span>{k === "grammar" ? t("editor.form.startVariable") : t("editor.form.startState")}</span>
+        <label title={k === "grammar" ? t("editor.form.startVariable") : t("editor.form.startState")}>
+          <span data-sym={k === "grammar" ? "S" : "q₀"}>{k === "grammar" ? t("editor.form.startVariable") : t("editor.form.startState")}</span>
           <SymbolField value={draft.init} onChange={(v) => setField("init", v)} digits placeholder="S" />
         </label>
         {k === "machine" && (
-          <label>
-            <span>{t("editor.form.accepting")}</span>
+          <label title={t("editor.form.accepting")}>
+            <span data-sym="F">{t("editor.form.accepting")}</span>
             <SymbolField value={draft.accept} onChange={(v) => setField("accept", v)} digits placeholder="A" />
           </label>
         )}
         {k === "machine" && draft.storages.length > 0 && (
           <>
-            <label>
+            <label className="ef-wide">
               <span>{t("editor.form.input")}</span>
               <select value={draft.input} onChange={(e) => setField("input", e.target.value)}>
                 <option value="head">{t("editor.form.readHead")}</option>
@@ -505,7 +591,7 @@ export const EntityForm: React.FC<Props> = ({ source, onChange }) => {
               </select>
             </label>
             {draft.input === "head" && (
-              <label>
+              <label className="ef-wide">
                 <span>{t("editor.form.acceptance")}</span>
                 <select value={draft.acceptMode} onChange={(e) => setField("acceptMode", e.target.value)}>
                   <option value="finalState">{t("editor.form.acceptFinalState")}</option>
@@ -565,15 +651,24 @@ export const EntityForm: React.FC<Props> = ({ source, onChange }) => {
       )}
 
       <div className="ef-rows">
-        <div className="ef-row ef-row-head">
-          {cols.map((c, i) => (
-            <span key={i}>{c.header}</span>
-          ))}
-          <span />
-        </div>
+        {!delta && !arrow && (
+          <div className="ef-row ef-row-head">
+            {cols.map((c, i) => (
+              <span key={i}>{c.header}</span>
+            ))}
+            <span />
+          </div>
+        )}
         {draft.rows.map((row, i) => (
-          <div className="ef-row" key={i}>
-            {row.map((part, j) =>
+          <div className={`ef-row ${delta ? "ef-row-delta" : ""}`} key={i}>
+            {delta ? (
+              <DeltaRow
+                row={row}
+                hasHead={draft.input === "head"}
+                storages={draft.storages}
+                onChange={(r) => setRowParts(i, r)}
+              />
+            ) : row.map((part, j) =>
               cols[j]?.widget === "move" ? (
                 <MoveSelect key={j} value={part} onChange={(v) => setRow(i, j, v)} />
               ) : (
@@ -591,7 +686,7 @@ export const EntityForm: React.FC<Props> = ({ source, onChange }) => {
                   className={k === "grammar" && j === 1 ? "wide" : ""}
                 />
               )
-            )}
+            ).flatMap((el, j) => (arrow && j === 1 ? [<span key="arrow" className="ef-op">→</span>, el] : [el]))}
             <button className="ef-remove" title={t("editor.form.deleteRow")} onClick={() => removeRow(i)}>
               <X size={13} />
             </button>

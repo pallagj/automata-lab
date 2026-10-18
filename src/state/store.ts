@@ -42,6 +42,7 @@ export interface LibrarySnapshot {
 }
 
 export type DefinitionView = "form" | "code";
+export type FormLabels = "symbols" | "words";
 
 export interface AppState {
   workspaces: Workspace[];
@@ -57,6 +58,8 @@ export interface AppState {
   hideKindChangeWarning: boolean;
   /** how definitions open: the form, or their YAML code (each cell can still switch) */
   definitionView: DefinitionView;
+  /** the form's labels: the lecture notes' symbols (Σ, Q, q₀, F, δ) or words */
+  formLabels: FormLabels;
   /** explicitly created folders (so a folder can exist while empty) */
   folders: string[];
   browserView: BrowserView;
@@ -64,6 +67,7 @@ export interface AppState {
 
   setHideKindChangeWarning: (v: boolean) => void;
   setDefinitionView: (v: DefinitionView) => void;
+  setFormLabels: (v: FormLabels) => void;
   setTheme: (t: Theme) => void;
   setPaneWidth: (w: number) => void;
   setNodePos: (cellId: string, node: string, x: number, y: number) => void;
@@ -129,12 +133,14 @@ export const useAppStore = create<AppState>()(
       layouts: {},
       hideKindChangeWarning: false,
       definitionView: "form",
+      formLabels: "symbols",
       folders: [],
       browserView: "grid",
       browserSort: { key: "updated", asc: false },
 
       setHideKindChangeWarning: (hideKindChangeWarning) => set({ hideKindChangeWarning }),
       setDefinitionView: (definitionView) => set({ definitionView }),
+      setFormLabels: (formLabels) => set({ formLabels }),
       setTheme: (theme) => set({ theme }),
       setPaneWidth: (paneWidth) => set({ paneWidth }),
       setNodePos: (cellId, node, x, y) =>

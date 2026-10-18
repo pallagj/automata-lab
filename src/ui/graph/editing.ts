@@ -1,4 +1,5 @@
 import { useMemo } from "react";
+import { fieldsToTokens, tokensToFields } from "../editor/opFields";
 import { useTranslation } from "react-i18next";
 import type { TFunction } from "i18next";
 import { activeWorkspace, useAppStore } from "../../state/store";
@@ -48,11 +49,6 @@ export interface GraphEditing {
 
 const list = (s: string) => s.split(",").map((x) => x.trim()).filter(Boolean);
 
-const splitSlash = (s: string): [string, string] => {
-  const i = s.indexOf("/");
-  return i >= 0 ? [s.slice(0, i), s.slice(i + 1)] : [s, ""];
-};
-
 function suggestStateName(used: Set<string>): string {
   if (used.size > 0 && [...used].every((s) => /^q\d+$/.test(s))) {
     let i = 0;
@@ -85,42 +81,6 @@ export function edgeFieldsFor(t: TFunction, hasHead: boolean, storages: Pick<Sto
     }
   }
   return fields;
-}
-
-/** line tokens (without from/to) → dialog field values */
-export function tokensToFields(hasHead: boolean, storages: Pick<StorageSpec, "id" | "type">[], tokens: string[]): string[] {
-  const out: string[] = [];
-  let i = 0;
-  if (hasHead) out.push(tokens[i++] ?? "");
-  for (const s of storages) {
-    if (s.type === "tape") {
-      const [r, w] = splitSlash(tokens[i++] ?? "");
-      out.push(r, w, tokens[i++] ?? ">");
-    } else {
-      const [a, b] = splitSlash(tokens[i++] ?? "");
-      out.push(a, b);
-    }
-  }
-  return out;
-}
-
-/** dialog field values → line tokens (without from/to) */
-export function fieldsToTokens(hasHead: boolean, storages: Pick<StorageSpec, "id" | "type">[], fields: string[]): string[] {
-  const out: string[] = [];
-  let i = 0;
-  if (hasHead) out.push(fields[i++] ?? "");
-  for (const s of storages) {
-    if (s.type === "tape") {
-      const r = fields[i++] ?? "";
-      const w = fields[i++] ?? "";
-      out.push(`${r}/${w}`, fields[i++] ?? ">");
-    } else {
-      const a = fields[i++] ?? "";
-      const b = fields[i++] ?? "";
-      out.push(`${a}/${b}`);
-    }
-  }
-  return out;
 }
 
 export function useGraphEditing(): {
