@@ -24,7 +24,8 @@
     "openWorksheets": "Deine Arbeitsblätter öffnen",
     "openFolder": "Diesen Ordner öffnen",
     "renameHint": "Zum Umbenennen klicken",
-    "worksheetMenu": "Arbeitsblatt-Menü"
+    "worksheetMenu": "Arbeitsblatt-Menü",
+    "settings": "Einstellungen"
   },
   "browser": {
     "title": "Arbeitsblätter",
@@ -560,5 +561,12 @@
     "resetView": "Ansicht zurücksetzen",
     "editingHint": "Doppelklick: neuer Zustand · Klick: Zustand bearbeiten · Ziehen: verschieben · vom Rand ziehen (Ring / ▸ Punkt): Übergang · Klick auf Kantenbeschriftung: Übergänge bearbeiten",
     "dragToConnect": "Auf einen anderen Zustand ziehen für einen neuen Übergang"
+  },
+  "settings": {
+    "definitionView": "Definitionen öffnen als",
+    "view": {
+      "form": "Formular",
+      "code": "YAML-Code"
+    }
   }
 }

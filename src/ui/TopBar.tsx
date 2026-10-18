@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { HelpModal } from "./HelpModal";
 import { LanguageSwitcher } from "./LanguageSwitcher";
+import { SettingsMenu } from "./SettingsMenu";
 import { BrowserTab, WorksheetBrowser } from "./browser/WorksheetBrowser";
 import { InlineInput, MovePanel, Popover } from "./browser/controls";
 
@@ -134,6 +135,7 @@ export const TopBar: React.FC = () => {
           <HelpCircle size={17} />
         </button>
         <LanguageSwitcher />
+        <SettingsMenu />
         <button
           className="icon-btn ghost"
           onClick={() => setTheme(theme === "dark" ? "light" : "dark")}

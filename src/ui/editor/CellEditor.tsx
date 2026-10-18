@@ -120,7 +120,10 @@ export const CellEditor: React.FC<Props> = ({ cell, index, result }) => {
   // entity cell: form or code view
   const entityKind = detectEntityKind(cell.source);
   const formAvailable = entityKind !== null && parseEntityDraft(cell.source) !== null;
-  const [codeView, setCodeView] = useState(false);
+  // the settings choose how definitions open; a cell's own switch overrides it for this session
+  const definitionView = useAppStore((s) => s.definitionView);
+  const [viewOverride, setViewOverride] = useState<boolean | null>(null);
+  const codeView = viewOverride ?? definitionView === "code";
   const showForm = formAvailable && !codeView;
 
 
@@ -444,7 +447,7 @@ export const CellEditor: React.FC<Props> = ({ cell, index, result }) => {
               title={showForm ? t("editor.cell.editYaml") : t("editor.cell.backToForm")}
               onClick={(e) => {
                 e.stopPropagation();
-                setCodeView((v) => !v);
+                setViewOverride(!codeView);
               }}
             >
               {showForm ? <Code2 size={15} /> : <SlidersHorizontal size={15} />}

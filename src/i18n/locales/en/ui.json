@@ -24,7 +24,8 @@
     "openWorksheets": "Open your worksheets",
     "openFolder": "Open this folder",
     "renameHint": "Click to rename",
-    "worksheetMenu": "Worksheet menu"
+    "worksheetMenu": "Worksheet menu",
+    "settings": "Settings"
   },
   "browser": {
     "title": "Worksheets",
@@ -560,5 +561,12 @@
     "resetView": "Reset view",
     "editingHint": "double-click: new state · click: edit state · drag: move · drag from the edge (ring / ▸ dot): transition · click an edge label: edit transitions",
     "dragToConnect": "Drag onto another state for a new transition"
+  },
+  "settings": {
+    "definitionView": "Definitions open as",
+    "view": {
+      "form": "form",
+      "code": "YAML code"
+    }
   }
 }

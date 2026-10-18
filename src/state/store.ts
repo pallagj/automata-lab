@@ -41,6 +41,8 @@ export interface LibrarySnapshot {
   activeCellId: string | null;
 }
 
+export type DefinitionView = "form" | "code";
+
 export interface AppState {
   workspaces: Workspace[];
   activeWorkspaceId: string;
@@ -53,12 +55,15 @@ export interface AppState {
   layouts: Record<string, Record<string, { x: number; y: number }>>;
   /** "don't warn me again" for edits that change the machine kind */
   hideKindChangeWarning: boolean;
+  /** how definitions open: the form, or their YAML code (each cell can still switch) */
+  definitionView: DefinitionView;
   /** explicitly created folders (so a folder can exist while empty) */
   folders: string[];
   browserView: BrowserView;
   browserSort: BrowserSort;
 
   setHideKindChangeWarning: (v: boolean) => void;
+  setDefinitionView: (v: DefinitionView) => void;
   setTheme: (t: Theme) => void;
   setPaneWidth: (w: number) => void;
   setNodePos: (cellId: string, node: string, x: number, y: number) => void;
@@ -123,11 +128,13 @@ export const useAppStore = create<AppState>()(
       paneWidth: 420,
       layouts: {},
       hideKindChangeWarning: false,
+      definitionView: "form",
       folders: [],
       browserView: "grid",
       browserSort: { key: "updated", asc: false },
 
       setHideKindChangeWarning: (hideKindChangeWarning) => set({ hideKindChangeWarning }),
+      setDefinitionView: (definitionView) => set({ definitionView }),
       setTheme: (theme) => set({ theme }),
       setPaneWidth: (paneWidth) => set({ paneWidth }),
       setNodePos: (cellId, node, x, y) =>

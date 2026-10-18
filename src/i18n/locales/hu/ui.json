@@ -24,7 +24,8 @@
     "openWorksheets": "Munkalapjaid megnyitása",
     "openFolder": "Mappa megnyitása",
     "renameHint": "Kattints az átnevezéshez",
-    "worksheetMenu": "Munkalap menü"
+    "worksheetMenu": "Munkalap menü",
+    "settings": "Beállítások"
   },
   "browser": {
     "title": "Munkalapok",
@@ -560,5 +561,12 @@
     "resetView": "Nézet visszaállítása",
     "editingHint": "dupla katt: új állapot · kattintás: állapot szerkesztése · húzás: áthelyezés · a széléről (gyűrű / ▸ pont) húzva: átmenet · él címkéjére katt: átmenetek szerkesztése",
     "dragToConnect": "Húzd egy másik állapotra új átmenethez"
+  },
+  "settings": {
+    "definitionView": "Definíciók megnyitása",
+    "view": {
+      "form": "űrlap",
+      "code": "YAML-kód"
+    }
   }
 }
