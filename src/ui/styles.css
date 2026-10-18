@@ -1100,26 +1100,56 @@ details.card[open] > summary .chev {
   font-style: italic;
 }
 
-/* δ(start, a) = (sawA, _, →): a state gets more room than a symbol, a move only its arrow */
-.ef-row-delta {
-  gap: 3px;
+/* δ(E, a) = O and S → aS | bA read like the notes: each field as wide as its content
+   (a rule's right-hand side takes the rest of the row), padded only while in use */
+.ef-row-delta,
+.ef-row-rule {
+  gap: 0;
 }
 
-.ef-row-delta > .sym-field.ef-state {
-  flex-grow: 2.2;
+.ef-row-delta > .sym-field,
+.ef-row-rule > .sym-field:first-child {
+  flex: 0 1 auto;
+  width: auto;
+  min-width: 8px;
 }
 
-.ef-row-delta > .sym-field.ef-word {
-  flex-grow: 1.5;
+.ef-row-delta .sym-field .cm-line,
+.ef-row-rule .sym-field .cm-line {
+  padding: 0;
 }
 
-.ef-row-delta .sym-field .cm-line {
+.ef-row-delta .sym-field .cm-focused .cm-line,
+.ef-row-rule .sym-field .cm-focused .cm-line {
   padding: 0 4px;
 }
 
+.ef-row-delta > .ef-comma,
+.ef-row-delta > .ef-eq {
+  margin-right: 4px;
+}
+
+.ef-row-rule > .ef-op {
+  margin: 0 5px;
+}
+
+/* the move is one more symbol of the row: its arrow, a box only on hover */
 .ef-row-delta > .move-select {
-  flex: 0 0 42px;
-  padding: 5px 0;
+  flex: none;
+  width: auto;
+  appearance: none;
+  background: transparent;
+  border-color: transparent;
+  padding: 3px 2px;
+  cursor: pointer;
+}
+
+.ef-row-delta > .move-select:hover {
+  border-color: var(--border);
+}
+
+.ef-row-delta > .ef-remove {
+  margin-left: auto;
 }
 
 .ef-row .ef-remove {

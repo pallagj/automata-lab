@@ -243,7 +243,7 @@ const DeltaRow: React.FC<{
     onChange([from, ...fieldsToTokens(hasHead, storages, next), to]);
   };
 
-  // a state, a single symbol, a word pushed onto a storage, a head move — each its own width
+  // a state, a single symbol, a word pushed onto a storage, or a head move
   type Part = { key: string; value: string; set: (v: string) => void; placeholder: string; kind: "state" | "symbol" | "word" | "move" };
   const part = (n: number, placeholder: string, kind: Part["kind"]): Part => ({
     key: `f${n}`,
@@ -278,15 +278,14 @@ const DeltaRow: React.FC<{
         digits={p.kind === "state"}
         epsilon={p.kind !== "state"}
         placeholder={p.placeholder}
-        className={`ef-${p.kind}`}
       />
     );
-  const list = (ps: Part[]) => ps.flatMap((p, i) => (i === 0 ? [field(p)] : [<span key={`c${i}`} className="ef-op">,</span>, field(p)]));
+  const list = (ps: Part[]) => ps.flatMap((p, i) => (i === 0 ? [field(p)] : [<span key={`c${i}`} className="ef-op ef-comma">,</span>, field(p)]));
   return (
     <>
       <span className="ef-op ef-delta">δ(</span>
       {list(args)}
-      <span className="ef-op">) =</span>
+      <span className="ef-op ef-eq">) =</span>
       {results.length === 1 ? (
         field(results[0])
       ) : (
@@ -660,7 +659,7 @@ export const EntityForm: React.FC<Props> = ({ source, onChange }) => {
           </div>
         )}
         {draft.rows.map((row, i) => (
-          <div className={`ef-row ${delta ? "ef-row-delta" : ""}`} key={i}>
+          <div className={`ef-row ${delta ? "ef-row-delta" : arrow ? "ef-row-rule" : ""}`} key={i}>
             {delta ? (
               <DeltaRow
                 row={row}
