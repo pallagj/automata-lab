@@ -1765,7 +1765,8 @@ details.card[open] > summary .chev {
 }
 
 /* storage editor in the entity form */
-/* the machine's setup (storages, input, acceptance): one line saying what it is, opened on demand */
+/* the machine's setup (storages, input, acceptance) under the kind's name: folded while the
+   kind implies it, open otherwise */
 .ef-config {
   display: flex;
   flex-direction: column;
@@ -1774,11 +1775,10 @@ details.card[open] > summary .chev {
   border-top: 1px dashed var(--border-soft);
 }
 
-.ef-config-toggle {
+.ef-config-head {
   align-self: flex-start;
   display: inline-flex;
   align-items: center;
-  flex-wrap: wrap;
   gap: 4px;
   background: none;
   border: none;
@@ -1788,6 +1788,9 @@ details.card[open] > summary .chev {
   font-family: var(--font-sans);
   font-size: 12.5px;
   text-align: left;
+}
+
+.ef-config-toggle {
   cursor: pointer;
 }
 
@@ -1803,12 +1806,6 @@ details.card[open] > summary .chev {
 
 .ef-config-toggle.open svg {
   transform: rotate(90deg);
-}
-
-.ef-config-toggle span + span::before {
-  content: "·";
-  margin-right: 4px;
-  color: var(--muted);
 }
 
 .ef-config > .ef-grid {

@@ -11,7 +11,6 @@ import { fieldsToTokens, tokensToFields } from "./opFields";
 import { parseStorageEntry } from "../../core/parse/definitionParser";
 import { useAppStore } from "../../state/store";
 import { machineKindLabel } from "../machineLabels";
-import { rich } from "../Rich";
 import { EPS } from "../../core/types";
 
 /**
@@ -334,21 +333,15 @@ function draftKindCaps(d: EntityDraft): MachineCaps {
 }
 
 /**
- * The machine's setup in one line: its kind — which implies the input (a read head, or
- * the input written onto the tape) — and only what differs from that kind's defaults.
+ * Whether the machine's setup is just what its kind implies: an automaton, a pushdown
+ * automaton read with a head or a Turing machine with the input on its tape, each storage
+ * starting with its default content and a head-read machine accepting in a final state.
+ * Then the setup may fold away; otherwise it stays open, so nothing unusual hides.
  */
-function configSummary(t: TFunction, d: EntityDraft): string[] {
-  const caps = draftKindCaps(d);
-  const parts = [machineKindLabel(t, caps)];
-  if (caps.kind === "general")
-    parts.push(
-      `${t("editor.form.input")}: ${d.input === "head" ? t("editor.form.readHead") : t("editor.form.writtenToStorage", { id: d.input })}`
-    );
-  for (const s of d.storages)
-    if (s.init !== defaultInit(s.type)) parts.push(`${t("editor.form.initialContent")} (${s.id}): ${s.init || EPS}`);
-  if (d.input === "head" && d.storages.length > 0 && d.acceptMode === "emptyStorages")
-    parts.push(`${t("editor.form.acceptance")}: ${t("editor.form.acceptEmptyStorages")}`);
-  return parts;
+function setupFollowsKind(d: EntityDraft): boolean {
+  if (draftKindCaps(d).kind === "general") return false;
+  if (d.storages.some((s) => s.init !== defaultInit(s.type))) return false;
+  return !(d.input === "head" && d.storages.length > 0 && d.acceptMode === "emptyStorages");
 }
 
 /* ------------------- machine-kind change warning dialog ------------------- */
@@ -456,6 +449,14 @@ export const EntityForm: React.FC<Props> = ({ source, onChange }) => {
     }
   }, [source]);
 
+  const formLabels = useAppStore((s) => s.formLabels);
+  // a setup that its kind implies folds into the kind's name until asked for; any other stays open
+  const [configOpen, setConfigOpen] = useState(false);
+  const followsKind = draft?.kind === "machine" && setupFollowsKind(draft);
+  useEffect(() => {
+    if (!followsKind) setConfigOpen(true);
+  }, [followsKind]);
+
   if (!draft) return null;
 
   const update = (d: EntityDraft) => {
@@ -558,9 +559,8 @@ export const EntityForm: React.FC<Props> = ({ source, onChange }) => {
     update({ ...draft, rows });
   };
   const cols = rowColumns(t, draft);
-  const formLabels = useAppStore((s) => s.formLabels);
-  // the machine's setup is clear from its kind, so it stays folded into one line until asked for
-  const [configOpen, setConfigOpen] = useState(false);
+  const kindCaps = draftKindCaps(draft);
+  const kindName = kindCaps.kind === "general" ? t("detail.machine.kind.general") : machineKindLabel(t, kindCaps);
   const addRow = () => update({ ...draft, rows: [...draft.rows, emptyRow(cols, draft.kind === "grammar")] });
   const removeRow = (i: number) => update({ ...draft, rows: draft.rows.filter((_, k) => k !== i) });
 
@@ -601,17 +601,19 @@ export const EntityForm: React.FC<Props> = ({ source, onChange }) => {
 
       {k === "machine" && (
         <div className="ef-config">
-          <button
-            className={`ef-config-toggle ${configOpen ? "open" : ""}`}
-            onClick={() => setConfigOpen(!configOpen)}
-            aria-expanded={configOpen}
-            title={t("editor.form.configHint")}
-          >
-            <ChevronRight size={13} />
-            {configSummary(t, draft).map((part, i) => (
-              <span key={i}>{rich(part)}</span>
-            ))}
-          </button>
+          {followsKind ? (
+            <button
+              className={`ef-config-head ef-config-toggle ${configOpen ? "open" : ""}`}
+              onClick={() => setConfigOpen(!configOpen)}
+              aria-expanded={configOpen}
+              title={t("editor.form.configHint")}
+            >
+              <ChevronRight size={13} />
+              {kindName}
+            </button>
+          ) : (
+            <div className="ef-config-head">{kindName}</div>
+          )}
           {configOpen && draft.storages.length > 0 && (
             <div className="ef-grid">
               <label className="ef-choice">
