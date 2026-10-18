@@ -4,8 +4,8 @@ import { readIdent } from "../../core/symbols";
 import { EPS } from "../../core/types";
 
 /**
- * Expression cells set like Desmos (and the lecture notes): names in italic serif,
- * function names, digits and brackets upright, a little space around = and + — only
+ * Expression cells set like Desmos (and the lecture notes): names in italic, function
+ * names, digits and brackets upright, a little space around = and + — only
  * shown, never typed, so "D=det(M)" and "D = det(M)" look the same. Inside regex(…) the
  * letters are the symbols of the pattern, also italic; the Kleene star is raised.
  */
