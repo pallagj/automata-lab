@@ -8,6 +8,7 @@ import { Machine, machineCaps, MachineCaps, StorageType } from "../../core/machi
 import { symbolsText } from "../../core/symbols";
 import { SymbolField } from "./SymbolField";
 import { fieldsToTokens, tokensToFields } from "./opFields";
+import { navigateFields } from "./formNav";
 import { parseStorageEntry } from "../../core/parse/definitionParser";
 import { useAppStore } from "../../state/store";
 import { machineKindLabel } from "../machineLabels";
@@ -573,7 +574,18 @@ export const EntityForm: React.FC<Props> = ({ source, onChange }) => {
   const arrow = symbols && k === "grammar";
 
   return (
-    <div className={`entity-form ${symbols ? "ef-symbols" : ""}`} onClick={(e) => e.stopPropagation()}>
+    <div
+      className={`entity-form ${symbols ? "ef-symbols" : ""}`}
+      onClick={(e) => e.stopPropagation()}
+      // before the field itself, which would otherwise take ↑ / ↓ as a caret move
+      onKeyDownCapture={(e) => {
+        if (e.altKey || e.ctrlKey || e.metaKey || e.shiftKey || e.nativeEvent.isComposing) return;
+        if (navigateFields(e.currentTarget, e.target as HTMLElement, e.key)) {
+          e.preventDefault();
+          e.stopPropagation();
+        }
+      }}
+    >
       <div className="ef-grid">
         <label className="ef-name" title={t("editor.form.name")}>
           <span>{t("editor.form.name")}</span>
