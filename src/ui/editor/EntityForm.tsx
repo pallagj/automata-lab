@@ -554,7 +554,7 @@ export const EntityForm: React.FC<Props> = ({ source, onChange }) => {
   return (
     <div className={`entity-form ${symbols ? "ef-symbols" : ""}`} onClick={(e) => e.stopPropagation()}>
       <div className="ef-grid">
-        <label className="ef-wide" title={t("editor.form.name")}>
+        <label className="ef-name" title={t("editor.form.name")}>
           <span>{t("editor.form.name")}</span>
           <SymbolField value={draft.name} onChange={(v) => setField("name", v)} digits placeholder={t("editor.form.name")} />
         </label>
@@ -578,7 +578,7 @@ export const EntityForm: React.FC<Props> = ({ source, onChange }) => {
         )}
         {k === "machine" && draft.storages.length > 0 && (
           <>
-            <label className="ef-wide">
+            <label className="ef-choice">
               <span>{t("editor.form.input")}</span>
               <select value={draft.input} onChange={(e) => setField("input", e.target.value)}>
                 <option value="head">{t("editor.form.readHead")}</option>
@@ -590,7 +590,7 @@ export const EntityForm: React.FC<Props> = ({ source, onChange }) => {
               </select>
             </label>
             {draft.input === "head" && (
-              <label className="ef-wide">
+              <label className="ef-choice">
                 <span>{t("editor.form.acceptance")}</span>
                 <select value={draft.acceptMode} onChange={(e) => setField("acceptMode", e.target.value)}>
                   <option value="finalState">{t("editor.form.acceptFinalState")}</option>

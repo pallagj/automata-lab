@@ -956,7 +956,8 @@ details.card[open] > summary .chev {
   padding: 8px 4px 0 4px;
 }
 
-/* interactive entity editor: compact, each label inside its field's box */
+/* interactive entity editor: one style throughout — text on the page in a light grid, a
+   field's box only while it is in use (hover outlines it, focus fills it) */
 .entity-form {
   padding: 8px 10px 11px 8px;
   display: flex;
@@ -967,35 +968,23 @@ details.card[open] > summary .chev {
 .ef-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-  gap: 6px;
+  column-gap: 16px;
 }
 
 .ef-grid label {
   display: flex;
   align-items: center;
+  gap: 2px;
   font-size: 11px;
   font-weight: 650;
   color: var(--muted);
   min-width: 0;
-  background: var(--bg-soft);
-  border: 1px solid var(--border);
-  border-radius: 7px;
-  padding-left: 8px;
-}
-
-.ef-grid label:focus-within {
-  border-color: var(--accent);
+  border-bottom: 1px solid var(--border-soft);
 }
 
 .ef-grid label > span {
   flex: none;
   white-space: nowrap;
-}
-
-.ef-grid label .sym-field .cm-editor,
-.ef-grid label select {
-  border: none !important;
-  background: transparent !important;
 }
 
 /* labels as the lecture notes' symbols (a setting): Σ, Q, q₀, F — V, S for a grammar */
@@ -1015,8 +1004,9 @@ details.card[open] > summary .chev {
   color: var(--muted);
 }
 
-/* the name and the selects would not fit the symbols' narrow columns */
-.ef-symbols .ef-grid label.ef-wide {
+/* a select's options would not fit one column, nor a name the symbols' narrow ones */
+.ef-grid label.ef-choice,
+.ef-symbols .ef-grid label.ef-name {
   grid-column: span 2;
 }
 
@@ -1026,8 +1016,8 @@ details.card[open] > summary .chev {
 .ef-row select,
 .ef-storage-row input,
 .ef-storage-row select {
-  background: var(--bg-soft);
-  border: 1px solid var(--border);
+  background: transparent;
+  border: 1px solid transparent;
   border-radius: 7px;
   color: var(--text);
   font-family: var(--font-sans);
@@ -1037,17 +1027,39 @@ details.card[open] > summary .chev {
   width: 100%;
 }
 
+.ef-grid .sym-field .cm-editor,
+.ef-row .sym-field .cm-editor,
+.ef-storage-row .sym-field .cm-editor {
+  background: transparent;
+  border-color: transparent;
+}
+
+.ef-grid input:hover,
+.ef-grid select:hover,
+.ef-row input:hover,
+.ef-row select:hover,
+.ef-storage-row input:hover,
+.ef-storage-row select:hover,
+.ef-grid .sym-field .cm-editor:hover,
+.ef-row .sym-field .cm-editor:hover,
+.ef-storage-row .sym-field .cm-editor:hover {
+  border-color: var(--border);
+}
+
 .ef-grid input:focus,
 .ef-grid select:focus,
 .ef-row input:focus,
 .ef-row select:focus,
 .ef-storage-row input:focus,
-.ef-storage-row select:focus {
+.ef-storage-row select:focus,
+.ef-grid .sym-field .cm-editor.cm-focused,
+.ef-row .sym-field .cm-editor.cm-focused,
+.ef-storage-row .sym-field .cm-editor.cm-focused {
   outline: none;
+  background: var(--bg-soft);
   border-color: var(--accent);
 }
 
-/* transitions and rules as a light grid: no boxes until a field is in use */
 .ef-rows {
   display: flex;
   flex-direction: column;
@@ -1077,16 +1089,6 @@ details.card[open] > summary .chev {
   flex: 2.5;
 }
 
-.ef-row .sym-field .cm-editor {
-  background: transparent;
-  border-color: transparent;
-}
-
-.ef-row .sym-field .cm-editor.cm-focused {
-  background: var(--bg-soft);
-  border-color: var(--accent);
-}
-
 /* the notation around the fields: δ(q, a) = p, A → α */
 .ef-op {
   flex: none;
@@ -1100,8 +1102,8 @@ details.card[open] > summary .chev {
   font-style: italic;
 }
 
-/* δ(E, a) = O and S → aS | bA read like the notes: each field as wide as its content
-   (a rule's right-hand side takes the rest of the row), padded only while in use */
+/* δ(E, a) = O and S → aS | bA read like the notes: each field as wide as its content (a
+   rule's right-hand side takes the rest of the row), a single symbol still easy to hit */
 .ef-row-delta,
 .ef-row-rule {
   gap: 0;
@@ -1111,41 +1113,38 @@ details.card[open] > summary .chev {
 .ef-row-rule > .sym-field:first-child {
   flex: 0 1 auto;
   width: auto;
-  min-width: 8px;
+  min-width: 18px;
 }
 
 .ef-row-delta .sym-field .cm-line,
 .ef-row-rule .sym-field .cm-line {
-  padding: 0;
+  padding: 0 2px;
 }
 
-.ef-row-delta .sym-field .cm-focused .cm-line,
-.ef-row-rule .sym-field .cm-focused .cm-line {
-  padding: 0 4px;
+.ef-row-delta .sym-field .cm-line {
+  text-align: center;
 }
 
-.ef-row-delta > .ef-comma,
+.ef-row-delta > .ef-comma {
+  margin-right: 2px;
+}
+
 .ef-row-delta > .ef-eq {
-  margin-right: 4px;
+  margin-right: 3px;
 }
 
 .ef-row-rule > .ef-op {
-  margin: 0 5px;
+  margin: 0 4px;
 }
 
 /* the move is one more symbol of the row: its arrow, a box only on hover */
 .ef-row-delta > .move-select {
   flex: none;
   width: auto;
+  min-width: 18px;
   appearance: none;
-  background: transparent;
-  border-color: transparent;
   padding: 3px 2px;
   cursor: pointer;
-}
-
-.ef-row-delta > .move-select:hover {
-  border-color: var(--border);
 }
 
 .ef-row-delta > .ef-remove {
@@ -1171,6 +1170,7 @@ details.card[open] > summary .chev {
 
 .ef-row-head span {
   flex: 1;
+  padding-left: 8px;
 }
 
 .ef-row-head span:last-child {
@@ -1768,7 +1768,6 @@ details.card[open] > summary .chev {
 .ef-storages {
   display: flex;
   flex-direction: column;
-  gap: 4px;
   margin-top: 8px;
   padding-top: 8px;
   border-top: 1px dashed var(--border-soft);
@@ -1781,7 +1780,12 @@ details.card[open] > summary .chev {
   align-items: center;
 }
 
+.ef-storage-row:not(.ef-storage-head) {
+  border-bottom: 1px solid var(--border-soft);
+}
+
 .ef-storage-row.ef-storage-head span {
+  padding-left: 8px;
   font-size: 10.5px;
   text-transform: uppercase;
   letter-spacing: 0.04em;
