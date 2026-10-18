@@ -1,12 +1,12 @@
 /**
- * Names and symbols, as in Desmos: a name is a single letter, optionally with primes
+ * Names and symbols: a name is a single letter, optionally with primes
  * and a subscript — M, M′, M_1, X_a, C_{12}, M_{even}. Names of worksheet cells, grammar
  * variables and stack symbols all follow this rule; state names are free labels.
  *
  * Text form: `_x` puts the single character x into the subscript, `_{…}` any longer
  * subscript, and ' or ′ adds a prime. Where only a name can stand (a cell name, a list
- * of grammar variables), digits right after the letter go to the subscript like in
- * Desmos: M1 is M_1, q10 is q_{10}.
+ * of grammar variables), digits right after the letter go to the subscript:
+ * M1 is M_1, q10 is q_{10}.
  */
 
 import { EPS } from "./types";

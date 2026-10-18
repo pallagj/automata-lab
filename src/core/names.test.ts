@@ -20,7 +20,7 @@ const M = (name: string) => `Machine:
     - S a A
     - A b A`;
 
-describe("cell names follow the Desmos rule", () => {
+describe("cell names: one letter with a subscript", () => {
   it("a definition's name is canonical: M1 is M_1", () => {
     const rs = evaluateCells([M("M1"), "D = det(M_1)", "E = det(M1)"]);
     expect(rs[0].name).toBe("M_1");
@@ -46,7 +46,7 @@ describe("cell names follow the Desmos rule", () => {
     expect(rs[3].name).toBe("M_2");
   });
 
-  it("names side by side are concatenated, as Desmos multiplies", () => {
+  it("names side by side are concatenated, as factors are multiplied in mathematics", () => {
     const rs = evaluateCells(["A = regex(a)", "B = regex(b)", "C = AB", "D = A B"]);
     for (const i of [2, 3]) {
       const m = rs[i].value as never;

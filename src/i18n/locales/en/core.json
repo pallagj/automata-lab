@@ -203,7 +203,7 @@
     },
     "badName": {
       "title": "“{{name}}” is not a name",
-      "detail": "A name is a single letter with an optional subscript, as in Desmos — for example {{suggestion}}. Type _ to start the subscript; digits right after the letter go there by themselves (M1 is M₁)."
+      "detail": "A name is a single letter with an optional subscript — for example {{suggestion}}. Type _ to start the subscript; digits right after the letter go there by themselves (M1 is M₁)."
     }
   },
   "ops": {

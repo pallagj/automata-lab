@@ -11,8 +11,8 @@ import {
 
 /**
  * Evaluates the cells of a worksheet: parses definitions, computes expressions
- * in dependency order, and detects cycles and name clashes. Names are optional,
- * as in Desmos: an unnamed cell is evaluated and shown but cannot be referenced.
+ * in dependency order, and detects cycles and name clashes. Names are optional:
+ * an unnamed cell is evaluated and shown but cannot be referenced.
  */
 
 export interface CellResult {
@@ -79,7 +79,7 @@ export function evaluateCells(sources: string[]): CellResult[] {
     if (asg !== null) {
       results[i].isExpression = true;
       if (asg.name === null) {
-        // EvenA = …: names are single letters with a subscript, as in Desmos
+        // EvenA = …: names are single letters with a subscript
         results[i].diagnostics.push(
           err(tx("definitionParser.badName.title", { name: asg.rawName }), tx("definitionParser.badName.detail", { suggestion: suggestName(asg.rawName) }))
         );

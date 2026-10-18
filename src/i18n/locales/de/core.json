@@ -203,7 +203,7 @@
     },
     "badName": {
       "title": "„{{name}}“ ist kein Name",
-      "detail": "Ein Name ist ein einzelner Buchstabe mit optionalem Index, wie in Desmos — zum Beispiel {{suggestion}}. Mit _ beginnt der Index; Ziffern direkt nach dem Buchstaben kommen von selbst hinein (M1 ist M₁)."
+      "detail": "Ein Name ist ein einzelner Buchstabe mit optionalem Index — zum Beispiel {{suggestion}}. Mit _ beginnt der Index; Ziffern direkt nach dem Buchstaben kommen von selbst hinein (M1 ist M₁)."
     }
   },
   "ops": {

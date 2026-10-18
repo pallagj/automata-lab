@@ -1,6 +1,6 @@
 /**
  * A note is a cell whose source starts with # (it is not evaluated). It is stored with "# " before every
- * line but edited and shown as plain text, as in Desmos: the markers are added and stripped here.
+ * line but edited and shown as plain text: the markers are added and stripped here.
  */
 
 const MARK = /^[ \t]*#[ \t]?/;

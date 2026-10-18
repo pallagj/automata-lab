@@ -153,7 +153,7 @@
     },
     "names": {
       "heading": "Names",
-      "body": "As in Desmos, a name is a single letter with an optional subscript: M, M₁, X_a, M_{even}. Type _ to start a subscript and → to leave it; digits typed right after the letter go into the subscript by themselves (M1 becomes M₁). So AB in an expression is A followed by B. Function names (det, min, toRegex, …) are words, as sin is in Desmos. State names are free labels (AB, 00, {A,B})."
+      "body": "A name is a single letter with an optional subscript: M, M₁, X_a, M_{even}. Type _ to start a subscript and → to leave it; digits typed right after the letter go into the subscript by themselves (M1 becomes M₁). So AB in an expression is A followed by B. Function names (det, min, toRegex, …) are words, as sin is in mathematics. State names are free labels (AB, 00, {A,B})."
     },
     "expressions": {
       "heading": "Expressions",
@@ -172,7 +172,7 @@
         "conversions": "conversions between automaton ↔ grammar, automaton → regular expression, grammar → pushdown automaton",
         "namedOps": "operations between named automata: concatenation, union, closure — letter literals only inside regex(…)"
       },
-      "optionalName": "The name is optional: without one the result is still shown, it just can't be referenced from other cells — like an unnamed expression in Desmos."
+      "optionalName": "The name is optional: without one the result is still shown, it just can't be referenced from other cells."
     },
     "storages": {
       "heading": "Storages: stack, queue, tape",

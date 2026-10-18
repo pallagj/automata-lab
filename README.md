@@ -42,14 +42,14 @@ an app; everything runs locally, no account needed.
   unit rules (`unitfree(G)`), useless symbols (`trim(G)`) and the Chomsky normal form (`cnf(G)`).
   Their derivability test is an exact decision with the **CYK algorithm**, showing the triangular
   table and the number of derivation trees (more than one proves the grammar ambiguous).
-- **Desmos-style worksheets:** a column of cells holding expressions, regexes, machines, grammars
+- **Worksheets of cells:** a column of cells holding expressions, regexes, machines, grammars
   and `#` notes; drag & drop reordering, an operation menu that checks applicability up front,
-  and a form editor or YAML code view for definitions. Names are optional, as in Desmos: `det(M_1)` or
-  `regex(a+b)` on their own are shown right away; name a cell only to reference it elsewhere. Type `eps` and it turns into `ε`, Desmos-style
+  and a form editor or YAML code view for definitions. Names are optional: `det(M_1)` or
+  `regex(a+b)` on their own are shown right away; name a cell only to reference it elsewhere. Type `eps` and it turns into `ε`
   (`\eps` keeps the letters).
-- **Desmos-style names:** a name is a single letter with an optional subscript — `M`, `M_1`, `X_a`,
+- **Mathematical names:** a name is a single letter with an optional subscript — `M`, `M_1`, `X_a`,
   `M_{even}` — for cells, grammar variables and stack symbols alike, shown with real subscripts.
-  Typing works as in Desmos: `_` opens a subscript and → leaves it, digits right after a letter go
+  Typing builds the subscripts as you go: `_` opens a subscript and → leaves it, digits right after a letter go
   there by themselves (`M1` becomes M₁), and `AB` in an expression is A concatenated with B. State
   names stay free labels (`AB`, `00`, `{A,B}`); automaton → grammar gives them `A_q` variables.
 - **Worksheet browser:** all your worksheets as cards with live graph previews (or a sortable list),

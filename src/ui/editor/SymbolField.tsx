@@ -5,7 +5,7 @@ import { subscripts } from "./subscript";
 import { epsilonAt } from "./epsilon";
 
 /**
- * A one-line field of the form that types like the cells: names get Desmos-style
+ * A one-line field of the form that types like the cells: names get
  * subscripts (M1 → M₁, _ opens a subscript, → leaves it), and symbol fields turn eps
  * into ε. Looks like the other inputs of the form.
  */

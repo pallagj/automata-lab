@@ -16,14 +16,14 @@ import {
 import { EPS } from "../../core/types";
 
 /**
- * Desmos-style subscripts while typing (see core/symbols.ts for the text form):
+ * Subscripts while typing (see core/symbols.ts for the text form):
  *   - "_" right after a letter opens a subscript — the text gets "_{}" and the caret
  *     goes inside; it stays there until → leaves it;
  *   - in a name context, a digit right after a letter opens a subscript by itself and
  *     the following digits stay in it; any other character leaves it (M1a → M_{1}a);
  *   - Backspace treats a subscript as one structure: at its start it unwraps it, at its
  *     end it deletes its last character, and an empty one disappears.
- * The "_{" and "}" are hidden and skipped by the caret, so it reads like Desmos.
+ * The "_{" and "}" are hidden and skipped by the caret, so it reads like mathematics on paper.
  */
 
 const isLetter = (c: string | undefined) => c !== undefined && c !== EPS && /^\p{L}$/u.test(c);

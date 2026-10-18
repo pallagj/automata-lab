@@ -21,7 +21,7 @@ function type(start: string, chars: string, digits = true): { text: string; care
   return { text, caret };
 }
 
-describe("typing subscripts like Desmos", () => {
+describe("typing subscripts", () => {
   it("digits after a letter go to the subscript, the next letter leaves it", () => {
     expect(type("", "M1").text).toBe("M_{1}");
     expect(type("", "M12").text).toBe("M_{12}");

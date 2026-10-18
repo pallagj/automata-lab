@@ -203,7 +203,7 @@
     },
     "badName": {
       "title": "„{{name}}” nem név",
-      "detail": "A név egyetlen betű, opcionális alsó indexszel, ahogy a Desmosban — például {{suggestion}}. Az _ leütésével kezdődik az alsó index; a betű utáni számjegyek maguktól oda kerülnek (M1 = M₁)."
+      "detail": "A név egyetlen betű, opcionális alsó indexszel — például {{suggestion}}. Az _ leütésével kezdődik az alsó index; a betű utáni számjegyek maguktól oda kerülnek (M1 = M₁)."
     }
   },
   "ops": {

@@ -153,7 +153,7 @@
     },
     "names": {
       "heading": "Nevek",
-      "body": "Ahogy a Desmosban, a név egyetlen betű, opcionális alsó indexszel: M, M₁, X_a, M_{even}. Az _ leütésével kezdődik az alsó index, a → nyíllal lépsz ki belőle; a betű után gépelt számjegyek maguktól az indexbe kerülnek (M1-ből M₁ lesz). Így egy kifejezésben az AB jelentése: A, utána B. A függvénynevek (det, min, toRegex, …) szavak, mint a Desmosban a sin. Az állapotnevek szabad címkék (AB, 00, {A,B})."
+      "body": "A név egyetlen betű, opcionális alsó indexszel: M, M₁, X_a, M_{even}. Az _ leütésével kezdődik az alsó index, a → nyíllal lépsz ki belőle; a betű után gépelt számjegyek maguktól az indexbe kerülnek (M1-ből M₁ lesz). Így egy kifejezésben az AB jelentése: A, utána B. A függvénynevek (det, min, toRegex, …) szavak, mint a matematikában a sin. Az állapotnevek szabad címkék (AB, 00, {A,B})."
     },
     "expressions": {
       "heading": "Kifejezések",
@@ -172,7 +172,7 @@
         "conversions": "konverziók automata ↔ nyelvtan, automata → reguláris kifejezés, nyelvtan → veremautomata",
         "namedOps": "műveletek nevesített automaták között: összefűzés, unió, lezárás — betű-literálok csak a regex(…) belsejében"
       },
-      "optionalName": "A név elhagyható: nélküle is megjelenik az eredmény, csak más cellából nem lehet rá hivatkozni — mint a névtelen kifejezések a Desmosban."
+      "optionalName": "A név elhagyható: nélküle is megjelenik az eredmény, csak más cellából nem lehet rá hivatkozni."
     },
     "storages": {
       "heading": "Tárolók: verem, sor, szalag",

@@ -67,10 +67,10 @@ export const EditorColumn: React.FC<Props> = ({ workspace, results }) => {
   const setActiveCell = useAppStore((s) => s.setActiveCell);
   const activeCellId = useAppStore((s) => s.activeCellId);
   const [menuOpen, setMenuOpen] = useState(false);
-  /** the list is scrolled away from the top: the header casts a shadow over it, as in Desmos */
+  /** the list is scrolled away from the top: the header casts a shadow over it */
   const [scrolled, setScrolled] = useState(false);
 
-  /** like Desmos: fill an empty active cell, otherwise insert below it */
+  /** fill an empty active cell, otherwise insert below it */
   const insert = (source: string) => {
     const active = workspace.cells.find((c) => c.id === activeCellId);
     if (active && active.source.trim() === "") {

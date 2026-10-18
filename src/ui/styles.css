@@ -705,7 +705,7 @@ details.card[open] > summary .chev {
   transform: rotate(90deg);
 }
 
-/* ====== Cells — a single-column "table", Desmos style ====== */
+/* ====== Cells — a single-column "table" ====== */
 
 .cell {
   position: relative;
@@ -773,7 +773,7 @@ details.card[open] > summary .chev {
   cursor: grabbing;
 }
 
-/* the number sits small in the corner, as in Desmos */
+/* the number sits small in the corner */
 .cell-index {
   position: absolute;
   top: 3px;
@@ -826,7 +826,7 @@ details.card[open] > summary .chev {
   padding: 6px 4px 6px 8px;
 }
 
-/* an expression reads as mathematics, as in Desmos (editor/mathStyle.ts) — in the UI's own font */
+/* an expression reads as mathematics (editor/mathStyle.ts), in the UI's own font */
 .cell.expr .cell-editor .cm-editor {
   font-size: 15px;
 }
@@ -874,7 +874,7 @@ details.card[open] > summary .chev {
   line-height: 0;
 }
 
-/* a note reads as text, as in Desmos: the UI font, wrapped lines, no markers */
+/* a note reads as text: the UI font, wrapped lines, no markers */
 .cell.note .cell-editor .cm-editor {
   font-size: 14px;
   color: var(--text-soft);
@@ -907,7 +907,7 @@ details.card[open] > summary .chev {
   padding: 0 6px 0 2px;
 }
 
-/* ✕ is always there (as in Desmos); the other tools show on the active or hovered cell */
+/* ✕ is always there; the other tools show on the active or hovered cell */
 .cell-tools .cell-tool:not(.danger) {
   opacity: 0;
   transition: opacity 0.12s;
@@ -2190,7 +2190,7 @@ table.t.cyk tr.cyk-word th {
   color: var(--accent);
 }
 
-/* ====== Desmos-style names: X_a, M_{even} ====== */
+/* ====== Names with subscripts: X_a, M_{even} ====== */
 
 .sym sub {
   font-size: 0.72em;

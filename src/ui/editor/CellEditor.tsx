@@ -138,12 +138,12 @@ export const CellEditor: React.FC<Props> = ({ cell, index, result }) => {
   const isNote = isNoteSource(cell.source);
   const text = isNote ? noteText(cell.source) : cell.source;
 
-  // expressions and notes are one line, as in Desmos: Enter starts a new cell below (Shift+Enter still breaks
+  // expressions and notes are one line: Enter starts a new cell below (Shift+Enter still breaks
   // the line); YAML definitions are multi-line, so there Enter stays a newline
   const extensions = useMemo(() => {
     if (isYaml) return [yaml(), epsilonInputHandler, subscripts(yamlDigits)];
     const newCellOnEnter = { key: "Enter", run: () => (addCell("", cell.id), true) };
-    // Backspace in an empty cell deletes it and goes on at the end of the cell above, as in Desmos;
+    // Backspace in an empty cell deletes it and goes on at the end of the cell above;
     // the first cell stays, and if it is an empty note it turns back into an expression cell
     const backspaceWhenEmpty = {
       key: "Backspace",

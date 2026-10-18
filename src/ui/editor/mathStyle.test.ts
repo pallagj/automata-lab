@@ -4,7 +4,7 @@ import { mathTokens } from "./mathStyle";
 /** "text|cls" pairs, for readable expectations. */
 const show = (text: string) => mathTokens(text).map((t) => `${text.slice(t.from, t.to)}|${t.cls}`);
 
-describe("expression cells set like Desmos", () => {
+describe("expression cells set as mathematics", () => {
   it("names italic, function names and brackets upright, space around =", () => {
     expect(show("D=det(M)")).toEqual(["D|var", "=|op eq pl pr", "det|fn", "(|paren", "M|var", ")|paren"]);
   });

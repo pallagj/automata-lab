@@ -153,7 +153,7 @@
     },
     "names": {
       "heading": "Namen",
-      "body": "Wie in Desmos ist ein Name ein einzelner Buchstabe mit optionalem Index: M, M₁, X_a, M_{even}. Mit _ beginnt ein Index, mit → verlässt man ihn; Ziffern direkt nach dem Buchstaben kommen von selbst in den Index (M1 wird M₁). AB in einem Ausdruck ist also A gefolgt von B. Funktionsnamen (det, min, toRegex, …) sind Wörter, wie sin in Desmos. Zustandsnamen sind freie Bezeichnungen (AB, 00, {A,B})."
+      "body": "Ein Name ist ein einzelner Buchstabe mit optionalem Index: M, M₁, X_a, M_{even}. Mit _ beginnt ein Index, mit → verlässt man ihn; Ziffern direkt nach dem Buchstaben kommen von selbst in den Index (M1 wird M₁). AB in einem Ausdruck ist also A gefolgt von B. Funktionsnamen (det, min, toRegex, …) sind Wörter, wie sin in der Mathematik. Zustandsnamen sind freie Bezeichnungen (AB, 00, {A,B})."
     },
     "expressions": {
       "heading": "Ausdrücke",
@@ -172,7 +172,7 @@
         "conversions": "Umwandlungen Automat ↔ Grammatik, Automat → regulärer Ausdruck, Grammatik → Kellerautomat",
         "namedOps": "Operationen zwischen benannten Automaten: Verkettung, Vereinigung, Abschluss — Buchstaben-Literale nur innerhalb von regex(…)"
       },
-      "optionalName": "Der Name ist optional: Ohne ihn wird das Ergebnis trotzdem angezeigt, es kann nur nicht aus anderen Zellen referenziert werden — wie ein unbenannter Ausdruck in Desmos."
+      "optionalName": "Der Name ist optional: Ohne ihn wird das Ergebnis trotzdem angezeigt, es kann nur nicht aus anderen Zellen referenziert werden."
     },
     "storages": {
       "heading": "Speicher: Keller, Warteschlange, Band",

@@ -3,7 +3,7 @@ import { splitAssignment } from "../core/expr/expression";
 
 /**
  * Names in a worksheet. A cell may define a name (`name:` in a definition, `name =` in an
- * expression) or stay unnamed, like an unnamed expression in Desmos. A name is a single
+ * expression) or stay unnamed. A name is a single
  * letter with an optional subscript (core/symbols.ts).
  */
 const DEFINITION = /^\s*[A-Za-z]+\s*:/;

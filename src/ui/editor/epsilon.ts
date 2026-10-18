@@ -3,7 +3,7 @@ import { EditorView } from "@uiw/react-codemirror";
 import { EPS } from "../../core/types";
 
 /**
- * Typing shortcut for the ε rule (see core/epsilon.ts), like Desmos turns "pi" into π:
+ * Typing shortcut for the ε rule (see core/epsilon.ts), as math editors turn "pi" into π:
  * in symbol fields "eps" becomes ε as soon as it is typed, anywhere — unless it follows
  * a backslash (\eps = the letters e, p, s). Typing on to "epsilon" folds the leftover
  * "ilon" back into ε. Names and expression cells never use this.
