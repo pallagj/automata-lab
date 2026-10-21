@@ -323,7 +323,10 @@
         "rightLinear": "Ihre Regeln sind A → uB, A → u, A → B oder A → ε (u ein Terminalwort): nach der Definition nicht Typ 3, aber sie lässt sich in einen endlichen Automaten umwandeln, ihre Sprache ist also regulär.",
         "leftLinear": "Ihre Regeln sind A → Bu, A → u oder A → ε, wie die linksregulären Grammatiken aus Skript 4.23: nicht Typ 3, aber ihre Sprache ist regulär.",
         "nonContracting": "Keine Regel verkürzt — eine nichtverkürzende Grammatik (Skript 12.5): nicht von der Form βAγ → βαγ, ihre Sprache ist dennoch kontextsensitiv (12.6)."
-      }
+      },
+      "cykCellHint": "Klicken: warum diese Variablen?",
+      "cykCellIntro": "das Teilwort „{{word}}“ ist aus diesen Variablen ableitbar:",
+      "cykCellEmpty": "Keine Variable leitet es ab (–)."
     },
     "machine": {
       "kind": {

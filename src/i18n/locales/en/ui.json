@@ -323,7 +323,10 @@
         "rightLinear": "Its rules are A → uB, A → u, A → B or A → ε (u a terminal word): not type 3 by the definition, but it turns into a finite automaton, so its language is regular.",
         "leftLinear": "Its rules are A → Bu, A → u or A → ε, like the left-regular grammars of lecture notes 4.23: not type 3, but its language is regular.",
         "nonContracting": "No rule shortens — a non-contracting grammar (lecture notes 12.5): not of the form βAγ → βαγ, yet its language is context-sensitive (12.6)."
-      }
+      },
+      "cykCellHint": "Click: why these variables?",
+      "cykCellIntro": "the subword \"{{word}}\" derives from these variables:",
+      "cykCellEmpty": "No variable derives it (–)."
     },
     "machine": {
       "kind": {

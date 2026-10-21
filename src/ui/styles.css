@@ -2504,3 +2504,9 @@ table.t.cyk tr.cyk-word th {
   overflow: hidden;
   font-family: var(--font-sans);
 }
+
+/* the CYK cell whose reasons are shown */
+table.t.cyk td.picked {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}

@@ -323,7 +323,10 @@
         "rightLinear": "A szabályai A → uB, A → u, A → B vagy A → ε alakúak (u terminális szó): a definíció szerint nem 3. típusú, de véges automatává alakítható, a nyelve tehát reguláris.",
         "leftLinear": "A szabályai A → Bu, A → u vagy A → ε alakúak, mint a jegyzet 4.23 bal-reguláris nyelvtanai: nem 3. típusú, de a nyelve reguláris.",
         "nonContracting": "Egyik szabály sem rövidít — nem csökkentő nyelvtan (jegyzet 12.5): nem βAγ → βαγ alakú, a nyelve mégis környezetfüggő (12.6)."
-      }
+      },
+      "cykCellHint": "Kattints: miért ezek a változók?",
+      "cykCellIntro": "a(z) „{{word}}” részszó ezekből a változókból vezethető le:",
+      "cykCellEmpty": "Egyik változóból sem vezethető le (–)."
     },
     "machine": {
       "kind": {

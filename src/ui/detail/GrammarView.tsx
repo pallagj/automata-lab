@@ -280,6 +280,8 @@ const CykCard: React.FC<{ membership: Membership; grammarName: string; epsilonFr
 }) => {
   const { t } = useTranslation();
   const { table, cnf, converted } = membership;
+  // the clicked cell, [length − 1, start]: its variables and how each got there
+  const [picked, setPicked] = useState<[number, number] | null>(null);
   if (!table || !cnf) return null;
   const n = table.word.length;
   const expr = epsilonFree ? `cnf(${grammarName})` : `cnf(epsfree(${grammarName}))`;
@@ -313,8 +315,15 @@ const CykCard: React.FC<{ membership: Membership; grammarName: string; epsilonFr
                     const cell = table.cells[j][i];
                     if (!cell) return <td key={i} className="void" />;
                     const hit = j === n - 1 && cell.has(cnf.start);
+                    const isPicked = picked?.[0] === j && picked?.[1] === i;
                     return (
-                      <td key={i} className={hit ? "hit" : undefined}>
+                      <td
+                        key={i}
+                        className={`${hit ? "hit" : ""} ${isPicked ? "picked" : ""}`}
+                        style={{ cursor: "pointer" }}
+                        title={t("detail.grammar.cykCellHint")}
+                        onClick={() => setPicked(isPicked ? null : [j, i])}
+                      >
                         {cell.size > 0 ? rich([...cell.keys()].join(", ")) : "–"}
                       </td>
                     );
@@ -330,6 +339,24 @@ const CykCard: React.FC<{ membership: Membership; grammarName: string; epsilonFr
             </tbody>
           </table>
         </div>
+        {picked && table.why[picked[0]]?.[picked[1]] && (
+          <div className="cyk-note" style={{ marginTop: 8 }}>
+            <b>{`T[${picked[0] + 1},${picked[1] + 1}]`}</b>
+            {" — "}
+            {t("detail.grammar.cykCellIntro", {
+              word: table.word.slice(picked[1], picked[1] + picked[0] + 1).join("")
+            })}
+            {table.why[picked[0]][picked[1]].size === 0 ? (
+              <div>{t("detail.grammar.cykCellEmpty")}</div>
+            ) : (
+              <ul style={{ margin: "4px 0 0", paddingLeft: 18 }}>
+                {[...table.why[picked[0]][picked[1]]].flatMap(([A, reasons]) =>
+                  reasons.map((r) => <li key={`${A}${r}`}>{rich(r)}</li>)
+                )}
+              </ul>
+            )}
+          </div>
+        )}
         {!converted && table.accepted && (
           <div className="cyk-note" style={{ marginTop: 8 }}>
             {table.trees === 1n

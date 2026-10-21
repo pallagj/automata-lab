@@ -357,6 +357,19 @@ describe("CYK (8.1)", () => {
     expect(r.trees).toBe(BigInt(countLeftmost(notes81, "baaba")));
   });
 
+  it("says why each variable is in a cell, as the notes explain T[2,1] and T[3,1]", () => {
+    const r = cyk(notes81, "baaba").value!;
+    const why = (j: number, i: number) => Object.fromEntries(r.why[j - 1][i - 1]);
+    expect(why(1, 2)).toEqual({ A: ["A → a"], C: ["C → a"] });
+    // T[2,1]: the pair T[1,1] = {B}, T[1,2] = {A, C} gives BA and BC
+    expect(why(2, 1)).toEqual({ A: ["A → BA: B ∈ T[1,1], A ∈ T[1,2]"], S: ["S → BC: B ∈ T[1,1], C ∈ T[1,2]"] });
+    // T[3,1]: no rule for AA, AC, SA, SC or BB — empty, as the notes cross it out
+    expect(why(3, 1)).toEqual({});
+    // every variable of every cell has a reason, and only those
+    for (let j = 0; j < r.cells.length; j++)
+      for (let i = 0; i < r.cells[j].length; i++) expect([...r.why[j][i].keys()].sort()).toEqual([...r.cells[j][i].keys()].sort());
+  });
+
   it("counts the derivation trees: S → SS | a gives the Catalan numbers", () => {
     const g = grammar("S", "S", "S -> SS | a", "a");
     const catalan = [1, 1, 2, 5, 14, 42, 132, 429];
