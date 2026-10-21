@@ -367,7 +367,8 @@ export const CellEditor: React.FC<Props> = ({ cell, index, result }) => {
         dropPos ? `drop-${dropPos}` : ""
       }`}
       onFocusCapture={() => setActiveCell(cell.id)}
-      onClick={() => setActiveCell(cell.id)}
+      // a click anywhere selects the cell, also where an inner part keeps the click to itself
+      onClickCapture={() => setActiveCell(cell.id)}
       onKeyDownCapture={(e) => {
         if (e.key === "Enter" && e.altKey) {
           e.preventDefault();

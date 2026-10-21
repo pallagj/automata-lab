@@ -511,7 +511,9 @@
       "newStorage": "neuer Speicher",
       "deleteRow": "Zeile löschen",
       "newRule": "neue Regel",
-      "newTransition": "neuer Übergang"
+      "newTransition": "neuer Übergang",
+      "transitions": "Übergänge",
+      "rules": "Regeln"
     },
     "insertMenu": {
       "buttonTitle": "Neue Zelle einfügen — wähle, was du möchtest",

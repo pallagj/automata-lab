@@ -1070,11 +1070,6 @@ details.card[open] > summary .chev {
   border-color: var(--accent);
 }
 
-.ef-rows {
-  display: flex;
-  flex-direction: column;
-}
-
 .ef-row {
   display: flex;
   gap: 5px;
@@ -1777,7 +1772,8 @@ details.card[open] > summary .chev {
 /* storage editor in the entity form */
 /* the machine's setup (storages, input, acceptance) under the kind's name: folded while the
    kind implies it, open otherwise */
-.ef-config {
+.ef-config,
+.ef-rows {
   display: flex;
   flex-direction: column;
   margin-top: 8px;
@@ -1785,7 +1781,7 @@ details.card[open] > summary .chev {
   border-top: 1px dashed var(--border-soft);
 }
 
-.ef-config-head {
+.ef-section-head {
   align-self: flex-start;
   display: inline-flex;
   align-items: center;
@@ -1800,22 +1796,28 @@ details.card[open] > summary .chev {
   text-align: left;
 }
 
-.ef-config-toggle {
+.ef-section-toggle {
   cursor: pointer;
 }
 
-.ef-config-toggle:hover {
+.ef-section-toggle:hover {
   color: var(--text);
   background: var(--bg-soft);
 }
 
-.ef-config-toggle svg {
+.ef-section-toggle svg {
   flex: none;
   transition: transform 0.15s;
 }
 
-.ef-config-toggle.open svg {
+.ef-section-toggle.open svg {
   transform: rotate(90deg);
+}
+
+.ef-count {
+  margin-left: 2px;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
 }
 
 .ef-config > .ef-grid {

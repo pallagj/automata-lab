@@ -511,7 +511,9 @@
       "newStorage": "new storage",
       "deleteRow": "Delete row",
       "newRule": "new rule",
-      "newTransition": "new transition"
+      "newTransition": "new transition",
+      "transitions": "Transitions",
+      "rules": "Rules"
     },
     "insertMenu": {
       "buttonTitle": "Insert a new cell — choose what you want",

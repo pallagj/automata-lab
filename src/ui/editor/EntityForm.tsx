@@ -333,6 +333,8 @@ export const EntityForm: React.FC<Props> = ({ source, onChange }) => {
   useEffect(() => {
     if (!followsKind) setConfigOpen(true);
   }, [followsKind]);
+  // a long list of transitions or rules can fold away; it starts open
+  const [rowsOpen, setRowsOpen] = useState(true);
   // an alphabet left out is the default one: the field shows what it is
   const resolved = useMemo(() => (draft?.kind === "machine" ? parseMachine(source).value : undefined), [source, draft?.kind]);
 
@@ -470,7 +472,6 @@ export const EntityForm: React.FC<Props> = ({ source, onChange }) => {
   return (
     <div
       className={`entity-form ${symbols ? "ef-symbols" : ""}`}
-      onClick={(e) => e.stopPropagation()}
       onKeyDownCapture={arrowKeysAcrossFields}
     >
       <div className="ef-grid">
@@ -508,7 +509,7 @@ export const EntityForm: React.FC<Props> = ({ source, onChange }) => {
         <div className="ef-config">
           {followsKind ? (
             <button
-              className={`ef-config-head ef-config-toggle ${configOpen ? "open" : ""}`}
+              className={`ef-section-head ef-section-toggle ${configOpen ? "open" : ""}`}
               onClick={() => setConfigOpen(!configOpen)}
               aria-expanded={configOpen}
               title={t("editor.form.configHint")}
@@ -517,7 +518,7 @@ export const EntityForm: React.FC<Props> = ({ source, onChange }) => {
               {kindName}
             </button>
           ) : (
-            <div className="ef-config-head">{kindName}</div>
+            <div className="ef-section-head">{kindName}</div>
           )}
           {configOpen && draft.storages.length > 0 && (
             <div className="ef-grid">
@@ -595,15 +596,24 @@ export const EntityForm: React.FC<Props> = ({ source, onChange }) => {
       )}
 
       <div className="ef-rows">
-        {k === "machine" && !symbols && <TransitionHead fields={fields} />}
-        {k === "grammar" && !symbols && (
+        <button
+          className={`ef-section-head ef-section-toggle ${rowsOpen ? "open" : ""}`}
+          onClick={() => setRowsOpen(!rowsOpen)}
+          aria-expanded={rowsOpen}
+        >
+          <ChevronRight size={13} />
+          {k === "grammar" ? t("editor.form.rules") : t("editor.form.transitions")}
+          <span className="ef-count">{draft.rows.length}</span>
+        </button>
+        {rowsOpen && k === "machine" && !symbols && <TransitionHead fields={fields} />}
+        {rowsOpen && k === "grammar" && !symbols && (
           <div className="ef-row ef-row-head">
             <span>{t("editor.form.col.leftSide")}</span>
             <span>{t("editor.form.col.rightSide")}</span>
             <span />
           </div>
         )}
-        {draft.rows.map((row, i) => {
+        {rowsOpen && draft.rows.map((row, i) => {
           if (k === "machine") {
             const from = row[0] ?? "";
             const to = row.length > 1 ? row[row.length - 1] : "";
@@ -642,9 +652,11 @@ export const EntityForm: React.FC<Props> = ({ source, onChange }) => {
             </div>
           );
         })}
-        <button className="ef-add" onClick={addRow}>
-          <Plus size={13} /> {k === "grammar" ? t("editor.form.newRule") : t("editor.form.newTransition")}
-        </button>
+        {rowsOpen && (
+          <button className="ef-add" onClick={addRow}>
+            <Plus size={13} /> {k === "grammar" ? t("editor.form.newRule") : t("editor.form.newTransition")}
+          </button>
+        )}
       </div>
 
       {kindChange && <KindChangeDialog req={kindChange} onClose={() => setKindChange(null)} />}

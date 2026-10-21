@@ -511,7 +511,9 @@
       "newStorage": "új tároló",
       "deleteRow": "Sor törlése",
       "newRule": "új szabály",
-      "newTransition": "új átmenet"
+      "newTransition": "új átmenet",
+      "transitions": "Átmenetek",
+      "rules": "Szabályok"
     },
     "insertMenu": {
       "buttonTitle": "Új cella beszúrása — válaszd ki, mit szeretnél",
