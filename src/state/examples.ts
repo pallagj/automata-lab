@@ -84,7 +84,7 @@ export const EXAMPLE_WORKSHEETS: ExampleWorksheet[] = [
     name: "ε-transitions — determinization and ε-removal",
     cells: [
       ENFA_A_OR_B,
-      "# The subset construction handles ε-transitions itself (lecture notes 2.16): the start state is E({S}), and a letter leads to the ε-closure of where it goes.",
+      "# The subset construction handles ε-transitions itself: the start state is E({S}), and a letter leads to the ε-closure of where it goes.",
       "D = det(N)",
       "M = min(D)",
       "# ε-removal is another way: it keeps the states and makes every ε-step a direct transition.",
@@ -136,7 +136,7 @@ export const EXAMPLE_WORKSHEETS: ExampleWorksheet[] = [
     - (q_1, b, A) -> (q_1, ε)
     - (q_1, ε, Z) -> (q_2, Z)
     - (q_0, ε, Z) -> (q_2, Z)`,
-      "# P accepts by final state. The same language by empty stack (lecture notes 7.9), and the context-free grammar of P (7.16): its variable [qAp] derives the words read while A, put on the stack in q, comes off in p. The construction makes every [qAp], useful or not — trim keeps the ones that derive a word.",
+      "# P accepts by final state. The same language by empty stack, and the context-free grammar of P: its variable [qAp] derives the words read while A, put on the stack in q, comes off in p. The construction makes every [qAp], useful or not — trim keeps the ones that derive a word.",
       "E = toEmptyStack(P)",
       "G = toGrammar(P)",
       "G_T = trim(G)",
@@ -187,7 +187,7 @@ export const EXAMPLE_WORKSHEETS: ExampleWorksheet[] = [
     - (back, a) -> (back, a, L)
     - (back, b) -> (back, b, L)
     - (back, _) -> (start, _, R)`,
-      "# A tape is infinite to the right only, as in the lecture notes — a head stepping left off its first cell halts the machine with an error. Adding 1 to a binary number may need a new digit left of the word (11 + 1 = 100), so this tape is infinite both ways.",
+      "# A tape is infinite to the right only — a head stepping left off its first cell halts the machine with an error. Adding 1 to a binary number may need a new digit left of the word (11 + 1 = 100), so this tape is infinite both ways.",
       `Machine:
   name: T_{inc}
   charset: 0, 1
@@ -206,7 +206,7 @@ export const EXAMPLE_WORKSHEETS: ExampleWorksheet[] = [
     - (carry, 1) -> (carry, 0, L)
     - (carry, 0) -> (done, 1, S)
     - (carry, _) -> (done, 1, S)`,
-      "# The palindrome machine of the lecture notes (example 9.4): x and y are tape symbols beyond Σ, so the tape has its own alphabet Γ.",
+      "# A Turing machine for palindromes: x and y are tape symbols beyond Σ, so the tape has its own alphabet Γ.",
       `Machine:
   name: T_{pal}
   charset: a, b
@@ -237,7 +237,7 @@ export const EXAMPLE_WORKSHEETS: ExampleWorksheet[] = [
     - (q_5, a) -> (q_5, a, L)
     - (q_5, b) -> (q_5, b, L)
     - (q_5, x) -> (q_0, x, R)`,
-      "# A 2-tape Turing machine (lecture notes 9.9) for aⁿbⁿ: the input tape t1 is only read, so δ writes on t2 alone — δ(q, a₁a₂) = (q′, b₂, d₁d₂). The second tape counts the a's, then every b takes one back. Its tapes have a first cell too, so the first a is marked Y — that is where the head of tape 2 must stop.",
+      "# A 2-tape Turing machine for aⁿbⁿ: the input tape t1 is only read, so δ writes on t2 alone — δ(q, a₁a₂) = (q′, b₂, d₁d₂). The second tape counts the a's, then every b takes one back. Its tapes have a first cell too, so the first a is marked Y — that is where the head of tape 2 must stop.",
       `Machine:
   name: T_2
   charset: a, b
@@ -316,7 +316,7 @@ export const EXAMPLE_WORKSHEETS: ExampleWorksheet[] = [
     - S -> aSb | ε`,
       "P = toPda(G_2)",
       "E = epsfree(G_2)",
-      "# A type-1 grammar for aⁿbⁿcⁿ: every rule rewrites one variable in place, βAγ → βαγ (lecture notes 4.14) — so CB → BC is done in four such steps.",
+      "# A type-1 grammar for aⁿbⁿcⁿ: every rule rewrites one variable in place, βAγ → βαγ — so CB → BC is done in four such steps.",
       `Grammar:
   name: G_1
   charset: a, b, c
@@ -332,7 +332,7 @@ export const EXAMPLE_WORKSHEETS: ExampleWorksheet[] = [
     - bB -> bb
     - bC -> bc
     - cC -> cc`,
-      "# The non-contracting grammar of example 12.7: Ba → aB is no βAγ → βαγ rule, so it is of type 0 — yet no rule shortens, and its language is context-sensitive (12.6).",
+      "# A non-contracting grammar: Ba → aB is no βAγ → βαγ rule, so it is of type 0 — yet no rule shortens, and its language is context-sensitive.",
       `Grammar:
   name: N
   charset: a, b, c
@@ -348,7 +348,7 @@ export const EXAMPLE_WORKSHEETS: ExampleWorksheet[] = [
     key: "cfgNormalForms",
     name: "Context-free grammars — normal forms and CYK",
     cells: [
-      "# The order of the lecture notes: ε-rules, unit rules, useless symbols, then the Chomsky normal form.",
+      "# Step by step: first the ε-rules go, then the unit rules, then the useless symbols, and last comes the Chomsky normal form.",
       `Grammar:
   name: G
   charset: a, b

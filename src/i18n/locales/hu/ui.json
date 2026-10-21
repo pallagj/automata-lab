@@ -25,7 +25,10 @@
     "openFolder": "Mappa megnyitása",
     "renameHint": "Kattints az átnevezéshez",
     "worksheetMenu": "Munkalap menü",
-    "settings": "Beállítások"
+    "settings": "Beállítások",
+    "github": "GitHub",
+    "reportIssue": "Hiba bejelentése vagy ötlet beküldése",
+    "sourceCode": "Forráskód a GitHubon"
   },
   "browser": {
     "title": "Munkalapok",
@@ -171,17 +174,24 @@
         "regex": "reguláris kifejezés mint érték — automatává a toFsm() alakítja",
         "equal": "ekvivalencia-vizsgálat, ellenpéldával",
         "conversions": "konverziók automata ↔ nyelvtan, automata → reguláris kifejezés, nyelvtan ↔ veremautomata",
-        "pdaAcceptance": "ugyanazt a nyelvet üres veremmel / állapottal elfogadó veremautomata (jegyzet 7.9)",
+        "pdaAcceptance": "ugyanazt a nyelvet üres veremmel / állapottal elfogadó veremautomata",
         "namedOps": "műveletek nevesített automaták között: összefűzés, unió, lezárás — betű-literálok csak a regex(…) belsejében"
       },
       "optionalName": "A név elhagyható: nélküle is megjelenik az eredmény, csak más cellából nem lehet rá hivatkozni."
     },
     "storages": {
       "heading": "Tárolók: verem, sor, szalag",
-      "example": "Machine:               # veremautomata: egy verem\n  name: P\n  charset: a, b\n  states: q_0, q_1, q_2\n  init: q_0\n  accept: q_2           # vagy acceptMode: emptyStorages\n  storages:\n    verem: stack       # Z-vel indul; ábécéje a használt jelek\n  transitions:         #   vagy: verem: { type: stack, charset: [Z, A], init: Z }\n    - (q_0, a, Z) -> (q_0, AZ)   # a-t olvas, Z a tetőn: Z helyett AZ\n    - (q_0, b, A) -> (q_1, ε)    # ε = nem ír semmit\n    - (q_1, ε, Z) -> (q_2, Z)    # ε-lépés (írd: eps)\n\nMachine:               # Turing-gép: egy szalag, rajta a bemenet\n  name: T\n  charset: a, b\n  states: s, ok\n  init: s\n  accept: ok\n  input: szalag        # a bemenet erre a tárolóra kerül\n  storages:\n    szalag:\n      type: tape\n      charset: a, b, x, _   # Γ: Σ, az üres jel (_) és más jelek (alapból Σ és _)\n  transitions:\n    - (s, a) -> (s, x, R)    # a-t olvas, x-et ír, jobbra lép (a YAML-ban R, L, S; a felület J, B, H)\n    - (s, _) -> (ok, _, S)   # _ = az üres jel\n\nMachine:               # kétszalagos Turing-gép: a bemenetet a t2-re másolja\n  charset: a, b\n  states: q_0, ok\n  init: q_0\n  accept: ok\n  input: t1            # a bemeneti szalag csak olvasható (jegyzet 9.9)\n  storages:\n    t1: tape           # t1: { type: tape, writable: true } — írható is\n    t2: tape\n  transitions:\n    - (q_0, a, _) -> (q_0, a, R, R)   # a-t és _-t olvas, a t2-re a-t ír, mindkét fej jobbra lép\n    - (q_0, b, _) -> (q_0, b, R, R)\n    - (q_0, _, _) -> (ok, _, S, S)",
-      "body1": "Egy átmenet úgy írandó, ahogy a jegyzet a δ-t írja:",
+      "example": "Machine:               # veremautomata: egy verem\n  name: P\n  charset: a, b\n  states: q_0, q_1, q_2\n  init: q_0\n  accept: q_2           # vagy acceptMode: emptyStorages\n  storages:\n    verem: stack       # Z-vel indul; ábécéje a használt jelek\n  transitions:         #   vagy: verem: { type: stack, charset: [Z, A], init: Z }\n    - (q_0, a, Z) -> (q_0, AZ)   # a-t olvas, Z a tetőn: Z helyett AZ\n    - (q_0, b, A) -> (q_1, ε)    # ε = nem ír semmit\n    - (q_1, ε, Z) -> (q_2, Z)    # ε-lépés (írd: eps)\n\nMachine:               # Turing-gép: egy szalag, rajta a bemenet\n  name: T\n  charset: a, b\n  states: s, ok\n  init: s\n  accept: ok\n  input: szalag        # a bemenet erre a tárolóra kerül\n  storages:\n    szalag:\n      type: tape\n      charset: a, b, x, _   # Γ: Σ, az üres jel (_) és más jelek (alapból Σ és _)\n  transitions:\n    - (s, a) -> (s, x, R)    # a-t olvas, x-et ír, jobbra lép (a YAML-ban R, L, S; a felület J, B, H)\n    - (s, _) -> (ok, _, S)   # _ = az üres jel\n\nMachine:               # kétszalagos Turing-gép: a bemenetet a t2-re másolja\n  charset: a, b\n  states: q_0, ok\n  init: q_0\n  accept: ok\n  input: t1            # a bemeneti szalag csak olvasható\n  storages:\n    t1: tape           # t1: { type: tape, writable: true } — írható is\n    t2: tape\n  transitions:\n    - (q_0, a, _) -> (q_0, a, R, R)   # a-t és _-t olvas, a t2-re a-t ír, mindkét fej jobbra lép\n    - (q_0, b, _) -> (q_0, b, R, R)\n    - (q_0, _, _) -> (ok, _, S, S)",
+      "body1": "Egy átmenet úgy írandó, mint a δ átmenetfüggvény:",
       "transitionSyntax": "(q, a, Z) -> (p, γ)",
-      "body2": "— δ argumentumai az állapot, az olvasott jel és amit az egyes tárolók olvasnak (a verem teteje, a szalag cellája); értéke a következő állapot és amit az egyes tárolók kapnak (a verembe írt szó; a szalagra írt jel), utána a szalagok fejeinek mozgása — ahogy a jegyzet írja: δ(q, a₁…a_k) = (q′, b₂…b_k, d₁…d_k). Ha a gépnek több tárolója van, a bemeneti szalagja csak olvasható, mint a jegyzet k-szalagos Turing-gépének első szalagja (9.9): erre nem ír, így δ értékében nincs is helye (writable: true esetén írható). A gráf élén szalagonként a → b áll (a csak olvasható szalagon csak az olvasott jel), utána a mozgások: a, _ → b, J, J. A szalag a jegyzethez hasonlóan az első cellájától jobbra végtelen: ha a fej balra lelép róla, a gép hibával megáll (infinite: both esetén két irányban végtelen). Akárhány tároló kombinálható, mindegyik egy argumentummal, a sorrendjükben: két veremmel már Turing-erejű gép építhető (pl. aⁿbⁿcⁿ, ami veremautomatával nem lehetséges), sorral (queue) sorautomata. Az automata-műveletek (det, min…) csak tárolómentes gépre alkalmazhatók — az alkalmazás megmondja, miért."
+      "body2": " — bal oldalon az állapot, az olvasott jel és amit az egyes tárolók olvasnak (a verem teteje, a szalagnak a fej alatti cellája); jobb oldalon a következő állapot, amit az egyes tárolók kapnak (a verembe írt szó, a szalagra írt jel), végül a szalagfejek mozgása (J, B vagy H).",
+      "points": {
+        "inputTape": "Több tároló esetén a bemeneti szalag csak olvasható: a gép csak olvassa a bemenetet, és a többi tárolóján dolgozik, így δ értékében nincs helye. writable: true esetén írható.",
+        "edge": "A gráf élén szalagonként a → b áll (csak olvasható szalagon csak az olvasott jel), utána a mozgások: a, _ → b, J, J.",
+        "tape": "A szalag az első cellájától jobbra végtelen; ha a fej balra lelép róla, a gép hibával megáll. infinite: both esetén mindkét irányban végtelen.",
+        "combine": "Akárhány tároló kombinálható, mindegyik egy argumentummal, a sorrendjükben: két veremmel már a Turing-géppel egyenértékű gép építhető (pl. aⁿbⁿcⁿ-re, amit veremautomata nem fogad el), sorral (queue) sorautomata.",
+        "ops": "Az automata-műveletek (det, min…) csak tároló nélküli gépre alkalmazhatók — ha nem alkalmazhatók, az alkalmazás megmondja, miért."
+      }
     },
     "grammar": {
       "heading": "Nyelvtan",
@@ -194,6 +204,10 @@
       "nfaBranch": "Szimuláció közben a kiemelt élekre kattintva NFA-ágat választhatsz.",
       "yaml": "A kifejezés-cellák eredménye a fejléc ikonjával szerkeszthető YAML-lá bontható.",
       "acceptedWords": "Az „Elfogadott szavak” chipjeire kattintva azonnal szimulálhatod őket."
+    },
+    "feedback": {
+      "body": "Hibát találtál, vagy van egy ötleted?",
+      "link": "Írd meg a GitHubon"
     }
   },
   "detail": {
@@ -237,7 +251,7 @@
       "optional": "opcionális",
       "emptyWord": "üres szó",
       "parens": "zárójelezés",
-      "toFsmHint": "Új cella: a kifejezés automatája (jegyzet 3.20)",
+      "toFsmHint": "Új cella: a kifejezés automatája",
       "toFsmLabel": "átalakítás ε-NFA-vá",
       "structure": "A kifejezés szerkezete",
       "wordTest": "Szó-teszt",
@@ -314,7 +328,7 @@
       "noDerivableWords": "Nem található levezethető szó 8 hosszig.",
       "moreWordsPossible": "…a nyelv ennél bővebb lehet (a felsorolás 8 hosszig terjed).",
       "cnfBadge": "Chomsky-normálforma",
-      "cykTitle": "CYK-táblázat (jegyzet 8.1)",
+      "cykTitle": "CYK-táblázat",
       "cykIntro": "A j. sor i. cellájában azok a változók állnak, amelyekből az i. betűtől induló, j hosszú részszó levezethető; a szó akkor vezethető le, ha a kezdőváltozó a legfelső cellában van.",
       "cykConverted": "A nyelvtan nem Chomsky-normálformájú, ezért a táblázat a(z) {{expr}} nyelvtanon készült:",
       "cykUnambiguous": "A szónak pontosan egy levezetési fája van.",
@@ -322,10 +336,10 @@
       "exact": "pontos döntés a CYK-algoritmussal",
       "toEpsilonFree": "ε-mentesítés",
       "notes": {
-        "contextFreeForm": "Minden szabály A → α alakú, csak az ε-szabályok miatt nem 2. típusú: ε-mentesítéssel (jegyzet 6.3.1) 2. típusúvá alakítható, a nyelve tehát környezetfüggetlen (6.14).",
+        "contextFreeForm": "Minden szabály A → α alakú, csak az ε-szabályok miatt nem 2. típusú: ε-mentesítéssel 2. típusúvá alakítható, a nyelve tehát környezetfüggetlen.",
         "rightLinear": "A szabályai A → uB, A → u, A → B vagy A → ε alakúak (u terminális szó): a definíció szerint nem 3. típusú, de véges automatává alakítható, a nyelve tehát reguláris.",
-        "leftLinear": "A szabályai A → Bu, A → u vagy A → ε alakúak, mint a jegyzet 4.23 bal-reguláris nyelvtanai: nem 3. típusú, de a nyelve reguláris.",
-        "nonContracting": "Egyik szabály sem rövidít — nem csökkentő nyelvtan (jegyzet 12.5): nem βAγ → βαγ alakú, a nyelve mégis környezetfüggő (12.6)."
+        "leftLinear": "A szabályai A → Bu, A → u vagy A → ε alakúak — bal-reguláris nyelvtan: nem 3. típusú, de a nyelve reguláris.",
+        "nonContracting": "Egyik szabály sem rövidít — nem csökkentő nyelvtan: nem βAγ → βαγ alakú, a nyelve mégis környezetfüggő."
       },
       "cykCellHint": "Kattints: miért ezek a változók?",
       "cykCellIntro": "a(z) „{{word}}” részszó ezekből a változókból vezethető le:",
@@ -383,7 +397,7 @@
       "tapeStartPlaceholder": "a szalag kezdete — kattints és gépelj",
       "oneStepAllBranches": "Egy lépés (minden ág)",
       "hitLimit": "korlátba ütközött",
-      "decidedByGrammar": "Pontos döntés: CYK (jegyzet 8.1) a veremautomata nyelvtanán (7.16)",
+      "decidedByGrammar": "Pontos döntés: CYK a veremautomata nyelvtanán",
       "step": "Lépés: {{n}}",
       "nondeterministicStepInfo": "A gép nemdeterminisztikus: egyszerre minden lehetséges ágat követünk. Lépés: {{n}} · aktív konfigurációk: {{count}}",
       "noMoreBranches": "Nincs több folytatható ág — a szó elutasítva.",
@@ -392,16 +406,16 @@
       "topLeft": "tető balra",
       "frontLeft": "eleje balra",
       "moreConfigs": "… és még {{count}} konfiguráció",
-      "fellOff": "A(z) {{id}} szalag feje balra lelépett a szalag első cellájáról — a gép hibával megáll, ez az ág elutasít (jegyzet 9.1).",
+      "fellOff": "A(z) {{id}} szalag feje balra lelépett a szalag első cellájáról — a gép hibával megáll, ez az ág elutasít.",
       "fellOffShort": "leesett a(z) {{id}} szalagról",
       "fellOffCell": "a fej itt lelépett a szalagról",
       "firstCell": "a szalag első cellája — a szalag csak jobbra végtelen",
       "tapeBothWays": "{{id}}: két irányban végtelen",
-      "tapeBothWaysHint": "Ennek a szalagnak nincs első cellája, a fej korlátlanul léphet balra. A jegyzet szalagja csak jobbra végtelen (infinite: right, ez az alapértelmezés).",
+      "tapeBothWaysHint": "Ennek a szalagnak nincs első cellája, a fej korlátlanul léphet balra. Alapból a szalag csak jobbra végtelen (infinite: right).",
       "tapeReadOnly": "{{id}}: csak olvasható",
       "tapeReadOnlyHint": "Erre a szalagra a gép nem ír, csak olvassa (writable: false).",
       "inputTapeWritable": "{{id}}: írható bemeneti szalag",
-      "inputTapeWritableHint": "A jegyzet k-szalagos Turing-gépén (9.9) a bemeneti szalag csak olvasható; ez a gép írhat is rá (writable: true)."
+      "inputTapeWritableHint": "Alapból a több tárolós gép bemeneti szalagja csak olvasható; ez a gép írhat is rá (writable: true)."
     }
   },
   "editor": {
@@ -524,8 +538,8 @@
       "readHead": "olvasófej",
       "writtenToStorage": "a(z) {{id}} tárolóra írva",
       "inputTape": "Bemeneti szalag",
-      "inputTapeHint": "A jegyzet k-szalagos Turing-gépe (9.9) a bemeneti szalagot csak olvassa, a többi szalag munkaszalag. Írható bemeneti szalaggal a gép a bemenetet is átírhatja (writable: true).",
-      "inputTapeReadOnly": "csak olvasható (jegyzet 9.9)",
+      "inputTapeHint": "A gép alapból csak olvassa a bemeneti szalagot, a többi szalag munkaszalag. Írható bemeneti szalaggal a gép a bemenetet is átírhatja (writable: true).",
+      "inputTapeReadOnly": "csak olvasható",
       "inputTapeWritable": "írható is",
       "acceptance": "Elfogadás",
       "acceptFinalState": "elfogadó állapottal",

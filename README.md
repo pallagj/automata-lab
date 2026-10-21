@@ -18,12 +18,12 @@ an app; everything runs locally, no account needed.
 - **Smart operations with explanations:** `det`, `min`, `epsfree`, `complete`, `reachable`,
   `complement`, `union`, `intersect`, `difference`, `concat`, `star`, `reverse`, `regex`, `equal`,
   `toGrammar`, `toRegex`, `toFsm`, `toPda`, for grammars `epsfree`, `unitfree`, `trim`, `cnf`, and
-  for pushdown automata `toEmptyStack`, `toFinalState` (lecture notes 7.9) and `toGrammar`: the
-  grammar of the [qAp] variables (7.16). A pushdown automaton's word test is exact — CYK on that
+  for pushdown automata `toEmptyStack`, `toFinalState` and `toGrammar`: the
+  grammar of the [qAp] variables. A pushdown automaton's word test is exact — CYK on that
   grammar — where a search over its configurations could only give up.
   When a precondition is missing (e.g. minimisation needs a complete
   deterministic automaton), the app **explains why** and inserts the fix chain with one click
-  (e.g. `min(det(M))`). Determinisation follows the lecture notes: the subset construction
+  (e.g. `min(det(M))`). In determinisation the subset construction
   handles ε-transitions itself, through ε-closures.
 - **"How was it built?" panel:** the recorded steps of each algorithm — powerset table, partition
   refinement rounds, ε-closures, product construction table, the r(p, q, t) tables of the
@@ -31,14 +31,14 @@ an app; everything runs locally, no account needed.
   panels over the graph can be enlarged to the whole canvas for a long table.
 - **Equivalence check with a counterexample:** `equal(A, B)` returns the shortest distinguishing word.
 - **Regular expressions** as values of their own: syntax tree, word test, sample matching words,
-  and `toFsm()` built as the lecture notes prove a regular expression regular (3.20): small
+  and `toFsm()` built inside out: small
   automata for a letter, ε and ∅, then the union, concatenation and closure constructions. The
-  way back, `toRegex(M)`, uses the r(p, q, t) dynamic programming of the lecture notes,
+  way back, `toRegex(M)`, uses the r(p, q, t) dynamic programming,
   simplifying with identities that always hold.
 - **Pushdown automata:** true nondeterministic simulation over configuration sets, stack display,
   acceptance by empty stack or by final state.
 - **Turing machines:** tape visualisation, step-by-step execution, nondeterminism detection and
-  branch selection. Transitions read as in the lecture notes, `a → b, D` (and `a; Z → AZ` for a
+  branch selection. Transitions read `a → b, D` (and `a; Z → AZ` for a
   pushdown automaton); the head moves are `R`, `L`, `S` in the YAML and shown in the interface's
   language (J, B, H in Hungarian).
 - **General machine model:** every machine is a restriction of one model — a finite control plus any
@@ -49,7 +49,7 @@ an app; everything runs locally, no account needed.
   gated by capability.
 - **Grammars:** exact Chomsky classification — for every level it shows *which rule violates the
   condition and why*; word generation with derivations, RG ↔ NFA and CFG → PDA conversions.
-  Context-free grammars follow the lecture notes step by step: ε-rule elimination (`epsfree(G)`),
+  Context-free grammars are simplified step by step: ε-rule elimination (`epsfree(G)`),
   unit rules (`unitfree(G)`), useless symbols (`trim(G)`) and the Chomsky normal form (`cnf(G)`).
   Their derivability test is an exact decision with the **CYK algorithm**, showing the triangular
   table and the number of derivation trees (more than one proves the grammar ambiguous).
@@ -90,7 +90,7 @@ Machine:
   init: S
   accept: F
   transitions:
-    - (S, a) -> S      # δ(S, a) = S, as in the lecture notes
+    - (S, a) -> S      # δ(S, a) = S
     - (S, b) -> S
     - (S, a) -> A
     - (A, b) -> F
@@ -134,12 +134,15 @@ finished string — the UI resolves it in the current language with the `tr()` h
 
 ## Contributing
 
-Contributions are welcome — bug reports, ideas, new algorithms, examples or translations. Fork the
-repository and open a pull request.
+Contributions are welcome — bug reports, ideas, new algorithms, examples or translations. Found a
+bug or have an idea? [Open an issue](https://github.com/pallagj/automata-lab/issues/new) (the
+GitHub icon in the app's header leads there too). For code, fork the repository and open a pull
+request.
 
 - Code, comments and commit messages are in English.
 - User-facing text goes through i18n: add new keys to all three locales in `src/i18n/locales/`
-  (`en`, `de`, `hu`).
+  (`en`, `de`, `hu`). It stands on its own — no references to course material or its section
+  numbers (`src/i18n/terminology.test.ts` checks this).
 - Run `npm test` and `npm run build` before opening a pull request.
 
 ## Acknowledgements

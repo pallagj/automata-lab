@@ -4,7 +4,7 @@ import { useTranslation } from "react-i18next";
 import { Plus, Trash2, X } from "lucide-react";
 import { EdgeMiddle, StatePatch } from "./editing";
 import { SymbolField } from "../editor/SymbolField";
-import { emptyFields, TransitionField, TransitionHead, TransitionRow } from "../editor/TransitionRow";
+import { DeltaRows, emptyFields, TransitionField, TransitionHead, TransitionRow } from "../editor/TransitionRow";
 import { arrowKeysAcrossFields } from "../editor/formNav";
 import { useAppStore } from "../../state/store";
 import { rich } from "../Rich";
@@ -135,6 +135,20 @@ export const EdgeDialog: React.FC<EdgeDialogProps> = ({ fields, from, to, initia
     onClose();
   };
 
+  const transitionRow = (row: string[], i: number) => (
+    <TransitionRow
+      key={i}
+      fields={fields}
+      notation={notation}
+      from={from}
+      to={to}
+      values={row}
+      onChange={(values) => setRows((rs) => rs.map((r, k) => (k === i ? values : r)))}
+      onRemove={() => setRows((rs) => rs.filter((_, k) => k !== i))}
+      onEnter={save}
+    />
+  );
+
   return (
     <Modal
       title={
@@ -148,19 +162,7 @@ export const EdgeDialog: React.FC<EdgeDialogProps> = ({ fields, from, to, initia
       <div className="gd-body">
         <div className="ef-rows" onKeyDownCapture={arrowKeysAcrossFields}>
           {!notation && <TransitionHead fields={fields} />}
-          {rows.map((row, i) => (
-            <TransitionRow
-              key={i}
-              fields={fields}
-              notation={notation}
-              from={from}
-              to={to}
-              values={row}
-              onChange={(values) => setRows((rs) => rs.map((r, k) => (k === i ? values : r)))}
-              onRemove={() => setRows((rs) => rs.filter((_, k) => k !== i))}
-              onEnter={save}
-            />
-          ))}
+          {notation ? <DeltaRows fields={fields}>{rows.map(transitionRow)}</DeltaRows> : rows.map(transitionRow)}
         </div>
         <button className="ef-add" onClick={() => setRows((rs) => [...rs, emptyFields(fields)])}>
           <Plus size={13} /> {t("graph.edgeDialog.addRow")}

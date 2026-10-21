@@ -52,13 +52,12 @@
     },
     "step": {
       "build": {
-        "title": "Automat aus dem Ausdruck (Skript 3.20)",
-        "detail": "Der Ausdruck wird von innen nach außen gebaut, so wie 3.20 seine Sprache als regulär beweist. Ein Buchstabe a bekommt einen einzigen a-Übergang, ε einen einzigen akzeptierenden Zustand, ∅ einen einzigen nie akzeptierenden Zustand (3.3). r₁ + r₂: ein neuer Startzustand mit ε-Übergängen in beide Startzustände, akzeptierend, wo einer von beiden es ist (3.4). r₁r₂: ε-Übergänge von den akzeptierenden Zuständen des ersten in den Start des zweiten, akzeptierend, wo der zweite es ist (3.9). r*: ein neuer, ebenfalls akzeptierender Startzustand mit einem ε-Übergang in den alten Start und ε-Übergängen zurück von den akzeptierenden Zuständen (3.10). r? bedeutet r + ε. Ergebnis: {{count}} Zustände — det(·) macht daraus einen DFA."
+        "title": "Automat aus dem Ausdruck",
+        "detail": "Der Ausdruck wird von innen nach außen gebaut: der Automat jedes Teilausdrucks entsteht aus den Automaten seiner Teile. Ein Buchstabe a bekommt einen einzigen a-Übergang, ε einen einzigen akzeptierenden Zustand, ∅ einen einzigen nie akzeptierenden Zustand. r₁ + r₂: ein neuer Startzustand mit ε-Übergängen in beide Startzustände, akzeptierend, wo einer von beiden es ist. r₁r₂: ε-Übergänge von den akzeptierenden Zuständen des ersten in den Start des zweiten, akzeptierend, wo der zweite es ist. r*: ein neuer, ebenfalls akzeptierender Startzustand mit einem ε-Übergang in den alten Start und ε-Übergängen zurück von den akzeptierenden Zuständen. r? bedeutet r + ε. Ergebnis: {{count}} Zustände — det(·) macht daraus einen DFA."
       }
     },
     "table": {
       "subexpression": "Teilausdruck",
-      "section": "Skript",
       "added": "neue Übergänge",
       "start": "Start",
       "accepting": "akzeptierend"
@@ -234,7 +233,7 @@
     },
     "badInfinite": {
       "title": "Speicher „{{id}}“: unbekannte Bandausdehnung „{{value}}“",
-      "detail": "infinite: right — ein Band, das ab seiner ersten Zelle nach rechts unendlich ist, wie im Skript (der Standard); infinite: both — ein beidseitig unendliches Band."
+      "detail": "infinite: right — ein Band, das ab seiner ersten Zelle nach rechts unendlich ist (der Standard); infinite: both — ein beidseitig unendliches Band."
     },
     "writableOnlyForTape": {
       "title": "Speicher „{{id}}“: writable gilt nur für ein Band",
@@ -242,13 +241,13 @@
     },
     "badWritable": {
       "title": "Speicher „{{id}}“: writable ist true oder false, nicht „{{value}}“",
-      "detail": "writable: true — die Maschine darf auch auf das Band schreiben; writable: false — sie liest es nur. Standardmäßig ist das Eingabeband einer Maschine mit mehreren Speichern nur lesbar, wie bei der k-Band-Turingmaschine des Skripts (9.9); jedes andere Band ist beschreibbar."
+      "detail": "writable: true — die Maschine darf auch auf das Band schreiben; writable: false — sie liest es nur. Standardmäßig ist das Eingabeband einer Maschine mit mehreren Speichern nur lesbar (die Maschine arbeitet auf ihren anderen Speichern); jedes andere Band ist beschreibbar."
     }
   },
   "ops": {
     "needsDeterministic": {
       "title": "Die Operation {{op}} benötigt einen deterministischen Automaten",
-      "detail": "Nichtdeterminismus gefunden: {{spots}}{{ellipsis}}. In einem deterministischen Automaten hat jedes (Zustand, Symbol)-Paar genau einen Folgezustand, und es gibt keinen ε-Übergang. Die Teilmengenkonstruktion (Determinisierung, Skript 2.16) baut einen äquivalenten DFA, ε-Übergänge eingeschlossen."
+      "detail": "Nichtdeterminismus gefunden: {{spots}}{{ellipsis}}. In einem deterministischen Automaten hat jedes (Zustand, Symbol)-Paar genau einen Folgezustand, und es gibt keinen ε-Übergang. Die Teilmengenkonstruktion (Determinisierung) baut einen äquivalenten DFA, ε-Übergänge eingeschlossen."
     },
     "needsComplete": {
       "title": "Die Operation {{op}} benötigt einen vollständigen Automaten",
@@ -296,7 +295,7 @@
         "detail": "Jedes (Zustand, Symbol)-Paar hat höchstens einen Übergang und es gibt keinen ε-Übergang — die Teilmengenkonstruktion erzeugt nur die erreichbaren einelementigen Mengen (und ∅, wo ein Übergang fehlt)."
       },
       "step": {
-        "title": "Teilmengenkonstruktion (Skript 2.16)",
+        "title": "Teilmengenkonstruktion",
         "detail": "Die neuen Zustände sind Mengen der alten; der Startzustand ist {{start}}. Für jede erreichte Menge R und jeden Buchstaben a: δ'(R, a) = ⋃ δ(r, a) über r ∈ R — hat R mehrere Elemente, werden die Teile einzeln gezeigt. Nur die vom Start aus erreichbaren Mengen werden gebaut, und eine Menge akzeptiert, wenn sie einen akzeptierenden Zustand enthält.",
         "detailEpsilon": "Die neuen Zustände sind Mengen der alten; der Startzustand ist {{startExpr}} = {{start}}. Für jede erreichte Menge R und jeden Buchstaben a: δ'(R, a) = ⋃ E(δ(r, a)) über r ∈ R — ein Buchstabe wird gelesen, danach dürfen ε-Übergänge folgen. Hat R mehrere Elemente, werden die Teile E(δ(r, a)) einzeln gezeigt. Nur die vom Start aus erreichbaren Mengen werden gebaut, und eine Menge akzeptiert, wenn sie einen akzeptierenden Zustand enthält."
       },
@@ -305,7 +304,7 @@
         "detail": "{{count}} Zustände entstanden aus den möglichen 2^{{exponent}} = {{possible}} Teilmengen. Akzeptierend: {{accept}}."
       },
       "closures": {
-        "title": "ε-Hüllen (Skript 2.16)",
+        "title": "ε-Hüllen",
         "detail": "E(q) ist die Menge der Zustände, die von q aus über ε-Übergänge — beliebig viele — erreichbar sind, q eingeschlossen. Der neue Automat rechnet mit diesen Hüllen: sein Startzustand ist die Hülle des Startzustands, und nach einem Buchstaben nimmt er die Hülle dessen, wohin der Buchstabe führt."
       },
       "emptySet": {
@@ -324,7 +323,7 @@
         "fixLabel": "Automatischen Namen verwenden"
       },
       "step": {
-        "title": "Einführen des Fangzustands: {{trap}} (Skript 2.10)",
+        "title": "Einführen des Fangzustands: {{trap}}",
         "detail": "Der neue Zustand {{trap}} ist nicht akzeptierend, und bei jedem Symbol geht er in sich selbst über — von hier aus kann nicht mehr akzeptiert werden. Die fehlenden Übergänge werden hierher geleitet."
       }
     },
@@ -341,23 +340,23 @@
     "min": {
       "unreachableStates": {
         "title": "Unerreichbare Zustände",
-        "detail": "Kein Wort führt vom Startzustand nach {{states}}. Das Skript (2.29) lässt solche Zustände aus dem fertigen Automaten weg; hier fallen sie zuerst weg, mit demselben Ergebnis."
+        "detail": "Kein Wort führt vom Startzustand nach {{states}}. Im minimalen Automaten haben sie keinen Platz, also fallen sie zuerst weg — das Ergebnis ist dasselbe, wie wenn sie am Ende wegfielen."
       },
       "step0": {
         "title": "Unerreichbare Zustände weglassen",
         "detail": "Entfernt: {{removed}}."
       },
       "step1": {
-        "title": "Anfangspartition: 0-Äquivalenz (Skript 2.4.1)",
+        "title": "Anfangspartition: 0-Äquivalenz",
         "detail": "A₁ = Q − F und A₂ = F: schon das leere Wort unterscheidet die nicht akzeptierenden von den akzeptierenden Zuständen. {{partition}}"
       },
       "refine": {
         "title": "Runde {{round}}: {{round}}-Äquivalenz",
-        "detail": "Zwei Zustände bleiben zusammen, wenn jeder Buchstabe sie in dieselbe Gruppe führt. Aufgeteilt: {{splits}}. Neue Partition: {{partition}}. Jetzt sind die Zustände zusammen, die kein Wort der Länge höchstens {{round}} unterscheidet ({{round}}-Äquivalenz, 2.27)."
+        "detail": "Zwei Zustände bleiben zusammen, wenn jeder Buchstabe sie in dieselbe Gruppe führt. Aufgeteilt: {{splits}}. Neue Partition: {{partition}}. Jetzt sind die Zustände zusammen, die kein Wort der Länge höchstens {{round}} unterscheidet ({{round}}-Äquivalenz)."
       },
       "fixpoint": {
         "title": "Runde {{round}}: nichts teilt sich",
-        "detail": "In jeder Gruppe führt jeder Buchstabe alle Zustände in dieselbe Gruppe: die {{round}}-Äquivalenz ist dieselbe wie die {{prev}}-Äquivalenz, und dann unterscheidet auch kein längeres Wort die Zustände (2.27). Die Gruppen sind die Äquivalenzklassen: {{partition}}."
+        "detail": "In jeder Gruppe führt jeder Buchstabe alle Zustände in dieselbe Gruppe: die {{round}}-Äquivalenz ist dieselbe wie die {{prev}}-Äquivalenz, und dann unterscheidet auch kein längeres Wort die Zustände. Die Gruppen sind die Äquivalenzklassen: {{partition}}."
       },
       "alreadyMinimal": {
         "title": "Der Automat war bereits minimal",
@@ -368,7 +367,7 @@
         "detail": "Zustände in derselben Klasse sind sprachlich nicht unterscheidbar: Sie akzeptieren/verwerfen jedes Wort gleich."
       },
       "build": {
-        "title": "Der neue Automat aus den Klassen (Skript 2.29)",
+        "title": "Der neue Automat aus den Klassen",
         "detail": "Jede Klasse ist ein Zustand. Ein Buchstabe führt alle Zustände einer Klasse in dieselbe Klasse — das ist der Übergang. Der Startzustand ist die Klasse des alten, {{start}}; akzeptierend sind die Klassen akzeptierender Zustände: {{accept}}."
       },
       "table": {
@@ -387,7 +386,7 @@
         "detail": "Fehlt irgendwo ein Übergang, „hängt“ der Automat fest und verwirft. Diese Wörter müsste das Komplement eigentlich akzeptieren — dafür muss der Automat zuerst mit einem Fangzustand vervollständigt werden."
       },
       "step": {
-        "title": "Umdrehen der akzeptierenden Zustände (Skript 3.6)",
+        "title": "Umdrehen der akzeptierenden Zustände",
         "detail": "In einem vollständigen DFA durchläuft jedes Wort genau einen Pfad, daher ergibt das Vertauschen von akzeptierenden/verwerfenden Zuständen genau die Komplementsprache. Neue Menge akzeptierender Zustände: {{accept}}."
       }
     },
@@ -413,12 +412,12 @@
         "difference": "(p,q) ist akzeptierend, wenn p akzeptierend ist, q aber NICHT (L₁ \\ L₂)"
       },
       "step": {
-        "title": "Produktkonstruktion ({{mode}}, Skript 3.4)",
+        "title": "Produktkonstruktion ({{mode}})",
         "detail": "Die beiden Automaten laufen parallel: Die Zustände sind (p,q)-Paare, δ((p,q),a) = (δ₁(p,a), δ₂(q,a)). Akzeptanz: {{acceptRule}}. Es werden nur erreichbare Paare aufgebaut."
       },
       "extend": {
-        "title": "Der {{part}} Automat über dem gemeinsamen Alphabet (Skript 3.4)",
-        "detail": "{{name}} hat keinen Übergang mit {{missing}}: über Σ = {{sigma}} ist er ein unvollständiger Automat, also wird er zuerst vervollständigt (2.10) — jeder fehlende Übergang führt in einen neuen Fangzustand {{trap}}, der nie verlassen wird. Seine Sprache ändert sich nicht."
+        "title": "Der {{part}} Automat über dem gemeinsamen Alphabet",
+        "detail": "{{name}} hat keinen Übergang mit {{missing}}: über Σ = {{sigma}} ist er ein unvollständiger Automat, also wird er zuerst vervollständigt — jeder fehlende Übergang führt in einen neuen Fangzustand {{trap}}, der nie verlassen wird. Seine Sprache ändert sich nicht."
       }
     },
     "unionEpsilon": {
@@ -427,31 +426,31 @@
         "detail": "Von einem neuen Startzustand führt je ein ε-Übergang zu den Startzuständen beider Automaten. Das Ergebnis ist ein ε-NFA — det(·) macht daraus einen DFA. (Die Vereinigung vollständiger DFAs lässt sich auch mit der Produktkonstruktion bilden.)"
       },
       "step": {
-        "title": "Vereinigung mit ε-Übergängen (Skript 3.4)",
+        "title": "Vereinigung mit ε-Übergängen",
         "detail": "Neuer Startzustand {{start}}, ε-Übergänge: {{start}} → {{m1start}}, {{start}} → {{bstart}}. Akzeptierende Zustände: die Vereinigung der akzeptierenden Zustände beider Automaten."
       }
     },
     "concat": {
       "step": {
-        "title": "Verkettung (Skript 3.9)",
+        "title": "Verkettung",
         "detail": "Von jedem akzeptierenden Zustand des ersten Automaten führt ein ε-Übergang zum Startzustand des zweiten ({{start}}). Akzeptierend: nur die akzeptierenden Zustände des zweiten Automaten. Das Ergebnis ist ein ε-NFA."
       }
     },
     "star": {
       "step": {
-        "title": "Kleene-Abschluss (Stern, Skript 3.10)",
+        "title": "Kleene-Abschluss (Stern)",
         "detail": "Neuer Startzustand {{start}} (zugleich akzeptierend — so ist auch das leere Wort in der Sprache), ein ε-Übergang zum ursprünglichen Startzustand, und von jedem akzeptierenden Zustand ein ε-Übergang zurück zu {{start}} für die Wiederholung."
       }
     },
     "reverse": {
       "step": {
-        "title": "Umkehrung (Skript 4.23)",
+        "title": "Umkehrung",
         "detail": "Die Richtung jedes Übergangs wird umgekehrt, vom neuen Startzustand ({{start}}) führt ein ε-Übergang zu den ursprünglichen akzeptierenden Zuständen, und der ursprüngliche Startzustand wird der einzige akzeptierende. L(Mᴿ) = { wᴿ : w ∈ L(M) }."
       }
     },
     "toRegex": {
       "numbering": {
-        "title": "Nummerierung der Zustände (Skript 3.21)",
+        "title": "Nummerierung der Zustände",
         "detail": "Die Zustände werden mit 1…{{n}} nummeriert; der Startzustand {{start}} erhält die 1. r(p, q, t) beschreibt die Wörter, die von Zustand p nach Zustand q führen, wobei jeder Zwischenzustand unter 1…t liegt."
       },
       "base": {
@@ -495,17 +494,17 @@
         "detail": "In jedem erreichbaren (p,q)-Zustandspaar des Produktautomaten stimmt der Akzeptanzstatus von p und q überein, es gibt also kein unterscheidendes Wort — die beiden Automaten erkennen dieselbe Sprache."
       },
       "det": {
-        "title": "{{name}} determinisieren (Skript 2.16)",
+        "title": "{{name}} determinisieren",
         "detail": "{{name}} ist kein vollständiger deterministischer Automat, also macht die Teilmengenkonstruktion daraus einen vollständigen DFA: {{count}} Zustände."
       },
       "extend": {
-        "title": "{{name}} über dem gemeinsamen Alphabet (Skript 2.10)",
+        "title": "{{name}} über dem gemeinsamen Alphabet",
         "detail": "{{name}} hat keinen Übergang mit {{missing}}: diese Buchstaben führen in einen neuen Fangzustand {{trap}}, so ist das Alphabet gemeinsam und die Sprache bleibt dieselbe."
       },
       "search": {
-        "title": "Suche nach einem unterscheidenden Wort im Produktautomaten (Skript 5.3)",
-        "detailFound": "L({{a}}) = L({{b}}) genau dann, wenn (L({{a}}) ∩ ¬L({{b}})) ∪ (¬L({{a}}) ∩ L({{b}})) = ∅ (5.3). Die beiden Automaten laufen nebeneinander (der Produktautomat, 3.4), und eine Breitensuche sucht das erste erreichbare Paar (p, q), in dem genau einer akzeptiert. Die Tabelle zeigt die Paare in der Reihenfolge der Suche, bis zum gefundenen.",
-        "detailNone": "L({{a}}) = L({{b}}) genau dann, wenn (L({{a}}) ∩ ¬L({{b}})) ∪ (¬L({{a}}) ∩ L({{b}})) = ∅ (5.3). Die beiden Automaten laufen nebeneinander (der Produktautomat, 3.4): in allen {{count}} erreichbaren Paaren (p, q) akzeptieren beide oder verwerfen beide, also ist die Sprache der Differenz leer."
+        "title": "Suche nach einem unterscheidenden Wort im Produktautomaten",
+        "detailFound": "L({{a}}) = L({{b}}) genau dann, wenn (L({{a}}) ∩ ¬L({{b}})) ∪ (¬L({{a}}) ∩ L({{b}})) = ∅. Die beiden Automaten laufen nebeneinander (der Produktautomat), und eine Breitensuche sucht das erste erreichbare Paar (p, q), in dem genau einer akzeptiert. Die Tabelle zeigt die Paare in der Reihenfolge der Suche, bis zum gefundenen.",
+        "detailNone": "L({{a}}) = L({{b}}) genau dann, wenn (L({{a}}) ∩ ¬L({{b}})) ∪ (¬L({{a}}) ∩ L({{b}})) = ∅. Die beiden Automaten laufen nebeneinander (der Produktautomat): in allen {{count}} erreichbaren Paaren (p, q) akzeptieren beide oder verwerfen beide, also ist die Sprache der Differenz leer."
       },
       "table": {
         "word": "Wort dorthin"
@@ -515,7 +514,7 @@
   "grammar": {
     "needsContextFree": {
       "title": "Diese Operation ({{op}}) braucht Regeln der Form A → α",
-      "detail": "Auf jeder linken Regelseite muss genau eine Variable stehen (Skript 6.3.1) — ε-Regeln sind erlaubt. Das Chomsky-Klassifikationspanel zeigt, welche Regel das verletzt."
+      "detail": "Auf jeder linken Regelseite muss genau eine Variable stehen — ε-Regeln sind erlaubt. Das Chomsky-Klassifikationspanel zeigt, welche Regel das verletzt."
     },
     "classify": {
       "startEpsilonNotAllowed": "{{start}} → ε ist nur erlaubt, wenn {{start}} auf keiner rechten Regelseite vorkommt — hier kommt es aber vor",
@@ -536,10 +535,10 @@
     "toFsm": {
       "needsRightLinear": {
         "title": "Nur eine rechtslineare Grammatik lässt sich in einen endlichen Automaten umwandeln",
-        "detail": "Jede Regel muss A → aB oder A → a sein (Typ 3), allgemeiner A → uB, A → u, A → B oder A → ε mit einem Terminalwort u. Die Konstruktion (Skript 4.20): jede Variable wird ein Zustand; aus A → aB wird der Übergang A →a B; aus A → a ein Übergang in einen neuen akzeptierenden Zustand E; A → ε macht A akzeptierend."
+        "detail": "Jede Regel muss A → aB oder A → a sein (Typ 3), allgemeiner A → uB, A → u, A → B oder A → ε mit einem Terminalwort u. Die Konstruktion: jede Variable wird ein Zustand; aus A → aB wird der Übergang A →a B; aus A → a ein Übergang in einen neuen akzeptierenden Zustand E; A → ε macht A akzeptierend."
       },
       "step": {
-        "title": "Rechtslineare Grammatik → NFA (Skript 4.20)",
+        "title": "Rechtslineare Grammatik → NFA",
         "detail": "Jede Variable wird ein Zustand, die Startvariable der Startzustand, und ein neuer Zustand {{end}} ist der akzeptierende. Aus A → aB: ein a-Übergang von A nach B; aus A → a: ein a-Übergang nach {{end}}; mit S → ε akzeptiert auch S. Ein längeres Wort u in A → uB oder A → u bekommt neue Zwischenzustände, A → B wird ein ε-Übergang und A → ε macht A akzeptierend."
       }
     },
@@ -549,15 +548,15 @@
         "detail": "{{mapping}}"
       },
       "step": {
-        "title": "Variablen für die Zustände (Skript 4.20)",
+        "title": "Variablen für die Zustände",
         "detail": "Jeder Zustand q erhält eine Variable A_q — den eigenen Namen des Zustands, wenn dieser schon ein gültiger Variablenname ist. Die Variable des Startzustands ist die Startvariable."
       },
       "needsEpsilonFree": {
         "title": "Für eine Grammatik braucht es einen Automaten ohne ε-Übergänge",
-        "detail": "Die Konstruktion aus Skript 4.20 macht aus einem Übergang δ(q, a) = p die Regel A_q → aA_p — ein ε-Übergang ({{list}}) ergäbe A_q → A_p, eine Regel, die keine Typ-3-Grammatik hat. Entferne zuerst die ε-Übergänge."
+        "detail": "Die Konstruktion macht aus einem Übergang δ(q, a) = p die Regel A_q → aA_p — ein ε-Übergang ({{list}}) ergäbe A_q → A_p, eine Regel, die keine Typ-3-Grammatik hat. Entferne zuerst die ε-Übergänge."
       },
       "newStart": {
-        "title": "Ein Startzustand ohne eingehende Übergänge (Skript 4.19)",
+        "title": "Ein Startzustand ohne eingehende Übergänge",
         "detail": "{{start}} akzeptiert, also bekommt die Grammatik S → ε — dann darf S aber auf keiner rechten Seite stehen. Es führen jedoch Übergänge nach {{start}}: ein neuer Zustand {{copy}}, eine Kopie von {{start}} (ebenfalls akzeptierend), übernimmt sie und geht weiter wie {{start}}. Die Sprache bleibt dieselbe."
       },
       "table": {
@@ -571,24 +570,24 @@
     "toPda": {
       "needsContextFree": {
         "title": "Nur eine Grammatik aus Regeln A → α lässt sich in einen Kellerautomaten umwandeln",
-        "detail": "In der Konstruktion (Skript 7.12) hält der Keller den Rest der Satzform, und eine Variable oben wird durch eine rechte Seite ersetzt — daher muss jede linke Seite eine einzelne Variable sein. Das Chomsky-Klassifikationspanel zeigt, welche Regel das verletzt."
+        "detail": "In der Konstruktion hält der Keller den Rest der Satzform, und eine Variable oben wird durch eine rechte Seite ersetzt — daher muss jede linke Seite eine einzelne Variable sein. Das Chomsky-Klassifikationspanel zeigt, welche Regel das verletzt."
       },
       "emptyStackInfo": {
         "title": "PDA mit Akzeptanz durch leeren Keller erstellt",
         "detail": "Der Keller speichert die aktuelle Satzform der Ableitung. Steht eine Variable oben auf dem Keller, wird eine Regel angewendet (ε-Schritt); steht ein Terminal oben, wird es mit dem nächsten Eingabebuchstaben abgeglichen. Ein Wort wird genau dann akzeptiert, wenn die Eingabe aufgebraucht und der Keller leer ist."
       },
       "step": {
-        "title": "KF-Grammatik → Kellerautomat (Skript 7.12)",
+        "title": "KF-Grammatik → Kellerautomat",
         "detail": "Ein einziger Zustand {{q}}; der Keller beginnt mit {{z0}}. Zuerst (q, ε, {{z0}}) → (q, {{start}}{{z1}}): die Startvariable kommt in den Keller, {{z1}} darunter. Eine Variable oben: für jede Regel A → α, (q, ε, A) → (q, α) — {{ruleCount}} solche Schritte. Ein Terminal oben: (q, a, a) → (q, ε) gleicht es mit dem nächsten Eingabebuchstaben ab — {{terminalCount}} solche Schritte. Schließlich (q, ε, {{z1}}) → (q, ε): ist die Satzform aufgebraucht, leert sich der Keller, und das Wort ist mit leerem Keller akzeptiert."
       }
     },
     "epsfree": {
       "needsContextFree": {
         "title": "Die ε-Elimination arbeitet auf Grammatiken aus Regeln A → α",
-        "detail": "Das Verfahren aus Skript 6.3.1 lässt Variablen aus rechten Seiten weg, daher muss jede linke Seite eine einzelne Variable sein. Das Chomsky-Klassifikationspanel zeigt, welche Regel das verletzt."
+        "detail": "Die ε-Elimination lässt Variablen aus rechten Seiten weg, daher muss jede linke Seite eine einzelne Variable sein. Das Chomsky-Klassifikationspanel zeigt, welche Regel das verletzt."
       },
       "step1": {
-        "title": "1. Löschbare Variablen (Skript 6.3.1)",
+        "title": "1. Löschbare Variablen",
         "detailNone": "Keine löschbare Variable — die Grammatik ist bereits ε-frei.",
         "detailSome": "N₁ enthält die Variablen mit einer ε-Regel; N(i+1) fügt jedes A hinzu, das eine Regel A → α hat, bei der jedes Symbol von α schon in N(i) liegt. Das Verfahren endet, wenn eine Runde nichts hinzufügt. Löschbar (auf ε ableitbar): {{nullable}}."
       },
@@ -603,7 +602,7 @@
     },
     "unitfree": {
       "step1": {
-        "title": "1. Der Graph der Kettenregeln (Skript 6.3.2)",
+        "title": "1. Der Graph der Kettenregeln",
         "detail": "Kettenregeln (A → B): {{edges}}. U(A) ist die Menge der von A aus über sie erreichbaren Variablen (A eingeschlossen).",
         "detailNone": "Es gibt keine Kettenregel (A → B) — die Grammatik bleibt unverändert."
       },
@@ -613,13 +612,13 @@
       },
       "epsilonFirst": {
         "title": "Die Grammatik hat noch ε-Regeln",
-        "detail": "Werden die ε-Regeln erst danach entfernt, können neue Kettenregeln entstehen (aus A → BC mit löschbarem C wird A → B), daher entfernt das Skript zuerst die ε-Regeln.",
+        "detail": "Werden die ε-Regeln erst danach entfernt, können neue Kettenregeln entstehen (aus A → BC mit löschbarem C wird A → B), daher werden zuerst die ε-Regeln entfernt.",
         "fix": "zuerst ε-Elimination"
       }
     },
     "trim": {
       "step1": {
-        "title": "1. Variablen, die ein Terminalwort ableiten (Skript 6.3.3)",
+        "title": "1. Variablen, die ein Terminalwort ableiten",
         "detail": "B₀ = Σ, und Bᵢ₊₁ nimmt jedes A hinzu, das eine Regel A → α hat, deren Symbole alle in Bᵢ liegen. Variablen außerhalb der Endmenge leiten kein Terminalwort ab; ihre Regeln entfallen: {{removed}}.",
         "detailNone": "B₀ = Σ, und Bᵢ₊₁ nimmt jedes A hinzu, das eine Regel A → α hat, deren Symbole alle in Bᵢ liegen. Jede Variable leitet ein Terminalwort ab."
       },
@@ -648,7 +647,7 @@
         "detail": "Eine Grammatik in Chomsky-Normalform kann ε nicht erzeugen, daher entfällt die Regel {{start}} → ε: das Ergebnis erzeugt L(G) \\ {ε}."
       },
       "step2": {
-        "title": "Entfernen der ε-Regel (Skript 6.25)",
+        "title": "Entfernen der ε-Regel",
         "detail": "Die Regel {{start}} → ε entfällt: in Chomsky-Normalform gibt es keine ε-Regel."
       },
       "step3": {
@@ -674,11 +673,11 @@
   "pda": {
     "needsPda": {
       "title": "{{op}} braucht einen Kellerautomaten",
-      "detail": "Die Konstruktionen von Skript 7.9 und 7.16 arbeiten auf einer Maschine mit Lesekopf und einem einzigen Keller. Eine Maschine ohne Speicher ist ein endlicher Automat: toGrammar liefert seine reguläre Grammatik (4.20)."
+      "detail": "Diese Konstruktion arbeitet auf einer Maschine mit Lesekopf und einem einzigen Keller. Eine Maschine ohne Speicher ist ein endlicher Automat: toGrammar liefert seine reguläre Grammatik."
     },
     "toEmptyStack": {
       "step": {
-        "title": "Akzeptanz durch Endzustand → durch leeren Keller (Skript 7.9)",
+        "title": "Akzeptanz durch Endzustand → durch leeren Keller",
         "detail": "Ein neuer Startzustand {{start}} legt ein neues Symbol {{z}} unten in den Keller, unter seinen Anfangsinhalt: {{first}}. M nimmt {{z}} nie heraus, also kann sich der Keller nicht leeren, solange M läuft — auch dort nicht, wo sich Ms eigener Keller leeren würde. Aus jedem akzeptierenden Zustand ({{accept}}) kann die Maschine mit einem beliebigen Symbol nach {{qe}} gehen, und {{qe}} leert den Keller: Ein Wort wird genau dann mit leerem Keller akzeptiert, wenn M mit dem gelesenen Wort einen akzeptierenden Zustand erreicht."
       },
       "already": {
@@ -688,7 +687,7 @@
     },
     "toFinalState": {
       "step": {
-        "title": "Akzeptanz durch leeren Keller → durch Endzustand (Skript 7.9)",
+        "title": "Akzeptanz durch leeren Keller → durch Endzustand",
         "detail": "Ein neuer Startzustand {{start}} legt ein neues Symbol {{z}} unten in den Keller, unter seinen Anfangsinhalt: {{first}}. M′ nimmt {{z}} nie heraus; ist nur noch {{z}} übrig, hat M′ seinen Keller geleert — dann geht die Maschine aus jedem seiner Zustände nach {{qf}}, dem einzigen akzeptierenden Zustand, und hält dort: (q, ε, {{z}}) → ({{qf}}, {{z}})."
       },
       "already": {
@@ -699,21 +698,21 @@
     "toGrammar": {
       "bottom": {
         "title": "Zuerst ein Bodensymbol für den Keller",
-        "detailInit": "Der Keller beginnt mit {{init}}, nicht mit einem einzigen Symbol Z₀, wie 7.16 es braucht. Ein neuer Startzustand {{start}} schreibt ihn über ein neues Bodensymbol {{z}}: {{first}}. Nur (q, ε, {{z}}) → ({{qe}}, ε) nimmt {{z}} heraus, nach {{qe}}, wo sich nichts mehr bewegt — der Keller ist also erst am Ende leer, und die Maschine akzeptiert mit leerem Keller dieselben Wörter.",
-        "detailEmptied": "Der erste Schritt von 7.16 lässt einen Übergang, der nichts vom Keller nimmt, jedes Symbol nehmen und zurücklegen. Das erhält die Sprache nur, wenn die Maschine mit leerem Keller nicht mehr ziehen kann — hier aber kann sich der Keller in {{state}} leeren, und {{transition}} zieht von dort noch weiter. Deshalb kommt zuerst ein neues Bodensymbol {{z}} unter den Kellerinhalt: {{first}}. Nur (q, ε, {{z}}) → ({{qe}}, ε) nimmt {{z}} heraus, nach {{qe}}, wo sich nichts mehr bewegt — der Keller ist also erst am Ende leer, und die Maschine akzeptiert mit leerem Keller dieselben Wörter."
+        "detailInit": "Der Keller beginnt mit {{init}}, nicht mit einem einzigen Symbol Z₀, wie die Konstruktion es braucht. Ein neuer Startzustand {{start}} schreibt ihn über ein neues Bodensymbol {{z}}: {{first}}. Nur (q, ε, {{z}}) → ({{qe}}, ε) nimmt {{z}} heraus, nach {{qe}}, wo sich nichts mehr bewegt — der Keller ist also erst am Ende leer, und die Maschine akzeptiert mit leerem Keller dieselben Wörter.",
+        "detailEmptied": "Der erste Schritt der Konstruktion lässt einen Übergang, der nichts vom Keller nimmt, jedes Symbol nehmen und zurücklegen. Das erhält die Sprache nur, wenn die Maschine mit leerem Keller nicht mehr ziehen kann — hier aber kann sich der Keller in {{state}} leeren, und {{transition}} zieht von dort noch weiter. Deshalb kommt zuerst ein neues Bodensymbol {{z}} unter den Kellerinhalt: {{first}}. Nur (q, ε, {{z}}) → ({{qe}}, ε) nimmt {{z}} heraus, nach {{qe}}, wo sich nichts mehr bewegt — der Keller ist also erst am Ende leer, und die Maschine akzeptiert mit leerem Keller dieselben Wörter."
       },
       "replace": {
-        "title": "1. Jeder Schritt nimmt ein Symbol vom Keller (Skript 7.16)",
+        "title": "1. Jeder Schritt nimmt ein Symbol vom Keller",
         "detail": "(q′, α) ∈ δ(q, a, ε) wird durch (q′, αA) ∈ δ(q, a, A) für jedes A ∈ Γ ersetzt: Das oberste Symbol wird genommen und zurückgelegt. Die Variablen [qAp] brauchen das — jeder Schritt nimmt genau ein Symbol vom Keller.",
         "detailNone": "Jeder Übergang nimmt bereits ein Symbol vom Keller: nichts zu ersetzen."
       },
       "variables": {
-        "title": "2. Die Variablen [qAp] (Skript 7.16)",
-        "detail": "V = {[qAp] : q, p ∈ Q, A ∈ Γ} ∪ {S}: {{states}}² · {{symbols}} + 1 = {{count}} Variablen. [qAp] steht dafür, dass A im Zustand q in den Keller kommt und — mit allem, was an seine Stelle trat — im Zustand p herauskommt: Sie leitet genau die Wörter x ab, für die (q, x, A) ⇒* (p, ε, ε) gilt (7.5); zum Beispiel {{example}}. S ist die Startvariable: {{startRules}}, denn ein Wort wird akzeptiert, wenn die Maschine, in {{q0}} mit {{z0}} gestartet, ihren Keller in irgendeinem Zustand leert."
+        "title": "2. Die Variablen [qAp]",
+        "detail": "V = {[qAp] : q, p ∈ Q, A ∈ Γ} ∪ {S}: {{states}}² · {{symbols}} + 1 = {{count}} Variablen. [qAp] steht dafür, dass A im Zustand q in den Keller kommt und — mit allem, was an seine Stelle trat — im Zustand p herauskommt: Sie leitet genau die Wörter x ab, für die (q, x, A) ⇒* (p, ε, ε) gilt; zum Beispiel {{example}}. S ist die Startvariable: {{startRules}}, denn ein Wort wird akzeptiert, wenn die Maschine, in {{q0}} mit {{z0}} gestartet, ihren Keller in irgendeinem Zustand leert."
       },
       "rules": {
-        "title": "3. Regeln aus den Übergängen (Skript 7.16)",
-        "detail": "(q′, ε) ∈ δ(q, a, A) ergibt [qAq′] → a; (q′, B₁…B_k) ∈ δ(q, a, A) ergibt [qAq″] → a[q′B₁q₂][q₂B₂q₃]…[q_kB_kq″] für jede Wahl der Zustände q₂, …, q_k, q″ — |Q|^k Regeln. Mit a = ε kann eine Regel [qAq′] → ε sein: Jede Regel ist A → α, und nach der ε-Elimination ist die Grammatik der Klasse 2 (6.14). Insgesamt {{count}} Regeln."
+        "title": "3. Regeln aus den Übergängen",
+        "detail": "(q′, ε) ∈ δ(q, a, A) ergibt [qAq′] → a; (q′, B₁…B_k) ∈ δ(q, a, A) ergibt [qAq″] → a[q′B₁q₂][q₂B₂q₃]…[q_kB_kq″] für jede Wahl der Zustände q₂, …, q_k, q″ — |Q|^k Regeln. Mit a = ε kann eine Regel [qAq′] → ε sein: Jede Regel ist A → α, und nach der ε-Elimination ist die Grammatik der Klasse 2. Insgesamt {{count}} Regeln."
       },
       "tooLarge": {
         "title": "Die Grammatik hätte {{count}} Regeln",
@@ -729,7 +728,7 @@
       },
       "useless": {
         "title": "{{useless}} der {{count}} Variablen sind nutzlos",
-        "detail": "Die Konstruktion bildet [qAp] für je zwei Zustände und jedes Symbol, auch dort, wo die Maschine A nach dem Ablegen in q nie in p herausnehmen kann. Die Grammatik ist richtig, so wie das Skript sie baut; das Entfernen der nutzlosen Symbole (6.3.3) lässt dieselbe Sprache mit viel weniger Regeln übrig.",
+        "detail": "Die Konstruktion bildet [qAp] für je zwei Zustände und jedes Symbol, auch dort, wo die Maschine A nach dem Ablegen in q nie in p herausnehmen kann. Die Grammatik ist auch so richtig; das Entfernen der nutzlosen Symbole (trim) lässt dieselbe Sprache mit viel weniger Regeln übrig.",
         "fix": "nutzlose Symbole entfernen"
       }
     },
@@ -782,7 +781,7 @@
     "autoConvert": {
       "regex": {
         "title": "Den regulären Ausdruck {{name}} automatisch in einen ε-NFA umgewandelt",
-        "detail": "Die Operation erwartet einen endlichen Automaten; aus dem regulären Ausdruck wird einer wie in Skript 3.20 gebaut — explizit: toFsm({{name}})."
+        "detail": "Die Operation erwartet einen endlichen Automaten; aus dem regulären Ausdruck wird einer gebaut — explizit: toFsm({{name}})."
       },
       "grammar": {
         "title": "Die Grammatik {{name}} automatisch in einen endlichen Automaten umgewandelt",

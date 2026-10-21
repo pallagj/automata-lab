@@ -52,13 +52,12 @@
     },
     "step": {
       "build": {
-        "title": "Automata a kifejezésből (jegyzet 3.20)",
-        "detail": "A kifejezést belülről kifelé építjük, ahogy a 3.20 a nyelve regularitását bizonyítja. Egy a betűhöz egyetlen a-átmenet tartozik, ε-hoz egyetlen elfogadó állapot, ∅-hoz egyetlen, sosem elfogadó állapot (3.3). r₁ + r₂: új kezdőállapot ε-átmenetekkel mindkét kezdőállapotba, elfogadó ott, ahol bármelyik az (3.4). r₁r₂: ε-átmenetek az első elfogadó állapotaiból a második kezdőállapotába, elfogadó ott, ahol a második (3.9). r*: új, szintén elfogadó kezdőállapot, ε-átmenettel a régi kezdőállapotba és az elfogadó állapotokból vissza (3.10). Az r? jelentése r + ε. Eredmény: {{count}} állapot — a det(·) DFA-vá alakítja."
+        "title": "Automata a kifejezésből",
+        "detail": "A kifejezést belülről kifelé építjük: minden részkifejezés automatája a részei automatáiból készül. Egy a betűhöz egyetlen a-átmenet tartozik, ε-hoz egyetlen elfogadó állapot, ∅-hoz egyetlen, sosem elfogadó állapot. r₁ + r₂: új kezdőállapot ε-átmenetekkel mindkét kezdőállapotba, elfogadó ott, ahol bármelyik az. r₁r₂: ε-átmenetek az első elfogadó állapotaiból a második kezdőállapotába, elfogadó ott, ahol a második. r*: új, szintén elfogadó kezdőállapot, ε-átmenettel a régi kezdőállapotba és az elfogadó állapotokból vissza. Az r? jelentése r + ε. Eredmény: {{count}} állapot — a det(·) DFA-vá alakítja."
       }
     },
     "table": {
       "subexpression": "részkifejezés",
-      "section": "jegyzet",
       "added": "új átmenetek",
       "start": "kezdő",
       "accepting": "elfogadó"
@@ -234,7 +233,7 @@
     },
     "badInfinite": {
       "title": "A(z) „{{id}}” tároló: ismeretlen szalagkiterjedés: „{{value}}”",
-      "detail": "infinite: right — az első cellától jobbra végtelen szalag, mint a jegyzetben (ez az alapértelmezés); infinite: both — mindkét irányban végtelen szalag."
+      "detail": "infinite: right — az első cellától jobbra végtelen szalag (ez az alapértelmezés); infinite: both — mindkét irányban végtelen szalag."
     },
     "writableOnlyForTape": {
       "title": "A(z) „{{id}}” tároló: a writable csak szalagra vonatkozik",
@@ -242,13 +241,13 @@
     },
     "badWritable": {
       "title": "A(z) „{{id}}” tároló: a writable értéke true vagy false, nem „{{value}}”",
-      "detail": "writable: true — a gép a szalagra írhat is; writable: false — csak olvassa. Alapból a több tárolós gép bemeneti szalagja csak olvasható, mint a jegyzet k-szalagos Turing-gépén (9.9); minden más szalag írható."
+      "detail": "writable: true — a gép a szalagra írhat is; writable: false — csak olvassa. Alapból a több tárolós gép bemeneti szalagja csak olvasható (a gép a többi tárolóján dolgozik); minden más szalag írható."
     }
   },
   "ops": {
     "needsDeterministic": {
       "title": "A(z) {{op}} művelethez determinisztikus automata kell",
-      "detail": "Nemdeterminizmus található: {{spots}}{{ellipsis}}. Determinisztikus automatában minden (állapot, szimbólum) párhoz pontosan egy következő állapot tartozik, és nincs ε-átmenet. A részhalmaz-konstrukció (determinizálás, jegyzet 2.16) — az ε-átmeneteket is kezelve — ekvivalens DFA-t ad."
+      "detail": "Nemdeterminizmus található: {{spots}}{{ellipsis}}. Determinisztikus automatában minden (állapot, szimbólum) párhoz pontosan egy következő állapot tartozik, és nincs ε-átmenet. A részhalmaz-konstrukció (determinizálás) — az ε-átmeneteket is kezelve — ekvivalens DFA-t ad."
     },
     "needsComplete": {
       "title": "A(z) {{op}} művelethez teljes automata kell",
@@ -296,7 +295,7 @@
         "detail": "Minden (állapot, szimbólum) párhoz legfeljebb egy átmenet tartozik és nincs ε-átmenet — a részhalmaz-konstrukció csak az elérhető egyelemű halmazokat hozza létre (és ∅-t, ahol hiányzik átmenet)."
       },
       "step": {
-        "title": "Részhalmaz-konstrukció (jegyzet 2.16)",
+        "title": "Részhalmaz-konstrukció",
         "detail": "Az új állapotok a régiek halmazai, a kezdőállapot {{start}}. Minden elért R halmazra és a betűre: δ'(R, a) = ⋃ δ(r, a), r ∈ R — ahol R több elemű, a tagokat egyenként is mutatjuk. Csak a kezdőállapotból elérhető halmazokat építjük fel; egy halmaz elfogadó, ha van benne elfogadó állapot.",
         "detailEpsilon": "Az új állapotok a régiek halmazai, a kezdőállapot {{startExpr}} = {{start}}. Minden elért R halmazra és a betűre: δ'(R, a) = ⋃ E(δ(r, a)), r ∈ R — beolvasunk egy betűt, utána tetszőleges ε-átmenetek jöhetnek. Ahol R több elemű, az E(δ(r, a)) tagokat egyenként is mutatjuk. Csak a kezdőállapotból elérhető halmazokat építjük fel; egy halmaz elfogadó, ha van benne elfogadó állapot."
       },
@@ -305,7 +304,7 @@
         "detail": "{{count}} állapot keletkezett a lehetséges 2^{{exponent}} = {{possible}} részhalmazból. Elfogadó: {{accept}}."
       },
       "closures": {
-        "title": "ε-lezárások (jegyzet 2.16)",
+        "title": "ε-lezárások",
         "detail": "E(q) a q-ból ε-átmenetekkel — akár többel egymás után — elérhető állapotok halmaza, q-val együtt. Az új automata ezekkel a lezárásokkal számol: a kezdőállapota a kezdőállapot lezártja, egy betű után pedig annak a lezártja, ahová a betű visz."
       },
       "emptySet": {
@@ -324,7 +323,7 @@
         "fixLabel": "automatikus név használata"
       },
       "step": {
-        "title": "Csapdaállapot bevezetése: {{trap}} (jegyzet 2.10)",
+        "title": "Csapdaállapot bevezetése: {{trap}}",
         "detail": "Az új {{trap}} állapot nem elfogadó, és minden szimbólumra önmagába megy — innen már nem lehet elfogadni. A hiányzó átmenetek ide kerülnek."
       }
     },
@@ -341,23 +340,23 @@
     "min": {
       "unreachableStates": {
         "title": "Elérhetetlen állapotok",
-        "detail": "A kezdőállapotból semmilyen szó nem vezet a(z) {{states}} állapot(ok)ba. A jegyzet (2.29) a kész automatából hagyja el az ilyen állapotokat; itt előre elhagyjuk őket, az eredmény ugyanaz."
+        "detail": "A kezdőállapotból semmilyen szó nem vezet a(z) {{states}} állapot(ok)ba. A minimális automatában ezeknek nincs helye, ezért már az elején elhagyjuk őket — az eredmény ugyanaz, mintha a végén hagynánk el."
       },
       "step0": {
         "title": "Az elérhetetlen állapotok elhagyása",
         "detail": "Elhagyva: {{removed}}."
       },
       "step1": {
-        "title": "Kezdő partíció: 0-ekvivalencia (jegyzet 2.4.1)",
+        "title": "Kezdő partíció: 0-ekvivalencia",
         "detail": "A₁ = Q − F és A₂ = F: az üres szó már megkülönbözteti a nem elfogadó és az elfogadó állapotokat. {{partition}}"
       },
       "refine": {
         "title": "{{round}}. kör: {{round}}-ekvivalencia",
-        "detail": "Két állapot akkor marad együtt, ha minden betű ugyanabba a csoportba viszi őket. Szétválik: {{splits}}. Új partíció: {{partition}}. Most a legfeljebb {{round}} hosszú szavakkal megkülönböztethetetlen állapotok vannak együtt ({{round}}-ekvivalencia, 2.27)."
+        "detail": "Két állapot akkor marad együtt, ha minden betű ugyanabba a csoportba viszi őket. Szétválik: {{splits}}. Új partíció: {{partition}}. Most a legfeljebb {{round}} hosszú szavakkal megkülönböztethetetlen állapotok vannak együtt ({{round}}-ekvivalencia)."
       },
       "fixpoint": {
         "title": "{{round}}. kör: nincs szétválás",
-        "detail": "Minden csoportban minden betű ugyanabba a csoportba viszi az állapotokat: a(z) {{round}}-ekvivalencia ugyanaz, mint a(z) {{prev}}-ekvivalencia, és ekkor hosszabb szó sem különbözteti meg őket (2.27). A csoportok az ekvivalenciaosztályok: {{partition}}."
+        "detail": "Minden csoportban minden betű ugyanabba a csoportba viszi az állapotokat: a(z) {{round}}-ekvivalencia ugyanaz, mint a(z) {{prev}}-ekvivalencia, és ekkor hosszabb szó sem különbözteti meg őket. A csoportok az ekvivalenciaosztályok: {{partition}}."
       },
       "alreadyMinimal": {
         "title": "Az automata már minimális volt",
@@ -368,7 +367,7 @@
         "detail": "Az egy osztályba került állapotok nyelvileg megkülönböztethetetlenek: minden szóra ugyanúgy fogadnak el / utasítanak el."
       },
       "build": {
-        "title": "Az osztályokból az új automata (jegyzet 2.29)",
+        "title": "Az osztályokból az új automata",
         "detail": "Minden osztály egy állapot. Egy betű egy osztály minden állapotát ugyanabba az osztályba viszi — ez lesz az átmenet. A kezdőállapot a régi kezdőállapot osztálya, {{start}}; elfogadók az elfogadó állapotok osztályai: {{accept}}."
       },
       "table": {
@@ -387,7 +386,7 @@
         "detail": "Ha valahol nincs átmenet, az automata „elakad” és elutasít. Ezeket a szavakat a komplementernek el kellene fogadnia — ehhez előbb csapdaállapottal teljessé kell tenni."
       },
       "step": {
-        "title": "Elfogadó állapotok átfordítása (jegyzet 3.6)",
+        "title": "Elfogadó állapotok átfordítása",
         "detail": "Teljes DFA-ban minden szó pontosan egy úton fut végig, így az elfogadó/elutasító állapotok cseréje pontosan a komplementer nyelvet adja. Új elfogadó halmaz: {{accept}}."
       }
     },
@@ -413,12 +412,12 @@
         "difference": "(p,q) elfogadó, ha p elfogadó, de q NEM (L₁ \\ L₂)"
       },
       "step": {
-        "title": "Szorzat-konstrukció ({{mode}}, jegyzet 3.4)",
+        "title": "Szorzat-konstrukció ({{mode}})",
         "detail": "A két automatát párhuzamosan futtatjuk: az állapotok (p,q) párok, δ((p,q),a) = (δ₁(p,a), δ₂(q,a)). Elfogadás: {{acceptRule}}. Csak az elérhető párokat építjük fel."
       },
       "extend": {
-        "title": "A(z) {{part}} automata a közös ábécé fölött (jegyzet 3.4)",
-        "detail": "{{name}} nem lép a(z) {{missing}} betűre: a Σ = {{sigma}} ábécé fölött hiányos automata, ezért előbb teljessé tesszük (2.10) — minden hiányzó átmenet egy új {{trap}} csapdaállapotba vezet, ahonnan nincs kiút. A nyelve nem változik."
+        "title": "A(z) {{part}} automata a közös ábécé fölött",
+        "detail": "{{name}} nem lép a(z) {{missing}} betűre: a Σ = {{sigma}} ábécé fölött hiányos automata, ezért előbb teljessé tesszük — minden hiányzó átmenet egy új {{trap}} csapdaállapotba vezet, ahonnan nincs kiút. A nyelve nem változik."
       }
     },
     "unionEpsilon": {
@@ -427,31 +426,31 @@
         "detail": "Új kezdőállapotból ε-átmenet vezet mindkét automata kezdőállapotába. Az eredmény ε-NFA — a det(·) DFA-vá alakítja. (Teljes DFA-k uniója a szorzat-konstrukcióval is elvégezhető.)"
       },
       "step": {
-        "title": "Unió ε-átmenetekkel (jegyzet 3.4)",
+        "title": "Unió ε-átmenetekkel",
         "detail": "Új {{start}} kezdőállapot, ε-átmenetek: {{start}} → {{m1start}}, {{start}} → {{bstart}}. Elfogadó állapotok: a két automata elfogadó állapotainak uniója."
       }
     },
     "concat": {
       "step": {
-        "title": "Összefűzés (jegyzet 3.9)",
+        "title": "Összefűzés",
         "detail": "Az első automata minden elfogadó állapotából ε-átmenet vezet a második kezdőállapotába ({{start}}). Elfogadók: csak a második automata elfogadó állapotai. Az eredmény ε-NFA."
       }
     },
     "star": {
       "step": {
-        "title": "Tranzitív lezárt (jegyzet 3.10)",
+        "title": "Tranzitív lezárt",
         "detail": "Új {{start}} kezdőállapot (egyben elfogadó — így az üres szó is a nyelvben van), ε-átmenet az eredeti kezdőállapotba, és minden elfogadó állapotból ε-átmenet vissza {{start}}-ba az ismétléshez."
       }
     },
     "reverse": {
       "step": {
-        "title": "Megfordítás (jegyzet 4.23)",
+        "title": "Megfordítás",
         "detail": "Minden átmenet irányát megfordítjuk, az új kezdőállapotból ({{start}}) ε-átmenet vezet az eredeti elfogadó állapotokba, és az eredeti kezdőállapot lesz az egyetlen elfogadó. L(Mᴿ) = { wᴿ : w ∈ L(M) }."
       }
     },
     "toRegex": {
       "numbering": {
-        "title": "Az állapotok megszámozása (jegyzet 3.21)",
+        "title": "Az állapotok megszámozása",
         "detail": "Az állapotokat 1…{{n}} számozzuk, a(z) {{start}} kezdőállapot kapja az 1-et. r(p, q, t) azokat a szavakat írja le, amelyekkel a p állapotból a q-ba jutunk úgy, hogy minden közbenső állapot az 1…t közül kerül ki."
       },
       "base": {
@@ -495,17 +494,17 @@
         "detail": "A szorzatautomata minden elérhető (p,q) állapotpárjában p és q elfogadási státusza megegyezik, tehát nincs megkülönböztető szó — a két automata ugyanazt a nyelvet ismeri fel."
       },
       "det": {
-        "title": "{{name}} determinizálása (jegyzet 2.16)",
+        "title": "{{name}} determinizálása",
         "detail": "{{name}} nem teljes determinisztikus automata, ezért a részhalmaz-konstrukcióval teljes DFA-t készítünk belőle: {{count}} állapot."
       },
       "extend": {
-        "title": "{{name}} a közös ábécé fölött (jegyzet 2.10)",
+        "title": "{{name}} a közös ábécé fölött",
         "detail": "{{name}} nem lép a(z) {{missing}} betűre: ezek egy új {{trap}} csapdaállapotba vezetnek, így az ábécé közös, a nyelv nem változik."
       },
       "search": {
-        "title": "Megkülönböztető szó keresése a szorzatautomatában (jegyzet 5.3)",
-        "detailFound": "L({{a}}) = L({{b}}) pontosan akkor, ha (L({{a}}) ∩ ¬L({{b}})) ∪ (¬L({{a}}) ∩ L({{b}})) = ∅ (5.3). A két automatát párhuzamosan futtatjuk (szorzatautomata, 3.4), és szélességi bejárással keressük az első olyan elérhető (p, q) párt, ahol pontosan az egyik elfogadó. A táblázat a bejárás sorrendjében mutatja a párokat, a megtaláltig.",
-        "detailNone": "L({{a}}) = L({{b}}) pontosan akkor, ha (L({{a}}) ∩ ¬L({{b}})) ∪ (¬L({{a}}) ∩ L({{b}})) = ∅ (5.3). A két automatát párhuzamosan futtatjuk (szorzatautomata, 3.4): mind a(z) {{count}} elérhető (p, q) párban a két állapot egyformán elfogad vagy elutasít, tehát a különbség nyelve üres."
+        "title": "Megkülönböztető szó keresése a szorzatautomatában",
+        "detailFound": "L({{a}}) = L({{b}}) pontosan akkor, ha (L({{a}}) ∩ ¬L({{b}})) ∪ (¬L({{a}}) ∩ L({{b}})) = ∅. A két automatát párhuzamosan futtatjuk (szorzatautomata), és szélességi bejárással keressük az első olyan elérhető (p, q) párt, ahol pontosan az egyik elfogadó. A táblázat a bejárás sorrendjében mutatja a párokat, a megtaláltig.",
+        "detailNone": "L({{a}}) = L({{b}}) pontosan akkor, ha (L({{a}}) ∩ ¬L({{b}})) ∪ (¬L({{a}}) ∩ L({{b}})) = ∅. A két automatát párhuzamosan futtatjuk (szorzatautomata): mind a(z) {{count}} elérhető (p, q) párban a két állapot egyformán elfogad vagy elutasít, tehát a különbség nyelve üres."
       },
       "table": {
         "word": "odavezető szó"
@@ -515,7 +514,7 @@
   "grammar": {
     "needsContextFree": {
       "title": "A(z) {{op}} művelethez A → α alakú szabályok kellenek",
-      "detail": "Minden szabály bal oldala egyetlen változó kell legyen (jegyzet 6.3.1) — ε-szabály lehet. A Chomsky-osztályozás panelen látszik, melyik szabály sérti ezt."
+      "detail": "Minden szabály bal oldala egyetlen változó kell legyen — ε-szabály lehet. A Chomsky-osztályozás panelen látszik, melyik szabály sérti ezt."
     },
     "classify": {
       "startEpsilonNotAllowed": "{{start}} → ε csak akkor megengedett, ha {{start}} egyetlen szabály jobb oldalán sem fordul elő — itt viszont előfordul",
@@ -536,10 +535,10 @@
     "toFsm": {
       "needsRightLinear": {
         "title": "Csak jobb-lineáris nyelvtan alakítható véges automatává",
-        "detail": "Minden szabály A → aB vagy A → a alakú legyen (3. típus), általánosabban A → uB, A → u, A → B vagy A → ε, ahol u terminális szó. A konstrukció (jegyzet 4.20): minden változó egy állapot; A → aB-ből az A →a B átmenet; A → a-ból átmenet egy új E elfogadó állapotba; A → ε esetén A elfogadó."
+        "detail": "Minden szabály A → aB vagy A → a alakú legyen (3. típus), általánosabban A → uB, A → u, A → B vagy A → ε, ahol u terminális szó. A konstrukció: minden változó egy állapot; A → aB-ből az A →a B átmenet; A → a-ból átmenet egy új E elfogadó állapotba; A → ε esetén A elfogadó."
       },
       "step": {
-        "title": "Jobb-lineáris nyelvtan → NFA (jegyzet 4.20)",
+        "title": "Jobb-lineáris nyelvtan → NFA",
         "detail": "Minden változó egy állapot, a kezdőváltozó a kezdőállapot, és egy új {{end}} állapot az elfogadó. A → aB-ből a-átmenet A-ból B-be; A → a-ból a-átmenet {{end}}-be; S → ε esetén S is elfogadó. Az A → uB és A → u szabályok hosszabb u szava közbülső új állapotokat kap, A → B-ből ε-átmenet lesz, A → ε esetén A elfogadó."
       }
     },
@@ -549,15 +548,15 @@
         "detail": "{{mapping}}"
       },
       "step": {
-        "title": "Változók az állapotokhoz (jegyzet 4.20)",
+        "title": "Változók az állapotokhoz",
         "detail": "Minden q állapot kap egy A_q változót — az állapot saját nevét, ha az már érvényes változónév. A kezdőállapot változója a kezdőváltozó."
       },
       "needsEpsilonFree": {
         "title": "A nyelvtanná alakításhoz ε-átmenet nélküli automata kell",
-        "detail": "A jegyzet 4.20 konstrukciója a δ(q, a) = p átmenetből A_q → aA_p szabályt készít — egy ε-átmenetből ({{list}}) A_q → A_p lenne, ilyen szabály 3. típusú nyelvtanban nincs. Előbb az ε-átmeneteket kell elhagyni."
+        "detail": "A konstrukció a δ(q, a) = p átmenetből A_q → aA_p szabályt készít — egy ε-átmenetből ({{list}}) A_q → A_p lenne, ilyen szabály 3. típusú nyelvtanban nincs. Előbb az ε-átmeneteket kell elhagyni."
       },
       "newStart": {
-        "title": "Kezdőállapot bejövő átmenet nélkül (jegyzet 4.19)",
+        "title": "Kezdőállapot bejövő átmenet nélkül",
         "detail": "{{start}} elfogadó, ezért a nyelvtanba S → ε kerül — ekkor viszont S egyetlen jobb oldalon sem állhat. A(z) {{start}} állapotba azonban vezet átmenet: egy új {{copy}} állapot, {{start}} másolata (szintén elfogadó) veszi át ezeket, és onnan ugyanúgy lép tovább, mint {{start}}. A nyelv nem változik."
       },
       "table": {
@@ -571,24 +570,24 @@
     "toPda": {
       "needsContextFree": {
         "title": "Csak A → α alakú szabályokból álló nyelvtan alakítható veremautomatává",
-        "detail": "A konstrukcióban (jegyzet 7.12) a verem a mondatforma hátralévő részét tárolja, és a tetején álló változót egy jobb oldalra cseréljük — ezért minden bal oldal egyetlen változó kell legyen. A Chomsky-osztályozás panelen látszik, melyik szabály sérti ezt."
+        "detail": "A konstrukcióban a verem a mondatforma hátralévő részét tárolja, és a tetején álló változót egy jobb oldalra cseréljük — ezért minden bal oldal egyetlen változó kell legyen. A Chomsky-osztályozás panelen látszik, melyik szabály sérti ezt."
       },
       "emptyStackInfo": {
         "title": "Üres veremmel elfogadó PDA készült",
         "detail": "A verem a levezetés aktuális mondatformáját tárolja. Ha a verem tetején változó van, egy szabályt alkalmazunk (ε-lépés); ha terminális, illesztjük a bemenet következő betűjével. A szó pontosan akkor elfogadott, ha a bemenet elfogyott és a verem kiürült."
       },
       "step": {
-        "title": "CF nyelvtan → veremautomata (jegyzet 7.12)",
+        "title": "CF nyelvtan → veremautomata",
         "detail": "Egyetlen {{q}} állapot; a verem kezdőjele {{z0}}. Első lépés: (q, ε, {{z0}}) → (q, {{start}}{{z1}}) — a verembe kerül a kezdőváltozó, alá {{z1}}. Ha a verem tetején változó van: minden A → α szabályhoz (q, ε, A) → (q, α) — {{ruleCount}} ilyen lépés. Ha terminális: (q, a, a) → (q, ε) illeszti a bemenet következő betűjével — {{terminalCount}} ilyen lépés. Végül (q, ε, {{z1}}) → (q, ε): ha a mondatforma elfogyott, a verem kiürül, és a szó üres veremmel elfogadott."
       }
     },
     "epsfree": {
       "needsContextFree": {
         "title": "Az ε-mentesítés A → α alakú szabályokra működik",
-        "detail": "A jegyzet 6.3.1 eljárása a jobb oldalakból hagy el változókat, ezért minden bal oldal egyetlen változó kell legyen. A Chomsky-osztályozás panelen látszik, melyik szabály sérti ezt."
+        "detail": "Az ε-mentesítés a jobb oldalakból hagy el változókat, ezért minden bal oldal egyetlen változó kell legyen. A Chomsky-osztályozás panelen látszik, melyik szabály sérti ezt."
       },
       "step1": {
-        "title": "1. Elenyésző változók (jegyzet 6.3.1)",
+        "title": "1. Elenyésző változók",
         "detailNone": "Nincs elenyésző változó — a nyelvtan már ε-mentes.",
         "detailSome": "N₁ az ε-szabállyal rendelkező változókból áll; N(i+1) ehhez hozzáveszi azokat az A változókat, amelyekre van olyan A → α szabály, hogy α minden betűje már N(i)-ben van. Ha egy kör nem bővít, az eljárás leáll. Elenyésző (ε-ra levezethető): {{nullable}}."
       },
@@ -603,7 +602,7 @@
     },
     "unitfree": {
       "step1": {
-        "title": "1. Az egyszeres szabályok gráfja (jegyzet 6.3.2)",
+        "title": "1. Az egyszeres szabályok gráfja",
         "detail": "Egyszeres szabályok (A → B): {{edges}}. U(A) az A-ból ezeken át elérhető változók halmaza (A-t is beleértve).",
         "detailNone": "Nincs egyszeres szabály (A → B) — a nyelvtan változatlan marad."
       },
@@ -613,13 +612,13 @@
       },
       "epsilonFirst": {
         "title": "A nyelvtanban még vannak ε-szabályok",
-        "detail": "Ha utólag hagyjuk el az ε-szabályokat, új egyszeres szabályok keletkezhetnek (A → BC-ből elenyésző C mellett A → B lesz), ezért a jegyzet előbb az ε-szabályokat hagyja el.",
+        "detail": "Ha utólag hagyjuk el az ε-szabályokat, új egyszeres szabályok keletkezhetnek (A → BC-ből elenyésző C mellett A → B lesz), ezért előbb az ε-szabályokat hagyjuk el.",
         "fix": "előbb ε-mentesítés"
       }
     },
     "trim": {
       "step1": {
-        "title": "1. Terminálódó változók (jegyzet 6.3.3)",
+        "title": "1. Terminálódó változók",
         "detail": "B₀ = Σ, és Bᵢ₊₁ hozzáveszi azokat az A változókat, amelyekhez van olyan A → α szabály, hogy α minden szimbóluma Bᵢ-ben van. A végső halmazon kívüli változókból nem vezethető le terminális szó, a szabályaikat elhagyjuk: {{removed}}.",
         "detailNone": "B₀ = Σ, és Bᵢ₊₁ hozzáveszi azokat az A változókat, amelyekhez van olyan A → α szabály, hogy α minden szimbóluma Bᵢ-ben van. Minden változó terminálódik."
       },
@@ -648,7 +647,7 @@
         "detail": "Chomsky-normálformájú nyelvtan nem generálhatja az ε-t, ezért a(z) {{start}} → ε szabályt elhagyjuk: az eredmény L(G) \\ {ε}-t generálja."
       },
       "step2": {
-        "title": "Az ε-szabály elhagyása (jegyzet 6.25)",
+        "title": "Az ε-szabály elhagyása",
         "detail": "A(z) {{start}} → ε szabályt elhagyjuk: Chomsky-normálformában nincs ε-szabály."
       },
       "step3": {
@@ -674,11 +673,11 @@
   "pda": {
     "needsPda": {
       "title": "A(z) {{op}} veremautomatát vár",
-      "detail": "A jegyzet 7.9. és 7.16. konstrukciója olvasófejes, egyetlen veremmel dolgozó gépre vonatkozik. A tároló nélküli gép véges automata: a toGrammar annak a reguláris nyelvtanát adja (4.20)."
+      "detail": "Ez a konstrukció olvasófejes, egyetlen veremmel dolgozó gépre vonatkozik. A tároló nélküli gép véges automata: a toGrammar annak a reguláris nyelvtanát adja."
     },
     "toEmptyStack": {
       "step": {
-        "title": "Állapottal elfogadó → üres veremmel elfogadó (jegyzet 7.9)",
+        "title": "Állapottal elfogadó → üres veremmel elfogadó",
         "detail": "Egy új {{start}} kezdőállapot a verem aljára, a kezdőtartalma alá betesz egy új {{z}} szimbólumot: {{first}}. M sosem veszi ki {{z}}-t, így a verem nem ürülhet ki, amíg M fut — ott sem, ahol M saját verme kiürülne. Minden elfogadó állapotból ({{accept}}) a gép bármely szimbólumot kivéve átmehet {{qe}}-be, {{qe}} pedig kiüríti a vermet: egy szó pontosan akkor elfogadott üres veremmel, ha M a szót végigolvasva elfogadó állapotba jut."
       },
       "already": {
@@ -688,7 +687,7 @@
     },
     "toFinalState": {
       "step": {
-        "title": "Üres veremmel elfogadó → állapottal elfogadó (jegyzet 7.9)",
+        "title": "Üres veremmel elfogadó → állapottal elfogadó",
         "detail": "Egy új {{start}} kezdőállapot a verem aljára, a kezdőtartalma alá betesz egy új {{z}} szimbólumot: {{first}}. M′ sosem veszi ki {{z}}-t, így amikor már csak {{z}} van a veremben, M′ kiürítette a vermét — ekkor a gép M′ bármely állapotából átmegy {{qf}}-be, az egyetlen elfogadó állapotba, ahol megáll: (q, ε, {{z}}) → ({{qf}}, {{z}})."
       },
       "already": {
@@ -699,21 +698,21 @@
     "toGrammar": {
       "bottom": {
         "title": "Előbb egy veremalj-szimbólum",
-        "detailInit": "A verem kezdőtartalma {{init}}, nem egyetlen Z₀ szimbólum, ahogy a 7.16 kívánja. Egy új {{start}} kezdőállapot egy új {{z}} veremalj-szimbólum fölé írja: {{first}}. {{z}}-t csak a (q, ε, {{z}}) → ({{qe}}, ε) veszi ki, {{qe}}-be, ahol semmi nem lép tovább — így a verem csak a végén üres, és a gép üres veremmel ugyanazokat a szavakat fogadja el.",
-        "detailEmptied": "A 7.16 első lépése a veremből semmit ki nem vevő átmenetet minden szimbólumra cseréli, amit kivesz és visszatesz. Ez csak akkor nem változtat a nyelven, ha üres veremmel a gép már nem tud lépni — itt viszont a verem kiürülhet {{state}}-ben, és onnan {{transition}} még lép. Ezért előbb egy új {{z}} veremalj-szimbólum kerül a verem tartalma alá: {{first}}. {{z}}-t csak a (q, ε, {{z}}) → ({{qe}}, ε) veszi ki, {{qe}}-be, ahol semmi nem lép tovább — így a verem csak a végén üres, és a gép üres veremmel ugyanazokat a szavakat fogadja el."
+        "detailInit": "A verem kezdőtartalma {{init}}, nem egyetlen Z₀ szimbólum, ahogy a konstrukció kívánja. Egy új {{start}} kezdőállapot egy új {{z}} veremalj-szimbólum fölé írja: {{first}}. {{z}}-t csak a (q, ε, {{z}}) → ({{qe}}, ε) veszi ki, {{qe}}-be, ahol semmi nem lép tovább — így a verem csak a végén üres, és a gép üres veremmel ugyanazokat a szavakat fogadja el.",
+        "detailEmptied": "A konstrukció első lépése a veremből semmit ki nem vevő átmenetet minden szimbólumra cseréli, amit kivesz és visszatesz. Ez csak akkor nem változtat a nyelven, ha üres veremmel a gép már nem tud lépni — itt viszont a verem kiürülhet {{state}}-ben, és onnan {{transition}} még lép. Ezért előbb egy új {{z}} veremalj-szimbólum kerül a verem tartalma alá: {{first}}. {{z}}-t csak a (q, ε, {{z}}) → ({{qe}}, ε) veszi ki, {{qe}}-be, ahol semmi nem lép tovább — így a verem csak a végén üres, és a gép üres veremmel ugyanazokat a szavakat fogadja el."
       },
       "replace": {
-        "title": "1. Minden lépés kivesz egy szimbólumot a veremből (jegyzet 7.16)",
+        "title": "1. Minden lépés kivesz egy szimbólumot a veremből",
         "detail": "A (q′, α) ∈ δ(q, a, ε) átmenet helyett minden A ∈ Γ-ra (q′, αA) ∈ δ(q, a, A): a verem tetején lévő szimbólumot levesszük és visszatesszük. Az [qAp] változókhoz ez kell — minden lépés pontosan egy szimbólumot vesz ki a veremből.",
         "detailNone": "Minden átmenet kivesz már egy szimbólumot a veremből: nincs mit cserélni."
       },
       "variables": {
-        "title": "2. Az [qAp] változók (jegyzet 7.16)",
-        "detail": "V = {[qAp] : q, p ∈ Q, A ∈ Γ} ∪ {S}: {{states}}² · {{symbols}} + 1 = {{count}} változó. [qAp] annak felel meg, hogy az A szimbólum a q állapotban került a verembe, és p lesz az az állapot, amelyikben ez az A — minden, a helyére került szimbólummal együtt — kikerül a veremből: pontosan azokat az x szavakat vezeti le, amelyekre (q, x, A) ⇒* (p, ε, ε) (7.5); például {{example}}. A kezdőváltozó S: {{startRules}}, mert a szó akkor elfogadott, ha a gép {{q0}}-ból és {{z0}}-ból indulva valamelyik állapotban kiüríti a vermet."
+        "title": "2. Az [qAp] változók",
+        "detail": "V = {[qAp] : q, p ∈ Q, A ∈ Γ} ∪ {S}: {{states}}² · {{symbols}} + 1 = {{count}} változó. [qAp] annak felel meg, hogy az A szimbólum a q állapotban került a verembe, és p lesz az az állapot, amelyikben ez az A — minden, a helyére került szimbólummal együtt — kikerül a veremből: pontosan azokat az x szavakat vezeti le, amelyekre (q, x, A) ⇒* (p, ε, ε); például {{example}}. A kezdőváltozó S: {{startRules}}, mert a szó akkor elfogadott, ha a gép {{q0}}-ból és {{z0}}-ból indulva valamelyik állapotban kiüríti a vermet."
       },
       "rules": {
-        "title": "3. Szabályok az átmenetekből (jegyzet 7.16)",
-        "detail": "A (q′, ε) ∈ δ(q, a, A) átmenetből [qAq′] → a; a (q′, B₁…B_k) ∈ δ(q, a, A) átmenetből [qAq″] → a[q′B₁q₂][q₂B₂q₃]…[q_kB_kq″], ahol q₂, …, q_k, q″ végigfut az összes állapoton — |Q|^k szabály. Ha a = ε, a szabály lehet [qAq′] → ε is: minden szabály A → α alakú, és ε-mentesítés után a nyelvtan 2. osztálybeli (6.14). Összesen {{count}} szabály."
+        "title": "3. Szabályok az átmenetekből",
+        "detail": "A (q′, ε) ∈ δ(q, a, A) átmenetből [qAq′] → a; a (q′, B₁…B_k) ∈ δ(q, a, A) átmenetből [qAq″] → a[q′B₁q₂][q₂B₂q₃]…[q_kB_kq″], ahol q₂, …, q_k, q″ végigfut az összes állapoton — |Q|^k szabály. Ha a = ε, a szabály lehet [qAq′] → ε is: minden szabály A → α alakú, és ε-mentesítés után a nyelvtan 2. osztálybeli. Összesen {{count}} szabály."
       },
       "tooLarge": {
         "title": "A nyelvtannak {{count}} szabálya lenne",
@@ -729,7 +728,7 @@
       },
       "useless": {
         "title": "A {{count}} változóból {{useless}} felesleges",
-        "detail": "A konstrukció minden állapotpárhoz és szimbólumhoz elkészíti az [qAp] változót, ott is, ahol a gép a q-ban betett A-t sosem tudja p-ben kivenni. A nyelvtan így helyes, ahogy a jegyzet felépíti; a felesleges szimbólumok elhagyása (6.3.3) ugyanazt a nyelvet sokkal kevesebb szabállyal adja.",
+        "detail": "A konstrukció minden állapotpárhoz és szimbólumhoz elkészíti az [qAp] változót, ott is, ahol a gép a q-ban betett A-t sosem tudja p-ben kivenni. A nyelvtan így is helyes; a felesleges szimbólumok elhagyása (trim) ugyanazt a nyelvet sokkal kevesebb szabállyal adja.",
         "fix": "felesleges szimbólumok elhagyása"
       }
     },
@@ -782,7 +781,7 @@
     "autoConvert": {
       "regex": {
         "title": "A(z) {{name}} regexet automatikusan ε-NFA-vá alakítottam",
-        "detail": "A művelet véges automatát vár; a reguláris kifejezésből a jegyzet 3.20 szerint épül automata — explicit módon: toFsm({{name}})."
+        "detail": "A művelet véges automatát vár; a reguláris kifejezésből automata épül — explicit módon: toFsm({{name}})."
       },
       "grammar": {
         "title": "A(z) {{name}} nyelvtant automatikusan véges automatává alakítottam",

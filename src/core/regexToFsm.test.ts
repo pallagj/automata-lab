@@ -29,9 +29,9 @@ describe("regular expression → automaton (lecture notes 3.20)", () => {
     expect(f.accept).toEqual(["q_2", "q_4"]);
     // one row per subexpression, inside out
     expect(r.steps[0].table!.rows).toEqual([
-      ["a", "3.3", "q_1 →a q_2", "q_1", "q_2"],
-      ["b", "3.3", "q_3 →b q_4", "q_3", "q_4"],
-      ["a+b", "3.4", "q_0 →ε q_1, q_0 →ε q_3", "q_0", "q_2, q_4"]
+      ["a", "q_1 →a q_2", "q_1", "q_2"],
+      ["b", "q_3 →b q_4", "q_3", "q_4"],
+      ["a+b", "q_0 →ε q_1, q_0 →ε q_3", "q_0", "q_2, q_4"]
     ]);
   });
 
@@ -46,7 +46,7 @@ describe("regular expression → automaton (lecture notes 3.20)", () => {
     const f = r.value!;
     expect(f.start).toBe("q_0");
     expect(f.accept).toEqual(["q_0"]);
-    expect(r.steps[0].table!.rows.at(-1)).toEqual(["(a+b)*", "3.10", "q_0 →ε q_1, q_3 →ε q_0, q_5 →ε q_0", "q_0", "q_0"]);
+    expect(r.steps[0].table!.rows.at(-1)).toEqual(["(a+b)*", "q_0 →ε q_1, q_3 →ε q_0, q_5 →ε q_0", "q_0", "q_0"]);
     for (const w of allWords(["a", "b"], 5)) expect(acceptsFSM(f, w)).toBe(true);
   });
 

@@ -52,13 +52,12 @@
     },
     "step": {
       "build": {
-        "title": "Automaton from the expression (lecture notes 3.20)",
-        "detail": "The expression is built inside out, as 3.20 proves its language regular. A letter a gets a single a-transition, ε a single accepting state, ∅ a single state that never accepts (3.3). r₁ + r₂: a new start state with ε-transitions into both start states, accepting where either one does (3.4). r₁r₂: ε-transitions from the first one's accepting states into the second one's start, accepting where the second one does (3.9). r*: a new start state, accepting too, with an ε-transition into the old start and ε-transitions back from the accepting states (3.10). r? means r + ε. Result: {{count}} states — det(·) turns it into a DFA."
+        "title": "Automaton from the expression",
+        "detail": "The expression is built inside out: each subexpression's automaton is made from the automata of its parts. A letter a gets a single a-transition, ε a single accepting state, ∅ a single state that never accepts. r₁ + r₂: a new start state with ε-transitions into both start states, accepting where either one does. r₁r₂: ε-transitions from the first one's accepting states into the second one's start, accepting where the second one does. r*: a new start state, accepting too, with an ε-transition into the old start and ε-transitions back from the accepting states. r? means r + ε. Result: {{count}} states — det(·) turns it into a DFA."
       }
     },
     "table": {
       "subexpression": "subexpression",
-      "section": "notes",
       "added": "new transitions",
       "start": "start",
       "accepting": "accepting"
@@ -234,7 +233,7 @@
     },
     "badInfinite": {
       "title": "Storage \"{{id}}\": unknown tape extent \"{{value}}\"",
-      "detail": "infinite: right — a tape infinite to the right from its first cell, as in the lecture notes (the default); infinite: both — a tape infinite in both directions."
+      "detail": "infinite: right — a tape infinite to the right from its first cell (the default); infinite: both — a tape infinite in both directions."
     },
     "writableOnlyForTape": {
       "title": "Storage \"{{id}}\": writable only applies to a tape",
@@ -242,13 +241,13 @@
     },
     "badWritable": {
       "title": "Storage \"{{id}}\": writable is true or false, not \"{{value}}\"",
-      "detail": "writable: true — the machine may write on the tape too; writable: false — it only reads it. By default the input tape of a machine with several storages is read-only, as on the k-tape Turing machine of the lecture notes (9.9); every other tape is writable."
+      "detail": "writable: true — the machine may write on the tape too; writable: false — it only reads it. By default the input tape of a machine with several storages is read-only (the machine works on its other storages); every other tape is writable."
     }
   },
   "ops": {
     "needsDeterministic": {
       "title": "The {{op}} operation requires a deterministic automaton",
-      "detail": "Nondeterminism found: {{spots}}{{ellipsis}}. In a deterministic automaton every (state, symbol) pair has exactly one successor state and there is no ε-transition. The subset construction (determinization, lecture notes 2.16) builds an equivalent DFA, ε-transitions included."
+      "detail": "Nondeterminism found: {{spots}}{{ellipsis}}. In a deterministic automaton every (state, symbol) pair has exactly one successor state and there is no ε-transition. The subset construction (determinization) builds an equivalent DFA, ε-transitions included."
     },
     "needsComplete": {
       "title": "The {{op}} operation requires a complete automaton",
@@ -296,7 +295,7 @@
         "detail": "Every (state, symbol) pair has at most one transition and there is no ε-transition — the subset construction only creates the reachable one-element sets (and ∅ where a transition is missing)."
       },
       "step": {
-        "title": "Subset construction (lecture notes 2.16)",
+        "title": "Subset construction",
         "detail": "The new states are sets of the old ones; the start state is {{start}}. For every set R reached and every letter a: δ'(R, a) = ⋃ δ(r, a) over r ∈ R — where R has several elements, the parts are shown one by one. Only the sets reachable from the start are built, and a set accepts if it contains an accepting state.",
         "detailEpsilon": "The new states are sets of the old ones; the start state is {{startExpr}} = {{start}}. For every set R reached and every letter a: δ'(R, a) = ⋃ E(δ(r, a)) over r ∈ R — a letter is read, then any ε-transitions may follow. Where R has several elements, the parts E(δ(r, a)) are shown one by one. Only the sets reachable from the start are built, and a set accepts if it contains an accepting state."
       },
@@ -305,7 +304,7 @@
         "detail": "{{count}} states were produced out of the possible 2^{{exponent}} = {{possible}} subsets. Accepting: {{accept}}."
       },
       "closures": {
-        "title": "ε-closures (lecture notes 2.16)",
+        "title": "ε-closures",
         "detail": "E(q) is the set of states reachable from q along ε-transitions — any number of them —, q included. The new automaton works with these closures: its start state is the closure of the start state, and after a letter it takes the closure of where the letter leads."
       },
       "emptySet": {
@@ -324,7 +323,7 @@
         "fixLabel": "Use an automatic name"
       },
       "step": {
-        "title": "Introducing the trap state: {{trap}} (lecture notes 2.10)",
+        "title": "Introducing the trap state: {{trap}}",
         "detail": "The new state {{trap}} is not accepting, and every symbol maps it to itself — once there, it can no longer accept. The missing transitions are routed here."
       }
     },
@@ -341,23 +340,23 @@
     "min": {
       "unreachableStates": {
         "title": "Unreachable states",
-        "detail": "No word leads from the start state into {{states}}. The notes (2.29) leave such states out of the finished automaton; here they go first, which gives the same result."
+        "detail": "No word leads from the start state into {{states}}. They have no place in the minimal automaton, so they go first — the result is the same as leaving them out at the end."
       },
       "step0": {
         "title": "Leaving out the unreachable states",
         "detail": "Removed: {{removed}}."
       },
       "step1": {
-        "title": "Initial partition: 0-equivalence (lecture notes 2.4.1)",
+        "title": "Initial partition: 0-equivalence",
         "detail": "A₁ = Q − F and A₂ = F: the empty word already tells the non-accepting and the accepting states apart. {{partition}}"
       },
       "refine": {
         "title": "Round {{round}}: {{round}}-equivalence",
-        "detail": "Two states stay together when every letter takes them into the same group. Splitting: {{splits}}. New partition: {{partition}}. Now the states no word of length at most {{round}} tells apart are together ({{round}}-equivalence, 2.27)."
+        "detail": "Two states stay together when every letter takes them into the same group. Splitting: {{splits}}. New partition: {{partition}}. Now the states no word of length at most {{round}} tells apart are together ({{round}}-equivalence)."
       },
       "fixpoint": {
         "title": "Round {{round}}: nothing splits",
-        "detail": "In every group, every letter takes all states into the same group: {{round}}-equivalence is the same as {{prev}}-equivalence, and then no longer word tells the states apart either (2.27). The groups are the equivalence classes: {{partition}}."
+        "detail": "In every group, every letter takes all states into the same group: {{round}}-equivalence is the same as {{prev}}-equivalence, and then no longer word tells the states apart either. The groups are the equivalence classes: {{partition}}."
       },
       "alreadyMinimal": {
         "title": "The automaton was already minimal",
@@ -368,7 +367,7 @@
         "detail": "States grouped into the same class are linguistically indistinguishable: they accept/reject every word the same way."
       },
       "build": {
-        "title": "The new automaton from the classes (lecture notes 2.29)",
+        "title": "The new automaton from the classes",
         "detail": "Every class is a state. A letter takes all states of a class into the same class — that is the transition. The start state is the class of the old one, {{start}}; the accepting states are the classes of accepting states: {{accept}}."
       },
       "table": {
@@ -387,7 +386,7 @@
         "detail": "If a transition is missing somewhere, the automaton gets \"stuck\" and rejects. The complement should accept these words instead — this requires completing the automaton with a trap state first."
       },
       "step": {
-        "title": "Flipping the accepting states (lecture notes 3.6)",
+        "title": "Flipping the accepting states",
         "detail": "In a complete DFA, every word runs along exactly one path, so swapping accepting/rejecting states yields exactly the complement language. New accepting set: {{accept}}."
       }
     },
@@ -413,12 +412,12 @@
         "difference": "(p,q) is accepting if p is accepting but q is NOT (L₁ \\ L₂)"
       },
       "step": {
-        "title": "Product construction ({{mode}}, lecture notes 3.4)",
+        "title": "Product construction ({{mode}})",
         "detail": "The two automata are run in parallel: the states are (p,q) pairs, δ((p,q),a) = (δ₁(p,a), δ₂(q,a)). Acceptance: {{acceptRule}}. Only reachable pairs are built."
       },
       "extend": {
-        "title": "The {{part}} automaton over the common alphabet (lecture notes 3.4)",
-        "detail": "{{name}} has no transition on {{missing}}: over Σ = {{sigma}} it is an incomplete automaton, so it is completed first (2.10) — every missing transition leads into a new trap state {{trap}}, which never leaves. Its language does not change."
+        "title": "The {{part}} automaton over the common alphabet",
+        "detail": "{{name}} has no transition on {{missing}}: over Σ = {{sigma}} it is an incomplete automaton, so it is completed first — every missing transition leads into a new trap state {{trap}}, which never leaves. Its language does not change."
       }
     },
     "unionEpsilon": {
@@ -427,31 +426,31 @@
         "detail": "An ε-transition leads from a new start state into both automata's start states. The result is an ε-NFA — det(·) turns it into a DFA. (A union of complete DFAs can also be done with the product construction.)"
       },
       "step": {
-        "title": "Union with ε-transitions (lecture notes 3.4)",
+        "title": "Union with ε-transitions",
         "detail": "New start state {{start}}, ε-transitions: {{start}} → {{m1start}}, {{start}} → {{bstart}}. Accepting states: the union of both automata's accepting states."
       }
     },
     "concat": {
       "step": {
-        "title": "Concatenation (lecture notes 3.9)",
+        "title": "Concatenation",
         "detail": "An ε-transition leads from every accepting state of the first automaton to the second automaton's start state ({{start}}). Accepting: only the second automaton's accepting states. The result is an ε-NFA."
       }
     },
     "star": {
       "step": {
-        "title": "Kleene closure (star, lecture notes 3.10)",
+        "title": "Kleene closure (star)",
         "detail": "New start state {{start}} (also accepting — so the empty word is in the language too), an ε-transition to the original start state, and from every accepting state an ε-transition back to {{start}} for repetition."
       }
     },
     "reverse": {
       "step": {
-        "title": "Reversal (lecture notes 4.23)",
+        "title": "Reversal",
         "detail": "Every transition's direction is reversed, an ε-transition leads from the new start state ({{start}}) to the original accepting states, and the original start state becomes the sole accepting state. L(Mᴿ) = { wᴿ : w ∈ L(M) }."
       }
     },
     "toRegex": {
       "numbering": {
-        "title": "Numbering the states (lecture notes 3.21)",
+        "title": "Numbering the states",
         "detail": "The states are numbered 1…{{n}}; the start state {{start}} gets 1. r(p, q, t) describes the words that lead from state p to state q while every intermediate state is among 1…t."
       },
       "base": {
@@ -495,17 +494,17 @@
         "detail": "In every reachable (p,q) state pair of the product automaton, p and q's acceptance status agree, so there is no distinguishing word — the two automata recognize the same language."
       },
       "det": {
-        "title": "Determinizing {{name}} (lecture notes 2.16)",
+        "title": "Determinizing {{name}}",
         "detail": "{{name}} is not a complete deterministic automaton, so the subset construction turns it into a complete DFA: {{count}} states."
       },
       "extend": {
-        "title": "{{name}} over the common alphabet (lecture notes 2.10)",
+        "title": "{{name}} over the common alphabet",
         "detail": "{{name}} has no transition on {{missing}}: those letters lead into a new trap state {{trap}}, so the alphabet is common and the language stays the same."
       },
       "search": {
-        "title": "Looking for a distinguishing word in the product automaton (lecture notes 5.3)",
-        "detailFound": "L({{a}}) = L({{b}}) exactly when (L({{a}}) ∩ ¬L({{b}})) ∪ (¬L({{a}}) ∩ L({{b}})) = ∅ (5.3). The two automata run side by side (the product automaton, 3.4), and a breadth-first search looks for the first reachable pair (p, q) where exactly one accepts. The table shows the pairs in the order of the search, up to the one found.",
-        "detailNone": "L({{a}}) = L({{b}}) exactly when (L({{a}}) ∩ ¬L({{b}})) ∪ (¬L({{a}}) ∩ L({{b}})) = ∅ (5.3). The two automata run side by side (the product automaton, 3.4): in all {{count}} reachable pairs (p, q) both accept or both reject, so the language of the difference is empty."
+        "title": "Looking for a distinguishing word in the product automaton",
+        "detailFound": "L({{a}}) = L({{b}}) exactly when (L({{a}}) ∩ ¬L({{b}})) ∪ (¬L({{a}}) ∩ L({{b}})) = ∅. The two automata run side by side (the product automaton), and a breadth-first search looks for the first reachable pair (p, q) where exactly one accepts. The table shows the pairs in the order of the search, up to the one found.",
+        "detailNone": "L({{a}}) = L({{b}}) exactly when (L({{a}}) ∩ ¬L({{b}})) ∪ (¬L({{a}}) ∩ L({{b}})) = ∅. The two automata run side by side (the product automaton): in all {{count}} reachable pairs (p, q) both accept or both reject, so the language of the difference is empty."
       },
       "table": {
         "word": "word leading there"
@@ -515,7 +514,7 @@
   "grammar": {
     "needsContextFree": {
       "title": "This operation ({{op}}) needs rules of the form A → α",
-      "detail": "Every rule's left-hand side must be a single variable (lecture notes 6.3.1) — ε-rules are fine. The Chomsky classification panel shows which rule breaks this."
+      "detail": "Every rule's left-hand side must be a single variable — ε-rules are fine. The Chomsky classification panel shows which rule breaks this."
     },
     "classify": {
       "startEpsilonNotAllowed": "{{start}} → ε is only allowed if {{start}} occurs on no right-hand side — but it does here",
@@ -536,10 +535,10 @@
     "toFsm": {
       "needsRightLinear": {
         "title": "Only a right-linear grammar can be turned into a finite automaton",
-        "detail": "Every rule must be A → aB or A → a (type 3), or more generally A → uB, A → u, A → B or A → ε with a terminal word u. The construction (lecture notes 4.20): every variable becomes a state; A → aB becomes the transition A →a B; A → a a transition into a new accepting state E; A → ε makes A accepting."
+        "detail": "Every rule must be A → aB or A → a (type 3), or more generally A → uB, A → u, A → B or A → ε with a terminal word u. The construction: every variable becomes a state; A → aB becomes the transition A →a B; A → a a transition into a new accepting state E; A → ε makes A accepting."
       },
       "step": {
-        "title": "Right-linear grammar → NFA (lecture notes 4.20)",
+        "title": "Right-linear grammar → NFA",
         "detail": "Every variable becomes a state, the start variable is the start state, and a new state {{end}} is the accepting one. From A → aB: an a-transition from A to B; from A → a: an a-transition into {{end}}; with S → ε, S accepts too. A longer word u in A → uB or A → u gets new states in between, A → B becomes an ε-transition and A → ε makes A accepting."
       }
     },
@@ -549,15 +548,15 @@
         "detail": "{{mapping}}"
       },
       "step": {
-        "title": "Variables for the states (lecture notes 4.20)",
+        "title": "Variables for the states",
         "detail": "Every state q gets a variable A_q — the state's own name when it already is a valid variable name. The start state's variable is the start variable."
       },
       "needsEpsilonFree": {
         "title": "An automaton without ε-transitions is needed for a grammar",
-        "detail": "The construction of lecture notes 4.20 turns a transition δ(q, a) = p into A_q → aA_p — an ε-transition ({{list}}) would give a rule A_q → A_p, which no type-3 grammar has. Remove the ε-transitions first."
+        "detail": "The construction turns a transition δ(q, a) = p into A_q → aA_p — an ε-transition ({{list}}) would give a rule A_q → A_p, which no type-3 grammar has. Remove the ε-transitions first."
       },
       "newStart": {
-        "title": "A start state with no incoming transition (lecture notes 4.19)",
+        "title": "A start state with no incoming transition",
         "detail": "{{start}} accepts, so the grammar gets S → ε — and then S may occur on no right-hand side. But transitions lead into {{start}}: a new state {{copy}}, a copy of {{start}} (accepting as well), takes them over and moves on just as {{start}} does. The language stays the same."
       },
       "table": {
@@ -571,24 +570,24 @@
     "toPda": {
       "needsContextFree": {
         "title": "Only a grammar of A → α rules can be turned into a pushdown automaton",
-        "detail": "In the construction (lecture notes 7.12) the stack holds the rest of the sentential form, and a variable on its top is replaced by a right-hand side — so every left-hand side must be a single variable. The Chomsky classification panel shows which rule breaks this."
+        "detail": "In the construction the stack holds the rest of the sentential form, and a variable on its top is replaced by a right-hand side — so every left-hand side must be a single variable. The Chomsky classification panel shows which rule breaks this."
       },
       "emptyStackInfo": {
         "title": "Built a PDA that accepts by empty stack",
         "detail": "The stack holds the derivation's current sentential form. If a variable is on top of the stack, a rule is applied (an ε-step); if a terminal, it's matched against the next input letter. A word is accepted exactly when the input is exhausted and the stack is empty."
       },
       "step": {
-        "title": "CF grammar → pushdown automaton (lecture notes 7.12)",
+        "title": "CF grammar → pushdown automaton",
         "detail": "A single state {{q}}; the stack starts with {{z0}}. First (q, ε, {{z0}}) → (q, {{start}}{{z1}}): the start variable goes onto the stack, {{z1}} below it. A variable on top: for every rule A → α, (q, ε, A) → (q, α) — {{ruleCount}} such steps. A terminal on top: (q, a, a) → (q, ε) matches it with the next input letter — {{terminalCount}} such steps. Finally (q, ε, {{z1}}) → (q, ε): when the sentential form is used up, the stack empties, and the word is accepted with an empty stack."
       }
     },
     "epsfree": {
       "needsContextFree": {
         "title": "ε-removal works on grammars of A → α rules",
-        "detail": "The procedure of lecture notes 6.3.1 leaves variables out of right-hand sides, so every left-hand side must be a single variable. The Chomsky classification panel shows which rule breaks this."
+        "detail": "Removing the ε-rules leaves variables out of right-hand sides, so every left-hand side must be a single variable. The Chomsky classification panel shows which rule breaks this."
       },
       "step1": {
-        "title": "1. Nullable variables (lecture notes 6.3.1)",
+        "title": "1. Nullable variables",
         "detailNone": "No nullable variable — the grammar is already ε-free.",
         "detailSome": "N₁ holds the variables with an ε-rule; N(i+1) adds every A that has a rule A → α where every symbol of α is already in N(i). It stops when a round adds nothing. Nullable (derivable to ε): {{nullable}}."
       },
@@ -603,7 +602,7 @@
     },
     "unitfree": {
       "step1": {
-        "title": "1. The graph of unit rules (lecture notes 6.3.2)",
+        "title": "1. The graph of unit rules",
         "detail": "Unit rules (A → B): {{edges}}. U(A) is the set of variables reachable from A along them, A included.",
         "detailNone": "There is no unit rule (A → B) — the grammar stays the same."
       },
@@ -613,13 +612,13 @@
       },
       "epsilonFirst": {
         "title": "The grammar still has ε-rules",
-        "detail": "Removing the ε-rules afterwards can create new unit rules (A → BC with a nullable C gives A → B), so the lecture notes remove the ε-rules first.",
+        "detail": "Removing the ε-rules afterwards can create new unit rules (A → BC with a nullable C gives A → B), so the ε-rules are removed first.",
         "fix": "ε-removal first"
       }
     },
     "trim": {
       "step1": {
-        "title": "1. Variables that derive a terminal word (lecture notes 6.3.3)",
+        "title": "1. Variables that derive a terminal word",
         "detail": "B₀ = Σ, and Bᵢ₊₁ adds every A with a rule A → α whose symbols are all in Bᵢ. The variables outside the final set derive no terminal word; their rules are dropped: {{removed}}.",
         "detailNone": "B₀ = Σ, and Bᵢ₊₁ adds every A with a rule A → α whose symbols are all in Bᵢ. Every variable derives a terminal word."
       },
@@ -648,7 +647,7 @@
         "detail": "A grammar in Chomsky normal form cannot generate ε, so the rule {{start}} → ε is dropped: the result generates L(G) \\ {ε}."
       },
       "step2": {
-        "title": "Dropping the ε-rule (lecture notes 6.25)",
+        "title": "Dropping the ε-rule",
         "detail": "The rule {{start}} → ε is dropped: there is no ε-rule in Chomsky normal form."
       },
       "step3": {
@@ -674,11 +673,11 @@
   "pda": {
     "needsPda": {
       "title": "{{op}} needs a pushdown automaton",
-      "detail": "The constructions of lecture notes 7.9 and 7.16 work on a machine with an input head and a single stack. A machine without storage is a finite automaton: toGrammar gives its regular grammar (4.20)."
+      "detail": "This construction works on a machine with an input head and a single stack. A machine without storage is a finite automaton: toGrammar gives its regular grammar."
     },
     "toEmptyStack": {
       "step": {
-        "title": "Acceptance by final state → by empty stack (lecture notes 7.9)",
+        "title": "Acceptance by final state → by empty stack",
         "detail": "A new start state {{start}} puts a new symbol {{z}} at the bottom of the stack, under its start content: {{first}}. M never takes {{z}} out, so the stack cannot empty while M runs — not even where M's own stack would. From every accepting state ({{accept}}) the machine may go to {{qe}}, taking any symbol, and {{qe}} empties the stack: a word is accepted by empty stack exactly when M reaches an accepting state with the word read."
       },
       "already": {
@@ -688,7 +687,7 @@
     },
     "toFinalState": {
       "step": {
-        "title": "Acceptance by empty stack → by final state (lecture notes 7.9)",
+        "title": "Acceptance by empty stack → by final state",
         "detail": "A new start state {{start}} puts a new symbol {{z}} at the bottom of the stack, under its start content: {{first}}. M′ never takes {{z}} out, so when only {{z}} is left, M′ has emptied its stack — then from any of its states the machine goes to {{qf}}, the only accepting state, where it stops: (q, ε, {{z}}) → ({{qf}}, {{z}})."
       },
       "already": {
@@ -699,21 +698,21 @@
     "toGrammar": {
       "bottom": {
         "title": "A bottom symbol for the stack first",
-        "detailInit": "The stack starts with {{init}}, not with a single symbol Z₀ as 7.16 needs. A new start state {{start}} writes it above a new bottom symbol {{z}}: {{first}}. Only (q, ε, {{z}}) → ({{qe}}, ε) takes {{z}} out, into {{qe}}, where nothing moves — so the stack is empty only at the end, and the machine accepts by empty stack the same words.",
-        "detailEmptied": "The first step of 7.16 lets a transition that takes nothing from the stack take every symbol and put it back. That keeps the language only when the machine cannot move once its stack is empty — but here the stack can empty in {{state}}, and {{transition}} still moves from there. So first a new bottom symbol {{z}} goes under the stack's content: {{first}}. Only (q, ε, {{z}}) → ({{qe}}, ε) takes {{z}} out, into {{qe}}, where nothing moves — so the stack is empty only at the end, and the machine accepts by empty stack the same words."
+        "detailInit": "The stack starts with {{init}}, not with a single symbol Z₀ as the construction needs. A new start state {{start}} writes it above a new bottom symbol {{z}}: {{first}}. Only (q, ε, {{z}}) → ({{qe}}, ε) takes {{z}} out, into {{qe}}, where nothing moves — so the stack is empty only at the end, and the machine accepts by empty stack the same words.",
+        "detailEmptied": "The construction's first step lets a transition that takes nothing from the stack take every symbol and put it back. That keeps the language only when the machine cannot move once its stack is empty — but here the stack can empty in {{state}}, and {{transition}} still moves from there. So first a new bottom symbol {{z}} goes under the stack's content: {{first}}. Only (q, ε, {{z}}) → ({{qe}}, ε) takes {{z}} out, into {{qe}}, where nothing moves — so the stack is empty only at the end, and the machine accepts by empty stack the same words."
       },
       "replace": {
-        "title": "1. Every step takes a symbol from the stack (lecture notes 7.16)",
+        "title": "1. Every step takes a symbol from the stack",
         "detail": "(q′, α) ∈ δ(q, a, ε) is replaced by (q′, αA) ∈ δ(q, a, A) for every A ∈ Γ: the symbol on top is taken and put back. The variables [qAp] need this — every step takes exactly one symbol from the stack.",
         "detailNone": "Every transition takes a symbol from the stack already: nothing to replace."
       },
       "variables": {
-        "title": "2. The variables [qAp] (lecture notes 7.16)",
-        "detail": "V = {[qAp] : q, p ∈ Q, A ∈ Γ} ∪ {S}: {{states}}² · {{symbols}} + 1 = {{count}} variables. [qAp] stands for A put on the stack in state q and taken out — with everything that came in its place — in state p: it derives exactly the words x with (q, x, A) ⇒* (p, ε, ε) (7.5); {{example}} for instance. S is the start variable: {{startRules}}, as a word is accepted when the machine, started in {{q0}} with {{z0}}, empties its stack in some state."
+        "title": "2. The variables [qAp]",
+        "detail": "V = {[qAp] : q, p ∈ Q, A ∈ Γ} ∪ {S}: {{states}}² · {{symbols}} + 1 = {{count}} variables. [qAp] stands for A put on the stack in state q and taken out — with everything that came in its place — in state p: it derives exactly the words x with (q, x, A) ⇒* (p, ε, ε); {{example}} for instance. S is the start variable: {{startRules}}, as a word is accepted when the machine, started in {{q0}} with {{z0}}, empties its stack in some state."
       },
       "rules": {
-        "title": "3. Rules from the transitions (lecture notes 7.16)",
-        "detail": "(q′, ε) ∈ δ(q, a, A) gives [qAq′] → a; (q′, B₁…B_k) ∈ δ(q, a, A) gives [qAq″] → a[q′B₁q₂][q₂B₂q₃]…[q_kB_kq″] for every choice of the states q₂, …, q_k, q″ — |Q|^k rules. With a = ε a rule can be [qAq′] → ε: every rule is A → α, and after ε-removal the grammar is of class 2 (6.14). {{count}} rules in all."
+        "title": "3. Rules from the transitions",
+        "detail": "(q′, ε) ∈ δ(q, a, A) gives [qAq′] → a; (q′, B₁…B_k) ∈ δ(q, a, A) gives [qAq″] → a[q′B₁q₂][q₂B₂q₃]…[q_kB_kq″] for every choice of the states q₂, …, q_k, q″ — |Q|^k rules. With a = ε a rule can be [qAq′] → ε: every rule is A → α, and after ε-removal the grammar is of class 2. {{count}} rules in all."
       },
       "tooLarge": {
         "title": "The grammar would have {{count}} rules",
@@ -729,7 +728,7 @@
       },
       "useless": {
         "title": "{{useless}} of the {{count}} variables are useless",
-        "detail": "The construction makes [qAp] for every two states and every symbol, also where the machine can never take A out in p after putting it on in q. The grammar is right as the notes build it; removing the useless symbols (6.3.3) leaves the same language with far fewer rules.",
+        "detail": "The construction makes [qAp] for every two states and every symbol, also where the machine can never take A out in p after putting it on in q. The grammar is right as it is; removing the useless symbols (trim) leaves the same language with far fewer rules.",
         "fix": "remove the useless symbols"
       }
     },
@@ -782,7 +781,7 @@
     "autoConvert": {
       "regex": {
         "title": "Automatically converted the regex {{name}} to an ε-NFA",
-        "detail": "The operation expects a finite automaton; one is built from the regular expression as in lecture notes 3.20 — explicitly: toFsm({{name}})."
+        "detail": "The operation expects a finite automaton; one is built from the regular expression — explicitly: toFsm({{name}})."
       },
       "grammar": {
         "title": "Automatically converted the grammar {{name}} to a finite automaton",

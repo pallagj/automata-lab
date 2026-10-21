@@ -25,7 +25,10 @@
     "openFolder": "Open this folder",
     "renameHint": "Click to rename",
     "worksheetMenu": "Worksheet menu",
-    "settings": "Settings"
+    "settings": "Settings",
+    "github": "GitHub",
+    "reportIssue": "Report a bug or suggest an idea",
+    "sourceCode": "Source code on GitHub"
   },
   "browser": {
     "title": "Worksheets",
@@ -171,17 +174,24 @@
         "regex": "a regular expression as a value — toFsm() turns it into an automaton",
         "equal": "equivalence check, with a counterexample",
         "conversions": "conversions between automaton ↔ grammar, automaton → regular expression, grammar ↔ pushdown automaton",
-        "pdaAcceptance": "a pushdown automaton accepting the same language by empty stack / by final state (lecture notes 7.9)",
+        "pdaAcceptance": "a pushdown automaton accepting the same language by empty stack / by final state",
         "namedOps": "operations between named automata: concatenation, union, closure — letter literals only inside regex(…)"
       },
       "optionalName": "The name is optional: without one the result is still shown, it just can't be referenced from other cells."
     },
     "storages": {
       "heading": "Storages: stack, queue, tape",
-      "example": "Machine:               # pushdown automaton: one stack\n  name: P\n  charset: a, b\n  states: q_0, q_1, q_2\n  init: q_0\n  accept: q_2           # or acceptMode: emptyStorages\n  storages:\n    stack: stack       # starts with Z; its alphabet is the symbols it uses\n  transitions:         #   or: stack: { type: stack, charset: [Z, A], init: Z }\n    - (q_0, a, Z) -> (q_0, AZ)   # reading a with Z on top: AZ instead of Z\n    - (q_0, b, A) -> (q_1, ε)    # ε = push nothing\n    - (q_1, ε, Z) -> (q_2, Z)    # ε-step (type eps)\n\nMachine:               # Turing machine: one tape, holding the input\n  name: T\n  charset: a, b\n  states: s, ok\n  init: s\n  accept: ok\n  input: tape          # the input is placed on this storage\n  storages:\n    tape:\n      type: tape\n      charset: a, b, x, _   # Γ: Σ, the blank _ and more (by default Σ and _)\n  transitions:\n    - (s, a) -> (s, x, R)    # read a, write x, move right (R, L, S: right, left, stay)\n    - (s, _) -> (ok, _, S)   # _ = the blank\n\nMachine:               # 2-tape Turing machine: copies the input onto t2\n  charset: a, b\n  states: q_0, ok\n  init: q_0\n  accept: ok\n  input: t1            # the input tape is read-only (lecture notes 9.9)\n  storages:\n    t1: tape           # t1: { type: tape, writable: true } — written too\n    t2: tape\n  transitions:\n    - (q_0, a, _) -> (q_0, a, R, R)   # reads a and _, writes a on t2, both heads move right\n    - (q_0, b, _) -> (q_0, b, R, R)\n    - (q_0, _, _) -> (ok, _, S, S)",
-      "body1": "A transition is written as δ in the lecture notes:",
+      "example": "Machine:               # pushdown automaton: one stack\n  name: P\n  charset: a, b\n  states: q_0, q_1, q_2\n  init: q_0\n  accept: q_2           # or acceptMode: emptyStorages\n  storages:\n    stack: stack       # starts with Z; its alphabet is the symbols it uses\n  transitions:         #   or: stack: { type: stack, charset: [Z, A], init: Z }\n    - (q_0, a, Z) -> (q_0, AZ)   # reading a with Z on top: AZ instead of Z\n    - (q_0, b, A) -> (q_1, ε)    # ε = push nothing\n    - (q_1, ε, Z) -> (q_2, Z)    # ε-step (type eps)\n\nMachine:               # Turing machine: one tape, holding the input\n  name: T\n  charset: a, b\n  states: s, ok\n  init: s\n  accept: ok\n  input: tape          # the input is placed on this storage\n  storages:\n    tape:\n      type: tape\n      charset: a, b, x, _   # Γ: Σ, the blank _ and more (by default Σ and _)\n  transitions:\n    - (s, a) -> (s, x, R)    # read a, write x, move right (R, L, S: right, left, stay)\n    - (s, _) -> (ok, _, S)   # _ = the blank\n\nMachine:               # 2-tape Turing machine: copies the input onto t2\n  charset: a, b\n  states: q_0, ok\n  init: q_0\n  accept: ok\n  input: t1            # the input tape is read-only\n  storages:\n    t1: tape           # t1: { type: tape, writable: true } — written too\n    t2: tape\n  transitions:\n    - (q_0, a, _) -> (q_0, a, R, R)   # reads a and _, writes a on t2, both heads move right\n    - (q_0, b, _) -> (q_0, b, R, R)\n    - (q_0, _, _) -> (ok, _, S, S)",
+      "body1": "A transition is written like the transition function δ:",
       "transitionSyntax": "(q, a, Z) -> (p, γ)",
-      "body2": "— δ's arguments are the state, the symbol read and what each storage reads (a stack's top, a tape's cell); its value is the next state and what each storage gets (the word pushed; the symbol written on a tape), then the moves of the tapes' heads — as the lecture notes write δ(q, a₁…a_k) = (q′, b₂…b_k, d₁…d_k). When a machine has several storages its input tape is read-only, as the first tape of the notes' k-tape Turing machine (9.9): nothing is written on it, so δ's value has no place for it (writable: true makes it writable). On the graph an edge shows each tape's a → b (a read-only tape just the symbol read), then the moves: a, _ → b, R, R. A tape is infinite to the right from its first cell, as in the lecture notes: a head stepping left off it halts the machine with an error (infinite: both makes it infinite both ways). Any number of storages can be combined, one argument each, in their order: two stacks already build a Turing-power machine (e.g. aⁿbⁿcⁿ, which is impossible with a pushdown automaton), a queue gives a queue automaton. The automaton operations (det, min…) only apply to storage-free machines — the app explains why."
+      "body2": " — on the left the state, the symbol read and what each storage reads (the top of a stack, the cell under a tape's head); on the right the next state, what each storage gets (the word pushed onto a stack, the symbol written on a tape), then the move of each tape's head (R, L or S).",
+      "points": {
+        "inputTape": "With several storages the input tape is read-only: the machine only reads its input and works on its other storages, so δ's value has no place for it. writable: true makes it writable.",
+        "edge": "On the graph an edge shows a → b for each tape (just the symbol read for a read-only tape), then the moves: a, _ → b, R, R.",
+        "tape": "A tape is infinite to the right from its first cell; a head stepping left off it halts the machine with an error. infinite: both makes it infinite in both directions.",
+        "combine": "Any number of storages can be combined, one argument each, in their order: two stacks already make a machine as strong as a Turing machine (e.g. for aⁿbⁿcⁿ, which no pushdown automaton accepts), a queue makes a queue automaton.",
+        "ops": "The automaton operations (det, min…) only apply to machines without storage — when one does not apply, the app tells you why."
+      }
     },
     "grammar": {
       "heading": "Grammar",
@@ -194,6 +204,10 @@
       "nfaBranch": "During simulation, click a highlighted edge to choose an NFA branch.",
       "yaml": "The result of an expression cell can be expanded into editable YAML using the header icon.",
       "acceptedWords": "Click a chip under \"Accepted words\" to simulate it immediately."
+    },
+    "feedback": {
+      "body": "Found a bug, or have an idea?",
+      "link": "Tell us on GitHub"
     }
   },
   "detail": {
@@ -237,7 +251,7 @@
       "optional": "optional",
       "emptyWord": "empty word",
       "parens": "parenthesization",
-      "toFsmHint": "New cell: the automaton of the expression (lecture notes 3.20)",
+      "toFsmHint": "New cell: the automaton of the expression",
       "toFsmLabel": "convert to ε-NFA",
       "structure": "Structure of the expression",
       "wordTest": "Word test",
@@ -314,7 +328,7 @@
       "noDerivableWords": "No derivable word found up to length 8.",
       "moreWordsPossible": "…the language may be larger than this (the enumeration covers length 8).",
       "cnfBadge": "Chomsky normal form",
-      "cykTitle": "CYK table (lecture notes 8.1)",
+      "cykTitle": "CYK table",
       "cykIntro": "Row j, column i holds the variables that derive the j letters long subword starting at the i-th letter; the word is derivable when the start variable is in the top cell.",
       "cykConverted": "The grammar is not in Chomsky normal form, so the table is computed on {{expr}}:",
       "cykUnambiguous": "The word has exactly one derivation tree.",
@@ -322,10 +336,10 @@
       "exact": "exact decision with the CYK algorithm",
       "toEpsilonFree": "ε-removal",
       "notes": {
-        "contextFreeForm": "Every rule is A → α — only its ε-rules keep it out of type 2: ε-removal (lecture notes 6.3.1) makes it type 2, so its language is context-free (6.14).",
+        "contextFreeForm": "Every rule is A → α — only its ε-rules keep it out of type 2: ε-removal makes it type 2, so its language is context-free.",
         "rightLinear": "Its rules are A → uB, A → u, A → B or A → ε (u a terminal word): not type 3 by the definition, but it turns into a finite automaton, so its language is regular.",
-        "leftLinear": "Its rules are A → Bu, A → u or A → ε, like the left-regular grammars of lecture notes 4.23: not type 3, but its language is regular.",
-        "nonContracting": "No rule shortens — a non-contracting grammar (lecture notes 12.5): not of the form βAγ → βαγ, yet its language is context-sensitive (12.6)."
+        "leftLinear": "Its rules are A → Bu, A → u or A → ε — a left-regular grammar: not type 3, but its language is regular.",
+        "nonContracting": "No rule shortens — a non-contracting grammar: not of the form βAγ → βαγ, yet its language is context-sensitive."
       },
       "cykCellHint": "Click: why these variables?",
       "cykCellIntro": "the subword \"{{word}}\" derives from these variables:",
@@ -383,7 +397,7 @@
       "tapeStartPlaceholder": "start of the tape — click and type",
       "oneStepAllBranches": "One step (all branches)",
       "hitLimit": "hit the step limit",
-      "decidedByGrammar": "Decided exactly: CYK (lecture notes 8.1) on the grammar of the pushdown automaton (7.16)",
+      "decidedByGrammar": "Decided exactly: CYK on the grammar of the pushdown automaton",
       "step": "Step: {{n}}",
       "nondeterministicStepInfo": "The machine is nondeterministic: every possible branch is followed at once. Step: {{n}} · active configurations: {{count}}",
       "noMoreBranches": "No branch left to continue — the word is rejected.",
@@ -392,16 +406,16 @@
       "topLeft": "top on the left",
       "frontLeft": "front on the left",
       "moreConfigs": "… and {{count}} more configurations",
-      "fellOff": "The head of tape {{id}} stepped left off the tape's first cell — the machine halts with an error, so this branch rejects (lecture notes 9.1).",
+      "fellOff": "The head of tape {{id}} stepped left off the tape's first cell — the machine halts with an error, so this branch rejects.",
       "fellOffShort": "fell off tape {{id}}",
       "fellOffCell": "the head stepped off the tape here",
       "firstCell": "the tape's first cell — the tape is infinite to the right only",
       "tapeBothWays": "{{id}}: infinite both ways",
-      "tapeBothWaysHint": "This tape has no first cell: the head may move left without limit. The lecture notes' tape is infinite to the right only (infinite: right, the default).",
+      "tapeBothWaysHint": "This tape has no first cell: the head may move left without limit. By default a tape is infinite to the right only (infinite: right).",
       "tapeReadOnly": "{{id}}: read-only",
       "tapeReadOnlyHint": "The machine only reads this tape, it writes nothing on it (writable: false).",
       "inputTapeWritable": "{{id}}: writable input tape",
-      "inputTapeWritableHint": "On the k-tape Turing machine of the lecture notes (9.9) the input tape is read-only; this machine may write on it too (writable: true)."
+      "inputTapeWritableHint": "By default the input tape of a machine with several storages is read-only; this machine may write on it too (writable: true)."
     }
   },
   "editor": {
@@ -524,8 +538,8 @@
       "readHead": "read head",
       "writtenToStorage": "written onto storage {{id}}",
       "inputTape": "Input tape",
-      "inputTapeHint": "The k-tape Turing machine of the lecture notes (9.9) only reads its input tape; the other tapes are its work tapes. With a writable input tape the machine may overwrite its input too (writable: true).",
-      "inputTapeReadOnly": "read-only (lecture notes 9.9)",
+      "inputTapeHint": "By default the machine only reads its input tape; the other tapes are its work tapes. With a writable input tape the machine may overwrite its input too (writable: true).",
+      "inputTapeReadOnly": "read-only",
       "inputTapeWritable": "written too",
       "acceptance": "Acceptance",
       "acceptFinalState": "with an accepting state",

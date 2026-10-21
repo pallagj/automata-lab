@@ -654,10 +654,16 @@
 }
 
 /* popovers */
-.browser-popover button {
+.browser-popover button,
+.menu.browser-popover a {
   display: flex;
   align-items: center;
   gap: 9px;
+}
+
+/* a link's icon stays beside its text, however long the text runs */
+.menu.browser-popover a > svg {
+  flex: none;
 }
 
 .browser-popover button.danger {

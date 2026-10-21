@@ -146,7 +146,7 @@ class Builder {
   states: string[] = [];
   transitions: { from: string; symbol: string; to: string }[] = [];
   alphabet = new Set<string>();
-  /** one row per subexpression, inside out: the expression, the notes' section, what it adds, start, accepting */
+  /** one row per subexpression, inside out: the expression, what it adds, start, accepting */
   rows: string[][] = [];
 
   newState(): string {
@@ -160,8 +160,8 @@ class Builder {
     this.transitions.push({ from, symbol, to });
   }
 
-  private record(n: Node, section: string, added: string[], f: Frag) {
-    this.rows.push([show(n), section, added.join(", ") || "—", f.start, f.accept.join(", ") || "∅"]);
+  private record(n: Node, added: string[], f: Frag) {
+    this.rows.push([show(n), added.join(", ") || "—", f.start, f.accept.join(", ") || "∅"]);
     return f;
   }
 
@@ -170,19 +170,19 @@ class Builder {
       case "empty": {
         // one state, not accepting: no word is accepted
         const s = this.newState();
-        return this.record(node, "3.3", [], { start: s, accept: [] });
+        return this.record(node, [], { start: s, accept: [] });
       }
       case "eps": {
         // one accepting state and no transition: only ε
         const s = this.newState();
-        return this.record(node, "3.3", [], { start: s, accept: [s] });
+        return this.record(node, [], { start: s, accept: [s] });
       }
       case "lit": {
         const s = this.newState();
         const a = this.newState();
         this.alphabet.add(node.c);
         this.add(s, node.c, a);
-        return this.record(node, "3.3", [`${s} →${node.c} ${a}`], { start: s, accept: [a] });
+        return this.record(node, [`${s} →${node.c} ${a}`], { start: s, accept: [a] });
       }
       case "alt":
       case "opt": {
@@ -192,7 +192,7 @@ class Builder {
         const fb = this.build(node.t === "alt" ? node.b : { t: "eps" });
         this.add(s, EPS, fa.start);
         this.add(s, EPS, fb.start);
-        return this.record(node, "3.4", [`${s} →ε ${fa.start}`, `${s} →ε ${fb.start}`], {
+        return this.record(node, [`${s} →ε ${fa.start}`, `${s} →ε ${fb.start}`], {
           start: s,
           accept: [...fa.accept, ...fb.accept]
         });
@@ -202,7 +202,7 @@ class Builder {
         const fa = this.build(node.a);
         const fb = this.build(node.b);
         for (const x of fa.accept) this.add(x, EPS, fb.start);
-        return this.record(node, "3.9", fa.accept.map((x) => `${x} →ε ${fb.start}`), { start: fa.start, accept: fb.accept });
+        return this.record(node, fa.accept.map((x) => `${x} →ε ${fb.start}`), { start: fa.start, accept: fb.accept });
       }
       case "star": {
         // a new accepting start state, ε into the old start, ε back from the accepting states
@@ -210,7 +210,7 @@ class Builder {
         const fa = this.build(node.a);
         this.add(s, EPS, fa.start);
         for (const x of fa.accept) this.add(x, EPS, s);
-        return this.record(node, "3.10", [`${s} →ε ${fa.start}`, ...fa.accept.map((x) => `${x} →ε ${s}`)], {
+        return this.record(node, [`${s} →ε ${fa.start}`, ...fa.accept.map((x) => `${x} →ε ${s}`)], {
           start: s,
           accept: [s]
         });
@@ -299,7 +299,6 @@ export function regexToNFA(pattern: string, name = "R"): OpResult<FSM> {
       table: {
         headers: [
           tx("regex.table.subexpression"),
-          tx("regex.table.section"),
           tx("regex.table.added"),
           tx("regex.table.start"),
           tx("regex.table.accepting")

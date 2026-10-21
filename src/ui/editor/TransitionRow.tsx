@@ -53,6 +53,34 @@ export function transitionFields(
   return fields;
 }
 
+/** The fields in the notation's order: δ's arguments, then its value — what is written, then the moves. */
+function deltaOrder(fields: TransitionField[]): { args: number[]; values: number[] } {
+  return {
+    args: fields.flatMap((f, n) => (f.side === "arg" ? [n] : [])),
+    values: [
+      ...fields.flatMap((f, n) => (f.side === "value" && f.kind !== "move" ? [n] : [])),
+      ...fields.flatMap((f, n) => (f.kind === "move" ? [n] : []))
+    ]
+  };
+}
+
+/** The parts of a δ row before its remove button: δ(, the arguments and their commas, ) =, the value. */
+export function deltaColumns(fields: TransitionField[]): number {
+  const { args, values } = deltaOrder(fields);
+  const list = (n: number) => 2 * n - 1;
+  return 1 + list(1 + args.length) + 1 + (values.length === 0 ? 1 : 1 + list(1 + values.length) + 1);
+}
+
+/**
+ * δ rows one under the other, their parts in shared columns: every comma, = and field
+ * stands under the one above it, however long a state's name is.
+ */
+export const DeltaRows: React.FC<{ fields: TransitionField[]; children: React.ReactNode }> = ({ fields, children }) => (
+  <div className="ef-delta-rows" style={{ gridTemplateColumns: `repeat(${deltaColumns(fields)}, auto) 1fr` }}>
+    {children}
+  </div>
+);
+
 /** A new transition's fields: all empty, a head moving right. */
 export const emptyFields = (fields: TransitionField[]): string[] => fields.map((f) => (f.kind === "move" ? "R" : ""));
 
@@ -118,6 +146,7 @@ export const TransitionRow: React.FC<{
       onChange={onSet ?? (() => {})}
       readOnly={!onSet}
       digits
+      className="ef-state"
       placeholder={placeholder}
       onEnter={onEnter}
     />
@@ -154,13 +183,9 @@ export const TransitionRow: React.FC<{
       </div>
     );
 
-  const args = [state("from", from, onFrom, "q"), ...fields.flatMap((f, n) => (f.side === "arg" ? [field(n)] : []))];
-  // δ's value as the notes write it: what is written, then the moves (9.9)
-  const results = [
-    state("to", to, onTo, "p"),
-    ...fields.flatMap((f, n) => (f.side === "value" && f.kind !== "move" ? [field(n)] : [])),
-    ...fields.flatMap((f, n) => (f.kind === "move" ? [field(n)] : []))
-  ];
+  const order = deltaOrder(fields);
+  const args = [state("from", from, onFrom, "q"), ...order.args.map(field)];
+  const results = [state("to", to, onTo, "p"), ...order.values.map(field)];
   const list = (els: React.ReactElement[]) =>
     els.flatMap((el, i) => (i === 0 ? [el] : [<span key={`c${el.key}`} className="ef-op ef-comma">,</span>, el]));
   return (

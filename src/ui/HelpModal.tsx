@@ -2,6 +2,9 @@ import React from "react";
 import { rich } from "./Rich";
 import { useTranslation } from "react-i18next";
 import { X } from "lucide-react";
+import { NEW_ISSUE_URL } from "./GitHubMenu";
+
+const STORAGE_POINTS = ["inputTape", "edge", "tape", "combine", "ops"] as const;
 
 export const HelpModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
   const { t } = useTranslation();
@@ -96,6 +99,11 @@ export const HelpModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
           {t("help.storages.body1")} <code>{t("help.storages.transitionSyntax")}</code>
           {t("help.storages.body2")}
         </p>
+        <ul>
+          {STORAGE_POINTS.map((p) => (
+            <li key={p}>{t(`help.storages.points.${p}`)}</li>
+          ))}
+        </ul>
 
         <h3>{t("help.grammar.heading")}</h3>
         <pre>{t("help.grammar.example")}</pre>
@@ -108,6 +116,13 @@ export const HelpModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
           <li>{t("help.tips.yaml")}</li>
           <li>{t("help.tips.acceptedWords")}</li>
         </ul>
+
+        <p className="help-feedback">
+          {t("help.feedback.body")}{" "}
+          <a href={NEW_ISSUE_URL} target="_blank" rel="noopener noreferrer">
+            {t("help.feedback.link")}
+          </a>
+        </p>
       </div>
     </div>
   );

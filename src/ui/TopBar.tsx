@@ -18,6 +18,7 @@ import {
 import { HelpModal } from "./HelpModal";
 import { LanguageSwitcher } from "./LanguageSwitcher";
 import { SettingsMenu } from "./SettingsMenu";
+import { GitHubMenu } from "./GitHubMenu";
 import { BrowserTab, WorksheetBrowser } from "./browser/WorksheetBrowser";
 import { InlineInput, MovePanel, Popover } from "./browser/controls";
 
@@ -144,6 +145,7 @@ export const TopBar: React.FC = () => {
         >
           {theme === "dark" ? <Sun size={17} /> : <Moon size={17} />}
         </button>
+        <GitHubMenu />
       </div>
 
       {menu?.t === "worksheet" && (

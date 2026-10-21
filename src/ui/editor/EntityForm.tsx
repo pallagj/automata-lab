@@ -16,7 +16,7 @@ import { deltaToRow, fieldCount, readDelta, rowToDelta, transitionScalar, writeD
 import { canonicalLabel, symbolsText } from "../../core/symbols";
 import { SymbolField } from "./SymbolField";
 import { arrowKeysAcrossFields } from "./formNav";
-import { emptyFields, TransitionHead, TransitionRow, transitionFields } from "./TransitionRow";
+import { DeltaRows, emptyFields, TransitionHead, TransitionRow, transitionFields } from "./TransitionRow";
 import { RuleHead, RuleRow } from "./RuleRow";
 import { parseMachine, parseStorageEntry, splitTopLevel } from "../../core/parse/definitionParser";
 import { yamlItem } from "../../core/parse/serialize";
@@ -579,6 +579,38 @@ export const EntityForm: React.FC<Props> = ({ source, onChange }) => {
   // one storage's alphabet stands with Σ, as in the notes' tuples; several have a column each
   const single = k === "machine" && draft.storages.length === 1 ? draft.storages[0] : null;
 
+  const transitionRow = (row: string[], i: number) => {
+    const from = row[0] ?? "";
+    const to = row.length > 1 ? row[row.length - 1] : "";
+    return (
+      <TransitionRow
+        key={i}
+        fields={fields}
+        notation={symbols}
+        from={from}
+        to={to}
+        values={row.slice(1, -1)}
+        onChange={(values) => setRowParts(i, [from, ...values, to])}
+        onFrom={(v) => setRowParts(i, [v, ...row.slice(1)])}
+        onTo={(v) => setRowParts(i, [...row.slice(0, -1), v])}
+        onRemove={() => removeRow(i)}
+      />
+    );
+  };
+  const ruleRow = (row: string[], i: number) => (
+    <RuleRow
+      key={i}
+      notation={symbols}
+      left={row[0]}
+      right={row.slice(1)}
+      onLeft={(v) => setRowParts(i, [v, ...row.slice(1)])}
+      onRight={(alternatives) => setRowParts(i, [row[0], ...alternatives])}
+      onRemove={() => removeRow(i)}
+      // digits go to subscripts in variables, unless the digit is a terminal (S → 0S1)
+      digits={(ch) => !terminals.includes(ch)}
+    />
+  );
+
   return (
     <div
       className={`entity-form ${symbols ? "ef-symbols" : ""}`}
@@ -736,39 +768,11 @@ export const EntityForm: React.FC<Props> = ({ source, onChange }) => {
         </button>
         {rowsOpen && k === "machine" && !symbols && <TransitionHead fields={fields} />}
         {rowsOpen && k === "grammar" && !symbols && <RuleHead />}
-        {rowsOpen && draft.rows.map((row, i) => {
-          if (k === "machine") {
-            const from = row[0] ?? "";
-            const to = row.length > 1 ? row[row.length - 1] : "";
-            return (
-              <TransitionRow
-                key={i}
-                fields={fields}
-                notation={symbols}
-                from={from}
-                to={to}
-                values={row.slice(1, -1)}
-                onChange={(values) => setRowParts(i, [from, ...values, to])}
-                onFrom={(v) => setRowParts(i, [v, ...row.slice(1)])}
-                onTo={(v) => setRowParts(i, [...row.slice(0, -1), v])}
-                onRemove={() => removeRow(i)}
-              />
-            );
-          }
-          return (
-            <RuleRow
-              key={i}
-              notation={symbols}
-              left={row[0]}
-              right={row.slice(1)}
-              onLeft={(v) => setRowParts(i, [v, ...row.slice(1)])}
-              onRight={(alternatives) => setRowParts(i, [row[0], ...alternatives])}
-              onRemove={() => removeRow(i)}
-              // digits go to subscripts in variables, unless the digit is a terminal (S → 0S1)
-              digits={(ch) => !terminals.includes(ch)}
-            />
-          );
-        })}
+        {rowsOpen && k === "machine" && symbols ? (
+          <DeltaRows fields={fields}>{draft.rows.map(transitionRow)}</DeltaRows>
+        ) : (
+          rowsOpen && draft.rows.map((row, i) => (k === "machine" ? transitionRow(row, i) : ruleRow(row, i)))
+        )}
         {rowsOpen && (
           <button className="ef-add" onClick={addRow}>
             <Plus size={13} /> {k === "grammar" ? t("editor.form.newRule") : t("editor.form.newTransition")}

@@ -1270,6 +1270,28 @@ details.card[open] > summary .chev {
   margin-left: auto;
 }
 
+/* δ rows one under the other share their columns (TransitionRow.DeltaRows): every comma, =
+   and field stands under the one above it; the row starts where the fields' text does */
+.ef-delta-rows {
+  display: grid;
+}
+
+.ef-delta-rows > .ef-row-delta {
+  display: grid;
+  grid-column: 1 / -1;
+  grid-template-columns: subgrid;
+  padding-left: 8px;
+}
+
+.ef-delta-rows > .ef-row-delta > .ef-remove {
+  justify-self: end;
+}
+
+/* in a column a state's name reads from its left edge, as in a table */
+.ef-delta-rows .sym-field.ef-state .cm-line {
+  text-align: left;
+}
+
 .ef-row .ef-remove {
   opacity: 0;
 }
@@ -1951,6 +1973,11 @@ details.card[open] > summary .chev {
   margin: 4px 0 6px;
 }
 
+/* a choice's options are sentences ("written onto storage tape"): each has a row of its own */
+.ef-config > .ef-grid label.ef-choice {
+  grid-column: 1 / -1;
+}
+
 .ef-storage-row {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr) minmax(0, 1fr) 22px;
@@ -2398,6 +2425,18 @@ table.t.cyk tr.cyk-word th {
   text-align: left;
 }
 
+.modal .help-feedback {
+  margin-top: 18px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border-soft);
+  color: var(--muted);
+}
+
+.modal .help-feedback a {
+  color: var(--accent);
+  font-weight: 600;
+}
+
 .empty-hint {
   text-align: center;
   color: var(--muted);
@@ -2482,20 +2521,24 @@ table.t.cyk tr.cyk-word th {
   padding: 8px 10px 3px 10px;
 }
 
-.menu button {
+.menu button,
+.menu a {
   display: block;
+  box-sizing: border-box;
   width: 100%;
   text-align: left;
   background: none;
   border: none;
   color: var(--text);
+  text-decoration: none;
   padding: 7px 10px;
   border-radius: 7px;
   font-size: 13.5px;
   cursor: pointer;
 }
 
-.menu button:hover {
+.menu button:hover,
+.menu a:hover {
   background: var(--accent-soft);
   color: var(--accent);
 }

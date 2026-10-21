@@ -34,6 +34,24 @@ describe("the lecture notes' terms in every language", () => {
     });
   }
 
+  // the app stands on its own: nobody reading it has the notes, so no text points to them
+  const NOTES: Record<keyof typeof LOCALES, RegExp> = {
+    en: /lecture notes|\bthe notes\b/i,
+    de: /Skript|Vorlesung/i,
+    hu: /jegyzet/i
+  };
+  // a note cell is a jegyzet in Hungarian — that is not the lecture notes
+  const NOTE_CELL = /(^|\.)note$|\.notePlaceholder$/;
+
+  for (const [lang, all] of Object.entries(LOCALES) as [keyof typeof LOCALES, [string, string][]][]) {
+    it(`${lang}: no text refers to the lecture notes or a numbered section of them`, () => {
+      const refs = all.filter(
+        ([key, text]) => (NOTES[lang].test(text) && !NOTE_CELL.test(key)) || /\b\d+\.\d+(\.\d+)?\b/.test(text)
+      );
+      expect(refs).toEqual([]);
+    });
+  }
+
   it("every language has the same texts", () => {
     const keys = (lang: keyof typeof LOCALES) => LOCALES[lang].map(([k]) => k).sort();
     expect(keys("de")).toEqual(keys("en"));

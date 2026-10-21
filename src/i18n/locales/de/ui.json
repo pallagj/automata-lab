@@ -25,7 +25,10 @@
     "openFolder": "Diesen Ordner öffnen",
     "renameHint": "Zum Umbenennen klicken",
     "worksheetMenu": "Arbeitsblatt-Menü",
-    "settings": "Einstellungen"
+    "settings": "Einstellungen",
+    "github": "GitHub",
+    "reportIssue": "Fehler melden oder Idee vorschlagen",
+    "sourceCode": "Quellcode auf GitHub"
   },
   "browser": {
     "title": "Arbeitsblätter",
@@ -171,17 +174,24 @@
         "regex": "ein regulärer Ausdruck als Wert — toFsm() wandelt ihn in einen Automaten um",
         "equal": "Äquivalenzprüfung mit Gegenbeispiel",
         "conversions": "Umwandlungen Automat ↔ Grammatik, Automat → regulärer Ausdruck, Grammatik ↔ Kellerautomat",
-        "pdaAcceptance": "ein Kellerautomat, der dieselbe Sprache durch leeren Keller / durch Endzustand akzeptiert (Skript 7.9)",
+        "pdaAcceptance": "ein Kellerautomat, der dieselbe Sprache durch leeren Keller / durch Endzustand akzeptiert",
         "namedOps": "Operationen zwischen benannten Automaten: Verkettung, Vereinigung, Abschluss — Buchstaben-Literale nur innerhalb von regex(…)"
       },
       "optionalName": "Der Name ist optional: Ohne ihn wird das Ergebnis trotzdem angezeigt, es kann nur nicht aus anderen Zellen referenziert werden."
     },
     "storages": {
       "heading": "Speicher: Keller, Warteschlange, Band",
-      "example": "Machine:               # Kellerautomat: ein Keller\n  name: P\n  charset: a, b\n  states: q_0, q_1, q_2\n  init: q_0\n  accept: q_2           # oder acceptMode: emptyStorages\n  storages:\n    keller: stack      # startet mit Z; sein Alphabet sind die benutzten Symbole\n  transitions:         #   oder: keller: { type: stack, charset: [Z, A], init: Z }\n    - (q_0, a, Z) -> (q_0, AZ)   # liest a, Z oben: statt Z wird AZ abgelegt\n    - (q_0, b, A) -> (q_1, ε)    # ε = schreibt nichts\n    - (q_1, ε, Z) -> (q_2, Z)    # ε-Schritt (tippe eps)\n\nMachine:               # Turingmaschine: ein Band, darauf die Eingabe\n  name: T\n  charset: a, b\n  states: s, ok\n  init: s\n  accept: ok\n  input: band          # die Eingabe kommt auf diesen Speicher\n  storages:\n    band:\n      type: tape\n      charset: a, b, x, _   # Γ: Σ, das Leerzeichen _ und mehr (standardmäßig Σ und _)\n  transitions:\n    - (s, a) -> (s, x, R)    # liest a, schreibt x, nach rechts (im YAML R, L, S; die Oberfläche zeigt R, L, N)\n    - (s, _) -> (ok, _, S)   # _ = das Leerzeichen\n\nMachine:               # 2-Band-Turingmaschine: kopiert die Eingabe auf t2\n  charset: a, b\n  states: q_0, ok\n  init: q_0\n  accept: ok\n  input: t1            # das Eingabeband ist nur lesbar (Skript 9.9)\n  storages:\n    t1: tape           # t1: { type: tape, writable: true } — auch beschreibbar\n    t2: tape\n  transitions:\n    - (q_0, a, _) -> (q_0, a, R, R)   # liest a und _, schreibt a auf t2, beide Köpfe nach rechts\n    - (q_0, b, _) -> (q_0, b, R, R)\n    - (q_0, _, _) -> (ok, _, S, S)",
-      "body1": "Ein Übergang wird geschrieben wie δ im Skript:",
+      "example": "Machine:               # Kellerautomat: ein Keller\n  name: P\n  charset: a, b\n  states: q_0, q_1, q_2\n  init: q_0\n  accept: q_2           # oder acceptMode: emptyStorages\n  storages:\n    keller: stack      # startet mit Z; sein Alphabet sind die benutzten Symbole\n  transitions:         #   oder: keller: { type: stack, charset: [Z, A], init: Z }\n    - (q_0, a, Z) -> (q_0, AZ)   # liest a, Z oben: statt Z wird AZ abgelegt\n    - (q_0, b, A) -> (q_1, ε)    # ε = schreibt nichts\n    - (q_1, ε, Z) -> (q_2, Z)    # ε-Schritt (tippe eps)\n\nMachine:               # Turingmaschine: ein Band, darauf die Eingabe\n  name: T\n  charset: a, b\n  states: s, ok\n  init: s\n  accept: ok\n  input: band          # die Eingabe kommt auf diesen Speicher\n  storages:\n    band:\n      type: tape\n      charset: a, b, x, _   # Γ: Σ, das Leerzeichen _ und mehr (standardmäßig Σ und _)\n  transitions:\n    - (s, a) -> (s, x, R)    # liest a, schreibt x, nach rechts (im YAML R, L, S; die Oberfläche zeigt R, L, N)\n    - (s, _) -> (ok, _, S)   # _ = das Leerzeichen\n\nMachine:               # 2-Band-Turingmaschine: kopiert die Eingabe auf t2\n  charset: a, b\n  states: q_0, ok\n  init: q_0\n  accept: ok\n  input: t1            # das Eingabeband ist nur lesbar\n  storages:\n    t1: tape           # t1: { type: tape, writable: true } — auch beschreibbar\n    t2: tape\n  transitions:\n    - (q_0, a, _) -> (q_0, a, R, R)   # liest a und _, schreibt a auf t2, beide Köpfe nach rechts\n    - (q_0, b, _) -> (q_0, b, R, R)\n    - (q_0, _, _) -> (ok, _, S, S)",
+      "body1": "Ein Übergang wird wie die Übergangsfunktion δ geschrieben:",
       "transitionSyntax": "(q, a, Z) -> (p, γ)",
-      "body2": "— die Argumente von δ sind der Zustand, das gelesene Zeichen und was jeder Speicher liest (die Kellerspitze, die Bandzelle); ihr Wert ist der nächste Zustand und was jeder Speicher bekommt (das abgelegte Wort; das auf ein Band geschriebene Zeichen), danach die Bewegungen der Bandköpfe — wie das Skript δ(q, a₁…a_k) = (q′, b₂…b_k, d₁…d_k) schreibt. Hat eine Maschine mehrere Speicher, ist ihr Eingabeband nur lesbar, wie das erste Band der k-Band-Turingmaschine des Skripts (9.9): darauf wird nichts geschrieben, im Wert von δ hat es also keinen Platz (mit writable: true ist es beschreibbar). Im Graphen zeigt eine Kante für jedes Band a → b (ein nur lesbares Band nur das gelesene Zeichen), danach die Bewegungen: a, _ → b, R, R. Ein Band ist wie im Skript ab seiner ersten Zelle nach rechts unendlich: läuft der Kopf links darüber hinaus, hält die Maschine mit einem Fehler (mit infinite: both ist es beidseitig unendlich). Beliebig viele Speicher lassen sich kombinieren, jeder mit einem Argument, in ihrer Reihenfolge: zwei Keller ergeben bereits eine Maschine mit Turing-Mächtigkeit (z. B. aⁿbⁿcⁿ, was mit einem Kellerautomaten nicht möglich ist), eine Warteschlange ergibt einen Warteschlangenautomaten. Die Automaten-Operationen (det, min…) gelten nur für speicherfreie Maschinen — die App erklärt, warum."
+      "body2": " — links der Zustand, das gelesene Zeichen und was jeder Speicher liest (die Kellerspitze, die Zelle unter dem Kopf eines Bandes); rechts der nächste Zustand, was jeder Speicher bekommt (das in den Keller geschriebene Wort, das aufs Band geschriebene Zeichen), danach die Bewegung jedes Bandkopfs (R, L oder N).",
+      "points": {
+        "inputTape": "Bei mehreren Speichern ist das Eingabeband nur lesbar: Die Maschine liest ihre Eingabe nur und arbeitet auf ihren anderen Speichern, im Wert von δ hat es also keinen Platz. Mit writable: true ist es beschreibbar.",
+        "edge": "Im Graphen zeigt eine Kante für jedes Band a → b (bei einem nur lesbaren Band nur das gelesene Zeichen), danach die Bewegungen: a, _ → b, R, R.",
+        "tape": "Ein Band ist ab seiner ersten Zelle nach rechts unendlich; läuft der Kopf links darüber hinaus, hält die Maschine mit einem Fehler. Mit infinite: both ist es beidseitig unendlich.",
+        "combine": "Beliebig viele Speicher lassen sich kombinieren, jeder mit einem Argument, in ihrer Reihenfolge: Zwei Keller ergeben bereits eine Maschine, die so stark ist wie eine Turingmaschine (z. B. für aⁿbⁿcⁿ, das kein Kellerautomat akzeptiert), eine Warteschlange (queue) einen Warteschlangenautomaten.",
+        "ops": "Die Automaten-Operationen (det, min…) gelten nur für Maschinen ohne Speicher — wo eine nicht passt, erklärt die App, warum."
+      }
     },
     "grammar": {
       "heading": "Grammatik",
@@ -194,6 +204,10 @@
       "nfaBranch": "Klicke während der Simulation auf eine hervorgehobene Kante, um einen NFA-Zweig zu wählen.",
       "yaml": "Das Ergebnis einer Ausdruckszelle lässt sich über das Kopfzeilen-Symbol zu editierbarem YAML aufklappen.",
       "acceptedWords": "Klicke auf einen Chip unter „Akzeptierte Wörter“, um es sofort zu simulieren."
+    },
+    "feedback": {
+      "body": "Einen Fehler gefunden oder eine Idee?",
+      "link": "Schreib es uns auf GitHub"
     }
   },
   "detail": {
@@ -237,7 +251,7 @@
       "optional": "optional",
       "emptyWord": "leeres Wort",
       "parens": "Klammerung",
-      "toFsmHint": "Neue Zelle: der Automat des Ausdrucks (Skript 3.20)",
+      "toFsmHint": "Neue Zelle: der Automat des Ausdrucks",
       "toFsmLabel": "in ε-NFA umwandeln",
       "structure": "Struktur des Ausdrucks",
       "wordTest": "Worttest",
@@ -314,7 +328,7 @@
       "noDerivableWords": "Kein ableitbares Wort bis Länge 8 gefunden.",
       "moreWordsPossible": "…die Sprache kann größer sein (die Aufzählung reicht bis Länge 8).",
       "cnfBadge": "Chomsky-Normalform",
-      "cykTitle": "CYK-Tabelle (Skript 8.1)",
+      "cykTitle": "CYK-Tabelle",
       "cykIntro": "Zeile j, Spalte i enthält die Variablen, aus denen das beim i-ten Buchstaben beginnende Teilwort der Länge j ableitbar ist; das Wort ist ableitbar, wenn die Startvariable in der obersten Zelle steht.",
       "cykConverted": "Die Grammatik ist nicht in Chomsky-Normalform, daher wird die Tabelle mit {{expr}} berechnet:",
       "cykUnambiguous": "Das Wort hat genau einen Ableitungsbaum.",
@@ -322,10 +336,10 @@
       "exact": "exakte Entscheidung mit dem CYK-Algorithmus",
       "toEpsilonFree": "ε-Elimination",
       "notes": {
-        "contextFreeForm": "Jede Regel ist A → α — nur ihre ε-Regeln halten sie aus Typ 2 heraus: die ε-Elimination (Skript 6.3.1) macht sie zu Typ 2, ihre Sprache ist also kontextfrei (6.14).",
+        "contextFreeForm": "Jede Regel ist A → α — nur ihre ε-Regeln halten sie aus Typ 2 heraus: die ε-Elimination macht sie zu Typ 2, ihre Sprache ist also kontextfrei.",
         "rightLinear": "Ihre Regeln sind A → uB, A → u, A → B oder A → ε (u ein Terminalwort): nach der Definition nicht Typ 3, aber sie lässt sich in einen endlichen Automaten umwandeln, ihre Sprache ist also regulär.",
-        "leftLinear": "Ihre Regeln sind A → Bu, A → u oder A → ε, wie die linksregulären Grammatiken aus Skript 4.23: nicht Typ 3, aber ihre Sprache ist regulär.",
-        "nonContracting": "Keine Regel verkürzt — eine nichtverkürzende Grammatik (Skript 12.5): nicht von der Form βAγ → βαγ, ihre Sprache ist dennoch kontextsensitiv (12.6)."
+        "leftLinear": "Ihre Regeln sind A → Bu, A → u oder A → ε — eine linksreguläre Grammatik: nicht Typ 3, aber ihre Sprache ist regulär.",
+        "nonContracting": "Keine Regel verkürzt — eine nichtverkürzende Grammatik: nicht von der Form βAγ → βαγ, ihre Sprache ist dennoch kontextsensitiv."
       },
       "cykCellHint": "Klicken: warum diese Variablen?",
       "cykCellIntro": "das Teilwort „{{word}}“ ist aus diesen Variablen ableitbar:",
@@ -383,7 +397,7 @@
       "tapeStartPlaceholder": "Anfang des Bandes — klicken und tippen",
       "oneStepAllBranches": "Ein Schritt (alle Zweige)",
       "hitLimit": "Grenze erreicht",
-      "decidedByGrammar": "Exakt entschieden: CYK (Skript 8.1) auf der Grammatik des Kellerautomaten (7.16)",
+      "decidedByGrammar": "Exakt entschieden: CYK auf der Grammatik des Kellerautomaten",
       "step": "Schritt: {{n}}",
       "nondeterministicStepInfo": "Die Maschine ist nichtdeterministisch: alle möglichen Zweige werden gleichzeitig verfolgt. Schritt: {{n}} · aktive Konfigurationen: {{count}}",
       "noMoreBranches": "Kein fortsetzbarer Zweig mehr — das Wort wird abgelehnt.",
@@ -392,16 +406,16 @@
       "topLeft": "Spitze links",
       "frontLeft": "Anfang links",
       "moreConfigs": "… und {{count}} weitere Konfigurationen",
-      "fellOff": "Der Kopf von Band {{id}} ist nach links über die erste Zelle hinausgelaufen — die Maschine hält mit einem Fehler, dieser Zweig verwirft (Skript 9.1).",
+      "fellOff": "Der Kopf von Band {{id}} ist nach links über die erste Zelle hinausgelaufen — die Maschine hält mit einem Fehler, dieser Zweig verwirft.",
       "fellOffShort": "von Band {{id}} gefallen",
       "fellOffCell": "hier hat der Kopf das Band verlassen",
       "firstCell": "die erste Zelle des Bandes — das Band ist nur nach rechts unendlich",
       "tapeBothWays": "{{id}}: beidseitig unendlich",
-      "tapeBothWaysHint": "Dieses Band hat keine erste Zelle: der Kopf kann beliebig weit nach links gehen. Das Band des Skripts ist nur nach rechts unendlich (infinite: right, der Standard).",
+      "tapeBothWaysHint": "Dieses Band hat keine erste Zelle: der Kopf kann beliebig weit nach links gehen. Standardmäßig ist ein Band nur nach rechts unendlich (infinite: right).",
       "tapeReadOnly": "{{id}}: nur lesbar",
       "tapeReadOnlyHint": "Die Maschine liest dieses Band nur und schreibt nichts darauf (writable: false).",
       "inputTapeWritable": "{{id}}: beschreibbares Eingabeband",
-      "inputTapeWritableHint": "Bei der k-Band-Turingmaschine des Skripts (9.9) ist das Eingabeband nur lesbar; diese Maschine darf auch darauf schreiben (writable: true)."
+      "inputTapeWritableHint": "Standardmäßig ist das Eingabeband einer Maschine mit mehreren Speichern nur lesbar; diese Maschine darf auch darauf schreiben (writable: true)."
     }
   },
   "editor": {
@@ -524,8 +538,8 @@
       "readHead": "Lesekopf",
       "writtenToStorage": "wird auf Speicher {{id}} geschrieben",
       "inputTape": "Eingabeband",
-      "inputTapeHint": "Die k-Band-Turingmaschine des Skripts (9.9) liest ihr Eingabeband nur; die anderen Bänder sind Arbeitsbänder. Mit einem beschreibbaren Eingabeband darf die Maschine auch ihre Eingabe überschreiben (writable: true).",
-      "inputTapeReadOnly": "nur lesbar (Skript 9.9)",
+      "inputTapeHint": "Standardmäßig liest die Maschine ihr Eingabeband nur; die anderen Bänder sind Arbeitsbänder. Mit einem beschreibbaren Eingabeband darf die Maschine auch ihre Eingabe überschreiben (writable: true).",
+      "inputTapeReadOnly": "nur lesbar",
       "inputTapeWritable": "auch beschreibbar",
       "acceptance": "Akzeptanz",
       "acceptFinalState": "mit akzeptierendem Zustand",
