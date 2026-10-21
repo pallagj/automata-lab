@@ -552,8 +552,8 @@
         "detail": "A verem a levezetés aktuális mondatformáját tárolja. Ha a verem tetején változó van, egy szabályt alkalmazunk (ε-lépés); ha terminális, illesztjük a bemenet következő betűjével. A szó pontosan akkor elfogadott, ha a bemenet elfogyott és a verem kiürült."
       },
       "step": {
-        "title": "CF nyelvtan → PDA (top-down elemző)",
-        "detail": "Egyetlen {{q}} állapot. Kezdő veremtartalom: {{start}}. Szabály-lépések: {{ruleCount}} db (ε, A / α), illesztő lépések: {{terminalCount}} db (a, a / ε)."
+        "title": "CF nyelvtan → veremautomata (jegyzet 7.12)",
+        "detail": "Egyetlen {{q}} állapot; a verem kezdőjele {{z0}}. Első lépés: (q, ε, {{z0}}) → (q, {{start}}{{z1}}) — a verembe kerül a kezdőváltozó, alá {{z1}}. Ha a verem tetején változó van: minden A → α szabályhoz (q, ε, A) → (q, α) — {{ruleCount}} ilyen lépés. Ha terminális: (q, a, a) → (q, ε) illeszti a bemenet következő betűjével — {{terminalCount}} ilyen lépés. Végül (q, ε, {{z1}}) → (q, ε): ha a mondatforma elfogyott, a verem kiürül, és a szó üres veremmel elfogadott."
       }
     },
     "epsfree": {

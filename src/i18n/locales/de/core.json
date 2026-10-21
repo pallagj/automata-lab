@@ -552,8 +552,8 @@
         "detail": "Der Keller speichert die aktuelle Satzform der Ableitung. Steht ein Nichtterminal oben auf dem Keller, wird eine Regel angewendet (ε-Schritt); steht ein Terminal oben, wird es mit dem nächsten Eingabebuchstaben abgeglichen. Ein Wort wird genau dann akzeptiert, wenn die Eingabe aufgebraucht und der Keller leer ist."
       },
       "step": {
-        "title": "KF-Grammatik → PDA (Top-down-Parser)",
-        "detail": "Ein einziger Zustand {{q}}. Anfänglicher Kellerinhalt: {{start}}. Regel-Schritte: {{ruleCount}} (ε, A / α), Abgleich-Schritte: {{terminalCount}} (a, a / ε)."
+        "title": "KF-Grammatik → Kellerautomat (Skript 7.12)",
+        "detail": "Ein einziger Zustand {{q}}; der Keller beginnt mit {{z0}}. Zuerst (q, ε, {{z0}}) → (q, {{start}}{{z1}}): die Startvariable kommt in den Keller, {{z1}} darunter. Eine Variable oben: für jede Regel A → α, (q, ε, A) → (q, α) — {{ruleCount}} solche Schritte. Ein Terminal oben: (q, a, a) → (q, ε) gleicht es mit dem nächsten Eingabebuchstaben ab — {{terminalCount}} solche Schritte. Schließlich (q, ε, {{z1}}) → (q, ε): ist die Satzform aufgebraucht, leert sich der Keller, und das Wort ist mit leerem Keller akzeptiert."
       }
     },
     "epsfree": {

@@ -552,8 +552,8 @@
         "detail": "The stack holds the derivation's current sentential form. If a nonterminal is on top of the stack, a rule is applied (an ε-step); if a terminal, it's matched against the next input letter. A word is accepted exactly when the input is exhausted and the stack is empty."
       },
       "step": {
-        "title": "CF grammar → PDA (top-down parser)",
-        "detail": "A single state {{q}}. Initial stack content: {{start}}. Rule steps: {{ruleCount}} (ε, A / α), matching steps: {{terminalCount}} (a, a / ε)."
+        "title": "CF grammar → pushdown automaton (lecture notes 7.12)",
+        "detail": "A single state {{q}}; the stack starts with {{z0}}. First (q, ε, {{z0}}) → (q, {{start}}{{z1}}): the start variable goes onto the stack, {{z1}} below it. A variable on top: for every rule A → α, (q, ε, A) → (q, α) — {{ruleCount}} such steps. A terminal on top: (q, a, a) → (q, ε) matches it with the next input letter — {{terminalCount}} such steps. Finally (q, ε, {{z1}}) → (q, ε): when the sentential form is used up, the stack empties, and the word is accepted with an empty stack."
       }
     },
     "epsfree": {

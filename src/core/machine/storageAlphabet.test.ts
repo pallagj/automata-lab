@@ -163,7 +163,8 @@ Grammar:
     - A -> ε
 `).value!;
     const p = grammarToPDA(g).value!;
-    expect(p.storages[0].alphabet).toEqual(["S", "A", "a", "b"]);
+    expect(p.storages[0].alphabet).toEqual(["S", "A", "a", "b", "Z_0", "Z_1"]);
+    expect(p.storages[0].init).toEqual(["Z_0"]);
     const back = parseMachine(serializeMachine(p));
     expect(back.ok).toBe(true);
     for (const w of words(["a", "b"], 6)) expect(runMachine(back.value!, w).verdict).toBe(runMachine(p, w).verdict);

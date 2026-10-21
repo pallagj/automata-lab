@@ -477,7 +477,12 @@ export function fsmToGrammar(f: FSM): OpResult<Grammar> {
   return okResult(g, diags, steps);
 }
 
-/** Context-free grammar → pushdown automaton (top-down parser). */
+/**
+ * Context-free grammar → pushdown automaton accepting by empty stack, the construction of
+ * the lecture notes (7.12): one state q, the stack starting with Z₀, first (q, ε, Z₀) →
+ * (q, SZ₁); a variable A on top is replaced by α for every rule A → α, a terminal on top is
+ * matched with the input, and (q, ε, Z₁) → (q, ε) empties the stack at the end.
+ */
 export function grammarToPDA(g: Grammar): OpResult<Machine> {
   if (!classify(g).contextFreeForm) {
     return failResult([
@@ -485,16 +490,17 @@ export function grammarToPDA(g: Grammar): OpResult<Machine> {
     ]);
   }
 
+  const used = new Set([...g.nonterminals, ...g.terminals]);
+  const z0 = freshVariable({ base: "Z", primes: 0, sub: "0" }, used);
+  const z1 = freshVariable({ base: "Z", primes: 0, sub: "1" }, used);
   const q = "q";
-  const transitions: Machine["transitions"] = [];
-  // nonterminal on top of the stack: apply a rule
-  for (const r of g.rules) {
-    transitions.push({ from: q, input: EPS, to: q, ops: [{ type: "stack", pop: r.left[0], push: [...r.right] }] });
-  }
-  // terminal on top of the stack: match it against the input
-  for (const a of g.terminals) {
-    transitions.push({ from: q, input: a, to: q, ops: [{ type: "stack", pop: a, push: [] }] });
-  }
+  const stack = (pop: string, push: string[]) => [{ type: "stack" as const, pop, push }];
+  const transitions: Machine["transitions"] = [{ from: q, input: EPS, to: q, ops: stack(z0, [g.start, z1]) }];
+  // a variable on top of the stack: apply a rule
+  for (const r of g.rules) transitions.push({ from: q, input: EPS, to: q, ops: stack(r.left[0], [...r.right]) });
+  // a terminal on top of the stack: match it against the input
+  for (const a of g.terminals) transitions.push({ from: q, input: a, to: q, ops: stack(a, []) });
+  transitions.push({ from: q, input: EPS, to: q, ops: stack(z1, []) });
 
   const pda: Machine = {
     kind: "machine",
@@ -505,8 +511,8 @@ export function grammarToPDA(g: Grammar): OpResult<Machine> {
     accept: [],
     acceptMode: "emptyStorages",
     input: "head",
-    // the stack holds the sentential form's rest: variables and terminals
-    storages: [{ id: "stack", type: "stack", alphabet: [...g.nonterminals, ...g.terminals], init: [g.start] }],
+    // Γ = V ∪ Σ ∪ {Z₀, Z₁}: the stack holds the rest of the sentential form above Z₁
+    storages: [{ id: "stack", type: "stack", alphabet: [...g.nonterminals, ...g.terminals, z0, z1], init: [z0] }],
     transitions
   };
 
@@ -515,7 +521,14 @@ export function grammarToPDA(g: Grammar): OpResult<Machine> {
   ], [
     {
       title: tx("grammar.toPda.step.title"),
-      detail: tx("grammar.toPda.step.detail", { q, start: g.start, ruleCount: g.rules.length, terminalCount: g.terminals.length })
+      detail: tx("grammar.toPda.step.detail", {
+        q,
+        start: g.start,
+        z0,
+        z1,
+        ruleCount: g.rules.length,
+        terminalCount: g.terminals.length
+      })
     }
   ]);
 }

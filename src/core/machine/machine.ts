@@ -254,13 +254,36 @@ export interface MachineRunResult {
   exploredConfigs: number;
 }
 
-/** Decides whether a word is accepted with a bounded BFS (guards against infinite ε-loops / runs). */
+/**
+ * Decides whether a word is accepted with a bounded BFS (guards against infinite ε-loops /
+ * runs). The storages are bounded too, and the bound grows round by round (8, 16, 32, …):
+ * a nondeterministic machine whose stack can grow on ε-steps — the pushdown automaton of a
+ * left-recursive grammar — has an accepting computation with a small stack found before the
+ * search drowns in ever longer stacks. A round in which no branch outgrew the bound is an
+ * exact answer; the last round, with the full bound, decides as a single search would.
+ */
 export function runMachine(
   m: Machine,
   input: string,
   maxConfigs = 20000,
   maxStorage = 400
 ): MachineRunResult {
+  let explored = 0;
+  for (let bound = 8; ; bound *= 2) {
+    const last = bound >= maxStorage;
+    const r = boundedSearch(m, input, maxConfigs, last ? maxStorage : bound);
+    explored += r.exploredConfigs;
+    if (r.verdict !== "rejected" || !r.pruned || last) return { ...r, exploredConfigs: explored };
+  }
+}
+
+/** One BFS with every storage bounded; `pruned` tells whether a branch was cut at the bound. */
+function boundedSearch(
+  m: Machine,
+  input: string,
+  maxConfigs: number,
+  maxStorage: number
+): MachineRunResult & { pruned: boolean } {
   interface Item {
     config: MachineConfig;
     parent: Item | null;
@@ -270,6 +293,7 @@ export function runMachine(
   const seen = new Set<string>([machineConfigKey(start.config)]);
   let frontier: Item[] = [start];
   let explored = 1;
+  let pruned = false;
 
   const buildPath = (item: Item) => {
     const path: { config: MachineConfig; via?: MachineTransition }[] = [];
@@ -291,31 +315,34 @@ export function runMachine(
     });
 
   if (isAcceptingMachineConfig(m, start.config, input)) {
-    return { verdict: "accepted", acceptingPath: buildPath(start), exploredConfigs: explored };
+    return { verdict: "accepted", acceptingPath: buildPath(start), exploredConfigs: explored, pruned };
   }
 
   while (frontier.length > 0) {
     const next: Item[] = [];
     for (const item of frontier) {
       for (const { config, transition } of machineMoves(m, item.config, input)) {
-        if (tooBig(config)) continue;
+        if (tooBig(config)) {
+          pruned = true;
+          continue;
+        }
         const key = machineConfigKey(config);
         if (seen.has(key)) continue;
         seen.add(key);
         explored++;
         const newItem: Item = { config, parent: item, via: transition };
         if (isAcceptingMachineConfig(m, config, input)) {
-          return { verdict: "accepted", acceptingPath: buildPath(newItem), exploredConfigs: explored };
+          return { verdict: "accepted", acceptingPath: buildPath(newItem), exploredConfigs: explored, pruned };
         }
         if (explored >= maxConfigs) {
-          return { verdict: "limit", exploredConfigs: explored };
+          return { verdict: "limit", exploredConfigs: explored, pruned };
         }
         next.push(newItem);
       }
     }
     frontier = next;
   }
-  return { verdict: "rejected", exploredConfigs: explored };
+  return { verdict: "rejected", exploredConfigs: explored, pruned };
 }
 
 /** Interactive simulation: one step of the current configuration set (every branch). */
