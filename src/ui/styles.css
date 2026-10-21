@@ -222,7 +222,8 @@ button {
   flex-shrink: 0;
 }
 
-.stage-panel > summary {
+.stage-panel > summary,
+.stage-panel-head {
   list-style: none;
   display: flex;
   align-items: center;
@@ -261,6 +262,62 @@ button {
   max-height: 44vh;
   overflow-y: auto;
   font-size: 13.5px;
+}
+
+.stage-panels[hidden] {
+  display: none;
+}
+
+/* the button that enlarges a panel over the canvas, and puts it back */
+.panel-enlarge {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.panel-enlarge:hover {
+  background: var(--accent-soft);
+  color: var(--text);
+}
+
+.stage-panel > summary .panel-enlarge + .chev {
+  margin-left: 0;
+}
+
+/* an enlarged panel covers the canvas; its body takes the room left under the head */
+.stage-panel-enlarged {
+  position: absolute;
+  inset: 10px;
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  background: var(--panel);
+  box-shadow: var(--shadow);
+}
+
+.stage-panel-enlarged > .stage-panel-head {
+  cursor: default;
+}
+
+.stage-panel-enlarged > .stage-panel-body {
+  flex: 1;
+  min-height: 0;
+  max-height: none;
+  font-size: 14px;
+}
+
+/* enlarged, a step's table is shown whole: the body scrolls instead */
+.stage-panel-enlarged .step .t-wrap {
+  max-height: none;
 }
 
 /* simulation strip docked at the bottom */

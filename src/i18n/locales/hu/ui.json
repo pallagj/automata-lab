@@ -201,6 +201,8 @@
     },
     "note": "Jegyzet",
     "notes": "Megjegyzések",
+    "panelEnlarge": "Nagyítás",
+    "panelRestore": "Vissza a helyére (Esc)",
     "whyNotEvaluable": "Miért nem értékelhető ki a cella?",
     "emptyCanvas": {
       "doubleClick": "Dupla kattintás",

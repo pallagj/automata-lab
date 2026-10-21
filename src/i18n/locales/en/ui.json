@@ -201,6 +201,8 @@
     },
     "note": "Note",
     "notes": "Notes",
+    "panelEnlarge": "Enlarge",
+    "panelRestore": "Back to its place (Esc)",
     "whyNotEvaluable": "Why can't this cell be evaluated?",
     "emptyCanvas": {
       "doubleClick": "Double-click",

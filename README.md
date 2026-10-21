@@ -24,7 +24,8 @@ an app; everything runs locally, no account needed.
   handles ε-transitions itself, through ε-closures.
 - **"How was it built?" panel:** the recorded steps of each algorithm — powerset table, partition
   refinement rounds, ε-closures, product construction table, the r(p, q, t) tables of the
-  automaton → regular expression conversion, the rounds of the grammar transformations.
+  automaton → regular expression conversion, the rounds of the grammar transformations. The
+  panels over the graph can be enlarged to the whole canvas for a long table.
 - **Equivalence check with a counterexample:** `equal(A, B)` returns the shortest distinguishing word.
 - **Regular expressions** as values of their own: syntax tree, word test, sample matching words,
   and `toFsm()` built as the lecture notes prove a regular expression regular (3.20): small

@@ -201,6 +201,8 @@
     },
     "note": "Notiz",
     "notes": "Hinweise",
+    "panelEnlarge": "Vergrößern",
+    "panelRestore": "Zurück an seinen Platz (Esc)",
     "whyNotEvaluable": "Warum kann die Zelle nicht ausgewertet werden?",
     "emptyCanvas": {
       "doubleClick": "Doppelklick",
