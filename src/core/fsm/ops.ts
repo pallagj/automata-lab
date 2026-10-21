@@ -23,6 +23,7 @@ import {
   reachableStates,
   transMap
 } from "./fsm";
+import { EquivalenceVerdict } from "../verdict";
 
 /* ------------------------------------------------------------------ */
 /* Precondition explanations                                           */
@@ -798,16 +799,6 @@ export function cleanFSM(f: FSM): OpResult<FSM> {
 /* Equivalence check with a counterexample                            */
 /* ------------------------------------------------------------------ */
 
-export interface EquivalenceVerdict {
-  kind: "verdict";
-  name: string;
-  machineA: string;
-  machineB: string;
-  equal: boolean;
-  /** a word accepted by one but not the other */
-  counterexample?: { word: string; acceptedBy: string; rejectedBy: string };
-}
-
 /**
  * Equivalence by lecture notes 5.3: L(A) = L(B) exactly when (L(A) ∩ ¬L(B)) ∪ (¬L(A) ∩ L(B))
  * is empty. Both automata are made complete DFAs over the common alphabet, and a breadth-first
@@ -864,6 +855,7 @@ export function checkEquivalence(a: FSM, b: FSM): OpResult<EquivalenceVerdict> {
     if (accA !== accB) {
       const verdict: EquivalenceVerdict = {
         kind: "verdict",
+        question: "equal",
         name: "",
         machineA: a.name,
         machineB: b.name,
@@ -895,7 +887,7 @@ export function checkEquivalence(a: FSM, b: FSM): OpResult<EquivalenceVerdict> {
     }
   }
 
-  return okResult({ kind: "verdict", name: "", machineA: a.name, machineB: b.name, equal: true }, [], [
+  return okResult<EquivalenceVerdict>({ kind: "verdict", question: "equal", name: "", machineA: a.name, machineB: b.name, equal: true }, [], [
     ...steps,
     searchStep(false),
     { title: tx("ops.equal.proof.title"), detail: tx("ops.equal.proof.detail") }

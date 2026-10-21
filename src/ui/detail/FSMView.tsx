@@ -4,13 +4,15 @@ import { useTranslation } from "react-i18next";
 import { Diagnostic, EPS, setName } from "../../core/types";
 import {
   analyzeFSM,
-  enumerateWords,
   epsilonClosure,
   FSM,
   initialStates,
   stepStates,
   transMap
 } from "../../core/fsm/fsm";
+import { languageSummary } from "../../core/fsm/decide";
+import { showWord } from "../../core/verdict";
+import { LanguageNote } from "./LanguageNote";
 import { GraphEdge, GraphSpec, GraphView } from "../graph/GraphView";
 import { useGraphEditing } from "../graph/editing";
 import { Stage, StagePanel } from "./Stage";
@@ -129,7 +131,7 @@ export const FSMView: React.FC<{ fsm: FSM; stepGroups?: StepGroup[]; diagnostics
     };
   }, [fsm, currentClosure, nextChar, current]);
 
-  const words = useMemo(() => enumerateWords(fsm, 7, 24), [fsm]);
+  const words = useMemo(() => languageSummary(fsm, 24), [fsm]);
 
   const symbols = analysis.hasEpsilon ? [...fsm.alphabet, EPS] : fsm.alphabet;
 
@@ -237,10 +239,8 @@ export const FSMView: React.FC<{ fsm: FSM; stepGroups?: StepGroup[]; diagnostics
         </>
       ),
       content:
-        words.words.length === 0 ? (
-          <div style={{ color: "var(--muted)" }}>
-            {t("detail.fsm.noAcceptedWords")}
-          </div>
+        words.empty ? (
+          <LanguageNote summary={words} shownCount={0} emptyKey="detail.language.emptyFsm" />
         ) : (
           <>
             <div className="words">
@@ -250,19 +250,15 @@ export const FSMView: React.FC<{ fsm: FSM; stepGroups?: StepGroup[]; diagnostics
                   className="word-chip"
                   title={t("detail.fsm.loadIntoSimulation")}
                   onClick={() => {
-                    setInput(w === EPS ? "" : w);
+                    setInput(w);
                     setHistory([initialStates(fsm)]);
                   }}
                 >
-                  {w}
+                  {showWord(w)}
                 </button>
               ))}
             </div>
-            {!words.exhaustive && (
-              <div style={{ marginTop: 8, fontSize: 12.5, color: "var(--muted)" }}>
-                {t("detail.fsm.wordsNotExhaustive")}
-              </div>
-            )}
+            <LanguageNote summary={words} shownCount={words.words.length} emptyKey="detail.language.emptyFsm" />
           </>
         )
     }

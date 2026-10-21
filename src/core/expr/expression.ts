@@ -7,7 +7,6 @@ import {
   complete,
   concatFSM,
   determinize,
-  EquivalenceVerdict,
   minimize,
   product,
   reachable,
@@ -16,14 +15,17 @@ import {
   starFSM,
   unionEpsilon
 } from "../fsm/ops";
+import { decideDisjointFSM, decideEmptyFSM, decideFiniteFSM } from "../fsm/decide";
 import { RegexDef, regexToNFA, regexValue } from "../fsm/regex";
 import { fsmToRegex } from "../fsm/toRegex";
-import { Grammar, grammarToFSM, grammarToPDA, fsmToGrammar, removeEpsilonRules } from "../grammar/grammar";
+import { classify, Grammar, grammarToFSM, grammarToPDA, fsmToGrammar, removeEpsilonRules } from "../grammar/grammar";
+import { decideEmptyGrammar, decideFiniteGrammar } from "../grammar/decide";
 import { removeUnitRules, removeUselessSymbols, toCNF } from "../grammar/normalForm";
 import { fsmToMachine, machineCaps, machineToFSM } from "../machine/machine";
 import { pdaToGrammar, toEmptyStack, toFinalState } from "../machine/pda";
 import { Definition } from "../parse/definitionParser";
 import { canonicalLabel, canonicalName, formatIdent, readIdent, suggestName } from "../symbols";
+import { EmptinessVerdict, FinitenessVerdict, Verdict } from "../verdict";
 
 /**
  * Expression language: name = expression
@@ -33,7 +35,8 @@ import { canonicalLabel, canonicalName, formatIdent, readIdent, suggestName } fr
  *   - there are NO letter literals — letter sequences only inside regex(...)
  *   - functions: det, min, epsfree, complete, reachable, complement, union,
  *     intersect, difference, concat, star, reverse, clean, toGrammar, toFsm,
- *     toPda, toRegex, regex, equal, unitfree, trim, cnf, toEmptyStack, toFinalState
+ *     toPda, toRegex, regex, equal, unitfree, trim, cnf, toEmptyStack, toFinalState,
+ *     empty, finite, disjoint
  */
 
 /** Parse/evaluation errors of the expression language always carry an I18nText. */
@@ -48,7 +51,7 @@ class ExprError extends Error {
  * algorithms work on it), but the final result is always converted to the
  * unified machine model — externally only machine/grammar/regex/verdict exist.
  */
-export type ExprValue = Definition | FSM | RegexDef | EquivalenceVerdict;
+export type ExprValue = Definition | FSM | RegexDef | Verdict;
 
 export interface StepGroup {
   operation: string;
@@ -85,7 +88,10 @@ export const FUNCTION_NAMES = [
   "trim",
   "cnf",
   "toEmptyStack",
-  "toFinalState"
+  "toFinalState",
+  "empty",
+  "finite",
+  "disjoint"
 ] as const;
 
 type FuncName = (typeof FUNCTION_NAMES)[number];
@@ -421,6 +427,11 @@ class Evaluator {
       return v;
     };
     const label = (base: string) => `${base}(${e.rawArgs.join(", ")})`;
+    // what a verdict calls an argument: its name, or the argument as written
+    const argName = (i: number) => {
+      const a = e.args[i];
+      return a.t === "var" ? a.name : e.rawArgs[i];
+    };
 
     switch (e.fn) {
       case "det":
@@ -536,7 +547,41 @@ class Evaluator {
         expectArgs(2);
         return this.take(label("equal"), checkEquivalence(fsmArg(0), fsmArg(1)));
       }
+      case "empty":
+      case "finite": {
+        expectArgs(1);
+        return this.decideLanguage(e.fn, this.evaluate(e.args[0]), argName(0), label(e.fn));
+      }
+      case "disjoint": {
+        expectArgs(2);
+        const r = this.take(label("disjoint"), decideDisjointFSM(fsmArg(0), fsmArg(1)));
+        return { ...r, machineA: argName(0), machineB: argName(1) };
+      }
     }
+  }
+
+  /**
+   * Emptiness or finiteness of a language: an automaton (a regular expression or a regular
+   * grammar as its automaton) by chapter 5, a context-free grammar — or a pushdown automaton
+   * as its grammar (7.16) — by chapter 8. For a Turing machine or a grammar of type 0 or 1
+   * no algorithm decides either question in general.
+   */
+  decideLanguage(fn: "empty" | "finite", value: ExprValue, name: string, stepLabel: string): EmptinessVerdict | FinitenessVerdict {
+    let v = value;
+    if (v.kind === "machine" && machineCaps(v).isPDALike) v = this.take(`toGrammar(${name})`, pdaToGrammar(v));
+    if (v.kind === "machine" && !machineCaps(v).isFSMLike)
+      throw new ExprError(
+        tx("expression.error.undecidableMachine", { opKey: `opNames.${fn}`, name, machineKindKey: `machineKind.${machineCaps(v).kind}` })
+      );
+    if (v.kind === "grammar" && !classify(v).rightLinear) {
+      if (!classify(v).contextFreeForm)
+        throw new ExprError(tx("expression.error.undecidableGrammar", { opKey: `opNames.${fn}`, name }));
+      const r: OpResult<EmptinessVerdict | FinitenessVerdict> = fn === "empty" ? decideEmptyGrammar(v) : decideFiniteGrammar(v);
+      return { ...this.take(stepLabel, r), subject: name };
+    }
+    const f = this.asFSM(v, fn);
+    const r: OpResult<EmptinessVerdict | FinitenessVerdict> = fn === "empty" ? decideEmptyFSM(f) : decideFiniteFSM(f);
+    return { ...this.take(stepLabel, r), subject: name };
   }
 }
 

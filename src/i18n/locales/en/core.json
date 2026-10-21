@@ -29,7 +29,10 @@
     "cnf": "conversion to Chomsky normal form",
     "cyk": "membership test (CYK)",
     "toEmptyStack": "conversion to acceptance by empty stack",
-    "toFinalState": "conversion to acceptance by final state"
+    "toFinalState": "conversion to acceptance by final state",
+    "empty": "emptiness check",
+    "finite": "finiteness check",
+    "disjoint": "disjointness check"
   },
   "regex": {
     "error": {
@@ -740,12 +743,84 @@
       "count": "number"
     }
   },
+  "decide": {
+    "table": {
+      "state": "state",
+      "word": "word leading there",
+      "accepting": "accepting",
+      "rules": "rules",
+      "onRight": "variables on the right-hand sides",
+      "leadsTo": "B with A ⇒⁺ …B…"
+    },
+    "empty": {
+      "search": {
+        "title": "Can an accepting state be reached from the start state?",
+        "detailFound": "L = ∅ exactly when no path leads from the start state to an accepting state. A breadth-first search from the start state; an ε-transition reads no letter, so those are followed first, and every state is reached by a shortest word leading there. The accepting state {{state}} is reachable: the language is not empty, and {{word}} is a shortest word of it.",
+        "detailNone": "L = ∅ exactly when no path leads from the start state to an accepting state. The breadth-first search from the start state reaches {{count}} states, none of them accepting — the automaton accepts no word, L = ∅."
+      }
+    },
+    "disjoint": {
+      "search": {
+        "title": "Looking for a common word in the product automaton",
+        "detailFound": "Whether L₁ ∩ L₂ = ∅ is the emptiness of the intersection. The states of its automaton are the pairs (p, q): a letter moves both automata, an ε-transition only its own. Only the pairs reachable from the start pair are built, breadth-first, each with a shortest word leading there. In the pair {{pair}} both states accept: {{word}} is in both languages, so they are not disjoint.",
+        "detailNone": "Whether L₁ ∩ L₂ = ∅ is the emptiness of the intersection. The states of its automaton are the pairs (p, q): a letter moves both automata, an ε-transition only its own. {{count}} pairs are reachable from the start pair, and in none of them do both states accept: the intersection is empty, the languages are disjoint."
+      }
+    },
+    "finite": {
+      "min": {
+        "title": "The minimal automaton",
+        "detMin": "The language is infinite exactly when it has a word w with n ≤ |w| ≤ 2n, n the number of states of its minimal automaton. The automaton determinized and minimized: n = {{n}} states.",
+        "completeMin": "The language is infinite exactly when it has a word w with n ≤ |w| ≤ 2n, n the number of states of its minimal automaton. The automaton completed and minimized: n = {{n}} states.",
+        "min": "The language is infinite exactly when it has a word w with n ≤ |w| ≤ 2n, n the number of states of its minimal automaton. The automaton minimized: n = {{n}} states."
+      },
+      "lengths": {
+        "title": "Is there a word with a length between n and 2n?",
+        "detailFound": "The words need not be followed one by one: Rₖ is the set of states some word of length k leads to (R₀ = {q₀}, Rₖ₊₁ = δ(Rₖ, Σ)), and the language has a word of length k exactly when Rₖ ∩ F ≠ ∅. The first such length between n = {{n}} and 2n = {{twoN}} is k = {{k}}: {{word}} is a shortest word of the language at least n long — the language is infinite.",
+        "detailNone": "The words need not be followed one by one: Rₖ is the set of states some word of length k leads to (R₀ = {q₀}, Rₖ₊₁ = δ(Rₖ, Σ)), and the language has a word of length k exactly when Rₖ ∩ F ≠ ∅. For no k with n = {{n}} ≤ k ≤ 2n = {{twoN}} does Rₖ contain an accepting state: the language has no word with a length between n and 2n, so it is finite."
+      },
+      "pump": {
+        "title": "Pumping the word",
+        "detail": "Reading {{word}}, the state {{state}} repeats within the first n letters, so the word splits as x = uvw: u = {{u}}, v = {{v}}, w = {{w}}, with |uv| ≤ n and |v| ≥ 1. v leads from {{state}} back to {{state}}, so it can be repeated any number of times: uvᵏw ∈ L for every k ≥ 0 — {{words}}, … Infinitely many words."
+      },
+      "words": {
+        "title": "The words of the language",
+        "detail": "Every word of a finite language is shorter than n = {{n}} (a word at least n long could be pumped). The language has {{count}} words.",
+        "detailEmpty": "The language has no word at all: L = ∅, so it is finite."
+      }
+    },
+    "emptyGrammar": {
+      "title": "Does the start variable derive a terminal word?",
+      "detailFound": "L(G) = ∅ exactly when the start variable is useless: it derives no terminal word. B₀ = Σ, and Bᵢ₊₁ adds every A with a rule A → α whose symbols are all in Bᵢ. The start variable {{start}} enters in round {{round}}: the language is not empty, and {{word}} is a shortest word of it.",
+      "detailNone": "L(G) = ∅ exactly when the start variable is useless: it derives no terminal word. B₀ = Σ, and Bᵢ₊₁ adds every A with a rule A → α whose symbols are all in Bᵢ. The start variable {{start}} never enters: it derives no terminal word, the language is empty."
+    },
+    "finiteGrammar": {
+      "prepare": {
+        "title": "Preparation: ε-rules, unit rules and useless symbols removed",
+        "detail": "The language is infinite exactly when it has a word w with p ≤ |w| ≤ 2p, p the pumping length. Such a word has a derivation tree with a path on which a variable repeats — the proof of the pumping lemma shows this on a grammar with no unit rules and no ε-rule other than S → ε; with the useless symbols removed too, every variable takes part in deriving some word. Such a grammar for the same language:",
+        "detailEmpty": "The start variable derives no terminal word: the language is empty, so it is finite."
+      },
+      "repeat": {
+        "title": "Can a variable repeat in a derivation tree?",
+        "detailFound": "A variable can repeat on a path of a derivation tree exactly when it derives a sentential form containing itself: A ⇒⁺ …A…. For every variable A the table gives the variables on the right-hand sides of its rules, and the variables B with A ⇒⁺ …B…. Variables leading back to themselves: {{variables}} — the language is infinite.",
+        "detailNone": "A variable can repeat on a path of a derivation tree exactly when it derives a sentential form containing itself: A ⇒⁺ …A…. For every variable A the table gives the variables on the right-hand sides of its rules, and the variables B with A ⇒⁺ …B…. No variable derives a sentential form containing itself: no variable repeats on any path of any derivation tree, so the trees are bounded (at most {{m}} variables on a path), and the language is finite."
+      },
+      "pump": {
+        "title": "Pumping the word",
+        "detail": "{{start}} ⇒* {{outer}} and {{variable}} ⇒⁺ {{inner}}; writing a shortest word of each variable in its place gives z = uvwxy with u = {{u}}, v = {{v}}, w = {{w}}, x = {{x}}, y = {{y}} (w a shortest word of {{variable}}). The step {{variable}} ⇒⁺ v{{variable}}x can be repeated any number of times, and as there are no unit rules and no ε-rules, |vx| ≥ 1: uvᵏwxᵏy ∈ L for every k ≥ 0 — {{words}}, … Infinitely many words."
+      },
+      "words": {
+        "title": "The words of the language",
+        "detail": "As no variable can repeat, the words of the variables can be computed bottom-up: first for those whose rules contain no variable, then for those that use only these. The language has {{count}} words.",
+        "detailCapped": "As no variable can repeat, the words of the variables can be computed bottom-up: first for those whose rules contain no variable, then for those that use only these. The language has at least {{count}} words — no more are listed."
+      }
+    }
+  },
   "expression": {
     "kind": {
       "fsm": "a finite automaton",
       "grammar": "a grammar",
       "regex": "a regular expression",
-      "verdict": "a comparison result"
+      "verdict": "a decision"
     },
     "error": {
       "unexpectedChar": "Unexpected character: \"{{char}}\" (position {{pos}})",
@@ -764,6 +839,8 @@
       "needsFsm": "{{ctx}}: expects a finite automaton, but got {{kind}}",
       "machineNeedsFsm": "{{ctx}}: expects a finite automaton, but {{name}} is {{machineKind}} (storages: {{storages}}). The language recognized by a machine with storage is generally not regular, so there is no automatic conversion — automaton operations only apply to storage-free machines.",
       "machineHasStorage": "{{name}} cannot be converted to a finite automaton because it has storage ({{storages}}) — only a storage-free machine has an equivalent automaton",
+      "undecidableMachine": "{{op}}: {{name}} is a {{machineKind}}, and for the languages of such machines the question cannot be decided by an algorithm in general. For regular and context-free languages it can: a finite automaton, a regular expression, a pushdown automaton, a type-2 or type-3 grammar.",
+      "undecidableGrammar": "{{op}}: not every rule of {{name}} is of the form A → α — for a type-0 or type-1 grammar the question cannot be decided by an algorithm in general; for regular and context-free languages it can.",
       "toFsmExpects": "toFsm() expects a grammar, a regular expression, or a storage-free machine",
       "toPdaExpects": "toPda() expects a grammar",
       "needsGrammar": "{{op}}: expects a grammar, but got {{kind}}",

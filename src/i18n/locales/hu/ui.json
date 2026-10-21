@@ -123,6 +123,9 @@
     "setOps": {
       "name": "Halmazműveletek nyelveken"
     },
+    "decisions": {
+      "name": "Eldöntendő kérdések — üres, véges, diszjunkt"
+    },
     "pda": {
       "name": "Veremautomaták"
     },
@@ -173,6 +176,7 @@
         "langOps": "nyelvműveletek",
         "regex": "reguláris kifejezés mint érték — automatává a toFsm() alakítja",
         "equal": "ekvivalencia-vizsgálat, ellenpéldával",
+        "decisions": "eldöntendő kérdések: üres-e, véges-e a nyelv, diszjunkt-e két nyelv — indoklással",
         "conversions": "konverziók automata ↔ nyelvtan, automata → reguláris kifejezés, nyelvtan ↔ veremautomata",
         "pdaAcceptance": "ugyanazt a nyelvet üres veremmel / állapottal elfogadó veremautomata",
         "namedOps": "műveletek nevesített automaták között: összefűzés, unió, lezárás — betű-literálok csak a regex(…) belsejében"
@@ -232,16 +236,49 @@
       "input": "bemenet"
     },
     "verdict": {
-      "title": "Ekvivalencia-vizsgálat",
-      "equalBody1": "A két automata",
-      "equalEmphasis": "ugyanazt a nyelvet",
-      "equalBody2": " ismeri fel: a szorzatautomata egyetlen elérhető állapotpárjában sem tér el az elfogadás.",
-      "notEqualBody1": "A két automata",
-      "notEqualEmphasis": "nem ekvivalens",
-      "notEqualBody2": ". A legrövidebb megkülönböztető szó:",
-      "counterexample1": "Ezt a szót a(z)",
-      "counterexample2": "elfogadja, a(z)",
-      "counterexample3": "viszont elutasítja."
+      "equal": {
+        "title": "Ekvivalencia-vizsgálat",
+        "equalBody1": "A két automata",
+        "equalEmphasis": "ugyanazt a nyelvet",
+        "equalBody2": " ismeri fel: a szorzatautomata egyetlen elérhető állapotpárjában sem tér el az elfogadás.",
+        "notEqualBody1": "A két automata",
+        "notEqualEmphasis": "nem ekvivalens",
+        "notEqualBody2": ". A legrövidebb megkülönböztető szó:",
+        "counterexample1": "Ezt a szót a(z)",
+        "counterexample2": "elfogadja, a(z)",
+        "counterexample3": "viszont elutasítja."
+      },
+      "empty": {
+        "title": "Üresség-vizsgálat",
+        "emptyBody": "A nyelv üres: egyetlen szó sincs benne.",
+        "notEmptyBody": "A nyelv nem üres. Egy legrövidebb szava:"
+      },
+      "finite": {
+        "title": "Végesség-vizsgálat",
+        "isFinite": "véges",
+        "isInfinite": "végtelen",
+        "emptyBody": "A nyelv üres, tehát véges.",
+        "finiteBody": "A nyelv véges, {{count}} szava van:",
+        "finiteBodyAtLeast": "A nyelv véges, legalább {{count}} szava van:",
+        "moreWords": "…és még {{count}} szó.",
+        "infiniteBody": "A nyelv végtelen. Ez a szava pumpálható:",
+        "pumpedRegular": "v ismétlésével, uvᵏw (k = 0, 1, 2, 3):",
+        "pumpedContextFree": "v és x együttes ismétlésével, uvᵏwxᵏy (k = 0, 1, 2, 3):"
+      },
+      "disjoint": {
+        "title": "Diszjunktság-vizsgálat",
+        "disjointBody": "A két nyelv diszjunkt: nincs olyan szó, amely mindkettőben benne van.",
+        "notDisjointBody": "A két nyelv nem diszjunkt. Egy legrövidebb közös szavuk:"
+      }
+    },
+    "language": {
+      "emptyFsm": "A nyelv üres: a kezdőállapotból egyetlen elfogadó állapot sem érhető el.",
+      "emptyGrammar": "A nyelv üres: a kezdőváltozóból nem vezethető le terminális szó.",
+      "emptyRegex": "Egyetlen szó sem illeszkedik: a nyelv üres.",
+      "infinite": "…a nyelv végtelen.",
+      "allWords": "Ez a nyelv összes szava: a nyelv véges.",
+      "moreFinite": "…a nyelv véges, összesen {{count}} szava van.",
+      "moreFiniteAtLeast": "…a nyelv véges, több mint {{count}} szava van."
     },
     "regex": {
       "title": "Reguláris kifejezés",
@@ -258,7 +295,7 @@
       "wordTestPlaceholder": "illeszkedik-e a szó? pl. abb",
       "matches": "illeszkedik",
       "noMatch": "nem illeszkedik",
-      "sampleWords": "Illeszkedő szavak (minta)"
+      "sampleWords": "Illeszkedő szavak"
     },
     "fsm": {
       "title": "Automata",
@@ -281,9 +318,7 @@
       "transitionTable": "Átmenet-táblázat",
       "state": "állapot",
       "acceptedWords": "Elfogadott szavak",
-      "noAcceptedWords": "Nem találtam elfogadott szót 7 hosszig — lehet, hogy a felismerendő nyelv üres.",
       "loadIntoSimulation": "Kattints: betöltés a szimulációba",
-      "wordsNotExhaustive": "…és a nyelv ennél bővebb (a lista 7 hosszig / 24 szóig terjed).",
       "howWasThisBuilt": "Hogyan készült?",
       "inputPlaceholder": "bemeneti szó — kattints és gépelj",
       "restart": "Újraindítás",
@@ -450,6 +485,9 @@
       "toFinalState": "veremautomata → állapottal elfogadó",
       "toRegex": "automata → reguláris kifejezés (r(p, q, t) módszer)",
       "equal": "ekvivalencia-vizsgálat ellenpéldával",
+      "empty": "üres-e a nyelv — egy legrövidebb szavával",
+      "finite": "véges-e a nyelv — a szavaival, vagy egy pumpálható szóval",
+      "disjoint": "diszjunkt-e két reguláris nyelv — egy közös szóval",
       "kind": {
         "fsm": "véges automata",
         "pda": "veremautomata",
@@ -457,11 +495,11 @@
         "generalMachine": "általános gép",
         "grammar": "nyelvtan",
         "regex": "reguláris kifejezés",
-        "verdict": "összehasonlítás eredménye",
+        "verdict": "döntés eredménye",
         "unknown": "ismeretlen"
       },
       "reason": {
-        "notApplicableToVerdict": "összehasonlítás eredményére nem alkalmazható",
+        "notApplicableToVerdict": "döntés eredményére nem alkalmazható",
         "expectsGrammarIsRegex": "nyelvtant vár — ez a cella: reguláris kifejezés",
         "invalidRegex": "hibás reguláris kifejezés",
         "expectsGrammar": "nyelvtant vár — ez a cella: {{kind}}",
@@ -469,14 +507,16 @@
         "hasStorage": "a gépnek tárolója van ({{types}}) — az általa felismert nyelv általában nem reguláris, ezért automata-művelet nem alkalmazható rá",
         "expectsFsm": "véges automatát vár — ez a cella: {{kind}}",
         "expectsPda": "veremautomatát vár — ez a cella: {{kind}}",
-        "unknown": "a művelet előfeltétele nem teljesül"
+        "unknown": "a művelet előfeltétele nem teljesül",
+        "undecidableMachine": "{{kind}} nyelvére a kérdés általában algoritmussal nem dönthető el",
+        "undecidableGrammar": "a nyelvtan nem minden szabálya A → α alakú — 0. és 1. típusú nyelvtanra a kérdés általában algoritmussal nem dönthető el"
       }
     },
     "cell": {
       "kind": {
         "grammar": "nyelvtan",
         "regex": "reguláris kifejezés",
-        "verdict": "összehasonlítás",
+        "verdict": "döntés",
         "fsm": "véges automata",
         "pda": "veremautomata",
         "tm": "Turing-gép",

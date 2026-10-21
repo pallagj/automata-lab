@@ -118,6 +118,32 @@ export const EXAMPLE_WORKSHEETS: ExampleWorksheet[] = [
     ]
   },
   {
+    key: "decisions",
+    name: "Decision questions — empty, finite, disjoint",
+    cells: [
+      DFA_EVEN_A,
+      DFA_ENDS_B,
+      "# Is the language empty? A search from the start state for an accepting one — the path to the first one found reads a shortest word.",
+      "empty(intersect(E, B))",
+      "# Is it finite? With n the states of the minimal automaton, the language is infinite exactly when it has a word of length n…2n — and that word pumps.",
+      "finite(B)",
+      "R = regex(ab+ba+aab)",
+      "finite(R)",
+      "# Are two languages disjoint? Their intersection is empty: the pairs of states are built one by one, looking for a pair where both accept.",
+      "disjoint(B, regex((a|b)*a))",
+      "disjoint(E, R)",
+      "# A context-free grammar: empty when its start variable derives no terminal word, infinite when a variable can repeat in a derivation tree.",
+      `Grammar:
+  name: G
+  charset: a, b
+  variables: S
+  init: S
+  rules:
+    - S -> aSb | ε`,
+      "finite(G)"
+    ]
+  },
+  {
     key: "pda",
     name: "Pushdown automata",
     cells: [

@@ -22,7 +22,7 @@ import {
 } from "../../core/fsm/ops";
 import { regexToNFA } from "../../core/fsm/regex";
 import { fsmToRegex } from "../../core/fsm/toRegex";
-import { fsmToGrammar, Grammar, grammarToFSM, grammarToPDA, removeEpsilonRules } from "../../core/grammar/grammar";
+import { classify, fsmToGrammar, Grammar, grammarToFSM, grammarToPDA, removeEpsilonRules } from "../../core/grammar/grammar";
 import { removeUnitRules, removeUselessSymbols, toCNF } from "../../core/grammar/normalForm";
 import { machineCaps, machineToFSM } from "../../core/machine/machine";
 import { pdaToGrammar, toEmptyStack, toFinalState } from "../../core/machine/pda";
@@ -38,8 +38,8 @@ export interface OpInfo {
   name: string;
   descKey: string;
   args: 1 | 2;
-  /** which kind of value it applies to */
-  input: "fsm" | "grammar" | "pda";
+  /** which kind of value it applies to — "language": anything with a regular or context-free language */
+  input: "fsm" | "grammar" | "pda" | "language";
   groupKey: string;
 }
 
@@ -70,7 +70,10 @@ export const OPS: OpInfo[] = [
   { groupKey: "editor.ops.groups.conversion", name: "toEmptyStack", descKey: "editor.ops.toEmptyStack", args: 1, input: "pda" },
   { groupKey: "editor.ops.groups.conversion", name: "toFinalState", descKey: "editor.ops.toFinalState", args: 1, input: "pda" },
 
-  { groupKey: "editor.ops.groups.inspection", name: "equal", descKey: "editor.ops.equal", args: 2, input: "fsm" }
+  { groupKey: "editor.ops.groups.inspection", name: "equal", descKey: "editor.ops.equal", args: 2, input: "fsm" },
+  { groupKey: "editor.ops.groups.inspection", name: "empty", descKey: "editor.ops.empty", args: 1, input: "language" },
+  { groupKey: "editor.ops.groups.inspection", name: "finite", descKey: "editor.ops.finite", args: 1, input: "language" },
+  { groupKey: "editor.ops.groups.inspection", name: "disjoint", descKey: "editor.ops.disjoint", args: 2, input: "fsm" }
 ];
 
 const KIND_KEY: Record<string, string> = {
@@ -177,6 +180,18 @@ export function opApplicability(op: OpInfo, value: ExprValue | Definition | null
   const kind = value.kind;
   if (kind === "verdict")
     return { ok: false, reason: ux("editor.ops.reason.notApplicableToVerdict") };
+
+  // emptiness and finiteness: decided for the regular and the context-free languages
+  if (op.input === "language") {
+    if (kind === "regex")
+      return regexToNFA(value.pattern, value.name).ok ? { ok: true } : { ok: false, reason: ux("editor.ops.reason.invalidRegex") };
+    if (kind === "grammar")
+      return classify(value).contextFreeForm ? { ok: true } : { ok: false, reason: ux("editor.ops.reason.undecidableGrammar") };
+    if (kind === "machine" && machineCaps(value).isPDALike) return fromDryRun(pdaToGrammar(value));
+    if (kind === "machine" && !machineCaps(value).isFSMLike)
+      return { ok: false, reason: ux("editor.ops.reason.undecidableMachine", { kindKey: describeValue(value).key }) };
+    return { ok: true };
+  }
 
   if (kind === "regex") {
     if (op.name === "toFsm") return { ok: true };

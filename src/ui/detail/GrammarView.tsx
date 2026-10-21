@@ -8,6 +8,9 @@ import {
   ruleToString
 } from "../../core/grammar/grammar";
 import { cykMembership, Membership } from "../../core/grammar/cyk";
+import { decideEmptyGrammar, decideFiniteGrammar } from "../../core/grammar/decide";
+import { LanguageSummary } from "../../core/fsm/decide";
+import { LanguageNote } from "./LanguageNote";
 import { showSymbols, withSubscript } from "../../core/symbols";
 import { rich } from "../Rich";
 import { isCNF } from "../../core/grammar/normalForm";
@@ -27,6 +30,14 @@ export const GrammarView: React.FC<{ grammar: Grammar }> = ({ grammar }) => {
   const { t } = useTranslation();
   const cls = useMemo(() => classify(grammar), [grammar]);
   const gen = useMemo(() => generateWords(grammar, 8, 36), [grammar]);
+  // a context-free grammar: exactly whether its language is empty or finite, and how large
+  const facts = useMemo((): LanguageSummary | null => {
+    if (!cls.contextFreeForm) return null;
+    if (decideEmptyGrammar(grammar).value!.empty) return { words: [], empty: true, finite: true, count: 0, countExact: true };
+    const v = decideFiniteGrammar(grammar).value!;
+    return { words: [], empty: false, finite: v.finite, count: v.finite ? Number(v.count) : undefined, countExact: v.countExact };
+  }, [grammar, cls]);
+  const allShown = facts ? facts.finite && facts.countExact && facts.count === gen.words.length : gen.exhaustive;
   const addCell = useAppStore((s) => s.addCell);
   const activeCellId = useAppStore((s) => s.activeCellId);
   const ensureCellName = useAppStore((s) => s.ensureCellName);
@@ -227,7 +238,7 @@ export const GrammarView: React.FC<{ grammar: Grammar }> = ({ grammar }) => {
       <details className="card" open>
         <summary className="card-title">
           <ListOrdered size={15} />
-          {t("detail.grammar.generatedWords", { count: gen.words.length, plus: gen.exhaustive ? "" : "+" })}
+          {t("detail.grammar.generatedWords", { count: gen.words.length, plus: allShown ? "" : "+" })}
           <ChevronRight size={15} className="chev" />
         </summary>
         <div className="card-body">
@@ -242,7 +253,7 @@ export const GrammarView: React.FC<{ grammar: Grammar }> = ({ grammar }) => {
                 {w.word === "" ? "ε" : w.word}
               </button>
             ))}
-            {gen.words.length === 0 && (
+            {gen.words.length === 0 && !facts && (
               <span style={{ color: "var(--muted)" }}>{t("detail.grammar.noDerivableWords")}</span>
             )}
           </div>
@@ -261,10 +272,14 @@ export const GrammarView: React.FC<{ grammar: Grammar }> = ({ grammar }) => {
                 </div>
               );
             })()}
-          {!gen.exhaustive && (
-            <div style={{ marginTop: 8, fontSize: 12.5, color: "var(--muted)" }}>
-              {t("detail.grammar.moreWordsPossible")}
-            </div>
+          {facts ? (
+            <LanguageNote summary={facts} shownCount={gen.words.length} emptyKey="detail.language.emptyGrammar" />
+          ) : (
+            !gen.exhaustive && (
+              <div style={{ marginTop: 8, fontSize: 12.5, color: "var(--muted)" }}>
+                {t("detail.grammar.moreWordsPossible")}
+              </div>
+            )
           )}
         </div>
       </details>

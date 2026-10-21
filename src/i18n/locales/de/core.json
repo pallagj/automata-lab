@@ -29,7 +29,10 @@
     "cnf": "Umwandlung in Chomsky-Normalform",
     "cyk": "Wortproblem (CYK)",
     "toEmptyStack": "Umwandlung in Akzeptanz durch leeren Keller",
-    "toFinalState": "Umwandlung in Akzeptanz durch Endzustand"
+    "toFinalState": "Umwandlung in Akzeptanz durch Endzustand",
+    "empty": "Leerheitsprüfung",
+    "finite": "Endlichkeitsprüfung",
+    "disjoint": "Disjunktheitsprüfung"
   },
   "regex": {
     "error": {
@@ -740,12 +743,84 @@
       "count": "Anzahl"
     }
   },
+  "decide": {
+    "table": {
+      "state": "Zustand",
+      "word": "Wort dorthin",
+      "accepting": "akzeptierend",
+      "rules": "Regeln",
+      "onRight": "Variablen auf den rechten Seiten",
+      "leadsTo": "B mit A ⇒⁺ …B…"
+    },
+    "empty": {
+      "search": {
+        "title": "Ist vom Startzustand aus ein akzeptierender Zustand erreichbar?",
+        "detailFound": "L = ∅ genau dann, wenn kein Weg vom Startzustand zu einem akzeptierenden Zustand führt. Eine Breitensuche vom Startzustand aus; ein ε-Übergang liest keinen Buchstaben, darum werden diese zuerst verfolgt, und jeder Zustand wird mit einem kürzesten Wort dorthin erreicht. Der akzeptierende Zustand {{state}} ist erreichbar: die Sprache ist nicht leer, und {{word}} ist eines ihrer kürzesten Wörter.",
+        "detailNone": "L = ∅ genau dann, wenn kein Weg vom Startzustand zu einem akzeptierenden Zustand führt. Die Breitensuche vom Startzustand aus erreicht {{count}} Zustände, keiner davon akzeptierend — der Automat akzeptiert kein Wort, L = ∅."
+      }
+    },
+    "disjoint": {
+      "search": {
+        "title": "Suche nach einem gemeinsamen Wort im Produktautomaten",
+        "detailFound": "Ob L₁ ∩ L₂ = ∅ gilt, ist die Leerheit des Durchschnitts. Die Zustände seines Automaten sind die Paare (p, q): ein Buchstabe bewegt beide Automaten, ein ε-Übergang nur den eigenen. Nur die vom Startpaar aus erreichbaren Paare werden gebildet, in Breitensuche, jedes mit einem kürzesten Wort dorthin. Im Paar {{pair}} akzeptieren beide Zustände: {{word}} liegt in beiden Sprachen, sie sind nicht disjunkt.",
+        "detailNone": "Ob L₁ ∩ L₂ = ∅ gilt, ist die Leerheit des Durchschnitts. Die Zustände seines Automaten sind die Paare (p, q): ein Buchstabe bewegt beide Automaten, ein ε-Übergang nur den eigenen. Vom Startpaar aus sind {{count}} Paare erreichbar, in keinem akzeptieren beide Zustände: der Durchschnitt ist leer, die Sprachen sind disjunkt."
+      }
+    },
+    "finite": {
+      "min": {
+        "title": "Der Minimalautomat",
+        "detMin": "Die Sprache ist genau dann unendlich, wenn sie ein Wort w mit n ≤ |w| ≤ 2n hat, n die Zustandszahl ihres Minimalautomaten. Der Automat determinisiert und minimiert: n = {{n}} Zustände.",
+        "completeMin": "Die Sprache ist genau dann unendlich, wenn sie ein Wort w mit n ≤ |w| ≤ 2n hat, n die Zustandszahl ihres Minimalautomaten. Der Automat vervollständigt und minimiert: n = {{n}} Zustände.",
+        "min": "Die Sprache ist genau dann unendlich, wenn sie ein Wort w mit n ≤ |w| ≤ 2n hat, n die Zustandszahl ihres Minimalautomaten. Der Automat minimiert: n = {{n}} Zustände."
+      },
+      "lengths": {
+        "title": "Gibt es ein Wort mit einer Länge zwischen n und 2n?",
+        "detailFound": "Die Wörter müssen nicht einzeln verfolgt werden: Rₖ ist die Menge der Zustände, in die ein Wort der Länge k führt (R₀ = {q₀}, Rₖ₊₁ = δ(Rₖ, Σ)), und die Sprache hat genau dann ein Wort der Länge k, wenn Rₖ ∩ F ≠ ∅. Die erste solche Länge zwischen n = {{n}} und 2n = {{twoN}} ist k = {{k}}: {{word}} ist ein kürzestes Wort der Sprache mit mindestens n Buchstaben — die Sprache ist unendlich.",
+        "detailNone": "Die Wörter müssen nicht einzeln verfolgt werden: Rₖ ist die Menge der Zustände, in die ein Wort der Länge k führt (R₀ = {q₀}, Rₖ₊₁ = δ(Rₖ, Σ)), und die Sprache hat genau dann ein Wort der Länge k, wenn Rₖ ∩ F ≠ ∅. Für kein k mit n = {{n}} ≤ k ≤ 2n = {{twoN}} enthält Rₖ einen akzeptierenden Zustand: die Sprache hat kein Wort mit einer Länge zwischen n und 2n, also ist sie endlich."
+      },
+      "pump": {
+        "title": "Das Wort aufpumpen",
+        "detail": "Beim Lesen von {{word}} wiederholt sich der Zustand {{state}} innerhalb der ersten n Buchstaben, also zerfällt das Wort in x = uvw: u = {{u}}, v = {{v}}, w = {{w}}, mit |uv| ≤ n und |v| ≥ 1. v führt von {{state}} zurück nach {{state}} und lässt sich daher beliebig oft wiederholen: uvᵏw ∈ L für jedes k ≥ 0 — {{words}}, … Unendlich viele Wörter."
+      },
+      "words": {
+        "title": "Die Wörter der Sprache",
+        "detail": "Jedes Wort einer endlichen Sprache ist kürzer als n = {{n}} (ein Wort mit mindestens n Buchstaben ließe sich aufpumpen). Die Sprache hat {{count}} Wörter.",
+        "detailEmpty": "Die Sprache hat überhaupt kein Wort: L = ∅, also ist sie endlich."
+      }
+    },
+    "emptyGrammar": {
+      "title": "Leitet die Startvariable ein Terminalwort ab?",
+      "detailFound": "L(G) = ∅ genau dann, wenn die Startvariable nutzlos ist: sie leitet kein Terminalwort ab. B₀ = Σ, und Bᵢ₊₁ nimmt jedes A hinzu, das eine Regel A → α hat, deren Symbole alle in Bᵢ liegen. Die Startvariable {{start}} kommt in Runde {{round}} hinzu: die Sprache ist nicht leer, und {{word}} ist eines ihrer kürzesten Wörter.",
+      "detailNone": "L(G) = ∅ genau dann, wenn die Startvariable nutzlos ist: sie leitet kein Terminalwort ab. B₀ = Σ, und Bᵢ₊₁ nimmt jedes A hinzu, das eine Regel A → α hat, deren Symbole alle in Bᵢ liegen. Die Startvariable {{start}} kommt nie hinzu: sie leitet kein Terminalwort ab, die Sprache ist leer."
+    },
+    "finiteGrammar": {
+      "prepare": {
+        "title": "Vorbereitung: ε-Regeln, Kettenregeln und nutzlose Symbole entfernt",
+        "detail": "Die Sprache ist genau dann unendlich, wenn sie ein Wort w mit p ≤ |w| ≤ 2p hat, p die Pumping-Länge. Ein solches Wort hat einen Ableitungsbaum mit einem Pfad, auf dem sich eine Variable wiederholt — der Beweis des Pumping-Lemmas zeigt das an einer Grammatik ohne Kettenregeln und ohne ε-Regel außer S → ε; ohne nutzlose Symbole nimmt zudem jede Variable an der Ableitung eines Wortes teil. Eine solche Grammatik für dieselbe Sprache:",
+        "detailEmpty": "Die Startvariable leitet kein Terminalwort ab: die Sprache ist leer, also endlich."
+      },
+      "repeat": {
+        "title": "Kann sich eine Variable im Ableitungsbaum wiederholen?",
+        "detailFound": "Eine Variable kann sich auf einem Pfad eines Ableitungsbaums genau dann wiederholen, wenn sie eine Satzform ableitet, die sie selbst enthält: A ⇒⁺ …A…. Die Tabelle gibt zu jeder Variable A die Variablen auf den rechten Seiten ihrer Regeln an und die Variablen B mit A ⇒⁺ …B…. Variablen, die zu sich selbst zurückführen: {{variables}} — die Sprache ist unendlich.",
+        "detailNone": "Eine Variable kann sich auf einem Pfad eines Ableitungsbaums genau dann wiederholen, wenn sie eine Satzform ableitet, die sie selbst enthält: A ⇒⁺ …A…. Die Tabelle gibt zu jeder Variable A die Variablen auf den rechten Seiten ihrer Regeln an und die Variablen B mit A ⇒⁺ …B…. Keine Variable leitet eine Satzform ab, die sie selbst enthält: auf keinem Pfad eines Ableitungsbaums wiederholt sich eine Variable, die Bäume sind also beschränkt (höchstens {{m}} Variablen auf einem Pfad), und die Sprache ist endlich."
+      },
+      "pump": {
+        "title": "Das Wort aufpumpen",
+        "detail": "{{start}} ⇒* {{outer}} und {{variable}} ⇒⁺ {{inner}}; setzt man für jede Variable eines ihrer kürzesten Wörter ein, ergibt sich z = uvwxy mit u = {{u}}, v = {{v}}, w = {{w}}, x = {{x}}, y = {{y}} (w ein kürzestes Wort von {{variable}}). Der Schritt {{variable}} ⇒⁺ v{{variable}}x lässt sich beliebig oft wiederholen, und da es keine Ketten- und keine ε-Regeln gibt, ist |vx| ≥ 1: uvᵏwxᵏy ∈ L für jedes k ≥ 0 — {{words}}, … Unendlich viele Wörter."
+      },
+      "words": {
+        "title": "Die Wörter der Sprache",
+        "detail": "Da sich keine Variable wiederholen kann, lassen sich die Wörter der Variablen von unten nach oben berechnen: zuerst für die, deren Regeln keine Variable enthalten, dann für die, die nur diese verwenden. Die Sprache hat {{count}} Wörter.",
+        "detailCapped": "Da sich keine Variable wiederholen kann, lassen sich die Wörter der Variablen von unten nach oben berechnen: zuerst für die, deren Regeln keine Variable enthalten, dann für die, die nur diese verwenden. Die Sprache hat mindestens {{count}} Wörter — mehr werden nicht aufgezählt."
+      }
+    }
+  },
   "expression": {
     "kind": {
       "fsm": "ein endlicher Automat",
       "grammar": "eine Grammatik",
       "regex": "ein regulärer Ausdruck",
-      "verdict": "ein Vergleichsergebnis"
+      "verdict": "eine Entscheidung"
     },
     "error": {
       "unexpectedChar": "Unerwartetes Zeichen: „{{char}}“ (Position {{pos}})",
@@ -764,6 +839,8 @@
       "needsFsm": "{{ctx}}: erwartet einen endlichen Automaten, aber {{kind}} wurde übergeben",
       "machineNeedsFsm": "{{ctx}}: erwartet einen endlichen Automaten, aber {{name}} ist {{machineKind}} (Speicher: {{storages}}). Die von einer Maschine mit Speicher erkannte Sprache ist im Allgemeinen nicht regulär, daher gibt es keine automatische Umwandlung — Automaten-Operationen gelten nur für speicherlose Maschinen.",
       "machineHasStorage": "{{name}} lässt sich nicht in einen endlichen Automaten umwandeln, da es Speicher hat ({{storages}}) — nur eine speicherlose Maschine hat einen äquivalenten Automaten",
+      "undecidableMachine": "{{op}}: {{name}} ist {{machineKind}}, und für die Sprachen solcher Maschinen ist die Frage im Allgemeinen nicht algorithmisch entscheidbar. Für reguläre und kontextfreie Sprachen ist sie es: ein endlicher Automat, ein regulärer Ausdruck, ein Kellerautomat, eine Grammatik vom Typ 2 oder 3.",
+      "undecidableGrammar": "{{op}}: nicht jede Regel von {{name}} hat die Form A → α — für eine Grammatik vom Typ 0 oder 1 ist die Frage im Allgemeinen nicht algorithmisch entscheidbar, für reguläre und kontextfreie Sprachen schon.",
       "toFsmExpects": "toFsm() erwartet eine Grammatik, einen regulären Ausdruck oder eine speicherlose Maschine",
       "toPdaExpects": "toPda() erwartet eine Grammatik",
       "needsGrammar": "{{op}}: erwartet eine Grammatik, aber {{kind}} wurde übergeben",

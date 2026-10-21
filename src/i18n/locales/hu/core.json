@@ -29,7 +29,10 @@
     "cnf": "Chomsky-normálformára hozás",
     "cyk": "beletartozás-vizsgálat (CYK)",
     "toEmptyStack": "üres veremmel elfogadóvá alakítás",
-    "toFinalState": "állapottal elfogadóvá alakítás"
+    "toFinalState": "állapottal elfogadóvá alakítás",
+    "empty": "üresség-vizsgálat",
+    "finite": "végesség-vizsgálat",
+    "disjoint": "diszjunktság-vizsgálat"
   },
   "regex": {
     "error": {
@@ -740,12 +743,84 @@
       "count": "darab"
     }
   },
+  "decide": {
+    "table": {
+      "state": "állapot",
+      "word": "odavezető szó",
+      "accepting": "elfogadó",
+      "rules": "szabályok",
+      "onRight": "változók a jobb oldalakon",
+      "leadsTo": "B, ahol A ⇒⁺ …B…"
+    },
+    "empty": {
+      "search": {
+        "title": "Elérhető-e elfogadó állapot a kezdőállapotból?",
+        "detailFound": "L = ∅ pontosan akkor, ha a kezdőállapotból nem vezet út elfogadó állapotba. Szélességi bejárás a kezdőállapotból; az ε-átmenet nem olvas betűt, ezért előbb azokat követjük, így minden állapotba a legrövidebb odavezető szóval jutunk el. A(z) {{state}} elfogadó állapot elérhető: a nyelv nem üres, a(z) {{word}} szó egy legrövidebb szava.",
+        "detailNone": "L = ∅ pontosan akkor, ha a kezdőállapotból nem vezet út elfogadó állapotba. A szélességi bejárás a kezdőállapotból {{count}} állapotot ér el, egyik sem elfogadó — az automata egyetlen szót sem fogad el, L = ∅."
+      }
+    },
+    "disjoint": {
+      "search": {
+        "title": "Közös szó keresése a szorzatautomatában",
+        "detailFound": "L₁ ∩ L₂ = ∅ a metszet ürességének kérdése. A metszet automatájának állapotai a (p, q) párok: egy betű mindkét automatát lépteti, egy ε-átmenet csak azt, amelyiké. Csak a kezdőpárból elérhető párokat építjük fel, szélességi bejárással, mindegyiket a legrövidebb odavezető szóval. A(z) {{pair}} párban mindkét állapot elfogadó: a(z) {{word}} szó mindkét nyelvben benne van, a nyelvek nem diszjunktak.",
+        "detailNone": "L₁ ∩ L₂ = ∅ a metszet ürességének kérdése. A metszet automatájának állapotai a (p, q) párok: egy betű mindkét automatát lépteti, egy ε-átmenet csak azt, amelyiké. A kezdőpárból {{count}} pár érhető el, egyikben sem elfogadó mindkét állapot: a metszet üres, a nyelvek diszjunktak."
+      }
+    },
+    "finite": {
+      "min": {
+        "title": "A minimálautomata",
+        "detMin": "A nyelv pontosan akkor végtelen, ha van olyan w szava, amelyre n ≤ |w| ≤ 2n, ahol n a minimálautomatájának állapotszáma. Az automata determinizálva és minimalizálva: n = {{n}} állapot.",
+        "completeMin": "A nyelv pontosan akkor végtelen, ha van olyan w szava, amelyre n ≤ |w| ≤ 2n, ahol n a minimálautomatájának állapotszáma. Az automata teljessé téve és minimalizálva: n = {{n}} állapot.",
+        "min": "A nyelv pontosan akkor végtelen, ha van olyan w szava, amelyre n ≤ |w| ≤ 2n, ahol n a minimálautomatájának állapotszáma. Az automata minimalizálva: n = {{n}} állapot."
+      },
+      "lengths": {
+        "title": "Van-e szó n és 2n közötti hosszal?",
+        "detailFound": "A szavakat nem kell egyenként végigkövetni: Rₖ azoknak az állapotoknak a halmaza, ahová valamelyik k hosszú szó visz (R₀ = {q₀}, Rₖ₊₁ = δ(Rₖ, Σ)), és a nyelvnek pontosan akkor van k hosszú szava, ha Rₖ ∩ F ≠ ∅. Az első ilyen hossz n = {{n}} és 2n = {{twoN}} között k = {{k}}: a(z) {{word}} a nyelv egy legrövidebb, legalább n hosszú szava — a nyelv végtelen.",
+        "detailNone": "A szavakat nem kell egyenként végigkövetni: Rₖ azoknak az állapotoknak a halmaza, ahová valamelyik k hosszú szó visz (R₀ = {q₀}, Rₖ₊₁ = δ(Rₖ, Σ)), és a nyelvnek pontosan akkor van k hosszú szava, ha Rₖ ∩ F ≠ ∅. Egyetlen n = {{n}} ≤ k ≤ 2n = {{twoN}} esetén sem tartalmaz Rₖ elfogadó állapotot: a nyelvnek nincs n és 2n közötti hosszú szava, tehát véges."
+      },
+      "pump": {
+        "title": "A szó pumpálása",
+        "detail": "A(z) {{word}} olvasása közben a(z) {{state}} állapot az első n betűn belül ismétlődik, így a szó x = uvw alakú: u = {{u}}, v = {{v}}, w = {{w}}, ahol |uv| ≤ n és |v| ≥ 1. A v a(z) {{state}} állapotból ugyanoda visz, ezért akárhányszor ismételhető: uvᵏw ∈ L minden k ≥ 0 esetén — {{words}}, … Végtelen sok szó."
+      },
+      "words": {
+        "title": "A nyelv szavai",
+        "detail": "A véges nyelv minden szava rövidebb, mint n = {{n}} (egy legalább n hosszú szó pumpálható lenne). A nyelvnek összesen {{count}} szava van.",
+        "detailEmpty": "A nyelvnek egyetlen szava sincs: L = ∅, tehát véges."
+      }
+    },
+    "emptyGrammar": {
+      "title": "Levezethető-e terminális szó a kezdőváltozóból?",
+      "detailFound": "L(G) = ∅ pontosan akkor, ha a kezdőváltozó felesleges szimbólum: belőle nem vezethető le terminális szó. B₀ = Σ, és Bᵢ₊₁ hozzáveszi azokat az A változókat, amelyekhez van olyan A → α szabály, hogy α minden szimbóluma Bᵢ-ben van. A(z) {{start}} kezdőváltozó a(z) {{round}}. körben kerül be: a nyelv nem üres, a(z) {{word}} szó egy legrövidebb szava.",
+      "detailNone": "L(G) = ∅ pontosan akkor, ha a kezdőváltozó felesleges szimbólum: belőle nem vezethető le terminális szó. B₀ = Σ, és Bᵢ₊₁ hozzáveszi azokat az A változókat, amelyekhez van olyan A → α szabály, hogy α minden szimbóluma Bᵢ-ben van. A(z) {{start}} kezdőváltozó nem kerül be: belőle nem vezethető le terminális szó, a nyelv üres."
+    },
+    "finiteGrammar": {
+      "prepare": {
+        "title": "Előkészítés: ε-mentesítés, egyszeres szabályok és felesleges szimbólumok elhagyása",
+        "detail": "A nyelv pontosan akkor végtelen, ha van olyan w szava, amelyre p ≤ |w| ≤ 2p, ahol p a pumpálási hossz. Egy ilyen szó levezetési fájában van olyan út, amelyen egy változó ismétlődik — ezt a pumpálási lemma bizonyítása olyan nyelvtanon mutatja meg, amelyben nincs egyszeres szabály, ε-szabály pedig legfeljebb S → ε alakban; a felesleges szimbólumokat is elhagyjuk, hogy minden változó részt vegyen valamelyik szó levezetésében. Ilyen nyelvtan ugyanerre a nyelvre:",
+        "detailEmpty": "A kezdőváltozóból nem vezethető le terminális szó: a nyelv üres, tehát véges."
+      },
+      "repeat": {
+        "title": "Ismétlődhet-e változó a levezetési fában?",
+        "detailFound": "Egy változó pontosan akkor ismétlődhet a levezetési fa egy útján, ha levezethető belőle önmagát tartalmazó mondatforma: A ⇒⁺ …A…. A táblázat minden A változóhoz megadja a szabályai jobb oldalán álló változókat, és azokat a B változókat, amelyekre A ⇒⁺ …B…. Önmagukba visszavezető változók: {{variables}} — a nyelv végtelen.",
+        "detailNone": "Egy változó pontosan akkor ismétlődhet a levezetési fa egy útján, ha levezethető belőle önmagát tartalmazó mondatforma: A ⇒⁺ …A…. A táblázat minden A változóhoz megadja a szabályai jobb oldalán álló változókat, és azokat a B változókat, amelyekre A ⇒⁺ …B…. Egyik változóból sem vezethető le önmagát tartalmazó mondatforma: egyetlen levezetési fa egyetlen útján sem ismétlődik változó, a fák tehát korlátosak (egy úton legfeljebb {{m}} változó), a nyelv véges."
+      },
+      "pump": {
+        "title": "A szó pumpálása",
+        "detail": "{{start}} ⇒* {{outer}} és {{variable}} ⇒⁺ {{inner}}; a változók helyére egy-egy legrövidebb szavukat írva z = uvwxy, ahol u = {{u}}, v = {{v}}, w = {{w}}, x = {{x}}, y = {{y}} (w a(z) {{variable}} egy legrövidebb szava). A(z) {{variable}} ⇒⁺ v{{variable}}x lépés akárhányszor ismételhető, és mivel nincs egyszeres és ε-szabály, |vx| ≥ 1: uvᵏwxᵏy ∈ L minden k ≥ 0 esetén — {{words}}, … Végtelen sok szó."
+      },
+      "words": {
+        "title": "A nyelv szavai",
+        "detail": "Mivel egyik változó sem ismétlődhet, a változók szavai alulról felfelé kiszámíthatók: előbb azoké, amelyek szabályaiban nincs változó, aztán azoké, amelyek csak ezeket használják. A nyelvnek összesen {{count}} szava van.",
+        "detailCapped": "Mivel egyik változó sem ismétlődhet, a változók szavai alulról felfelé kiszámíthatók: előbb azoké, amelyek szabályaiban nincs változó, aztán azoké, amelyek csak ezeket használják. A nyelvnek legalább {{count}} szava van — ennél többet nem sorolunk fel."
+      }
+    }
+  },
   "expression": {
     "kind": {
       "fsm": "véges automata",
       "grammar": "nyelvtan",
       "regex": "reguláris kifejezés",
-      "verdict": "összehasonlítás eredménye"
+      "verdict": "döntés eredménye"
     },
     "error": {
       "unexpectedChar": "Váratlan karakter: „{{char}}” (pozíció: {{pos}})",
@@ -764,6 +839,8 @@
       "needsFsm": "{{ctx}}: véges automatát vár, de {{kind}} érkezett",
       "machineNeedsFsm": "{{ctx}}: véges automatát vár, de a(z) {{name}} {{machineKind}} (tárolói: {{storages}}). A tárolós gép által felismert nyelv általában nem reguláris, ezért nincs automatikus átalakítás — az automata-műveletek csak tárolómentes gépekre alkalmazhatók.",
       "machineHasStorage": "A(z) {{name}} gép nem alakítható véges automatává, mert tárolója van ({{storages}}) — csak a tárolómentes gép ekvivalens automatával",
+      "undecidableMachine": "{{op}}: a(z) {{name}} {{machineKind}}, az ilyen gépek nyelvére a kérdés általában algoritmussal nem dönthető el. A reguláris és a környezetfüggetlen nyelvekre igen: véges automatára, reguláris kifejezésre, veremautomatára, 2. vagy 3. típusú nyelvtanra.",
+      "undecidableGrammar": "{{op}}: a(z) {{name}} nem minden szabálya A → α alakú — 0. és 1. típusú nyelvtanra a kérdés általában algoritmussal nem dönthető el, a reguláris és a környezetfüggetlen nyelvekre igen.",
       "toFsmExpects": "A toFsm() nyelvtant, reguláris kifejezést vagy tárolómentes gépet vár",
       "toPdaExpects": "A toPda() nyelvtant vár",
       "needsGrammar": "{{op}}: nyelvtant vár, de {{kind}} érkezett",

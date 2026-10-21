@@ -3,13 +3,13 @@ import {
   Boxes,
   CircleDot,
   Columns3,
-  Equal,
   FunctionSquare,
   Layers,
   ListTree,
   LucideIcon,
   Quote,
-  Regex
+  Regex,
+  Scale
 } from "lucide-react";
 
 /** What a cell or worksheet holds. One plain, grey icon set used everywhere (cells, Insert menu, browser). */
@@ -22,7 +22,7 @@ const ICONS: Record<ValueKind, LucideIcon> = {
   general: Boxes,
   grammar: ListTree,
   regex: Regex,
-  verdict: Equal,
+  verdict: Scale,
   expression: FunctionSquare,
   note: Quote
 };

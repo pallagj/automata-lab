@@ -123,6 +123,9 @@
     "setOps": {
       "name": "Set operations on languages"
     },
+    "decisions": {
+      "name": "Decision questions — empty, finite, disjoint"
+    },
     "pda": {
       "name": "Pushdown automata"
     },
@@ -173,6 +176,7 @@
         "langOps": "language operations",
         "regex": "a regular expression as a value — toFsm() turns it into an automaton",
         "equal": "equivalence check, with a counterexample",
+        "decisions": "decision questions: is the language empty, is it finite, are two languages disjoint — with the reasons",
         "conversions": "conversions between automaton ↔ grammar, automaton → regular expression, grammar ↔ pushdown automaton",
         "pdaAcceptance": "a pushdown automaton accepting the same language by empty stack / by final state",
         "namedOps": "operations between named automata: concatenation, union, closure — letter literals only inside regex(…)"
@@ -232,16 +236,49 @@
       "input": "input"
     },
     "verdict": {
-      "title": "Equivalence check",
-      "equalBody1": "The two automata recognize",
-      "equalEmphasis": "the same language",
-      "equalBody2": ": acceptance never differs at any reachable state pair of the product automaton.",
-      "notEqualBody1": "The two automata are",
-      "notEqualEmphasis": "not equivalent",
-      "notEqualBody2": ". The shortest distinguishing word:",
-      "counterexample1": "This word is accepted by",
-      "counterexample2": ", but rejected by",
-      "counterexample3": "."
+      "equal": {
+        "title": "Equivalence check",
+        "equalBody1": "The two automata recognize",
+        "equalEmphasis": "the same language",
+        "equalBody2": ": acceptance never differs at any reachable state pair of the product automaton.",
+        "notEqualBody1": "The two automata are",
+        "notEqualEmphasis": "not equivalent",
+        "notEqualBody2": ". The shortest distinguishing word:",
+        "counterexample1": "This word is accepted by",
+        "counterexample2": ", but rejected by",
+        "counterexample3": "."
+      },
+      "empty": {
+        "title": "Emptiness check",
+        "emptyBody": "The language is empty: there is no word in it.",
+        "notEmptyBody": "The language is not empty. A shortest word of it:"
+      },
+      "finite": {
+        "title": "Finiteness check",
+        "isFinite": "is finite",
+        "isInfinite": "is infinite",
+        "emptyBody": "The language is empty, so it is finite.",
+        "finiteBody": "The language is finite, with {{count}} words:",
+        "finiteBodyAtLeast": "The language is finite, with at least {{count}} words:",
+        "moreWords": "…and {{count}} more.",
+        "infiniteBody": "The language is infinite. This word of it pumps:",
+        "pumpedRegular": "repeating v, uvᵏw (k = 0, 1, 2, 3):",
+        "pumpedContextFree": "repeating v and x together, uvᵏwxᵏy (k = 0, 1, 2, 3):"
+      },
+      "disjoint": {
+        "title": "Disjointness check",
+        "disjointBody": "The two languages are disjoint: no word is in both.",
+        "notDisjointBody": "The two languages are not disjoint. A shortest word in both:"
+      }
+    },
+    "language": {
+      "emptyFsm": "The language is empty: no accepting state can be reached from the start state.",
+      "emptyGrammar": "The language is empty: the start variable derives no terminal word.",
+      "emptyRegex": "No word matches: the language is empty.",
+      "infinite": "…the language is infinite.",
+      "allWords": "These are all the words of the language: it is finite.",
+      "moreFinite": "…the language is finite, with {{count}} words in all.",
+      "moreFiniteAtLeast": "…the language is finite, with more than {{count}} words."
     },
     "regex": {
       "title": "Regular expression",
@@ -258,7 +295,7 @@
       "wordTestPlaceholder": "does the word match? e.g. abb",
       "matches": "matches",
       "noMatch": "no match",
-      "sampleWords": "Matching words (sample)"
+      "sampleWords": "Matching words"
     },
     "fsm": {
       "title": "Automaton",
@@ -281,9 +318,7 @@
       "transitionTable": "Transition table",
       "state": "state",
       "acceptedWords": "Accepted words",
-      "noAcceptedWords": "No accepted word found up to length 7 — the recognized language might be empty.",
       "loadIntoSimulation": "Click to load into the simulation",
-      "wordsNotExhaustive": "…and the language is larger than this (the list covers length 7 / 24 words).",
       "howWasThisBuilt": "How was this built?",
       "inputPlaceholder": "input word — click and type",
       "restart": "Restart",
@@ -450,6 +485,9 @@
       "toFinalState": "pushdown automaton → accepting by final state",
       "toRegex": "automaton → regular expression (r(p, q, t) method)",
       "equal": "equivalence check with a counterexample",
+      "empty": "is the language empty — with a shortest word",
+      "finite": "is the language finite — with its words, or a word that pumps",
+      "disjoint": "are two regular languages disjoint — with a common word",
       "kind": {
         "fsm": "finite automaton",
         "pda": "pushdown automaton",
@@ -457,11 +495,11 @@
         "generalMachine": "general machine",
         "grammar": "grammar",
         "regex": "regular expression",
-        "verdict": "comparison result",
+        "verdict": "a decision",
         "unknown": "unknown"
       },
       "reason": {
-        "notApplicableToVerdict": "not applicable to a comparison result",
+        "notApplicableToVerdict": "not applicable to a decision",
         "expectsGrammarIsRegex": "expects a grammar — this cell is: a regular expression",
         "invalidRegex": "invalid regular expression",
         "expectsGrammar": "expects a grammar — this cell is: {{kind}}",
@@ -469,14 +507,16 @@
         "hasStorage": "this machine has storage ({{types}}) — the language it recognizes usually isn't regular, so automaton operations don't apply",
         "expectsFsm": "expects a finite automaton — this cell is: {{kind}}",
         "expectsPda": "expects a pushdown automaton — this cell is: {{kind}}",
-        "unknown": "the operation's precondition is not met"
+        "unknown": "the operation's precondition is not met",
+        "undecidableMachine": "for the language of a {{kind}} the question cannot be decided by an algorithm in general",
+        "undecidableGrammar": "not every rule of the grammar is of the form A → α — for a type-0 or type-1 grammar the question cannot be decided by an algorithm in general"
       }
     },
     "cell": {
       "kind": {
         "grammar": "grammar",
         "regex": "regular expression",
-        "verdict": "comparison",
+        "verdict": "decision",
         "fsm": "finite automaton",
         "pda": "pushdown automaton",
         "tm": "Turing machine",

@@ -2,7 +2,9 @@ import React, { useMemo, useState } from "react";
 import { rich } from "../Rich";
 import { useTranslation } from "react-i18next";
 import { RegexDef, RegexNodeInfo, regexToNFA, regexTree } from "../../core/fsm/regex";
-import { acceptsFSM, enumerateWords } from "../../core/fsm/fsm";
+import { acceptsFSM } from "../../core/fsm/fsm";
+import { languageSummary } from "../../core/fsm/decide";
+import { LanguageNote } from "./LanguageNote";
 import { useAppStore, activeWorkspace } from "../../state/store";
 import { uniqueName, usedNames } from "../../state/names";
 import { withSubscript } from "../../core/symbols";
@@ -39,7 +41,7 @@ export const RegexView: React.FC<{ regex: RegexDef }> = ({ regex }) => {
   // internal ε-NFA only for the analysis (word test, sample words)
   const nfa = useMemo(() => regexToNFA(regex.pattern, regex.name).value ?? null, [regex]);
   const tree = useMemo(() => regexTree(regex.pattern), [regex.pattern]);
-  const words = useMemo(() => (nfa ? enumerateWords(nfa, 7, 24) : null), [nfa]);
+  const words = useMemo(() => (nfa ? languageSummary(nfa, 24) : null), [nfa]);
 
   const [test, setTest] = useState("");
   const testOk = useMemo(
@@ -106,18 +108,20 @@ export const RegexView: React.FC<{ regex: RegexDef }> = ({ regex }) => {
         </div>
       </div>
 
-      {words && words.words.length > 0 && (
+      {words && (
         <div className="card">
           <div className="card-title">{t("detail.regex.sampleWords")}</div>
           <div className="card-body">
-            <div className="words">
-              {words.words.map((w) => (
-                <code key={w} className="word-chip">
-                  {w === "" ? "ε" : w}
-                </code>
-              ))}
-              {!words.exhaustive && <span style={{ color: "var(--muted)" }}>…</span>}
-            </div>
+            {words.words.length > 0 && (
+              <div className="words">
+                {words.words.map((w) => (
+                  <code key={w} className="word-chip">
+                    {w === "" ? "ε" : w}
+                  </code>
+                ))}
+              </div>
+            )}
+            <LanguageNote summary={words} shownCount={words.words.length} emptyKey="detail.language.emptyRegex" />
           </div>
         </div>
       )}

@@ -1,4 +1,4 @@
-import { EPS, setEquals, setName, setUnion } from "../types";
+import { EPS, setEquals, setUnion } from "../types";
 
 /** Finite automaton (may be an NFA, ε-NFA or DFA — analyze() decides). */
 export interface FSM {
@@ -160,44 +160,6 @@ export function acceptsFSM(f: FSM, word: string): boolean {
     if (current.size === 0) return false;
   }
   return [...current].some((s) => f.accept.includes(s));
-}
-
-/** Enumerates accepted words by length (BFS), with limits. */
-export function enumerateWords(
-  f: FSM,
-  maxLength = 8,
-  maxCount = 30
-): { words: string[]; exhaustive: boolean } {
-  const tm = transMap(f);
-  const words: string[] = [];
-  const acceptSet = new Set(f.accept);
-  // level: (state-set key → one representative word)
-  let frontier = new Map<string, { states: Set<string>; word: string }>();
-  const start = epsilonClosure(f, [f.start], tm);
-  frontier.set(setName(start), { states: start, word: "" });
-
-  const isAccepting = (states: Set<string>) => [...states].some((s) => acceptSet.has(s));
-
-  if (isAccepting(start)) words.push(EPS);
-
-  let exhaustive = true;
-  for (let len = 1; len <= maxLength && words.length < maxCount; len++) {
-    const next = new Map<string, { states: Set<string>; word: string }>();
-    for (const { states, word } of frontier.values()) {
-      for (const a of f.alphabet) {
-        const ns = stepStates(f, states, a, tm);
-        if (ns.size === 0) continue;
-        const w = word + a;
-        if (isAccepting(ns) && words.length < maxCount) words.push(w);
-        const key = setName(ns) + "|" + w; // every word is tracked separately for a complete enumeration
-        if (!next.has(key)) next.set(key, { states: ns, word: w });
-      }
-    }
-    frontier = next;
-    if (words.length >= maxCount) exhaustive = false;
-  }
-  if (frontier.size > 0) exhaustive = false;
-  return { words: words.slice(0, maxCount), exhaustive };
 }
 
 /** A fresh, not yet used state name. */

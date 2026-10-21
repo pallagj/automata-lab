@@ -14,7 +14,8 @@ an app; everything runs locally, no account needed.
 ## Features
 
 - **Finite automata** (DFA / NFA / ε-NFA): step-by-step simulation over state sets, a timeline,
-  clickable edges to explore NFA branches, and enumeration of accepted words.
+  clickable edges to explore NFA branches, and the accepted words in shortlex order — with whether
+  the language is empty, finite (and how many words it has) or infinite, decided exactly.
 - **Smart operations with explanations:** `det`, `min`, `epsfree`, `complete`, `reachable`,
   `complement`, `union`, `intersect`, `difference`, `concat`, `star`, `reverse`, `regex`, `equal`,
   `toGrammar`, `toRegex`, `toFsm`, `toPda`, for grammars `epsfree`, `unitfree`, `trim`, `cnf`, and
@@ -30,6 +31,11 @@ an app; everything runs locally, no account needed.
   automaton → regular expression conversion, the rounds of the grammar transformations. The
   panels over the graph can be enlarged to the whole canvas for a long table.
 - **Equivalence check with a counterexample:** `equal(A, B)` returns the shortest distinguishing word.
+- **Decision questions, decided exactly and explained:** `empty(L)` gives a shortest word or shows
+  that no accepting state is reachable; `finite(L)` works on the minimal automaton (infinite exactly
+  when there is a word of length n…2n, and that word is pumped) or, for a context-free grammar or a
+  pushdown automaton, looks for a variable that can repeat in a derivation tree — a finite language
+  gets all its words listed; `disjoint(A, B)` searches the product automaton for a common word.
 - **Regular expressions** as values of their own: syntax tree, word test, sample matching words,
   and `toFsm()` built inside out: small
   automata for a letter, ε and ∅, then the union, concatenation and closure constructions. The

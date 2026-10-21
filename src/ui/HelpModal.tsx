@@ -79,6 +79,10 @@ export const HelpModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
               <td>{t("help.expressions.ops.equal")}</td>
             </tr>
             <tr>
+              <td><code>empty(M)</code>, <code>finite(G)</code>, <code>disjoint(A,B)</code></td>
+              <td>{t("help.expressions.ops.decisions")}</td>
+            </tr>
+            <tr>
               <td><code>toGrammar(M)</code>, <code>toRegex(M)</code>, <code>toFsm(G)</code>, <code>toPda(G)</code></td>
               <td>{t("help.expressions.ops.conversions")}</td>
             </tr>

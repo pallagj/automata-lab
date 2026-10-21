@@ -2234,6 +2234,56 @@ table.t.cyk tr.cyk-word th {
   font-size: 16px;
 }
 
+.verdict-card .verdict-words {
+  justify-content: center;
+  margin: 8px 0 4px;
+}
+
+.word-chip.static {
+  cursor: default;
+}
+
+.word-chip.static:hover {
+  border-color: var(--border-soft);
+  color: inherit;
+}
+
+/* a word cut by the pumping lemma: each part over its letter, the pumped ones marked */
+.pump-parts {
+  display: inline-flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 4px;
+  margin: 6px 0 2px;
+}
+
+.pump-part {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.pump-text {
+  font-family: var(--font-mono);
+  font-size: 16px;
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  padding: 4px 10px;
+}
+
+.pump-part.pumped .pump-text {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.pump-label {
+  font-size: 12px;
+  font-style: italic;
+  color: var(--muted);
+}
+
 /* ====== Graph editor dialogs ====== */
 
 .modal.gdialog {

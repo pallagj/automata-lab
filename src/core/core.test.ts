@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { EPS } from "./types";
-import { acceptsFSM, analyzeFSM, enumerateWords, makeFSM } from "./fsm/fsm";
+import { acceptsFSM, analyzeFSM, makeFSM } from "./fsm/fsm";
+import { shortlexWords } from "./fsm/decide";
 import {
   checkEquivalence,
   complement,
@@ -251,10 +252,7 @@ describe("regex", () => {
   });
   it("word enumeration", () => {
     const m = regexToNFA("ab*").value!;
-    const { words } = enumerateWords(m, 4, 10);
-    expect(words).toContain("a");
-    expect(words).toContain("ab");
-    expect(words).toContain("abb");
+    expect(shortlexWords(m, 10, 4)).toEqual(["a", "ab", "abb", "abbb"]);
   });
 });
 
