@@ -483,6 +483,22 @@
       "proof": {
         "title": "Proving equivalence",
         "detail": "In every reachable (p,q) state pair of the product automaton, p and q's acceptance status agree, so there is no distinguishing word — the two automata recognize the same language."
+      },
+      "det": {
+        "title": "Determinizing {{name}} (lecture notes 2.16)",
+        "detail": "{{name}} is not a complete deterministic automaton, so the subset construction turns it into a complete DFA: {{count}} states."
+      },
+      "extend": {
+        "title": "{{name}} over the common alphabet (lecture notes 2.10)",
+        "detail": "{{name}} has no transition on {{missing}}: those letters lead into a new trap state {{trap}}, so the alphabet is common and the language stays the same."
+      },
+      "search": {
+        "title": "Looking for a distinguishing word in the product automaton (lecture notes 5.3)",
+        "detailFound": "L({{a}}) = L({{b}}) exactly when (L({{a}}) ∩ ¬L({{b}})) ∪ (¬L({{a}}) ∩ L({{b}})) = ∅ (5.3). The two automata run side by side (the product automaton, 3.4), and a breadth-first search looks for the first reachable pair (p, q) where exactly one accepts. The table shows the pairs in the order of the search, up to the one found.",
+        "detailNone": "L({{a}}) = L({{b}}) exactly when (L({{a}}) ∩ ¬L({{b}})) ∪ (¬L({{a}}) ∩ L({{b}})) = ∅ (5.3). The two automata run side by side (the product automaton, 3.4): in all {{count}} reachable pairs (p, q) both accept or both reject, so the language of the difference is empty."
+      },
+      "table": {
+        "word": "word leading there"
       }
     }
   },

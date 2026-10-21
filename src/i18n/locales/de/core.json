@@ -483,6 +483,22 @@
       "proof": {
         "title": "Nachweis der Äquivalenz",
         "detail": "In jedem erreichbaren (p,q)-Zustandspaar des Produktautomaten stimmt der Akzeptanzstatus von p und q überein, es gibt also kein unterscheidendes Wort — die beiden Automaten erkennen dieselbe Sprache."
+      },
+      "det": {
+        "title": "{{name}} determinisieren (Skript 2.16)",
+        "detail": "{{name}} ist kein vollständiger deterministischer Automat, also macht die Teilmengenkonstruktion daraus einen vollständigen DFA: {{count}} Zustände."
+      },
+      "extend": {
+        "title": "{{name}} über dem gemeinsamen Alphabet (Skript 2.10)",
+        "detail": "{{name}} hat keinen Übergang mit {{missing}}: diese Buchstaben führen in einen neuen Fangzustand {{trap}}, so ist das Alphabet gemeinsam und die Sprache bleibt dieselbe."
+      },
+      "search": {
+        "title": "Suche nach einem unterscheidenden Wort im Produktautomaten (Skript 5.3)",
+        "detailFound": "L({{a}}) = L({{b}}) genau dann, wenn (L({{a}}) ∩ ¬L({{b}})) ∪ (¬L({{a}}) ∩ L({{b}})) = ∅ (5.3). Die beiden Automaten laufen nebeneinander (der Produktautomat, 3.4), und eine Breitensuche sucht das erste erreichbare Paar (p, q), in dem genau einer akzeptiert. Die Tabelle zeigt die Paare in der Reihenfolge der Suche, bis zum gefundenen.",
+        "detailNone": "L({{a}}) = L({{b}}) genau dann, wenn (L({{a}}) ∩ ¬L({{b}})) ∪ (¬L({{a}}) ∩ L({{b}})) = ∅ (5.3). Die beiden Automaten laufen nebeneinander (der Produktautomat, 3.4): in allen {{count}} erreichbaren Paaren (p, q) akzeptieren beide oder verwerfen beide, also ist die Sprache der Differenz leer."
+      },
+      "table": {
+        "word": "Wort dorthin"
       }
     }
   },

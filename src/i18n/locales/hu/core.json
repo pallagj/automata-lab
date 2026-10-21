@@ -483,6 +483,22 @@
       "proof": {
         "title": "Ekvivalencia igazolása",
         "detail": "A szorzatautomata minden elérhető (p,q) állapotpárjában p és q elfogadási státusza megegyezik, tehát nincs megkülönböztető szó — a két automata ugyanazt a nyelvet ismeri fel."
+      },
+      "det": {
+        "title": "{{name}} determinizálása (jegyzet 2.16)",
+        "detail": "{{name}} nem teljes determinisztikus automata, ezért a részhalmaz-konstrukcióval teljes DFA-t készítünk belőle: {{count}} állapot."
+      },
+      "extend": {
+        "title": "{{name}} a közös ábécé fölött (jegyzet 2.10)",
+        "detail": "{{name}} nem lép a(z) {{missing}} betűre: ezek egy új {{trap}} csapdaállapotba vezetnek, így az ábécé közös, a nyelv nem változik."
+      },
+      "search": {
+        "title": "Megkülönböztető szó keresése a szorzatautomatában (jegyzet 5.3)",
+        "detailFound": "L({{a}}) = L({{b}}) pontosan akkor, ha (L({{a}}) ∩ ¬L({{b}})) ∪ (¬L({{a}}) ∩ L({{b}})) = ∅ (5.3). A két automatát párhuzamosan futtatjuk (szorzatautomata, 3.4), és szélességi bejárással keressük az első olyan elérhető (p, q) párt, ahol pontosan az egyik elfogadó. A táblázat a bejárás sorrendjében mutatja a párokat, a megtaláltig.",
+        "detailNone": "L({{a}}) = L({{b}}) pontosan akkor, ha (L({{a}}) ∩ ¬L({{b}})) ∪ (¬L({{a}}) ∩ L({{b}})) = ∅ (5.3). A két automatát párhuzamosan futtatjuk (szorzatautomata, 3.4): mind a(z) {{count}} elérhető (p, q) párban a két állapot egyformán elfogad vagy elutasít, tehát a különbség nyelve üres."
+      },
+      "table": {
+        "word": "odavezető szó"
       }
     }
   },

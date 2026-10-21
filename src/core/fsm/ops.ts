@@ -808,15 +808,33 @@ export interface EquivalenceVerdict {
   counterexample?: { word: string; acceptedBy: string; rejectedBy: string };
 }
 
-/** Normalises an arbitrary (ε-)NFA into a complete DFA: the subset construction gives one (with a ∅ state). */
-function normalizeToCompleteDFA(f: FSM): FSM {
-  return determinize(f).value!;
-}
-
+/**
+ * Equivalence by lecture notes 5.3: L(A) = L(B) exactly when (L(A) ∩ ¬L(B)) ∪ (¬L(A) ∩ L(B))
+ * is empty. Both automata are made complete DFAs over the common alphabet, and a breadth-first
+ * search over their product looks for a reachable pair where exactly one accepts — the word
+ * leading there is a shortest distinguishing word.
+ */
 export function checkEquivalence(a: FSM, b: FSM): OpResult<EquivalenceVerdict> {
   const alphabet = [...new Set([...a.alphabet, ...b.alphabet])];
-  const da = withAlphabet(normalizeToCompleteDFA(a), alphabet);
-  const db = withAlphabet(normalizeToCompleteDFA(b), alphabet);
+  const steps: AlgoStep[] = [];
+  const prepare = (f: FSM): FSM => {
+    let m = f;
+    if (!analyzeFSM(m).isCompleteDFA) {
+      m = determinize(m).value!;
+      steps.push({ title: tx("ops.equal.det.title", { name: f.name }), detail: tx("ops.equal.det.detail", { name: f.name, count: m.states.length }) });
+    }
+    const missing = alphabet.filter((c) => !m.alphabet.includes(c));
+    if (missing.length > 0) {
+      m = withAlphabet(m, alphabet);
+      steps.push({
+        title: tx("ops.equal.extend.title", { name: f.name }),
+        detail: tx("ops.equal.extend.detail", { name: f.name, missing: missing.join(", "), trap: m.states[m.states.length - 1] })
+      });
+    }
+    return m;
+  };
+  const da = prepare(a);
+  const db = prepare(b);
 
   // traverse the product, looking for a pair where exactly one side accepts
   const ta = transMap(da);
@@ -827,11 +845,22 @@ export function checkEquivalence(a: FSM, b: FSM): OpResult<EquivalenceVerdict> {
   const seen = new Set<string>();
   const queue: { p: string; q: string; word: string }[] = [{ p: da.start, q: db.start, word: "" }];
   seen.add(`${da.start}|${db.start}`);
+  const rows: string[][] = [];
+  const MAX_ROWS = 60;
+  const searchStep = (found: boolean): AlgoStep => ({
+    title: tx("ops.equal.search.title"),
+    detail: tx(found ? "ops.equal.search.detailFound" : "ops.equal.search.detailNone", { a: a.name, b: b.name, count: seen.size }),
+    table: {
+      headers: ["(p, q)", tx("ops.equal.table.word"), `p ∈ F(${a.name})`, `q ∈ F(${b.name})`],
+      rows: rows.length > MAX_ROWS ? [...rows.slice(0, MAX_ROWS - 1), ["…", "", "", ""], rows[rows.length - 1]] : rows
+    }
+  });
 
   while (queue.length) {
     const { p, q, word } = queue.shift()!;
     const accA = da.accept.includes(p);
     const accB = db.accept.includes(q);
+    rows.push([`(${p}, ${q})`, word === "" ? EPS : word, accA ? "✓" : "✗", accB ? "✓" : "✗"]);
     if (accA !== accB) {
       const verdict: EquivalenceVerdict = {
         kind: "verdict",
@@ -846,6 +875,8 @@ export function checkEquivalence(a: FSM, b: FSM): OpResult<EquivalenceVerdict> {
         }
       };
       return okResult(verdict, [], [
+        ...steps,
+        searchStep(true),
         {
           title: tx("ops.equal.counterexampleSearch.title"),
           detail: tx("ops.equal.counterexampleSearch.detail", { word: word === "" ? "ε" : word })
@@ -864,16 +895,11 @@ export function checkEquivalence(a: FSM, b: FSM): OpResult<EquivalenceVerdict> {
     }
   }
 
-  return okResult(
-    { kind: "verdict", name: "", machineA: a.name, machineB: b.name, equal: true },
-    [],
-    [
-      {
-        title: tx("ops.equal.proof.title"),
-        detail: tx("ops.equal.proof.detail")
-      }
-    ]
-  );
+  return okResult({ kind: "verdict", name: "", machineA: a.name, machineB: b.name, equal: true }, [], [
+    ...steps,
+    searchStep(false),
+    { title: tx("ops.equal.proof.title"), detail: tx("ops.equal.proof.detail") }
+  ]);
 }
 
 /** Extends the alphabet (stays a complete DFA: missing symbols go to a trap). */
