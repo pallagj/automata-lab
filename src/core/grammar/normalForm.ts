@@ -8,7 +8,7 @@ import { formatIdent, showSymbols, subscriptText } from "../symbols";
  */
 
 function needsContextFree(g: Grammar, op: string): Diagnostic | null {
-  if (classify(g).reasons.type2.holds) return null;
+  if (classify(g).contextFreeForm) return null;
   return err(tx("grammar.needsContextFree.title", { opKey: `opNames.${op}` }), tx("grammar.needsContextFree.detail"));
 }
 

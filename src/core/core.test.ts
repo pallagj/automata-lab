@@ -399,10 +399,10 @@ Grammar:
   it("classification: type 3", () => {
     const c = classify(regular);
     expect(c.type).toBe(3);
-    expect(c.direction).toBe("right");
+    expect(c.rightLinear).toBe(true);
   });
 
-  it("classification: type 2 with an explanation", () => {
+  it("classification: S → ε with S on a right-hand side is in no class above 0 (4.13)", () => {
     const g = parseGrammar(`
 Grammar:
   name: G
@@ -413,11 +413,13 @@ Grammar:
     - S -> aSb | ε
 `).value!;
     const c = classify(g);
-    expect(c.type).toBe(2);
-    expect(c.reasons.type3.holds).toBe(false);
+    expect(c.type).toBe(0);
+    expect(c.reasons.type2.violations[0].key).toBe("grammar.classify.startEpsilonNotAllowed");
+    // but its rules are A → α: ε-removal makes it type 2
+    expect(c.contextFreeForm).toBe(true);
   });
 
-  it("classification: type 1 (context-sensitive)", () => {
+  it("classification: a non-contracting grammar is not type 1 by the definition (4.14, 12.5)", () => {
     const g = parseGrammar(`
 Grammar:
   name: G
@@ -430,7 +432,8 @@ Grammar:
     - bB -> bb
 `).value!;
     const c = classify(g);
-    expect(c.type).toBe(1);
+    expect(c.type).toBe(0);
+    expect(c.nonContracting).toBe(true);
   });
 
   it("word generation with derivations", () => {

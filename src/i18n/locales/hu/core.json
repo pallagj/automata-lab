@@ -142,15 +142,15 @@
     },
     "grammar": {
       "fieldHints": {
-        "variables": "A nemterminálisok, pl. variables: S, A, B",
-        "init": "A kezdőszimbólum, pl. init: S",
+        "variables": "A változók, pl. variables: S, A, B",
+        "init": "A kezdőváltozó, pl. init: S",
         "charset": "A terminálisok, pl. charset: a, b",
         "rules": "A szabályok, pl. rules: [S -> aA | b]"
       },
-      "startNotInNonterminals": "A kezdőszimbólum ({{start}}) nincs a nemterminálisok között",
+      "startNotInNonterminals": "A kezdőváltozó ({{start}}) nincs a változók között",
       "overlappingSymbols": {
         "title": "Ütköző jelek: {{symbols}}",
-        "detail": "Egy jel nem lehet egyszerre terminális és nemterminális."
+        "detail": "Egy jel nem lehet egyszerre terminális és változó."
       },
       "emptyAlternative": {
         "title": "Üres alternatíva a szabályban: „{{line}}”",
@@ -163,8 +163,8 @@
       "unknownSymbolLeft": "Ismeretlen jel a szabály bal oldalán: „{{symbol}}”",
       "ruleDetail": "Szabály: „{{line}}”. Minden jelet fel kell venni a charset vagy variables mezőbe.",
       "leftMissingNonterminal": {
-        "title": "A szabály bal oldala nem tartalmaz nemterminálist: „{{line}}”",
-        "detail": "Generatív nyelvtanban a bal oldalon legalább egy nemterminálisnak kell lennie."
+        "title": "A szabály bal oldala nem tartalmaz változót: „{{line}}”",
+        "detail": "Generatív nyelvtanban a bal oldalon legalább egy változónak kell lennie."
       },
       "unknownSymbolRight": "Ismeretlen jel a szabály jobb oldalán: „{{symbol}}”",
       "terminalNotOneChar": {
@@ -471,18 +471,17 @@
   },
   "grammar": {
     "needsContextFree": {
-      "title": "Ez a művelet ({{op}}) csak környezetfüggetlen nyelvtanra alkalmazható",
-      "detail": "Minden szabály bal oldalán egyetlen változónak kell állnia — a Chomsky-osztályozás panel megmutatja, melyik szabály sérti ezt."
+      "title": "A(z) {{op}} művelethez A → α alakú szabályok kellenek",
+      "detail": "Minden szabály bal oldala egyetlen változó kell legyen (jegyzet 6.3.1) — ε-szabály lehet. A Chomsky-osztályozás panelen látszik, melyik szabály sérti ezt."
     },
     "classify": {
-      "leftNotSingleNonterminal": "a(z) {{rule}} szabály bal oldala nem egyetlen nemterminális",
-      "notRightLinear": "a(z) {{rule}} szabály jobb oldala nem „terminálisok + legfeljebb egy záró nemterminális” alakú",
-      "notLeftLinear": "a(z) {{rule}} szabály jobb oldala nem „legfeljebb egy kezdő nemterminális + terminálisok” alakú",
-      "startEpsilonNotAllowed": "S → ε csak akkor megengedett, ha S nem fordul elő egyetlen szabály jobb oldalán sem — itt viszont előfordul",
-      "deletingRule": "a(z) {{rule}} törlő szabály (ε csak S → ε alakban megengedett)",
-      "shortens": "a(z) {{rule}} szabály rövidít: |{{left}}| = {{leftLen}} > |{{right}}| = {{rightLen}}",
-      "epsilonNotOnStart": "{{rule}} — ε-szabály nem a kezdőszimbólumon",
-      "startOnRightWithEpsilon": "S → ε mellett S előfordul jobb oldalon — így a nyelvtan nem ε-mentes alakú"
+      "startEpsilonNotAllowed": "{{start}} → ε csak akkor megengedett, ha {{start}} egyetlen szabály jobb oldalán sem fordul elő — itt viszont előfordul",
+      "deletingRule": "a(z) {{rule}} ε-szabály (ε csak S → ε alakban megengedett)",
+      "epsilonNotOnStart": "{{rule}} — ε-szabály nem a kezdőváltozón",
+      "startOnRightWithEpsilon": "{{start}} → ε mellett {{start}} jobb oldalon is előfordul — így a nyelvtan nem ε-mentes alakú",
+      "notRegularRule": "a(z) {{rule}} szabály nem A → aB vagy A → a alakú",
+      "leftNotSingleVariable": "a(z) {{rule}} szabály bal oldala nem egyetlen változó",
+      "notContextSensitive": "a(z) {{rule}} szabály nem βAγ → βαγ alakú (egy A változó helyére, a környezetét megtartva, nem üres α kerül)"
     },
     "table": {
       "rule": "szabály",
@@ -493,12 +492,12 @@
     },
     "toFsm": {
       "needsRightLinear": {
-        "title": "Csak jobblineáris (3. típusú) nyelvtan alakítható véges automatává",
-        "detail": "A konstrukció: minden nemterminális egy állapot, az A → aB szabály A →a B átmenet, az A → a szabály átmenet egy új elfogadó állapotba, az A → ε szabály A-t elfogadóvá teszi. A pontos okért nézd meg a Chomsky-osztályozás panelt."
+        "title": "Csak jobb-lineáris nyelvtan alakítható véges automatává",
+        "detail": "Minden szabály A → aB vagy A → a alakú legyen (3. típus), általánosabban A → uB, A → u, A → B vagy A → ε, ahol u terminális szó. A konstrukció (jegyzet 4.20): minden változó egy állapot; A → aB-ből az A →a B átmenet; A → a-ból átmenet egy új E elfogadó állapotba; A → ε esetén A elfogadó."
       },
       "step": {
-        "title": "Jobblineáris nyelvtan → NFA",
-        "detail": "Minden nemterminális állapot lesz, a kezdőszimbólum a kezdőállapot. A → aB szabályból a-átmenet A-ból B-be; A → a szabályból átmenet az új ✓ elfogadó állapotba; A → ε esetén A elfogadó."
+        "title": "Jobb-lineáris nyelvtan → NFA (jegyzet 4.20)",
+        "detail": "Minden változó egy állapot, a kezdőváltozó a kezdőállapot, és egy új {{end}} állapot az elfogadó. A → aB-ből a-átmenet A-ból B-be; A → a-ból a-átmenet {{end}}-be; S → ε esetén S is elfogadó. Az A → uB és A → u szabályok hosszabb u szava közbülső új állapotokat kap, A → B-ből ε-átmenet lesz, A → ε esetén A elfogadó."
       }
     },
     "fsmToGrammar": {
@@ -507,18 +506,18 @@
         "detail": "{{mapping}}"
       },
       "step": {
-        "title": "NFA → jobblineáris nyelvtan",
+        "title": "NFA → jobb-lineáris nyelvtan",
         "detail": "Minden q állapot kap egy A_q változót — az állapot saját nevét, ha az már érvényes változónév. Minden q →a p átmenetből A_q → aA_p szabály lesz, minden elfogadó q állapotból A_q → ε. Az eredmény 3. típusú, és ugyanazt a nyelvet generálja."
       }
     },
     "toPda": {
       "needsContextFree": {
-        "title": "Csak környezetfüggetlen (2. típusú) nyelvtan alakítható veremautomatává",
-        "detail": "A konstrukcióban a verem a mondatformát tárolja, ezért a bal oldalon egyetlen nemterminálisnak kell állnia. A pontos okért nézd meg a Chomsky-osztályozás panelt."
+        "title": "Csak A → α alakú szabályokból álló nyelvtan alakítható veremautomatává",
+        "detail": "A konstrukcióban (jegyzet 7.12) a verem a mondatforma hátralévő részét tárolja, és a tetején álló változót egy jobb oldalra cseréljük — ezért minden bal oldal egyetlen változó kell legyen. A Chomsky-osztályozás panelen látszik, melyik szabály sérti ezt."
       },
       "emptyStackInfo": {
         "title": "Üres veremmel elfogadó PDA készült",
-        "detail": "A verem a levezetés aktuális mondatformáját tárolja. Ha a verem tetején nemterminális van, egy szabályt alkalmazunk (ε-lépés); ha terminális, illesztjük a bemenet következő betűjével. A szó pontosan akkor elfogadott, ha a bemenet elfogyott és a verem kiürült."
+        "detail": "A verem a levezetés aktuális mondatformáját tárolja. Ha a verem tetején változó van, egy szabályt alkalmazunk (ε-lépés); ha terminális, illesztjük a bemenet következő betűjével. A szó pontosan akkor elfogadott, ha a bemenet elfogyott és a verem kiürült."
       },
       "step": {
         "title": "CF nyelvtan → PDA (top-down elemző)",
@@ -527,8 +526,8 @@
     },
     "epsfree": {
       "needsContextFree": {
-        "title": "Az ε-mentesítés környezetfüggetlen nyelvtanra van definiálva",
-        "detail": "A pontos okért nézd meg a Chomsky-osztályozás panelt."
+        "title": "Az ε-mentesítés A → α alakú szabályokra működik",
+        "detail": "A jegyzet 6.3.1 eljárása a jobb oldalakból hagy el változókat, ezért minden bal oldal egyetlen változó kell legyen. A Chomsky-osztályozás panelen látszik, melyik szabály sérti ezt."
       },
       "step1": {
         "title": "1. Elenyésző változók",
@@ -540,8 +539,8 @@
         "detail": "Minden szabály helyett felvesszük az összes olyan változatát, amelyben az elenyésző változók egy részét elhagyjuk — kivéve az üres jobb oldalt és a haszontalan A → A szabályt. Magukat az ε-szabályokat elhagyjuk."
       },
       "step3": {
-        "title": "3. Új kezdőszimbólum az ε miatt",
-        "detail": "Az eredeti nyelvben benne van az ε (a kezdőszimbólum elenyésző), ezért új {{s2}} kezdőszimbólumot vezetünk be: {{s2}} → {{start}} | ε. Így az ε-szabály csak a kezdőszimbólumon marad."
+        "title": "3. Új kezdőváltozó az ε miatt",
+        "detail": "Az eredeti nyelvben benne van az ε (a kezdőváltozó elenyésző), ezért új {{s2}} kezdőváltozót vezetünk be: {{s2}} → {{start}} | ε. Így az ε-szabály csak a kezdőváltozón marad."
       }
     },
     "unitfree": {
@@ -567,7 +566,7 @@
         "detailNone": "B₀ = Σ, és Bᵢ₊₁ hozzáveszi azokat az A változókat, amelyekhez van olyan A → α szabály, hogy α minden szimbóluma Bᵢ-ben van. Minden változó terminálódik."
       },
       "step2": {
-        "title": "2. A kezdőszimbólumból elérhető szimbólumok",
+        "title": "2. A kezdőváltozóból elérhető szimbólumok",
         "detail": "T₀ = {S}, és Tᵢ₊₁ hozzáveszi a Tᵢ-beli változók szabályainak jobb oldalán álló szimbólumokat. Nem elérhető, elhagyjuk: {{removed}}.",
         "detailNone": "T₀ = {S}, és Tᵢ₊₁ hozzáveszi a Tᵢ-beli változók szabályainak jobb oldalán álló szimbólumokat. Minden megmaradt szimbólum elérhető."
       },
@@ -577,7 +576,7 @@
       },
       "emptyLanguage": {
         "title": "A nyelv üres",
-        "detail": "A(z) {{start}} kezdőszimbólumból nem vezethető le terminális szó, így L(G) = ∅ — minden szabály felesleges."
+        "detail": "A(z) {{start}} kezdőváltozóból nem vezethető le terminális szó, így L(G) = ∅ — minden szabály felesleges."
       }
     },
     "cnf": {
@@ -658,7 +657,7 @@
       },
       "grammar": {
         "title": "A(z) {{name}} nyelvtant automatikusan véges automatává alakítottam",
-        "detail": "A művelet véges automatát vár; a jobblineáris nyelvtan átalakítható."
+        "detail": "A művelet véges automatát vár; a jobb-lineáris nyelvtan átalakítható."
       }
     },
     "regexNameInside": {

@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { classify, Grammar, removeEpsilonRules } from "./grammar/grammar";
+import { removeUnitRules } from "./grammar/normalForm";
 import { parseGrammar } from "./parse/definitionParser";
 import { evaluateCells } from "./workspace";
 import { cfgWordsUpTo, randomCFG, rng, sorted } from "./testing";
@@ -159,12 +160,16 @@ describe("grammar ε-rule elimination", () => {
     expectSameLanguage(g, out);
   });
 
-  it("a regular grammar stays regular (lecture notes, 6.16)", () => {
+  it("a regular grammar stays right-linear; the new S′ → S makes it type 2, unitfree makes it type 3 (6.16)", () => {
     const g = grammar("S", "S, A", "S -> aS | bA | ε\nA -> bA | ε");
     const out = removeEpsilonRules(g).value!;
-    expect(classify(out).type).toBe(3);
+    // S′ → S | ε: a unit rule, which no type-3 grammar has (6.16 says regular)
+    expect(classify(out).type).toBe(2);
+    expect(classify(out).rightLinear).toBe(true);
+    expect(classify(removeUnitRules(out).value!).type).toBe(3);
     expectEpsilonFree(g, out);
     expectSameLanguage(g, out);
+    expectSameLanguage(g, removeUnitRules(out).value!);
   });
 
   it("refuses a grammar that is not context-free", () => {

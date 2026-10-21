@@ -471,18 +471,17 @@
   },
   "grammar": {
     "needsContextFree": {
-      "title": "Diese Operation ({{op}}) gilt nur für kontextfreie Grammatiken",
-      "detail": "Auf jeder linken Regelseite muss genau eine Variable stehen — das Chomsky-Klassifikationspanel zeigt, welche Regel das verletzt."
+      "title": "Diese Operation ({{op}}) braucht Regeln der Form A → α",
+      "detail": "Auf jeder linken Regelseite muss genau eine Variable stehen (Skript 6.3.1) — ε-Regeln sind erlaubt. Das Chomsky-Klassifikationspanel zeigt, welche Regel das verletzt."
     },
     "classify": {
-      "leftNotSingleNonterminal": "die linke Seite der Regel {{rule}} ist kein einzelnes Nichtterminal",
-      "notRightLinear": "die rechte Seite der Regel {{rule}} hat nicht die Form „Terminale + höchstens ein abschließendes Nichtterminal“",
-      "notLeftLinear": "die rechte Seite der Regel {{rule}} hat nicht die Form „höchstens ein führendes Nichtterminal + Terminale“",
-      "startEpsilonNotAllowed": "S → ε ist nur erlaubt, wenn S auf keiner rechten Regelseite vorkommt — hier kommt es aber vor",
-      "deletingRule": "{{rule}} ist eine löschende Regel (ε ist nur als S → ε erlaubt)",
-      "shortens": "Regel {{rule}} verkürzt: |{{left}}| = {{leftLen}} > |{{right}}| = {{rightLen}}",
-      "epsilonNotOnStart": "{{rule}} — ε-Regel nicht am Startsymbol",
-      "startOnRightWithEpsilon": "neben S → ε kommt S auch auf einer rechten Seite vor — die Grammatik ist damit nicht in ε-freier Form"
+      "startEpsilonNotAllowed": "{{start}} → ε ist nur erlaubt, wenn {{start}} auf keiner rechten Regelseite vorkommt — hier kommt es aber vor",
+      "deletingRule": "{{rule}} ist eine ε-Regel (ε ist nur als S → ε erlaubt)",
+      "epsilonNotOnStart": "{{rule}} — ε-Regel nicht an der Startvariable",
+      "startOnRightWithEpsilon": "neben {{start}} → ε kommt {{start}} auch auf einer rechten Seite vor — die Grammatik ist damit nicht in ε-freier Form",
+      "notRegularRule": "Regel {{rule}} hat nicht die Form A → aB oder A → a",
+      "leftNotSingleVariable": "die linke Seite der Regel {{rule}} ist keine einzelne Variable",
+      "notContextSensitive": "Regel {{rule}} hat nicht die Form βAγ → βαγ (eine Variable A wird an Ort und Stelle durch ein nichtleeres α ersetzt)"
     },
     "table": {
       "rule": "Regel",
@@ -493,12 +492,12 @@
     },
     "toFsm": {
       "needsRightLinear": {
-        "title": "Nur eine rechtslineare (Typ-3-)Grammatik lässt sich in einen endlichen Automaten umwandeln",
-        "detail": "Die Konstruktion: Jedes Nichtterminal wird ein Zustand; aus A → aB wird der Übergang A →a B; aus A → a wird ein Übergang in einen neuen akzeptierenden Zustand; A → ε macht A akzeptierend. Den genauen Grund, warum diese Grammatik nicht qualifiziert, zeigt das Chomsky-Klassifikationspanel."
+        "title": "Nur eine rechtslineare Grammatik lässt sich in einen endlichen Automaten umwandeln",
+        "detail": "Jede Regel muss A → aB oder A → a sein (Typ 3), allgemeiner A → uB, A → u, A → B oder A → ε mit einem Terminalwort u. Die Konstruktion (Skript 4.20): jede Variable wird ein Zustand; aus A → aB wird der Übergang A →a B; aus A → a ein Übergang in einen neuen akzeptierenden Zustand E; A → ε macht A akzeptierend."
       },
       "step": {
-        "title": "Rechtslineare Grammatik → NFA",
-        "detail": "Jedes Nichtterminal wird ein Zustand, das Startsymbol der Startzustand. Aus A → aB: ein a-Übergang von A nach B; aus A → a: ein Übergang in den neuen akzeptierenden Zustand ✓; bei A → ε wird A akzeptierend."
+        "title": "Rechtslineare Grammatik → NFA (Skript 4.20)",
+        "detail": "Jede Variable wird ein Zustand, die Startvariable der Startzustand, und ein neuer Zustand {{end}} ist der akzeptierende. Aus A → aB: ein a-Übergang von A nach B; aus A → a: ein a-Übergang nach {{end}}; mit S → ε akzeptiert auch S. Ein längeres Wort u in A → uB oder A → u bekommt neue Zwischenzustände, A → B wird ein ε-Übergang und A → ε macht A akzeptierend."
       }
     },
     "fsmToGrammar": {
@@ -513,8 +512,8 @@
     },
     "toPda": {
       "needsContextFree": {
-        "title": "Nur eine kontextfreie (Typ-2-)Grammatik lässt sich in einen Kellerautomaten umwandeln",
-        "detail": "In der Konstruktion speichert der Keller die Satzform, daher muss die linke Seite ein einzelnes Nichtterminal sein. Den genauen Grund, warum diese Grammatik nicht qualifiziert, zeigt das Chomsky-Klassifikationspanel."
+        "title": "Nur eine Grammatik aus Regeln A → α lässt sich in einen Kellerautomaten umwandeln",
+        "detail": "In der Konstruktion (Skript 7.12) hält der Keller den Rest der Satzform, und eine Variable oben wird durch eine rechte Seite ersetzt — daher muss jede linke Seite eine einzelne Variable sein. Das Chomsky-Klassifikationspanel zeigt, welche Regel das verletzt."
       },
       "emptyStackInfo": {
         "title": "PDA mit Akzeptanz durch leeren Keller erstellt",
@@ -527,8 +526,8 @@
     },
     "epsfree": {
       "needsContextFree": {
-        "title": "Die ε-Elimination ist für kontextfreie Grammatiken definiert",
-        "detail": "Den genauen Grund, warum diese Grammatik nicht qualifiziert, zeigt das Chomsky-Klassifikationspanel."
+        "title": "Die ε-Elimination arbeitet auf Grammatiken aus Regeln A → α",
+        "detail": "Das Verfahren aus Skript 6.3.1 lässt Variablen aus rechten Seiten weg, daher muss jede linke Seite eine einzelne Variable sein. Das Chomsky-Klassifikationspanel zeigt, welche Regel das verletzt."
       },
       "step1": {
         "title": "1. Löschbare Nichtterminale",

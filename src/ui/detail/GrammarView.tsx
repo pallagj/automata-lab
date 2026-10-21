@@ -32,7 +32,7 @@ export const GrammarView: React.FC<{ grammar: Grammar }> = ({ grammar }) => {
   const ensureCellName = useAppStore((s) => s.ensureCellName);
 
   /** inserts `<prefix>_G = fn(G)` below; an unnamed grammar gets a name first */
-  const convert = (fn: "toFsm" | "toPda", prefix: string) => {
+  const convert = (fn: "toFsm" | "toPda" | "epsfree", prefix: string) => {
     if (!activeCellId) return;
     const source = grammar.name || ensureCellName(activeCellId, "G");
     const used = usedNames(activeWorkspace(useAppStore.getState()).cells);
@@ -42,7 +42,7 @@ export const GrammarView: React.FC<{ grammar: Grammar }> = ({ grammar }) => {
   const [test, setTest] = useState("");
   // context-free: an exact decision with CYK; otherwise a bounded search for a derivation
   const membership = useMemo(
-    () => (test === "" || !cls.reasons.type2.holds ? null : cykMembership(grammar, test).value!),
+    () => (test === "" || !cls.contextFreeForm ? null : cykMembership(grammar, test).value!),
     [grammar, test, cls]
   );
   const testResult = useMemo(() => {
@@ -85,9 +85,6 @@ export const GrammarView: React.FC<{ grammar: Grammar }> = ({ grammar }) => {
               {cls.epsilonFree ? t("detail.grammar.epsilonFreeForm") : t("detail.grammar.epsilonRuled")}
             </span>
             {cnfForm && <span className="badge accent">{t("detail.grammar.cnfBadge")}</span>}
-            {cls.type === 3 && (
-              <span className="badge accent">{cls.direction === "right" ? t("detail.grammar.rightLinear") : t("detail.grammar.leftLinear")}</span>
-            )}
           </div>
 
           <div className="class-grid">
@@ -97,7 +94,7 @@ export const GrammarView: React.FC<{ grammar: Grammar }> = ({ grammar }) => {
             <span className="why">
               {cls.reasons.type3.holds
                 ? t("detail.grammar.type3Holds")
-                : cls.reasons.type3.violations[0] ? rich(tr(t, cls.reasons.type3.violations[0])) : t("detail.grammar.notLinear")}
+                : rich(tr(t, cls.reasons.type3.violations[0]))}
             </span>
             <span className="lvl" style={{ color: cls.reasons.type2.holds ? "var(--success)" : "var(--muted)" }}>
               {cls.reasons.type2.holds ? "✓" : "✗"} {t("detail.grammar.type2Short")}
@@ -117,13 +114,41 @@ export const GrammarView: React.FC<{ grammar: Grammar }> = ({ grammar }) => {
             </span>
           </div>
 
+          {/* what still follows about the language when the grammar's own class is lower */}
+          {(() => {
+            const notes: { key: string; fix?: React.ReactNode }[] = [];
+            if (cls.type < 2 && cls.contextFreeForm)
+              notes.push({
+                key: "detail.grammar.notes.contextFreeForm",
+                fix: (
+                  <button className="icon-btn" onClick={() => convert("epsfree", "E")}>
+                    <Wand2 size={14} /> {t("detail.grammar.toEpsilonFree")}
+                  </button>
+                )
+              });
+            if (cls.type < 3 && cls.rightLinear) notes.push({ key: "detail.grammar.notes.rightLinear" });
+            if (cls.type < 3 && cls.leftLinear && !cls.rightLinear) notes.push({ key: "detail.grammar.notes.leftLinear" });
+            if (cls.type < 1 && cls.nonContracting) notes.push({ key: "detail.grammar.notes.nonContracting" });
+            if (notes.length === 0) return null;
+            return (
+              <div className="class-notes" style={{ marginTop: 12, display: "grid", gap: 8, fontSize: 13 }}>
+                {notes.map((n) => (
+                  <div key={n.key}>
+                    {rich(t(n.key))}
+                    {n.fix && <div style={{ marginTop: 6 }}>{n.fix}</div>}
+                  </div>
+                ))}
+              </div>
+            );
+          })()}
+
           <div className="badges" style={{ marginTop: 14 }}>
-            {cls.type === 3 && cls.direction === "right" && (
+            {cls.rightLinear && (
               <button className="icon-btn" onClick={() => convert("toFsm", "M")}>
                 <Wand2 size={14} /> {t("detail.grammar.toFsm")}
               </button>
             )}
-            {cls.reasons.type2.holds && (
+            {cls.contextFreeForm && (
               <button className="icon-btn" onClick={() => convert("toPda", "P")}>
                 <Wand2 size={14} /> {t("detail.grammar.toPda")}
               </button>

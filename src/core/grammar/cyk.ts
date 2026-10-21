@@ -70,7 +70,7 @@ export interface Membership {
 /** Exact membership test for a context-free grammar, with the CYK table. */
 export function cykMembership(g: Grammar, input: string): OpResult<Membership> {
   const cls = classify(g);
-  if (!cls.reasons.type2.holds)
+  if (!cls.contextFreeForm)
     return failResult([
       err(tx("grammar.needsContextFree.title", { opKey: "opNames.cyk" }), tx("grammar.needsContextFree.detail"))
     ]);

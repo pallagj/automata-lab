@@ -471,18 +471,17 @@
   },
   "grammar": {
     "needsContextFree": {
-      "title": "This operation ({{op}}) applies to context-free grammars only",
-      "detail": "Every rule must have a single variable on its left-hand side — the Chomsky classification panel shows which rule breaks this."
+      "title": "This operation ({{op}}) needs rules of the form A → α",
+      "detail": "Every rule's left-hand side must be a single variable (lecture notes 6.3.1) — ε-rules are fine. The Chomsky classification panel shows which rule breaks this."
     },
     "classify": {
-      "leftNotSingleNonterminal": "the left side of rule {{rule}} is not a single nonterminal",
-      "notRightLinear": "the right side of rule {{rule}} is not of the form \"terminals + at most one trailing nonterminal\"",
-      "notLeftLinear": "the right side of rule {{rule}} is not of the form \"at most one leading nonterminal + terminals\"",
-      "startEpsilonNotAllowed": "S → ε is only allowed if S does not occur on the right side of any rule — but it does here",
-      "deletingRule": "{{rule}} is a deleting rule (ε is only allowed as S → ε)",
-      "shortens": "rule {{rule}} shortens: |{{left}}| = {{leftLen}} > |{{right}}| = {{rightLen}}",
-      "epsilonNotOnStart": "{{rule}} — ε-rule not on the start symbol",
-      "startOnRightWithEpsilon": "alongside S → ε, S also occurs on a right side — so the grammar is not in ε-free form"
+      "startEpsilonNotAllowed": "{{start}} → ε is only allowed if {{start}} occurs on no right-hand side — but it does here",
+      "deletingRule": "{{rule}} is an ε-rule (ε is only allowed as S → ε)",
+      "epsilonNotOnStart": "{{rule}} — an ε-rule not on the start variable",
+      "startOnRightWithEpsilon": "alongside {{start}} → ε, {{start}} also occurs on a right-hand side — so the grammar is not in ε-free form",
+      "notRegularRule": "rule {{rule}} is not of the form A → aB or A → a",
+      "leftNotSingleVariable": "the left side of rule {{rule}} is not a single variable",
+      "notContextSensitive": "rule {{rule}} is not of the form βAγ → βαγ (a variable A replaced in place by a nonempty α)"
     },
     "table": {
       "rule": "rule",
@@ -493,12 +492,12 @@
     },
     "toFsm": {
       "needsRightLinear": {
-        "title": "Only a right-linear (type 3) grammar can be turned into a finite automaton",
-        "detail": "The construction: every nonterminal becomes a state; a rule A → aB becomes the transition A →a B; a rule A → a becomes a transition into a new accepting state; a rule A → ε makes A accepting. See the Chomsky classification panel for the exact reason this grammar doesn't qualify."
+        "title": "Only a right-linear grammar can be turned into a finite automaton",
+        "detail": "Every rule must be A → aB or A → a (type 3), or more generally A → uB, A → u, A → B or A → ε with a terminal word u. The construction (lecture notes 4.20): every variable becomes a state; A → aB becomes the transition A →a B; A → a a transition into a new accepting state E; A → ε makes A accepting."
       },
       "step": {
-        "title": "Right-linear grammar → NFA",
-        "detail": "Every nonterminal becomes a state, the start symbol is the start state. From A → aB: an a-transition from A to B; from A → a: a transition to the new ✓ accepting state; for A → ε: A becomes accepting."
+        "title": "Right-linear grammar → NFA (lecture notes 4.20)",
+        "detail": "Every variable becomes a state, the start variable is the start state, and a new state {{end}} is the accepting one. From A → aB: an a-transition from A to B; from A → a: an a-transition into {{end}}; with S → ε, S accepts too. A longer word u in A → uB or A → u gets new states in between, A → B becomes an ε-transition and A → ε makes A accepting."
       }
     },
     "fsmToGrammar": {
@@ -513,8 +512,8 @@
     },
     "toPda": {
       "needsContextFree": {
-        "title": "Only a context-free (type 2) grammar can be turned into a pushdown automaton",
-        "detail": "In the construction, the stack stores the sentential form, so the left side must be a single nonterminal. See the Chomsky classification panel for the exact reason this grammar doesn't qualify."
+        "title": "Only a grammar of A → α rules can be turned into a pushdown automaton",
+        "detail": "In the construction (lecture notes 7.12) the stack holds the rest of the sentential form, and a variable on its top is replaced by a right-hand side — so every left-hand side must be a single variable. The Chomsky classification panel shows which rule breaks this."
       },
       "emptyStackInfo": {
         "title": "Built a PDA that accepts by empty stack",
@@ -527,8 +526,8 @@
     },
     "epsfree": {
       "needsContextFree": {
-        "title": "ε-removal is defined for context-free grammars",
-        "detail": "See the Chomsky classification panel for the exact reason this grammar doesn't qualify."
+        "title": "ε-removal works on grammars of A → α rules",
+        "detail": "The procedure of lecture notes 6.3.1 leaves variables out of right-hand sides, so every left-hand side must be a single variable. The Chomsky classification panel shows which rule breaks this."
       },
       "step1": {
         "title": "1. Nullable nonterminals",

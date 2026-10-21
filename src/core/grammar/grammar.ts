@@ -58,116 +58,128 @@ export function freshVariable(base: Ident, used: Set<string>): string {
 /* ------------------------------------------------------------------ */
 
 export interface Classification {
-  /** the highest class that holds */
+  /** the highest class of the lecture notes' definitions (4.12–4.15) that holds */
   type: 0 | 1 | 2 | 3;
-  /** the reasoning behind the classification, per level */
+  /** each class's condition and the rules that break it */
   reasons: {
     type3: { holds: boolean; violations: I18nText[] };
     type2: { holds: boolean; violations: I18nText[] };
     type1: { holds: boolean; violations: I18nText[] };
   };
+  /**
+   * every rule is A → α with α anything, ε too (6.3.1): the grammars the context-free
+   * transformations work on — with ε-rules not of class 2 yet, but its language is
+   * context-free (6.14)
+   */
+  contextFreeForm: boolean;
+  /** every rule is A → uB, A → u or A → ε (u a terminal word): it becomes a finite automaton */
+  rightLinear: boolean;
+  /** every rule is A → Bu, A → u or A → ε — the left-regular grammars of 4.23 and more */
+  leftLinear: boolean;
+  /** no rule shortens, apart from the allowed S → ε (12.5): its language is context-sensitive (12.6) */
+  nonContracting: boolean;
   /** whether it is ε-free (apart from the allowed S → ε) */
   epsilonFree: boolean;
   epsilonIssues: I18nText[];
-  direction?: "right" | "left";
 }
 
+/**
+ * The Chomsky class of a grammar, with the lecture notes' definitions:
+ *   3: A → aB or A → a                              (4.12)
+ *   2: A → α with α ≠ ε                             (4.13)
+ *   1: βAγ → βαγ with α ≠ ε                         (4.14)
+ *   0: anything with a variable on the left         (4.15)
+ * Each class also allows S → ε when S occurs on no right-hand side (4.14 says "left-hand
+ * side" there, a slip: the condition is the same in all three). The classes are nested,
+ * so the grammar's class is the highest one that holds.
+ */
 export function classify(g: Grammar): Classification {
   const nt = new Set(g.nonterminals);
   const term = new Set(g.terminals);
 
   const allTerminals = (w: string[]) => w.every((c) => term.has(c));
   const singleVariable = (r: GrammarRule) => r.left.length === 1 && nt.has(r.left[0]);
-
-  /* --- type 3: right-linear (A → uB | u, u a terminal word) or left-linear --- */
-  const v3right: I18nText[] = [];
-  const v3left: I18nText[] = [];
-  for (const r of g.rules) {
-    if (!singleVariable(r)) {
-      const violation = tx("grammar.classify.leftNotSingleNonterminal", { rule: ruleToString(r) });
-      v3right.push(violation);
-      v3left.push(violation);
-      continue;
-    }
-    const w = r.right;
-    if (w.length === 0) continue; // ε-rule — handled by the ε-freeness check
-    // right-linear: terminals, with at most one nonterminal at the end
-    const rOk = allTerminals(w) || (allTerminals(w.slice(0, -1)) && nt.has(w[w.length - 1]));
-    if (!rOk) v3right.push(tx("grammar.classify.notRightLinear", { rule: ruleToString(r) }));
-    const lOk = allTerminals(w) || (nt.has(w[0]) && allTerminals(w.slice(1)));
-    if (!lOk) v3left.push(tx("grammar.classify.notLeftLinear", { rule: ruleToString(r) }));
-  }
-  const type3right = v3right.length === 0;
-  const type3left = v3left.length === 0;
-  const type3 = type3right || type3left;
-
-  /* --- type 2: context-free (A → α) --- */
-  const v2: I18nText[] = [];
-  for (const r of g.rules) {
-    if (!singleVariable(r)) v2.push(tx("grammar.classify.leftNotSingleNonterminal", { rule: ruleToString(r) }));
-  }
-  const type2 = v2.length === 0;
-
-  /* --- type 1: context-sensitive / monotone (|α| ≤ |β|, except S → ε if S never occurs on a right-hand side) --- */
-  const v1: I18nText[] = [];
   const startOnRight = g.rules.some((r) => r.right.includes(g.start));
   const isStartEps = (r: GrammarRule) => r.right.length === 0 && r.left.length === 1 && r.left[0] === g.start;
-  for (const r of g.rules) {
-    if (r.right.length === 0) {
-      if (isStartEps(r)) {
-        if (startOnRight) v1.push(tx("grammar.classify.startEpsilonNotAllowed"));
-      } else {
-        v1.push(tx("grammar.classify.deletingRule", { rule: ruleToString(r) }));
-      }
-      continue;
-    }
-    if (r.left.length > r.right.length) {
-      v1.push(
-        tx("grammar.classify.shortens", {
-          rule: ruleToString(r),
-          left: showSymbols(r.left),
-          leftLen: r.left.length,
-          right: showSymbols(r.right),
-          rightLen: r.right.length
-        })
-      );
-    }
-  }
-  const type1 = v1.length === 0;
 
-  /* --- ε-freeness --- */
+  /** the ε-rules every class allows only as S → ε with S on no right-hand side */
+  const epsViolation = (r: GrammarRule): I18nText | null => {
+    if (r.right.length > 0) return null;
+    if (!isStartEps(r)) return tx("grammar.classify.deletingRule", { rule: ruleToString(r) });
+    return startOnRight ? tx("grammar.classify.startEpsilonNotAllowed", { start: g.start }) : null;
+  };
+  const check = (form: (r: GrammarRule) => boolean, key: string) => {
+    const out: I18nText[] = [];
+    for (const r of g.rules) {
+      const v = r.right.length === 0 ? epsViolation(r) : form(r) ? null : tx(key, { rule: ruleToString(r) });
+      if (v && !out.some((x) => x.key === v.key && x.params?.rule === v.params?.rule)) out.push(v);
+    }
+    return out;
+  };
+
+  /* --- class 3: A → aB | a --- */
+  const v3 = check(
+    (r) =>
+      singleVariable(r) &&
+      term.has(r.right[0]) &&
+      (r.right.length === 1 || (r.right.length === 2 && nt.has(r.right[1]))),
+    "grammar.classify.notRegularRule"
+  );
+  /* --- class 2: A → α, α ≠ ε --- */
+  const v2 = check(singleVariable, "grammar.classify.leftNotSingleVariable");
+  /* --- class 1: βAγ → βαγ, α ≠ ε --- */
+  const v1 = check((r) => isContextSensitiveRule(r, nt), "grammar.classify.notContextSensitive");
+
   const epsilonIssues: I18nText[] = [];
   for (const r of g.rules) {
     if (r.right.length === 0) {
       if (!isStartEps(r)) epsilonIssues.push(tx("grammar.classify.epsilonNotOnStart", { rule: ruleToString(r) }));
-      else if (startOnRight) epsilonIssues.push(tx("grammar.classify.startOnRightWithEpsilon"));
+      else if (startOnRight) epsilonIssues.push(tx("grammar.classify.startOnRightWithEpsilon", { start: g.start }));
     }
   }
-  const epsilonFree = epsilonIssues.length === 0;
 
-  let type: 0 | 1 | 2 | 3 = 0;
-  if (type1) type = 1;
-  if (type2 && type1) type = 2;
-  if (type3 && type2 && type1) type = 3;
-  // note: the hierarchy is cumulative by definition; ε-rules on levels 2/3
-  // follow the usual convention (S→ε is allowed).
-  if (type2 && !type1) {
-    // a CF grammar with ε-rules is type 2 by the usual course convention
-    type = 2;
-    if (type3) type = 3;
-  }
+  const type3 = v3.length === 0;
+  const type2 = v2.length === 0;
+  const type1 = v1.length === 0;
+  const type: Classification["type"] = type3 ? 3 : type2 ? 2 : type1 ? 1 : 0;
+
+  const linear = (r: GrammarRule, varAt: "end" | "start") => {
+    if (!singleVariable(r)) return false;
+    const w = r.right;
+    if (allTerminals(w)) return true;
+    return varAt === "end"
+      ? nt.has(w[w.length - 1]) && allTerminals(w.slice(0, -1))
+      : nt.has(w[0]) && allTerminals(w.slice(1));
+  };
 
   return {
     type,
     reasons: {
-      type3: { holds: type3, violations: type3 ? [] : type3right ? [] : v3right.slice(0, 6) },
+      type3: { holds: type3, violations: v3.slice(0, 6) },
       type2: { holds: type2, violations: v2.slice(0, 6) },
       type1: { holds: type1, violations: v1.slice(0, 6) }
     },
-    epsilonFree,
-    epsilonIssues,
-    direction: type3 ? (type3right ? "right" : "left") : undefined
+    contextFreeForm: g.rules.every(singleVariable),
+    rightLinear: g.rules.every((r) => linear(r, "end")),
+    leftLinear: g.rules.every((r) => linear(r, "start")),
+    nonContracting: g.rules.every((r) => (r.right.length === 0 ? epsViolation(r) === null : r.right.length >= r.left.length)),
+    epsilonFree: epsilonIssues.length === 0,
+    epsilonIssues
   };
+}
+
+/** βAγ → βαγ with a variable A and α ≠ ε: some variable of the left side is replaced, in place. */
+function isContextSensitiveRule(r: GrammarRule, nt: Set<string>): boolean {
+  const L = r.left;
+  const R = r.right;
+  for (let i = 0; i < L.length; i++) {
+    if (!nt.has(L[i])) continue;
+    const beta = L.slice(0, i);
+    const gamma = L.slice(i + 1);
+    if (R.length - beta.length - gamma.length < 1) continue;
+    if (beta.every((c, k) => R[k] === c) && gamma.every((c, k) => R[R.length - gamma.length + k] === c)) return true;
+  }
+  return false;
 }
 
 /* ------------------------------------------------------------------ */
@@ -259,16 +271,20 @@ export function generateWords(
 /* Conversions                                                         */
 /* ------------------------------------------------------------------ */
 
-/** Type-3 (right-linear) grammar → NFA */
+/**
+ * Right-linear grammar → NFA, the construction of the lecture notes (4.20): every variable
+ * is a state, A → aB is the transition A →a B, A → a a transition into the new accepting
+ * state E. Beyond the class-3 rules it also takes A → uB and A → u with a terminal word u
+ * (through new states), A → B (an ε-transition) and A → ε (A accepts).
+ */
 export function grammarToFSM(g: Grammar): OpResult<FSM> {
-  const cls = classify(g);
-  if (cls.type !== 3 || cls.direction !== "right") {
+  if (!classify(g).rightLinear) {
     return failResult([
       err(tx("grammar.toFsm.needsRightLinear.title"), tx("grammar.toFsm.needsRightLinear.detail"))
     ]);
   }
 
-  const acceptState = "✓";
+  const acceptState = freshVariable({ base: "E", primes: 0, sub: "" }, new Set(g.nonterminals));
   const states = [...g.nonterminals, acceptState];
   const accept = [acceptState];
   const transitions: { from: string; symbol: string; to: string }[] = [];
@@ -287,7 +303,7 @@ export function grammarToFSM(g: Grammar): OpResult<FSM> {
     const A = r.left[0];
     if (r.right.length === 0) {
       if (!accept.includes(A)) accept.push(A);
-      rows.push([ruleToString(r), `${A} → ✓`]);
+      rows.push([ruleToString(r), `${A} ∈ F`]);
       continue;
     }
     const last = r.right[r.right.length - 1];
@@ -308,7 +324,7 @@ export function grammarToFSM(g: Grammar): OpResult<FSM> {
   const steps: AlgoStep[] = [
     {
       title: tx("grammar.toFsm.step.title"),
-      detail: tx("grammar.toFsm.step.detail"),
+      detail: tx("grammar.toFsm.step.detail", { end: acceptState }),
       table: { headers: [tx("grammar.table.rule"), tx("grammar.table.transition")], rows }
     }
   ];
@@ -386,8 +402,7 @@ export function fsmToGrammar(f: FSM): OpResult<Grammar> {
 
 /** Context-free grammar → pushdown automaton (top-down parser). */
 export function grammarToPDA(g: Grammar): OpResult<Machine> {
-  const cls = classify(g);
-  if (!cls.reasons.type2.holds) {
+  if (!classify(g).contextFreeForm) {
     return failResult([
       err(tx("grammar.toPda.needsContextFree.title"), tx("grammar.toPda.needsContextFree.detail"))
     ]);
@@ -428,10 +443,9 @@ export function grammarToPDA(g: Grammar): OpResult<Machine> {
   ]);
 }
 
-/** Eliminates ε-rules (for type 2–3 grammars). */
+/** Eliminates ε-rules from a grammar of A → α rules (6.3.1): the result is of class 2 (6.14). */
 export function removeEpsilonRules(g: Grammar): OpResult<Grammar> {
-  const cls = classify(g);
-  if (!cls.reasons.type2.holds) {
+  if (!classify(g).contextFreeForm) {
     return failResult([
       err(tx("grammar.epsfree.needsContextFree.title"), tx("grammar.epsfree.needsContextFree.detail"))
     ]);
