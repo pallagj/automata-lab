@@ -4,6 +4,7 @@ import { useAppStore } from "../../state/store";
 import { subscripts } from "./subscript";
 import { fieldStyle } from "./mathStyle";
 import { epsilonAt } from "./epsilon";
+import { worksheetUndoKeys } from "./worksheetUndo";
 
 /**
  * A one-line field of the form that types like the cells: names get
@@ -94,6 +95,7 @@ export const SymbolField: React.FC<{
       }),
       ...(epsilon ? [epsilonEverywhere] : []),
       splitAtBar(() => splitRef.current),
+      worksheetUndoKeys,
       Prec.high(keymap.of([{ key: "Enter", run: () => (enterRef.current?.(), true) }]))
     ],
     [epsilon]

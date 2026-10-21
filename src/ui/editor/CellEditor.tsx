@@ -21,6 +21,7 @@ import { machineKindLabel } from "../machineLabels";
 import { epsilonInputHandler, insideRegex, regexEpsilonInputHandler } from "./epsilon";
 import { isNoteSource, noteSource, noteText } from "./note";
 import { KindIcon, ValueKind } from "../kinds";
+import { worksheetUndoKeys } from "./worksheetUndo";
 
 interface Props {
   cell: Cell;
@@ -144,7 +145,7 @@ export const CellEditor: React.FC<Props> = ({ cell, index, result }) => {
   // expressions and notes are one line: Enter starts a new cell below (Shift+Enter still breaks
   // the line); YAML definitions are multi-line, so there Enter stays a newline
   const extensions = useMemo(() => {
-    if (isYaml) return [yaml(), epsilonInputHandler, subscripts(yamlDigits)];
+    if (isYaml) return [yaml(), epsilonInputHandler, subscripts(yamlDigits), worksheetUndoKeys];
     const newCellOnEnter = { key: "Enter", run: () => (addCell("", cell.id), true) };
     // Backspace in an empty cell deletes it and goes on at the end of the cell above;
     // the first cell stays, and if it is an empty note it turns back into an expression cell
@@ -166,10 +167,10 @@ export const CellEditor: React.FC<Props> = ({ cell, index, result }) => {
       }
     };
     const keys = Prec.high(keymap.of([newCellOnEnter, backspaceWhenEmpty]));
-    if (isNote) return [EditorView.lineWrapping, keys];
+    if (isNote) return [EditorView.lineWrapping, keys, worksheetUndoKeys];
     // names in expressions: M1 is M₁ (inside regex(…) digits are letters of the pattern)
     const exprDigits = subscripts((state, pos) => !insideRegex(state.doc.sliceString(0, pos)));
-    return [regexEpsilonInputHandler, exprDigits, mathStyle, keys];
+    return [regexEpsilonInputHandler, exprDigits, mathStyle, keys, worksheetUndoKeys];
   }, [isYaml, isNote, addCell, removeCell, setActiveCell, setCellSource, cell.id]);
 
   // the editor is reconfigured whenever basicSetup or onChange is a new object (see

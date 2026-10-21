@@ -1,11 +1,11 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Workspace, useAppStore } from "../../state/store";
+import { Workspace, canRedo, canUndo, useAppStore } from "../../state/store";
 import { CellResult } from "../../core/workspace";
 import { CellEditor } from "./CellEditor";
 import { CELL_TEMPLATES } from "../../state/examples";
 import { uniqueName, usedNames } from "../../state/names";
-import { Plus } from "lucide-react";
+import { Plus, Redo2, Undo2 } from "lucide-react";
 import { KindIcon } from "../kinds";
 
 interface Props {
@@ -66,6 +66,10 @@ export const EditorColumn: React.FC<Props> = ({ workspace, results }) => {
   const setCellSource = useAppStore((s) => s.setCellSource);
   const setActiveCell = useAppStore((s) => s.setActiveCell);
   const activeCellId = useAppStore((s) => s.activeCellId);
+  const undo = useAppStore((s) => s.undo);
+  const redo = useAppStore((s) => s.redo);
+  const undoable = useAppStore(canUndo);
+  const redoable = useAppStore(canRedo);
   const [menuOpen, setMenuOpen] = useState(false);
   /** the list is scrolled away from the top: the header casts a shadow over it */
   const [scrolled, setScrolled] = useState(false);
@@ -81,12 +85,38 @@ export const EditorColumn: React.FC<Props> = ({ workspace, results }) => {
     }
   };
 
+  // Ctrl+Z / Ctrl+Shift+Z (or Ctrl+Y) step through the worksheet's edits anywhere but in dialogs and
+  // the text fields outside the cells; the cells' own editors do the same (worksheetUndoKeys)
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (!(e.ctrlKey || e.metaKey) || e.altKey || e.defaultPrevented) return;
+      const key = e.key.toLowerCase();
+      const back = key === "z" && !e.shiftKey;
+      const forward = (key === "z" && e.shiftKey) || (key === "y" && !e.shiftKey);
+      if (!back && !forward) return;
+      const target = e.target instanceof HTMLElement ? e.target : null;
+      if (target?.closest(".cm-editor") || document.querySelector(".modal-back")) return;
+      if (target?.matches("input, textarea, [contenteditable='true']") && !target.closest(".cell-list")) return;
+      e.preventDefault();
+      if (back) undo();
+      else redo();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [undo, redo]);
+
   return (
     <>
       <div className={`pane-head ${scrolled ? "scrolled" : ""}`}>
-        <span className="pane-title">{workspace.name}</span>
         <span className="pane-count">{t("editor.column.cellCount", { count: workspace.cells.length })}</span>
-        <span className="spacer" />
+        <div className="history-btns">
+          <button className="icon-btn ghost" title={t("editor.column.undo")} disabled={!undoable} onClick={undo}>
+            <Undo2 size={16} />
+          </button>
+          <button className="icon-btn ghost" title={t("editor.column.redo")} disabled={!redoable} onClick={redo}>
+            <Redo2 size={16} />
+          </button>
+        </div>
         <div className="menu-anchor">
           <button
             className="icon-btn primary"

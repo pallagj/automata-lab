@@ -575,7 +575,9 @@
     },
     "column": {
       "cellCount": "{{count}} cells",
-      "ghostCellTitle": "Click for a new cell (or press Enter in an expression)"
+      "ghostCellTitle": "Click for a new cell (or press Enter in an expression)",
+      "undo": "Undo (Ctrl+Z)",
+      "redo": "Redo (Ctrl+Shift+Z)"
     }
   },
   "graph": {

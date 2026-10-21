@@ -3,6 +3,16 @@ import { persist } from "zustand/middleware";
 import i18n from "../i18n";
 import { STARTER_CELLS } from "./examples";
 import { cellName, uniqueName, usedNames, withName } from "./names";
+import {
+  CellHistory,
+  CellsSnapshot,
+  createActionGate,
+  EMPTY_HISTORY,
+  redoStep,
+  remember,
+  restoredLayouts,
+  undoStep
+} from "./history";
 
 /**
  * Offline-first state: every worksheet lives in localStorage,
@@ -23,6 +33,9 @@ export interface Workspace {
   createdAt: number;
   updatedAt: number;
 }
+
+/** manually pinned graph positions: cellId → state name → coordinate */
+export type Layouts = Record<string, Record<string, { x: number; y: number }>>;
 
 export type Theme = "dark" | "light";
 export type MobileTab = "code" | "view";
@@ -52,8 +65,7 @@ export interface AppState {
   mobileTab: MobileTab;
   /** width of the left cell panel in px */
   paneWidth: number;
-  /** manually pinned graph positions: cellId → state name → coordinate */
-  layouts: Record<string, Record<string, { x: number; y: number }>>;
+  layouts: Layouts;
   /** "don't warn me again" for edits that change the machine kind */
   hideKindChangeWarning: boolean;
   /** how definitions open: the form, or their YAML code (each cell can still switch) */
@@ -64,6 +76,8 @@ export interface AppState {
   folders: string[];
   browserView: BrowserView;
   browserSort: BrowserSort;
+  /** each worksheet's undo history (by worksheet id) — not saved */
+  history: Record<string, CellHistory>;
 
   setHideKindChangeWarning: (v: boolean) => void;
   setDefinitionView: (v: DefinitionView) => void;
@@ -97,6 +111,9 @@ export interface AppState {
   addCell: (source?: string, afterCellId?: string | null) => void;
   removeCell: (cellId: string) => void;
   moveCellTo: (cellId: string, toIndex: number) => void;
+  /** steps back (or forward again) through the active worksheet's cell edits */
+  undo: () => void;
+  redo: () => void;
 }
 
 let counter = 0;
@@ -114,6 +131,40 @@ function newWorkspace(name: string, sources: string[] = [""], folder?: string): 
     createdAt: Date.now(),
     updatedAt: Date.now()
   };
+}
+
+const sameAction = createActionGate();
+
+function snapshotOf(s: AppState, ws: Workspace): CellsSnapshot {
+  return { cells: ws.cells, activeCellId: s.activeCellId, layouts: s.layouts };
+}
+
+/** The histories with the active worksheet's cells remembered before an edit; `typingIn` for typing in one cell. */
+function remembered(s: AppState, typingIn?: string): Record<string, CellHistory> {
+  const ws = activeWorkspace(s);
+  const edit = { at: Date.now(), sameAction: sameAction(), typingIn };
+  return { ...s.history, [ws.id]: remember(s.history[ws.id] ?? EMPTY_HISTORY, snapshotOf(s, ws), edit) };
+}
+
+/** Undo or redo on the active worksheet: its cells as they were, and the history after the step. */
+function travel(s: AppState, step: typeof undoStep): Partial<AppState> {
+  const ws = activeWorkspace(s);
+  const done = step(s.history[ws.id] ?? EMPTY_HISTORY, snapshotOf(s, ws));
+  if (!done) return {};
+  return {
+    workspaces: s.workspaces.map((w) => (w.id === ws.id ? { ...w, cells: done.to.cells, updatedAt: Date.now() } : w)),
+    activeCellId: done.to.activeCellId,
+    layouts: restoredLayouts(s.layouts, done.to),
+    history: { ...s.history, [ws.id]: done.history }
+  };
+}
+
+export function canUndo(s: AppState): boolean {
+  return (s.history[s.activeWorkspaceId]?.past.length ?? 0) > 0;
+}
+
+export function canRedo(s: AppState): boolean {
+  return (s.history[s.activeWorkspaceId]?.future.length ?? 0) > 0;
 }
 
 const starter = newWorkspace(i18n.t("workspace.starterName", { ns: "ui" }), STARTER_CELLS);
@@ -137,6 +188,7 @@ export const useAppStore = create<AppState>()(
       folders: [],
       browserView: "grid",
       browserSort: { key: "updated", asc: false },
+      history: {},
 
       setHideKindChangeWarning: (hideKindChangeWarning) => set({ hideKindChangeWarning }),
       setDefinitionView: (definitionView) => set({ definitionView }),
@@ -250,17 +302,21 @@ export const useAppStore = create<AppState>()(
       },
 
       setCellSource: (cellId, source) =>
-        set((s) => ({
-          workspaces: s.workspaces.map((w) =>
-            w.id !== s.activeWorkspaceId
-              ? w
-              : {
-                  ...w,
-                  updatedAt: Date.now(),
-                  cells: w.cells.map((c) => (c.id === cellId ? { ...c, source } : c))
-                }
-          )
-        })),
+        set((s) => {
+          if (activeWorkspace(s).cells.find((c) => c.id === cellId)?.source === source) return {};
+          return {
+            history: remembered(s, cellId),
+            workspaces: s.workspaces.map((w) =>
+              w.id !== s.activeWorkspaceId
+                ? w
+                : {
+                    ...w,
+                    updatedAt: Date.now(),
+                    cells: w.cells.map((c) => (c.id === cellId ? { ...c, source } : c))
+                  }
+            )
+          };
+        }),
       ensureCellName: (cellId, base) => {
         const ws = activeWorkspace(get());
         const cell = ws.cells.find((c) => c.id === cellId);
@@ -274,6 +330,7 @@ export const useAppStore = create<AppState>()(
       addCell: (source = "", afterCellId = null) => {
         const cell: Cell = { id: uid(), source };
         set((s) => ({
+          history: remembered(s),
           activeCellId: cell.id,
           mobileTab: "code",
           workspaces: s.workspaces.map((w) => {
@@ -299,6 +356,7 @@ export const useAppStore = create<AppState>()(
               ? cells[Math.min(Math.max(idx, 0), cells.length - 1)].id
               : s.activeCellId;
           return {
+            history: remembered(s),
             layouts: Object.fromEntries(Object.entries(s.layouts).filter(([k]) => k !== cellId)),
             workspaces: s.workspaces.map((w) =>
               w.id === s.activeWorkspaceId ? { ...w, cells, updatedAt: Date.now() } : w
@@ -307,22 +365,27 @@ export const useAppStore = create<AppState>()(
           };
         }),
       moveCellTo: (cellId, toIndex) =>
-        set((s) => ({
-          workspaces: s.workspaces.map((w) => {
-            if (w.id !== s.activeWorkspaceId) return w;
-            const cells = [...w.cells];
-            const i = cells.findIndex((c) => c.id === cellId);
-            if (i < 0) return w;
-            const [moved] = cells.splice(i, 1);
-            const j = Math.max(0, Math.min(cells.length, toIndex > i ? toIndex - 1 : toIndex));
-            cells.splice(j, 0, moved);
-            return { ...w, cells, updatedAt: Date.now() };
-          })
-        }))
+        set((s) => {
+          const ws = activeWorkspace(s);
+          const cells = [...ws.cells];
+          const i = cells.findIndex((c) => c.id === cellId);
+          const j = Math.max(0, Math.min(cells.length - 1, toIndex > i ? toIndex - 1 : toIndex));
+          if (i < 0 || j === i) return {};
+          const [moved] = cells.splice(i, 1);
+          cells.splice(j, 0, moved);
+          return {
+            history: remembered(s),
+            workspaces: s.workspaces.map((w) => (w.id === ws.id ? { ...w, cells, updatedAt: Date.now() } : w))
+          };
+        }),
+      undo: () => set((s) => travel(s, undoStep)),
+      redo: () => set((s) => travel(s, redoStep))
     }),
     {
       name: "automata-lab",
-      version: 1
+      version: 1,
+      // the undo history is for this session only
+      partialize: ({ history: _history, ...saved }) => saved
     }
   )
 );

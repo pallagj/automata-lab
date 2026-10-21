@@ -66,6 +66,9 @@ an app; everything runs locally, no account needed.
 - **Worksheet browser:** all your worksheets as cards with live graph previews (or a sortable list),
   search, sort and filter by what they contain, folders, multi-select, drag & drop into folders,
   duplicate/rename/move/delete with undo, and a gallery of ready-made example worksheets.
+- **Undo and redo:** every edit of a worksheet's cells — typing, the form, adding, moving and
+  deleting cells — can be undone and redone with the buttons over the cells or Ctrl+Z /
+  Ctrl+Shift+Z (Ctrl+Y). Each worksheet keeps its own history for the session.
 - **Visual graph editing:** drag states around (positions are remembered), double-click to add a
   state, drag from a state's port to add a transition, click a label to edit it. Export graphs as
   SVG, PNG or LaTeX (TikZ, in the textbook `automata` style).

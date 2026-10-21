@@ -575,7 +575,9 @@
     },
     "column": {
       "cellCount": "{{count}} Zellen",
-      "ghostCellTitle": "Klicken für eine neue Zelle (oder Enter in einem Ausdruck)"
+      "ghostCellTitle": "Klicken für eine neue Zelle (oder Enter in einem Ausdruck)",
+      "undo": "Rückgängig (Strg+Z)",
+      "redo": "Wiederholen (Strg+Umschalt+Z)"
     }
   },
   "graph": {

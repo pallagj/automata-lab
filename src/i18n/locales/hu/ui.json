@@ -575,7 +575,9 @@
     },
     "column": {
       "cellCount": "{{count}} cella",
-      "ghostCellTitle": "Kattints új cellához (vagy nyomj Entert egy kifejezésben)"
+      "ghostCellTitle": "Kattints új cellához (vagy nyomj Entert egy kifejezésben)",
+      "undo": "Visszavonás (Ctrl+Z)",
+      "redo": "Mégis (Ctrl+Shift+Z)"
     }
   },
   "graph": {
