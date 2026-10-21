@@ -312,15 +312,32 @@ export const EXAMPLE_WORKSHEETS: ExampleWorksheet[] = [
     - S -> aSb | ε`,
       "P = toPda(G_2)",
       "E = epsfree(G_2)",
+      "# A type-1 grammar for aⁿbⁿcⁿ: every rule rewrites one variable in place, βAγ → βαγ (lecture notes 4.14) — so CB → BC is done in four such steps.",
       `Grammar:
   name: G_1
+  charset: a, b, c
+  variables: S, B, C, W, Z
+  init: S
+  rules:
+    - S -> aSBC | aBC
+    - CB -> CZ
+    - CZ -> WZ
+    - WZ -> WC
+    - WC -> BC
+    - aB -> ab
+    - bB -> bb
+    - bC -> bc
+    - cC -> cc`,
+      "# The non-contracting grammar of example 12.7: Ba → aB is no βAγ → βαγ rule, so it is of type 0 — yet no rule shortens, and its language is context-sensitive (12.6).",
+      `Grammar:
+  name: N
   charset: a, b, c
   variables: S, B
   init: S
   rules:
-    - S -> aSBc | abc
-    - cB -> Bc
-    - bB -> bb`
+    - S -> aBSc | abc
+    - Ba -> aB
+    - Bb -> bb`
     ]
   },
   {

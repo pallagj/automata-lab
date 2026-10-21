@@ -174,3 +174,23 @@ describe("toFsm (lecture notes 4.20)", () => {
     expect(r.diagnostics[0].title.key).toBe("grammar.toFsm.needsRightLinear.title");
   });
 });
+
+describe("the example worksheet's grammars", () => {
+  it("G_1 is type 1 and N is a non-contracting type-0 grammar, both of aⁿbⁿcⁿ", async () => {
+    const { EXAMPLE_WORKSHEETS } = await import("../state/examples");
+    const cells = EXAMPLE_WORKSHEETS.flatMap((w) => w.cells);
+    const named = (n: string) => parseGrammar(cells.find((c) => c.startsWith("Grammar:") && c.includes(`name: ${n}\n`))!).value!;
+    const g1 = named("G_1");
+    const n = named("N");
+    expect(classify(g1).type).toBe(1);
+    expect(classify(n).type).toBe(0);
+    expect(classify(n).nonContracting).toBe(true);
+    const { grammarAccepts } = await import("./grammar/grammar");
+    for (const g of [g1, n])
+      for (const w of allWords(["a", "b", "c"], 6).filter((x) => x !== "")) {
+        const k = w.length / 3;
+        const inL = w === "a".repeat(k) + "b".repeat(k) + "c".repeat(k);
+        expect(grammarAccepts(g, w).verdict, `${g.name} ${w}`).toBe(inL ? "yes" : "no");
+      }
+  });
+});
