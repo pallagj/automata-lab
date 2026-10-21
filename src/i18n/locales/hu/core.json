@@ -49,10 +49,17 @@
       "opt": "opcionális ( ? )"
     },
     "step": {
-      "thompson": {
-        "title": "Thompson-konstrukció",
-        "detail": "A reguláris kifejezés szerkezeti felépítését követve minden részkifejezéshez kis ε-NFA-darabot építünk (literál, unió, összefűzés, csillag), majd ezeket ε-átmenetekkel kapcsoljuk össze. Eredmény: {{count}} állapot. A det(·) DFA-vá alakítja."
+      "build": {
+        "title": "Automata a kifejezésből (jegyzet 3.20)",
+        "detail": "A kifejezést belülről kifelé építjük, ahogy a 3.20 a nyelve regularitását bizonyítja. Egy a betűhöz egyetlen a-átmenet tartozik, ε-hoz egyetlen elfogadó állapot, ∅-hoz egyetlen, sosem elfogadó állapot (3.3). r₁ + r₂: új kezdőállapot ε-átmenetekkel mindkét kezdőállapotba, elfogadó ott, ahol bármelyik az (3.4). r₁r₂: ε-átmenetek az első elfogadó állapotaiból a második kezdőállapotába, elfogadó ott, ahol a második (3.9). r*: új, szintén elfogadó kezdőállapot, ε-átmenettel a régi kezdőállapotba és az elfogadó állapotokból vissza (3.10). Az r? jelentése r + ε. Eredmény: {{count}} állapot — a det(·) DFA-vá alakítja."
       }
+    },
+    "table": {
+      "subexpression": "részkifejezés",
+      "section": "jegyzet",
+      "added": "új átmenetek",
+      "start": "kezdő",
+      "accepting": "elfogadó"
     }
   },
   "workspace": {
@@ -678,7 +685,7 @@
     "autoConvert": {
       "regex": {
         "title": "A(z) {{name}} regexet automatikusan ε-NFA-vá alakítottam",
-        "detail": "A művelet véges automatát vár; a reguláris kifejezés a Thompson-konstrukcióval automatává alakítható — explicit módon: toFsm({{name}})."
+        "detail": "A művelet véges automatát vár; a reguláris kifejezésből a jegyzet 3.20 szerint épül automata — explicit módon: toFsm({{name}})."
       },
       "grammar": {
         "title": "A(z) {{name}} nyelvtant automatikusan véges automatává alakítottam",

@@ -234,7 +234,7 @@
       "optional": "optional",
       "emptyWord": "empty word",
       "parens": "parenthesization",
-      "toFsmHint": "New cell: automaton via Thompson's construction",
+      "toFsmHint": "New cell: the automaton of the expression (lecture notes 3.20)",
       "toFsmLabel": "convert to ε-NFA",
       "structure": "Structure of the expression",
       "wordTest": "Word test",

@@ -234,7 +234,7 @@
       "optional": "optional",
       "emptyWord": "leeres Wort",
       "parens": "Klammerung",
-      "toFsmHint": "Neue Zelle: Automat mittels Thompson-Konstruktion",
+      "toFsmHint": "Neue Zelle: der Automat des Ausdrucks (Skript 3.20)",
       "toFsmLabel": "in ε-NFA umwandeln",
       "structure": "Struktur des Ausdrucks",
       "wordTest": "Worttest",

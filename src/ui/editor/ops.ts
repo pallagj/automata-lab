@@ -179,7 +179,7 @@ export function opApplicability(op: OpInfo, value: ExprValue | Definition | null
     if (op.name === "toFsm") return { ok: true };
     if (op.input === "grammar")
       return { ok: false, reason: ux("editor.ops.reason.expectsGrammarIsRegex") };
-    // automaton operations: tested on the Thompson ε-NFA
+    // automaton operations: tested on the expression's ε-NFA (lecture notes 3.20)
     const conv = regexToNFA(value.pattern, value.name);
     if (!conv.ok) return { ok: false, reason: ux("editor.ops.reason.invalidRegex") };
     return dryRunFsmOp(op.name, conv.value!);

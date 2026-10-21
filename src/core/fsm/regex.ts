@@ -9,9 +9,11 @@ class RegexSyntaxError extends Error {
 }
 
 /**
- * Regular expression → ε-NFA (Thompson construction).
+ * Regular expression → ε-NFA, built as lecture notes 3.20 proves the expression's language
+ * regular: small automata for a letter, ε and ∅ (3.3), then for r₁ + r₂ the union (3.4), for
+ * r₁r₂ the concatenation (3.9) and for r* the closure (3.10).
  * Supported: letter/digit literals, ε, ∅, concatenation, | or + (union),
- * * (star), ? (optional), parentheses.
+ * * (star), ? (optional: r? is r + ε), parentheses.
  */
 
 type Node =
@@ -113,14 +115,38 @@ class Parser {
 
 interface Frag {
   start: string;
-  accept: string;
+  accept: string[];
 }
+
+/** The expression as written, with parentheses only where they are needed. */
+function show(n: Node): string {
+  const atom = (x: Node) => (x.t === "lit" || x.t === "eps" || x.t === "empty" || x.t === "star" || x.t === "opt" ? show(x) : `(${show(x)})`);
+  switch (n.t) {
+    case "empty":
+      return "∅";
+    case "eps":
+      return EPS;
+    case "lit":
+      return SPECIAL.has(n.c) ? `\\${n.c}` : n.c;
+    case "alt":
+      return `${show(n.a)}+${show(n.b)}`;
+    case "cat":
+      return [n.a, n.b].map((x) => (x.t === "alt" ? `(${show(x)})` : show(x))).join("");
+    case "star":
+      return `${atom(n.a)}*`;
+    case "opt":
+      return `${atom(n.a)}?`;
+  }
+}
+const SPECIAL = new Set(["(", ")", "|", "+", "*", "?", "ε", "∅", "\\"]);
 
 class Builder {
   counter = 0;
   states: string[] = [];
   transitions: { from: string; symbol: string; to: string }[] = [];
   alphabet = new Set<string>();
+  /** one row per subexpression, inside out: the expression, the notes' section, what it adds, start, accepting */
+  rows: string[][] = [];
 
   newState(): string {
     const s = `q${this.counter++}`;
@@ -132,61 +158,60 @@ class Builder {
     this.transitions.push({ from, symbol, to });
   }
 
+  private record(n: Node, section: string, added: string[], f: Frag) {
+    this.rows.push([show(n), section, added.join(", ") || "—", f.start, f.accept.join(", ") || "∅"]);
+    return f;
+  }
+
   build(node: Node): Frag {
     switch (node.t) {
       case "empty": {
+        // one state, not accepting: no word is accepted
         const s = this.newState();
-        const a = this.newState();
-        return { start: s, accept: a }; // no transition — empty language
+        return this.record(node, "3.3", [], { start: s, accept: [] });
       }
       case "eps": {
+        // one accepting state and no transition: only ε
         const s = this.newState();
-        const a = this.newState();
-        this.add(s, EPS, a);
-        return { start: s, accept: a };
+        return this.record(node, "3.3", [], { start: s, accept: [s] });
       }
       case "lit": {
         const s = this.newState();
         const a = this.newState();
         this.alphabet.add(node.c);
         this.add(s, node.c, a);
-        return { start: s, accept: a };
+        return this.record(node, "3.3", [`${s} →${node.c} ${a}`], { start: s, accept: [a] });
       }
-      case "cat": {
-        const fa = this.build(node.a);
-        const fb = this.build(node.b);
-        this.add(fa.accept, EPS, fb.start);
-        return { start: fa.start, accept: fb.accept };
-      }
-      case "alt": {
+      case "alt":
+      case "opt": {
+        // a new start state, ε-transitions into both start states, accepting where either accepts
         const s = this.newState();
-        const a = this.newState();
         const fa = this.build(node.a);
-        const fb = this.build(node.b);
+        const fb = this.build(node.t === "alt" ? node.b : { t: "eps" });
         this.add(s, EPS, fa.start);
         this.add(s, EPS, fb.start);
-        this.add(fa.accept, EPS, a);
-        this.add(fb.accept, EPS, a);
-        return { start: s, accept: a };
+        return this.record(node, "3.4", [`${s} →ε ${fa.start}`, `${s} →ε ${fb.start}`], {
+          start: s,
+          accept: [...fa.accept, ...fb.accept]
+        });
+      }
+      case "cat": {
+        // ε-transitions from the first one's accepting states into the second one's start
+        const fa = this.build(node.a);
+        const fb = this.build(node.b);
+        for (const x of fa.accept) this.add(x, EPS, fb.start);
+        return this.record(node, "3.9", fa.accept.map((x) => `${x} →ε ${fb.start}`), { start: fa.start, accept: fb.accept });
       }
       case "star": {
+        // a new accepting start state, ε into the old start, ε back from the accepting states
         const s = this.newState();
-        const a = this.newState();
         const fa = this.build(node.a);
         this.add(s, EPS, fa.start);
-        this.add(s, EPS, a);
-        this.add(fa.accept, EPS, fa.start);
-        this.add(fa.accept, EPS, a);
-        return { start: s, accept: a };
-      }
-      case "opt": {
-        const s = this.newState();
-        const a = this.newState();
-        const fa = this.build(node.a);
-        this.add(s, EPS, fa.start);
-        this.add(s, EPS, a);
-        this.add(fa.accept, EPS, a);
-        return { start: s, accept: a };
+        for (const x of fa.accept) this.add(x, EPS, s);
+        return this.record(node, "3.10", [`${s} →ε ${fa.start}`, ...fa.accept.map((x) => `${x} →ε ${s}`)], {
+          start: s,
+          accept: [s]
+        });
       }
     }
   }
@@ -262,13 +287,23 @@ export function regexToNFA(pattern: string, name = "R"): OpResult<FSM> {
     alphabet: [...b.alphabet].sort(),
     states: b.states,
     start: frag.start,
-    accept: [frag.accept],
+    accept: frag.accept,
     transitions: b.transitions
   });
   return okResult(fsm, [], [
     {
-      title: tx("regex.step.thompson.title"),
-      detail: tx("regex.step.thompson.detail", { count: b.states.length })
+      title: tx("regex.step.build.title"),
+      detail: tx("regex.step.build.detail", { count: b.states.length }),
+      table: {
+        headers: [
+          tx("regex.table.subexpression"),
+          tx("regex.table.section"),
+          tx("regex.table.added"),
+          tx("regex.table.start"),
+          tx("regex.table.accepting")
+        ],
+        rows: b.rows
+      }
     }
   ]);
 }

@@ -333,7 +333,7 @@ class Evaluator {
   asFSM(v: ExprValue, ctxOpId: string): FSM {
     if (v.kind === "fsm") return v;
     if (v.kind === "regex") {
-      // convenience auto-conversion: regex → ε-NFA (Thompson)
+      // convenience auto-conversion: regex → ε-NFA (lecture notes 3.20)
       this.diagnostics.push(
         info(
           tx("expression.autoConvert.regex.title", { name: v.name }),

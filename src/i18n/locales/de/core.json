@@ -49,10 +49,17 @@
       "opt": "optional ( ? )"
     },
     "step": {
-      "thompson": {
-        "title": "Thompson-Konstruktion",
-        "detail": "Der Struktur des Ausdrucks folgend wird für jeden Teilausdruck ein kleines ε-NFA-Fragment gebaut (Literal, Vereinigung, Verkettung, Stern), die anschließend mit ε-Übergängen verbunden werden. Ergebnis: {{count}} Zustände. det(·) macht daraus einen DFA."
+      "build": {
+        "title": "Automat aus dem Ausdruck (Skript 3.20)",
+        "detail": "Der Ausdruck wird von innen nach außen gebaut, so wie 3.20 seine Sprache als regulär beweist. Ein Buchstabe a bekommt einen einzigen a-Übergang, ε einen einzigen akzeptierenden Zustand, ∅ einen einzigen nie akzeptierenden Zustand (3.3). r₁ + r₂: ein neuer Startzustand mit ε-Übergängen in beide Startzustände, akzeptierend, wo einer von beiden es ist (3.4). r₁r₂: ε-Übergänge von den akzeptierenden Zuständen des ersten in den Start des zweiten, akzeptierend, wo der zweite es ist (3.9). r*: ein neuer, ebenfalls akzeptierender Startzustand mit einem ε-Übergang in den alten Start und ε-Übergängen zurück von den akzeptierenden Zuständen (3.10). r? bedeutet r + ε. Ergebnis: {{count}} Zustände — det(·) macht daraus einen DFA."
       }
+    },
+    "table": {
+      "subexpression": "Teilausdruck",
+      "section": "Skript",
+      "added": "neue Übergänge",
+      "start": "Start",
+      "accepting": "akzeptierend"
     }
   },
   "workspace": {
@@ -678,7 +685,7 @@
     "autoConvert": {
       "regex": {
         "title": "Den regulären Ausdruck {{name}} automatisch in einen ε-NFA umgewandelt",
-        "detail": "Die Operation erwartet einen endlichen Automaten; der reguläre Ausdruck lässt sich mit der Thompson-Konstruktion in einen Automaten umwandeln — explizit: toFsm({{name}})."
+        "detail": "Die Operation erwartet einen endlichen Automaten; aus dem regulären Ausdruck wird einer wie in Skript 3.20 gebaut — explizit: toFsm({{name}})."
       },
       "grammar": {
         "title": "Die Grammatik {{name}} automatisch in einen endlichen Automaten umgewandelt",

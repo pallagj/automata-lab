@@ -27,8 +27,10 @@ an app; everything runs locally, no account needed.
   automaton → regular expression conversion, the rounds of the grammar transformations.
 - **Equivalence check with a counterexample:** `equal(A, B)` returns the shortest distinguishing word.
 - **Regular expressions** as values of their own: syntax tree, word test, sample matching words,
-  and `toFsm()` via the Thompson construction. The way back, `toRegex(M)`, uses the r(p, q, t)
-  dynamic programming of the lecture notes, simplifying with identities that always hold.
+  and `toFsm()` built as the lecture notes prove a regular expression regular (3.20): small
+  automata for a letter, ε and ∅, then the union, concatenation and closure constructions. The
+  way back, `toRegex(M)`, uses the r(p, q, t) dynamic programming of the lecture notes,
+  simplifying with identities that always hold.
 - **Pushdown automata:** true nondeterministic simulation over configuration sets, stack display,
   acceptance by empty stack or by final state.
 - **Turing machines:** tape visualisation, step-by-step execution, nondeterminism detection and

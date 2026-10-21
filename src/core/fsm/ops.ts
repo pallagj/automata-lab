@@ -675,7 +675,7 @@ export function unionEpsilon(m1: FSM, m2: FSM): OpResult<FSM> {
 }
 
 /* ------------------------------------------------------------------ */
-/* Concatenation and closure (Thompson style)                         */
+/* Concatenation and closure (lecture notes 3.9, 3.10)               */
 /* ------------------------------------------------------------------ */
 
 export function concatFSM(m1: FSM, m2: FSM): OpResult<FSM> {

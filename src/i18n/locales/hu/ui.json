@@ -234,7 +234,7 @@
       "optional": "opcionális",
       "emptyWord": "üres szó",
       "parens": "zárójelezés",
-      "toFsmHint": "Új cella: automata a Thompson-konstrukcióval",
+      "toFsmHint": "Új cella: a kifejezés automatája (jegyzet 3.20)",
       "toFsmLabel": "átalakítás ε-NFA-vá",
       "structure": "A kifejezés szerkezete",
       "wordTest": "Szó-teszt",
