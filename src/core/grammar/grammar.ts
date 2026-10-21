@@ -413,7 +413,8 @@ export function grammarToPDA(g: Grammar): OpResult<Machine> {
     accept: [],
     acceptMode: "emptyStorages",
     input: "head",
-    storages: [{ id: "stack", type: "stack", init: [g.start] }],
+    // the stack holds the sentential form's rest: variables and terminals
+    storages: [{ id: "stack", type: "stack", alphabet: [...g.nonterminals, ...g.terminals], init: [g.start] }],
     transitions
   };
 

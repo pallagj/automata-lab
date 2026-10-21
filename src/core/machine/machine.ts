@@ -23,6 +23,11 @@ export interface StorageSpec {
   id: string;
   type: StorageType;
   /**
+   * the storage's alphabet Γ: every symbol it can hold — a tape's includes the blank and,
+   * when the input is written onto it, the input alphabet Σ (see defaultStorageAlphabet)
+   */
+  alphabet: string[];
+  /**
    * initial content, symbol by symbol (stack: the first is the top; queue: the first is
    * the front); stack and queue symbols are names like Z, Z_0, X_a or single characters
    */
@@ -78,6 +83,25 @@ export interface MachineConfig {
 
 export function hasInputHead(m: Machine): boolean {
   return m.input === "head";
+}
+
+/**
+ * The alphabet Γ a storage has when the definition leaves it out: a tape's is Σ with the
+ * blank and the symbols it starts with — what a tape could always hold — a stack's or
+ * queue's the symbols it starts with and its operations use.
+ */
+export function defaultStorageAlphabet(
+  sigma: string[],
+  spec: Pick<StorageSpec, "type" | "init">,
+  ops: StorageOp[]
+): string[] {
+  const out = new Set<string>(spec.type === "tape" ? [...sigma, TAPE_BLANK] : []);
+  for (const s of spec.init) out.add(s);
+  for (const op of ops) {
+    if (op.type === "stack") [op.pop, ...op.push].forEach((s) => s !== EPS && out.add(s));
+    if (op.type === "queue") [op.take, ...op.put].forEach((s) => s !== EPS && out.add(s));
+  }
+  return [...out];
 }
 
 /* ------------------------------------------------------------------ */
@@ -296,7 +320,7 @@ export interface MachineAnalysis {
   /** static determinism: two transitions can never match at the same time */
   isDeterministic: boolean;
   /** pairs of transitions that are applicable in the same situation */
-  nondeterministicAt: { state: string; detail: string }[];
+  nondeterministicAt: { state: string; pair: [MachineTransition, MachineTransition] }[];
   hasEpsilonInput: boolean;
 }
 
@@ -318,7 +342,7 @@ function guardsOverlap(m: Machine, a: MachineTransition, b: MachineTransition): 
 }
 
 export function analyzeMachine(m: Machine): MachineAnalysis {
-  const nondeterministicAt: { state: string; detail: string }[] = [];
+  const nondeterministicAt: MachineAnalysis["nondeterministicAt"] = [];
   const head = hasInputHead(m);
   const hasEpsilonInput = head && m.transitions.some((t) => t.input === EPS);
 
@@ -332,10 +356,7 @@ export function analyzeMachine(m: Machine): MachineAnalysis {
     for (let i = 0; i < ts.length && !found; i++) {
       for (let j = i + 1; j < ts.length && !found; j++) {
         if (guardsOverlap(m, ts[i], ts[j])) {
-          nondeterministicAt.push({
-            state,
-            detail: `${machineTransitionLabel(m, ts[i])}  ‖  ${machineTransitionLabel(m, ts[j])}`
-          });
+          nondeterministicAt.push({ state, pair: [ts[i], ts[j]] });
           found = true; // one example per state is enough
         }
       }
@@ -413,21 +434,23 @@ export function fsmToMachine(f: FSM): Machine {
 /* Labels                                                              */
 /* ------------------------------------------------------------------ */
 
-/** The same arrows the move picker of the form shows (→ right · ← left · • stay). */
-export const MOVE_ARROW = { R: "→", L: "←", S: "•" } as const;
+/** The letters a head move is written with; the YAML uses the English ones, the UI its language's (J, B, H). */
+export type MoveLetters = Record<"L" | "R" | "S", string>;
+
+export const MOVE_LETTERS: MoveLetters = { R: "R", L: "L", S: "S" };
 
 /**
- * One storage operation in the notation of the definition: stack `pop/push`,
- * queue `out/in`, tape `read/write, move` — `_` is the blank, as it is typed.
+ * One storage operation as the lecture notes write it: stack Z → AZ, queue A → B, tape
+ * a → b, D — `_` is the blank, as it is typed.
  */
-export function storageOpLabel(op: StorageOp): string {
+export function storageOpLabel(op: StorageOp, moves: MoveLetters = MOVE_LETTERS): string {
   switch (op.type) {
     case "stack":
-      return `${op.pop}/${showSymbols(op.push)}`;
+      return `${op.pop} → ${showSymbols(op.push)}`;
     case "queue":
-      return `${op.take}/${showSymbols(op.put)}`;
+      return `${op.take} → ${showSymbols(op.put)}`;
     case "tape":
-      return `${op.read}/${op.write}, ${MOVE_ARROW[op.move]}`;
+      return `${op.read} → ${op.write}, ${moves[op.move]}`;
   }
 }
 
@@ -439,19 +462,20 @@ function isNoOp(op: StorageOp): boolean {
 }
 
 /**
- * Edge label for the graph: the textbook form for preset machines; for custom
- * machines the input symbol, then each storage's operation named by its id
- * (operations that leave a storage untouched are left out).
+ * Edge label for the graph, as in the lecture notes: a; Z → AZ for a pushdown automaton,
+ * a → b, D for a Turing machine; for custom machines the input symbol, then each
+ * storage's operation named by its id (operations that leave a storage untouched are
+ * left out).
  */
-export function machineTransitionLabel(m: Machine, t: MachineTransition): string {
+export function machineTransitionLabel(m: Machine, t: MachineTransition, moves: MoveLetters = MOVE_LETTERS): string {
   const caps = machineCaps(m);
   if (caps.isFSMLike) return t.input;
-  if (caps.isPDALike) return `${t.input}, ${storageOpLabel(t.ops[0])}`;
-  if (caps.isTMLike) return storageOpLabel(t.ops[0]);
+  if (caps.isPDALike) return `${t.input}; ${storageOpLabel(t.ops[0], moves)}`;
+  if (caps.isTMLike) return storageOpLabel(t.ops[0], moves);
   const parts: string[] = [];
   if (hasInputHead(m)) parts.push(t.input);
   t.ops.forEach((op, i) => {
-    if (!isNoOp(op)) parts.push(`${m.storages[i].id}: ${storageOpLabel(op)}`);
+    if (!isNoOp(op)) parts.push(`${m.storages[i].id}: ${storageOpLabel(op, moves)}`);
   });
   return parts.length > 0 ? parts.join("; ") : EPS;
 }

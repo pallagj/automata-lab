@@ -1,3 +1,4 @@
+import type React from "react";
 import { EditorView } from "@uiw/react-codemirror";
 
 /**
@@ -87,7 +88,10 @@ function focusField(el: HTMLElement, caret: "start" | "end"): void {
 export function navigateFields(form: HTMLElement, target: HTMLElement, key: string): boolean {
   const el = target.closest<HTMLElement>(FIELD);
   if (!el || !form.contains(el)) return false;
-  const fields = [...form.querySelectorAll<HTMLElement>(FIELD)].filter((f) => f.getClientRects().length > 0);
+  // a fixed value (the edge dialog's states) is shown, not stepped into
+  const fields = [...form.querySelectorAll<HTMLElement>(FIELD)].filter(
+    (f) => f.getClientRects().length > 0 && f.getAttribute("contenteditable") !== "false"
+  );
   const i = fields.indexOf(el);
   if (i < 0) return false;
 
@@ -120,4 +124,13 @@ export function navigateFields(form: HTMLElement, target: HTMLElement, key: stri
     return true;
   }
   return false;
+}
+
+/** The form's (and the edge dialog's) onKeyDownCapture: before a field takes ↑ / ↓ as a caret move. */
+export function arrowKeysAcrossFields(e: React.KeyboardEvent<HTMLElement>): void {
+  if (e.altKey || e.ctrlKey || e.metaKey || e.shiftKey || e.nativeEvent.isComposing) return;
+  if (navigateFields(e.currentTarget, e.target as HTMLElement, e.key)) {
+    e.preventDefault();
+    e.stopPropagation();
+  }
 }

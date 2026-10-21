@@ -479,19 +479,19 @@ Machine:
   storages:
     tape: tape
   transitions:
-    - start a/_ > haveA
-    - start b/_ > haveB
-    - start _/& = ok
-    - haveA ./& > haveA
-    - haveA _/& < matchA
-    - haveB ./& > haveB
-    - haveB _/& < matchB
-    - matchA a/_ < back
-    - matchA _/& = ok
-    - matchB b/_ < back
-    - matchB _/& = ok
-    - back ./& < back
-    - back _/& > start
+    - start a/_ R haveA
+    - start b/_ R haveB
+    - start _/& S ok
+    - haveA ./& R haveA
+    - haveA _/& L matchA
+    - haveB ./& R haveB
+    - haveB _/& L matchB
+    - matchA a/_ L back
+    - matchA _/& S ok
+    - matchB b/_ L back
+    - matchB _/& S ok
+    - back ./& L back
+    - back _/& R start
 `).value!;
     expect(machineCaps(t).isTMLike).toBe(true);
     expect(runMachine(t, "abba").verdict).toBe("accepted");
@@ -512,12 +512,12 @@ Machine:
   storages:
     tape: tape
   transitions:
-    - s a/a > s
-    - s _/_ = ok
+    - s a/a R s
+    - s _/_ S ok
 `).value!;
     const ser = serializeDefinition(t);
     expect(ser).toContain("Machine:");
-    expect(ser).toContain("a/a > s");
+    expect(ser).toContain("a/a R s");
     const back = parseMachine(ser).value!;
     expect(runMachine(back, "aaa").verdict).toBe("accepted");
   });

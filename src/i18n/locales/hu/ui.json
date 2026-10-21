@@ -177,9 +177,10 @@
     },
     "storages": {
       "heading": "Tárolók: verem, sor, szalag",
-      "example": "Machine:               # veremautomata: egy verem\n  name: P\n  charset: a, b\n  states: q0, q1, q2\n  init: q0\n  accept: q2           # vagy acceptMode: emptyStorages\n  storages:\n    verem: stack       # a verem alapból Z-vel indul; másképp:\n  transitions:         #   verem: { type: stack, init: X }\n    - q0 a Z/AZ q0     # a beolvasása: Z helyett AZ a verembe\n    - q0 b A/ε q1      # ε = nem ír semmit\n    - q1 ε Z/Z q2      # ε-lépés (írd: eps)\n\nMachine:               # Turing-gép: egy szalag, rajta a bemenet\n  name: T\n  charset: a, b\n  states: s, ok\n  init: s\n  accept: ok\n  input: szalag        # a bemenet erre a tárolóra kerül\n  storages:\n    szalag: tape\n  transitions:\n    - s a/b > s        # a-t olvas, b-t ír, jobbra lép\n    - s _/& = ok       # _ = üres jel, & = ugyanazt írja vissza",
+      "example": "Machine:               # veremautomata: egy verem\n  name: P\n  charset: a, b\n  states: q0, q1, q2\n  init: q0\n  accept: q2           # vagy acceptMode: emptyStorages\n  storages:\n    verem: stack       # Z-vel indul; ábécéje a használt jelek\n  transitions:         #   vagy: verem: { type: stack, charset: [Z, A], init: Z }\n    - q0 a Z/AZ q0     # a beolvasása: Z helyett AZ a verembe\n    - q0 b A/ε q1      # ε = nem ír semmit\n    - q1 ε Z/Z q2      # ε-lépés (írd: eps)\n\nMachine:               # Turing-gép: egy szalag, rajta a bemenet\n  name: T\n  charset: a, b\n  states: s, ok\n  init: s\n  accept: ok\n  input: szalag        # a bemenet erre a tárolóra kerül\n  storages:\n    szalag:\n      type: tape\n      charset: a, b, x, _   # Γ: Σ, az üres jel (_) és más jelek (alapból Σ és _)\n  transitions:\n    - s a/x R s        # a-t olvas, x-et ír, jobbra lép (a YAML-ban R, L, S; a felület J, B, H)\n    - s _/& S ok       # _ = üres jel, & = ugyanazt írja vissza",
+      "body1": "Egy átmenet sora:",
       "transitionSyntax": "HONNAN [BEMENET] tárolónként-művelet… HOVA",
-      "body2": "— verem/sor egy elem (LE/FEL), szalag kettő (olvas/ír mozgás). Akárhány tároló kombinálható: két veremmel már Turing-erejű gép építhető (pl. aⁿbⁿcⁿ, ami veremautomatával nem lehetséges), sorral (queue) sorautomata. Az automata-műveletek (det, min…) csak tárolómentes gépre alkalmazhatók — az alkalmazás megmondja, miért."
+      "body2": "— verem/sor egy elem (LE/FEL), szalag kettő (OLVAS/ÍR MOZGÁS). Akárhány tároló kombinálható: két veremmel már Turing-erejű gép építhető (pl. aⁿbⁿcⁿ, ami veremautomatával nem lehetséges), sorral (queue) sorautomata. Az automata-műveletek (det, min…) csak tárolómentes gépre alkalmazhatók — az alkalmazás megmondja, miért."
     },
     "grammar": {
       "heading": "Nyelvtan",
@@ -361,6 +362,11 @@
         "queue": "sor",
         "tape": "szalag"
       },
+      "move": {
+        "R": "J",
+        "L": "B",
+        "S": "H"
+      },
       "tapeStartPlaceholder": "a szalag kezdete — kattints és gépelj",
       "oneStepAllBranches": "Egy lépés (minden ág)",
       "hitLimit": "korlátba ütközött",
@@ -451,13 +457,16 @@
         "rightSide": "jobb oldal (| választ el)",
         "from": "honnan",
         "symbol": "jel",
-        "readWrite": "{{id}} olvas/ír",
-        "move": "mozgás",
-        "pushPop": "{{id}} le/fel",
-        "enqueueDequeue": "{{id}} ki/be",
+        "pop": "{{id}} le",
+        "push": "{{id}} fel",
+        "dequeue": "{{id}} ki",
+        "enqueue": "{{id}} be",
+        "read": "{{id}} olvas",
+        "write": "{{id}} ír",
+        "move": "{{id}} mozgás",
         "to": "hová"
       },
-      "moveHint": "mozgás: → jobbra · ← balra · • helyben",
+      "moveHint": "mozgás: J jobbra · B balra · H helyben",
       "kindChangeTitle": "A gép fajtája megváltozik",
       "kindChangeBody1": "Ez a módosítás a gépet",
       "kindChangeBody2": "helyett",
@@ -472,6 +481,12 @@
       },
       "name": "Név",
       "alphabet": "Ábécé",
+      "storageAlphabet": {
+        "stack": "Veremábécé",
+        "queue": "Sorábécé",
+        "tape": "Szalagábécé"
+      },
+      "storageAlphabetColumn": "ábécé",
       "variables": "Változók",
       "states": "Állapotok",
       "startVariable": "Kezdő változó",
@@ -516,16 +531,6 @@
     }
   },
   "graph": {
-    "edgeFields": {
-      "symbol": "olvasott jel (ε: írd, hogy eps)",
-      "stackPop": "{{id}}: tetejéről le",
-      "stackPush": "{{id}}: rá fel",
-      "queuePop": "{{id}}: elejéről ki",
-      "queuePush": "{{id}}: végére be",
-      "tapeRead": "{{id}}: olvas",
-      "tapeWrite": "{{id}}: ír",
-      "move": "mozgás"
-    },
     "validation": {
       "emptyName": "Az állapot neve nem lehet üres.",
       "noSpaceComma": "A névben ne legyen szóköz vagy vessző.",
@@ -543,7 +548,7 @@
     "cancel": "Mégse",
     "save": "Mentés",
     "edgeDialog": {
-      "title": "Átmenet — {{from}} → {{to}}",
+      "title": "Átmenet",
       "addRow": "új átmenet ezen az élen",
       "emptyNote": "Nincs sor — a mentés törli az él összes átmenetét."
     },

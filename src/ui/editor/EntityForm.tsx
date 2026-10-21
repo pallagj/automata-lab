@@ -1,15 +1,15 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import yaml from "js-yaml";
 import { useTranslation } from "react-i18next";
-import type { TFunction } from "i18next";
 import { ChevronRight, Plus, TriangleAlert, X } from "lucide-react";
 import { Machine, machineCaps, MachineCaps, StorageType } from "../../core/machine/machine";
 import { symbolsText } from "../../core/symbols";
 import { SymbolField } from "./SymbolField";
 import { fieldsToTokens, tokensToFields } from "./opFields";
-import { navigateFields } from "./formNav";
-import { parseStorageEntry } from "../../core/parse/definitionParser";
+import { arrowKeysAcrossFields } from "./formNav";
+import { emptyFields, TransitionHead, TransitionRow, transitionFields } from "./TransitionRow";
+import { parseMachine, parseStorageEntry } from "../../core/parse/definitionParser";
 import { useAppStore } from "../../state/store";
 import { machineKindLabel } from "../machineLabels";
 import { EPS } from "../../core/types";
@@ -54,10 +54,11 @@ export function detectEntityKind(source: string): EntityKind | null {
   return m ? (KIND_BY_KEY[m[1]] ?? null) : null;
 }
 
-/** A storage as the form edits it: the initial content as typed. */
+/** A storage as the form edits it: its alphabet and initial content as typed ("" = the default). */
 export interface DraftStorage {
   id: string;
   type: StorageType;
+  charset: string;
   init: string;
 }
 
@@ -114,7 +115,8 @@ export function parseEntityDraft(source: string): EntityDraft | null {
       for (const [id, v] of Object.entries(raw as Record<string, unknown>)) {
         const r = parseStorageEntry(id.trim(), v);
         if (!r.ok) return null;
-        storages.push({ ...r.value!, init: symbolsText(r.value!.init) });
+        const charset = typeof v === "object" && v !== null ? fieldText((v as Record<string, unknown>)["charset"]) : "";
+        storages.push({ id: r.value!.id, type: r.value!.type, charset, init: symbolsText(r.value!.init) });
       }
     }
   }
@@ -145,6 +147,9 @@ const scalar = (s: string) => (NEEDS_QUOTE.test(s) ? `"${s.replaceAll('"', '\\"'
 
 const defaultInit = (type: StorageType) => (type === "stack" ? "Z" : "");
 
+/** what an alphabet looks like, where the default one is not known yet */
+const CHARSET_PLACEHOLDER: Record<StorageType, string> = { stack: "Z, A", queue: "A, B", tape: "a, b, _" };
+
 export function serializeEntityDraft(d: EntityDraft): string {
   if (d.kind === "grammar") {
     const lines = [
@@ -173,12 +178,14 @@ export function serializeEntityDraft(d: EntityDraft): string {
   if (d.storages.length > 0) {
     lines.push("  storages:");
     for (const s of d.storages) {
-      if (s.init === defaultInit(s.type)) {
+      const charset = s.charset.trim();
+      if (charset === "" && s.init === defaultInit(s.type)) {
         lines.push(`    ${s.id}: ${s.type}`);
       } else {
         lines.push(`    ${s.id}:`);
         lines.push(`      type: ${s.type}`);
-        lines.push(`      init: ${scalar(s.init)}`);
+        if (charset !== "") lines.push(`      charset: ${scalar(charset)}`);
+        if (s.init !== defaultInit(s.type)) lines.push(`      init: ${scalar(s.init)}`);
       }
     }
   }
@@ -186,135 +193,6 @@ export function serializeEntityDraft(d: EntityDraft): string {
   for (const r of d.rows) lines.push(`    - ${scalar(r.join(" ").trim())}`);
   return lines.join("\n");
 }
-
-/* ---------------------- columns for transition rows ---------------------- */
-
-export interface RowColumn {
-  header: string;
-  placeholder: string;
-  widget: "text" | "move";
-}
-
-export function rowColumns(t: TFunction, d: EntityDraft): RowColumn[] {
-  if (d.kind === "grammar")
-    return [
-      { header: t("editor.form.col.leftSide"), placeholder: "S", widget: "text" },
-      { header: t("editor.form.col.rightSide"), placeholder: "aS | b", widget: "text" }
-    ];
-  const cols: RowColumn[] = [{ header: t("editor.form.col.from"), placeholder: "S", widget: "text" }];
-  if (d.input === "head") cols.push({ header: t("editor.form.col.symbol"), placeholder: "a", widget: "text" });
-  for (const s of d.storages) {
-    if (s.type === "tape") {
-      cols.push({ header: t("editor.form.col.readWrite", { id: s.id }), placeholder: "a/b", widget: "text" });
-      cols.push({ header: t("editor.form.col.move"), placeholder: ">", widget: "move" });
-    } else {
-      cols.push({
-        header: s.type === "stack" ? t("editor.form.col.pushPop", { id: s.id }) : t("editor.form.col.enqueueDequeue", { id: s.id }),
-        placeholder: s.type === "stack" ? "Z/AZ" : "A/BA",
-        widget: "text"
-      });
-    }
-  }
-  cols.push({ header: t("editor.form.col.to"), placeholder: "A", widget: "text" });
-  return cols;
-}
-
-function emptyRow(cols: RowColumn[], isGrammar: boolean): string[] {
-  if (isGrammar) return ["", ""];
-  return cols.map((c) => (c.widget === "move" ? ">" : ""));
-}
-
-/**
- * A transition in the lecture notes' notation, its parts as fields:
- * δ(q, a) = p · δ(q, a, Z) = (p, γ) · δ(q, a) = (p, b, D). The YAML row behind it is
- * rebuilt from the fields (editor/opFields.ts).
- */
-const DeltaRow: React.FC<{
-  row: string[];
-  hasHead: boolean;
-  storages: DraftStorage[];
-  onChange: (row: string[]) => void;
-}> = ({ row, hasHead, storages, onChange }) => {
-  const from = row[0] ?? "";
-  const to = row.length > 1 ? row[row.length - 1] : "";
-  const fields = tokensToFields(hasHead, storages, row.slice(1, -1));
-  const setField = (n: number, v: string) => {
-    const next = [...fields];
-    next[n] = v;
-    onChange([from, ...fieldsToTokens(hasHead, storages, next), to]);
-  };
-
-  // a state, a single symbol, a word pushed onto a storage, or a head move
-  type Part = { key: string; value: string; set: (v: string) => void; placeholder: string; kind: "state" | "symbol" | "word" | "move" };
-  const part = (n: number, placeholder: string, kind: Part["kind"]): Part => ({
-    key: `f${n}`,
-    value: fields[n] ?? "",
-    set: (v) => setField(n, v),
-    placeholder,
-    kind
-  });
-  const args: Part[] = [{ key: "from", value: from, set: (v) => onChange([v, ...row.slice(1)]), placeholder: "q", kind: "state" }];
-  const results: Part[] = [{ key: "to", value: to, set: (v) => onChange([...row.slice(0, -1), v]), placeholder: "p", kind: "state" }];
-  let n = 0;
-  if (hasHead) args.push(part(n++, "a", "symbol"));
-  for (const s of storages) {
-    if (s.type === "tape") {
-      args.push(part(n++, "a", "symbol"));
-      results.push(part(n++, "b", "symbol"));
-      results.push(part(n++, ">", "move"));
-    } else {
-      args.push(part(n++, s.type === "stack" ? "Z" : "A", "symbol"));
-      results.push(part(n++, s.type === "stack" ? "AZ" : "BA", "word"));
-    }
-  }
-
-  const field = (p: Part) =>
-    p.kind === "move" ? (
-      <MoveSelect key={p.key} value={p.value} onChange={p.set} />
-    ) : (
-      <SymbolField
-        key={p.key}
-        value={p.value}
-        onChange={p.set}
-        digits={p.kind === "state"}
-        epsilon={p.kind !== "state"}
-        placeholder={p.placeholder}
-      />
-    );
-  const list = (ps: Part[]) => ps.flatMap((p, i) => (i === 0 ? [field(p)] : [<span key={`c${i}`} className="ef-op ef-comma">,</span>, field(p)]));
-  return (
-    <>
-      <span className="ef-op ef-delta">δ(</span>
-      {list(args)}
-      <span className="ef-op ef-eq">) =</span>
-      {results.length === 1 ? (
-        field(results[0])
-      ) : (
-        <>
-          <span className="ef-op">(</span>
-          {list(results)}
-          <span className="ef-op">)</span>
-        </>
-      )}
-    </>
-  );
-};
-
-/** Move picker: arrows only, text would not fit anyway. */
-export const MoveSelect: React.FC<{
-  value: string;
-  onChange: (v: string) => void;
-}> = ({ value, onChange }) => {
-  const { t } = useTranslation();
-  return (
-    <select className="move-select" value={value} onChange={(e) => onChange(e.target.value)} title={t("editor.form.moveHint")}>
-      {![">", "<", "="].includes(value) && <option value={value} hidden />}
-      <option value=">">→</option>
-      <option value="<">←</option>
-      <option value="=">•</option>
-    </select>
-  );
-};
 
 /** The recognised machine kind — depends only on the input and the storages. */
 function draftKindCaps(d: EntityDraft): MachineCaps {
@@ -327,7 +205,7 @@ function draftKindCaps(d: EntityDraft): MachineCaps {
     accept: [],
     acceptMode: "finalState",
     input: d.input,
-    storages: d.storages.map((s) => ({ ...s, init: [] })),
+    storages: d.storages.map((s) => ({ id: s.id, type: s.type, alphabet: [], init: [] })),
     transitions: []
   };
   return machineCaps(probe);
@@ -457,6 +335,8 @@ export const EntityForm: React.FC<Props> = ({ source, onChange }) => {
   useEffect(() => {
     if (!followsKind) setConfigOpen(true);
   }, [followsKind]);
+  // an alphabet left out is the default one: the field shows what it is
+  const resolved = useMemo(() => (draft?.kind === "machine" ? parseMachine(source).value : undefined), [source, draft?.kind]);
 
   if (!draft) return null;
 
@@ -468,7 +348,7 @@ export const EntityForm: React.FC<Props> = ({ source, onChange }) => {
   };
 
   /** the token(s) that leave the given storage untouched in a transition line */
-  const noOpTokens = (s: DraftStorage): string[] => (s.type === "tape" ? ["./&", "="] : [`${EPS}/${EPS}`]);
+  const noOpTokens = (s: DraftStorage): string[] => (s.type === "tape" ? ["./&", "S"] : [`${EPS}/${EPS}`]);
 
   /**
    * When the storages or the input change, the existing rows are rearranged: the
@@ -538,8 +418,10 @@ export const EntityForm: React.FC<Props> = ({ source, onChange }) => {
   const setStorage = (i: number, patch: Partial<DraftStorage>) => {
     const prev = draft.storages[i];
     const updated = { ...prev, ...patch };
-    // on a type change the default initial content follows too, if it was the default
+    // on a type change the default initial content follows too, if it was the default; an
+    // alphabet of the old type means little to the new one, so the default takes over
     if (patch.type && prev.init === defaultInit(prev.type)) updated.init = defaultInit(patch.type);
+    if (patch.type) updated.charset = "";
     // the input reference follows the rename
     const storages = draft.storages.map((s, k) => (k === i ? updated : s));
     const next: EntityDraft = { ...draft, storages };
@@ -550,8 +432,13 @@ export const EntityForm: React.FC<Props> = ({ source, onChange }) => {
 
   const addStorage = () => {
     const used = new Set(draft.storages.map((s) => s.id));
-    setStorages([...draft.storages, { id: freshStorageId(used), type: "stack", init: "Z" }]);
+    setStorages([...draft.storages, { id: freshStorageId(used), type: "stack", charset: "", init: "Z" }]);
   };
+  // the alphabet does not change the machine's shape: no rows to rearrange
+  const setCharset = (i: number, charset: string) =>
+    update({ ...draft, storages: draft.storages.map((s, k) => (k === i ? { ...s, charset } : s)) });
+  const charsetPlaceholder = (i: number) =>
+    resolved?.storages[i]?.alphabet.join(", ") ?? CHARSET_PLACEHOLDER[draft.storages[i].type];
 
   const setRowParts = (i: number, parts: string[]) =>
     update({ ...draft, rows: draft.rows.map((r, k) => (k === i ? parts : r)) });
@@ -559,32 +446,29 @@ export const EntityForm: React.FC<Props> = ({ source, onChange }) => {
     const rows = draft.rows.map((r, k) => (k === i ? r.map((p, l) => (l === j ? value : p)) : r));
     update({ ...draft, rows });
   };
-  const cols = rowColumns(t, draft);
+  const hasHead = draft.input === "head";
+  const fields = transitionFields(t, hasHead, draft.storages);
   const kindCaps = draftKindCaps(draft);
   const kindName = kindCaps.kind === "general" ? t("detail.machine.kind.general") : machineKindLabel(t, kindCaps);
-  const addRow = () => update({ ...draft, rows: [...draft.rows, emptyRow(cols, draft.kind === "grammar")] });
+  const addRow = () =>
+    update({
+      ...draft,
+      rows: [...draft.rows, draft.kind === "grammar" ? ["", ""] : ["", ...fieldsToTokens(hasHead, draft.storages, emptyFields(fields)), ""]]
+    });
   const removeRow = (i: number) => update({ ...draft, rows: draft.rows.filter((_, k) => k !== i) });
 
   const k = draft.kind;
   const terminals = draft.charset.split(",").map((c) => c.trim());
-  // with the notes' symbols a transition reads δ(q, a) = p and a rule A → α — except for
-  // machines with several storages, which have no such notation (and would not fit)
+  // with the notes' symbols a transition reads δ(q, a, Z) = (p, γ) and a rule A → α
   const symbols = formLabels === "symbols";
-  const delta = symbols && k === "machine" && draft.storages.length <= 1;
-  const arrow = symbols && k === "grammar";
+  // one storage's alphabet stands with Σ, as in the notes' tuples; several have a column each
+  const single = k === "machine" && draft.storages.length === 1 ? draft.storages[0] : null;
 
   return (
     <div
       className={`entity-form ${symbols ? "ef-symbols" : ""}`}
       onClick={(e) => e.stopPropagation()}
-      // before the field itself, which would otherwise take ↑ / ↓ as a caret move
-      onKeyDownCapture={(e) => {
-        if (e.altKey || e.ctrlKey || e.metaKey || e.shiftKey || e.nativeEvent.isComposing) return;
-        if (navigateFields(e.currentTarget, e.target as HTMLElement, e.key)) {
-          e.preventDefault();
-          e.stopPropagation();
-        }
-      }}
+      onKeyDownCapture={arrowKeysAcrossFields}
     >
       <div className="ef-grid">
         <label className="ef-name" title={t("editor.form.name")}>
@@ -595,6 +479,12 @@ export const EntityForm: React.FC<Props> = ({ source, onChange }) => {
           <span data-sym="Σ">{t("editor.form.alphabet")}</span>
           <SymbolField value={draft.charset} onChange={(v) => setField("charset", v)} digits={false} placeholder="a, b" />
         </label>
+        {single && (
+          <label title={t(`editor.form.storageAlphabet.${single.type}`)}>
+            <span data-sym="Γ">{t(`editor.form.storageAlphabet.${single.type}`)}</span>
+            <SymbolField value={single.charset} onChange={(v) => setCharset(0, v)} digits={false} placeholder={charsetPlaceholder(0)} />
+          </label>
+        )}
         <label title={k === "grammar" ? t("editor.form.variables") : t("editor.form.states")}>
           <span data-sym={k === "grammar" ? "V" : "Q"}>{k === "grammar" ? t("editor.form.variables") : t("editor.form.states")}</span>
           <SymbolField value={draft.states} onChange={(v) => setField("states", v)} digits placeholder="S, A" />
@@ -651,15 +541,16 @@ export const EntityForm: React.FC<Props> = ({ source, onChange }) => {
             </div>
           )}
           {configOpen && draft.storages.length > 0 && (
-            <div className="ef-storage-row ef-storage-head">
+            <div className={`ef-storage-row ef-storage-head ${single ? "" : "ef-with-alphabet"}`}>
               <span>{t("editor.form.storage")}</span>
               <span>{t("editor.form.type")}</span>
+              {!single && <span>{t("editor.form.storageAlphabetColumn")}</span>}
               <span>{t("editor.form.initialContent")}</span>
               <span />
             </div>
           )}
           {configOpen && draft.storages.map((s, i) => (
-            <div className="ef-storage-row" key={i}>
+            <div className={`ef-storage-row ${single ? "" : "ef-with-alphabet"}`} key={i}>
               <input
                 value={s.id}
                 onChange={(e) => setStorage(i, { id: e.target.value.trim() })}
@@ -673,6 +564,9 @@ export const EntityForm: React.FC<Props> = ({ source, onChange }) => {
                   </option>
                 ))}
               </select>
+              {!single && (
+                <SymbolField value={s.charset} onChange={(v) => setCharset(i, v)} digits={false} placeholder={charsetPlaceholder(i)} />
+              )}
               <SymbolField
                 value={s.init}
                 onChange={(init) => setStorage(i, { init })}
@@ -698,47 +592,53 @@ export const EntityForm: React.FC<Props> = ({ source, onChange }) => {
       )}
 
       <div className="ef-rows">
-        {!delta && !arrow && (
+        {k === "machine" && !symbols && <TransitionHead fields={fields} />}
+        {k === "grammar" && !symbols && (
           <div className="ef-row ef-row-head">
-            {cols.map((c, i) => (
-              <span key={i}>{c.header}</span>
-            ))}
+            <span>{t("editor.form.col.leftSide")}</span>
+            <span>{t("editor.form.col.rightSide")}</span>
             <span />
           </div>
         )}
-        {draft.rows.map((row, i) => (
-          <div className={`ef-row ${delta ? "ef-row-delta" : arrow ? "ef-row-rule" : ""}`} key={i}>
-            {delta ? (
-              <DeltaRow
-                row={row}
-                hasHead={draft.input === "head"}
-                storages={draft.storages}
-                onChange={(r) => setRowParts(i, r)}
+        {draft.rows.map((row, i) => {
+          if (k === "machine") {
+            const from = row[0] ?? "";
+            const to = row.length > 1 ? row[row.length - 1] : "";
+            return (
+              <TransitionRow
+                key={i}
+                fields={fields}
+                notation={symbols}
+                from={from}
+                to={to}
+                values={tokensToFields(hasHead, draft.storages, row.slice(1, -1))}
+                onChange={(values) => setRowParts(i, [from, ...fieldsToTokens(hasHead, draft.storages, values), to])}
+                onFrom={(v) => setRowParts(i, [v, ...row.slice(1)])}
+                onTo={(v) => setRowParts(i, [...row.slice(0, -1), v])}
+                onRemove={() => removeRow(i)}
               />
-            ) : row.map((part, j) =>
-              cols[j]?.widget === "move" ? (
-                <MoveSelect key={j} value={part} onChange={(v) => setRow(i, j, v)} />
-              ) : (
-                <SymbolField
-                  key={j}
-                  value={part}
-                  onChange={(v) => setRow(i, j, v)}
-                  // the ε shortcut is for symbols: grammar right sides and the middle columns of a
-                  // transition — never the state names (first and last column) or a rule's left side
-                  epsilon={k === "grammar" ? j === 1 : j > 0 && j < row.length - 1}
-                  // digits go to subscripts in names: state columns, and grammar variables unless the
-                  // digit is a terminal (S → 0S1)
-                  digits={k === "grammar" ? (ch) => !terminals.includes(ch) : j === 0 || j === row.length - 1}
-                  placeholder={cols[j]?.placeholder ?? ""}
-                  className={k === "grammar" && j === 1 ? "wide" : ""}
-                />
-              )
-            ).flatMap((el, j) => (arrow && j === 1 ? [<span key="arrow" className="ef-op">→</span>, el] : [el]))}
-            <button className="ef-remove" title={t("editor.form.deleteRow")} onClick={() => removeRow(i)}>
-              <X size={13} />
-            </button>
-          </div>
-        ))}
+            );
+          }
+          // digits go to subscripts in variables, unless the digit is a terminal (S → 0S1)
+          const digits = (ch: string) => !terminals.includes(ch);
+          return (
+            <div className={`ef-row ${symbols ? "ef-row-rule" : ""}`} key={i}>
+              <SymbolField value={row[0]} onChange={(v) => setRow(i, 0, v)} digits={digits} placeholder="S" />
+              {symbols && <span className="ef-op">→</span>}
+              <SymbolField
+                value={row[1]}
+                onChange={(v) => setRow(i, 1, v)}
+                epsilon
+                digits={digits}
+                placeholder="aS | b"
+                className="wide"
+              />
+              <button className="ef-remove" title={t("editor.form.deleteRow")} onClick={() => removeRow(i)}>
+                <X size={13} />
+              </button>
+            </div>
+          );
+        })}
         <button className="ef-add" onClick={addRow}>
           <Plus size={13} /> {k === "grammar" ? t("editor.form.newRule") : t("editor.form.newTransition")}
         </button>

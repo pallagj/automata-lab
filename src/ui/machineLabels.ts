@@ -1,5 +1,10 @@
 import type { TFunction } from "i18next";
-import { MachineCaps } from "../core/machine/machine";
+import { MachineCaps, MoveLetters } from "../core/machine/machine";
+
+/** The head moves' letters in the UI's language: J, B, H in Hungarian (the YAML keeps R, L, S). */
+export function moveLetters(t: TFunction): MoveLetters {
+  return { R: t("detail.machine.move.R"), L: t("detail.machine.move.L"), S: t("detail.machine.move.S") };
+}
 
 /** Display label for a machine's recognized kind (automaton / pushdown automaton / Turing machine / general machine). */
 export function machineKindLabel(t: TFunction, caps: MachineCaps, lowercase = false): string {

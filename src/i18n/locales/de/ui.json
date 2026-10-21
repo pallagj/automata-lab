@@ -177,9 +177,10 @@
     },
     "storages": {
       "heading": "Speicher: Keller, Warteschlange, Band",
-      "example": "Machine:               # Kellerautomat: ein Keller\n  name: P\n  charset: a, b\n  states: q0, q1, q2\n  init: q0\n  accept: q2           # oder acceptMode: emptyStorages\n  storages:\n    keller: stack      # der Keller startet standardmäßig mit Z; sonst:\n  transitions:         #   keller: { type: stack, init: X }\n    - q0 a Z/AZ q0     # a lesen: statt Z wird AZ auf den Keller gelegt\n    - q0 b A/ε q1      # ε = schreibt nichts\n    - q1 ε Z/Z q2      # ε-Schritt (tippe eps)\n\nMachine:               # Turingmaschine: ein Band, darauf die Eingabe\n  name: T\n  charset: a, b\n  states: s, ok\n  init: s\n  accept: ok\n  input: band          # die Eingabe kommt auf diesen Speicher\n  storages:\n    band: tape\n  transitions:\n    - s a/b > s        # liest a, schreibt b, bewegt sich nach rechts\n    - s _/& = ok       # _ = Leerzeichen, & = schreibt dasselbe Zeichen zurück",
+      "example": "Machine:               # Kellerautomat: ein Keller\n  name: P\n  charset: a, b\n  states: q0, q1, q2\n  init: q0\n  accept: q2           # oder acceptMode: emptyStorages\n  storages:\n    keller: stack      # startet mit Z; sein Alphabet sind die benutzten Symbole\n  transitions:         #   oder: keller: { type: stack, charset: [Z, A], init: Z }\n    - q0 a Z/AZ q0     # a lesen: statt Z wird AZ auf den Keller gelegt\n    - q0 b A/ε q1      # ε = schreibt nichts\n    - q1 ε Z/Z q2      # ε-Schritt (tippe eps)\n\nMachine:               # Turingmaschine: ein Band, darauf die Eingabe\n  name: T\n  charset: a, b\n  states: s, ok\n  init: s\n  accept: ok\n  input: band          # die Eingabe kommt auf diesen Speicher\n  storages:\n    band:\n      type: tape\n      charset: a, b, x, _   # Γ: Σ, das Leerzeichen _ und mehr (standardmäßig Σ und _)\n  transitions:\n    - s a/x R s        # liest a, schreibt x, nach rechts (im YAML R, L, S; die Oberfläche zeigt R, L, N)\n    - s _/& S ok       # _ = Leerzeichen, & = schreibt dasselbe Zeichen zurück",
+      "body1": "Eine Übergangszeile:",
       "transitionSyntax": "VON [EINGABE] Operation-pro-Speicher… NACH",
-      "body2": "— Keller/Warteschlange nehmen ein Element (POP/PUSH), ein Band nimmt zwei (lesen/schreiben Bewegung). Beliebig viele Speicher lassen sich kombinieren: zwei Keller ergeben bereits eine Maschine mit Turing-Mächtigkeit (z. B. aⁿbⁿcⁿ, was mit einem Kellerautomaten nicht möglich ist), eine Warteschlange ergibt einen Warteschlangenautomaten. Die Automaten-Operationen (det, min…) gelten nur für speicherfreie Maschinen — die App erklärt, warum."
+      "body2": "— Keller/Warteschlange nehmen ein Element (POP/PUSH), ein Band nimmt zwei (LESEN/SCHREIBEN BEWEGUNG). Beliebig viele Speicher lassen sich kombinieren: zwei Keller ergeben bereits eine Maschine mit Turing-Mächtigkeit (z. B. aⁿbⁿcⁿ, was mit einem Kellerautomaten nicht möglich ist), eine Warteschlange ergibt einen Warteschlangenautomaten. Die Automaten-Operationen (det, min…) gelten nur für speicherfreie Maschinen — die App erklärt, warum."
     },
     "grammar": {
       "heading": "Grammatik",
@@ -361,6 +362,11 @@
         "queue": "Warteschlange",
         "tape": "Band"
       },
+      "move": {
+        "R": "R",
+        "L": "L",
+        "S": "N"
+      },
       "tapeStartPlaceholder": "Anfang des Bandes — klicken und tippen",
       "oneStepAllBranches": "Ein Schritt (alle Zweige)",
       "hitLimit": "Grenze erreicht",
@@ -451,13 +457,16 @@
         "rightSide": "rechte Seite (| trennt)",
         "from": "von",
         "symbol": "Zeichen",
-        "readWrite": "{{id}} lesen/schreiben",
-        "move": "Bewegung",
-        "pushPop": "{{id}} runter/rauf",
-        "enqueueDequeue": "{{id}} raus/rein",
+        "pop": "{{id}} runter",
+        "push": "{{id}} rauf",
+        "dequeue": "{{id}} raus",
+        "enqueue": "{{id}} rein",
+        "read": "{{id}} lesen",
+        "write": "{{id}} schreiben",
+        "move": "{{id}} Bewegung",
         "to": "nach"
       },
-      "moveHint": "Bewegung: → rechts · ← links · • bleiben",
+      "moveHint": "Bewegung: R rechts · L links · N neutral (bleiben)",
       "kindChangeTitle": "Die Art der Maschine ändert sich",
       "kindChangeBody1": "Diese Änderung wandelt die Maschine von einem/einer",
       "kindChangeBody2": "in einen/eine",
@@ -472,6 +481,12 @@
       },
       "name": "Name",
       "alphabet": "Alphabet",
+      "storageAlphabet": {
+        "stack": "Kelleralphabet",
+        "queue": "Warteschlangenalphabet",
+        "tape": "Bandalphabet"
+      },
+      "storageAlphabetColumn": "Alphabet",
       "variables": "Variablen",
       "states": "Zustände",
       "startVariable": "Startvariable",
@@ -516,16 +531,6 @@
     }
   },
   "graph": {
-    "edgeFields": {
-      "symbol": "gelesenes Zeichen (ε: tippe eps)",
-      "stackPop": "{{id}}: von der Spitze runter",
-      "stackPush": "{{id}}: auf die Spitze rauf",
-      "queuePop": "{{id}}: vom Anfang raus",
-      "queuePush": "{{id}}: am Ende rein",
-      "tapeRead": "{{id}}: lesen",
-      "tapeWrite": "{{id}}: schreiben",
-      "move": "Bewegung"
-    },
     "validation": {
       "emptyName": "Der Zustandsname darf nicht leer sein.",
       "noSpaceComma": "Der Name darf kein Leerzeichen oder Komma enthalten.",
@@ -543,7 +548,7 @@
     "cancel": "Abbrechen",
     "save": "Speichern",
     "edgeDialog": {
-      "title": "Übergang — {{from}} → {{to}}",
+      "title": "Übergang",
       "addRow": "neuer Übergang auf dieser Kante",
       "emptyNote": "Keine Zeilen — beim Speichern werden alle Übergänge dieser Kante gelöscht."
     },

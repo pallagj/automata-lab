@@ -6,7 +6,7 @@ import { symbolsText } from "../symbols";
 const sym = (s: string) => (s === EPS || s === "" ? EPS : escapeSymbols(s));
 /** a string of stack/queue/grammar symbols, ε for none */
 const syms = (s: string[]) => (s.length === 0 ? EPS : symbolsText(s));
-import { Machine, StorageOp } from "../machine/machine";
+import { defaultStorageAlphabet, Machine, StorageOp, TAPE_BLANK } from "../machine/machine";
 import { Grammar } from "../grammar/grammar";
 import { Definition } from "./definitionParser";
 
@@ -25,8 +25,6 @@ const NEEDS_QUOTE = /[{}[\]:#'"&*?|>%@`]|^[\s-]|^$/;
 const scalar = (s: string) => (NEEDS_QUOTE.test(s) ? `"${s.replaceAll('"', '\\"')}"` : s);
 const listLine = (items: string[]) => scalar(items.join(", "));
 
-const MOVE_CHAR = { R: ">", L: "<", S: "=" } as const;
-
 function storageOpToken(op: StorageOp): string {
   switch (op.type) {
     case "stack":
@@ -34,13 +32,17 @@ function storageOpToken(op: StorageOp): string {
     case "queue":
       return `${op.take === EPS ? EPS : symbolsText([op.take])}/${syms(op.put)}`;
     case "tape":
-      return `${op.read}/${op.write} ${MOVE_CHAR[op.move]}`;
+      return `${op.read}/${op.write} ${op.move}`;
   }
 }
 
 /** the storage's default initial content (see parseStorageEntry) */
 const isDefaultInit = (type: string, init: string[]) =>
   type === "stack" ? init.length === 1 && init[0] === "Z" : init.length === 0;
+
+const sameSet = (a: string[], b: string[]) => a.length === b.length && a.every((x) => b.includes(x));
+/** an alphabet's symbols one by one; a lone blank needs no escape */
+const alphabetLine = (symbols: string[]) => listLine(symbols.map((x) => (x === TAPE_BLANK ? x : symbolsText([x]))));
 
 export function serializeMachine(m: Machine): string {
   const lines = [
@@ -56,15 +58,18 @@ export function serializeMachine(m: Machine): string {
   if (m.input !== "head") lines.push(`  input: ${scalar(m.input)}`);
   if (m.storages.length > 0) {
     lines.push("  storages:");
-    for (const s of m.storages) {
-      if (isDefaultInit(s.type, s.init)) {
+    m.storages.forEach((s, i) => {
+      // the alphabet is written only where it is not the default one
+      const ownAlphabet = !sameSet(s.alphabet, defaultStorageAlphabet(m.alphabet, s, m.transitions.map((t) => t.ops[i])));
+      if (!ownAlphabet && isDefaultInit(s.type, s.init)) {
         lines.push(`    ${s.id}: ${s.type}`);
-      } else {
-        lines.push(`    ${s.id}:`);
-        lines.push(`      type: ${s.type}`);
-        lines.push(`      init: ${scalar(syms(s.init))}`);
+        return;
       }
-    }
+      lines.push(`    ${s.id}:`);
+      lines.push(`      type: ${s.type}`);
+      if (ownAlphabet) lines.push(`      charset: ${alphabetLine(s.alphabet)}`);
+      if (!isDefaultInit(s.type, s.init)) lines.push(`      init: ${scalar(syms(s.init))}`);
+    });
   }
   lines.push("  transitions:");
   for (const t of m.transitions) {

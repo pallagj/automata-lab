@@ -88,7 +88,7 @@
       "acceptNotInStates": "The accepting state ({{state}}) is not among the states",
       "badStoragesField": {
         "title": "The storages field expects key-value pairs",
-        "detail": "For example:\n  storages:\n    v1: stack\n    v2:\n      type: queue\n      init: A"
+        "detail": "For example:\n  storages:\n    v1: stack\n    v2:\n      type: queue\n      charset: A, B\n      init: A"
       },
       "duplicateStorageId": "Duplicate storage id: \"{{id}}\"",
       "badInputField": {
@@ -107,8 +107,6 @@
       "unknownToState": "Unknown target state in the transition: \"{{state}}\"",
       "unknownInputSymbol": "Unknown input symbol: \"{{symbol}}\"",
       "alphabetHint": "Line: \"{{line}}\". Alphabet: {{alphabet}} (type ε as eps).",
-      "unknownWrittenTapeSymbol": "Unknown tape symbol being written: \"{{symbol}}\" ({{storageId}})",
-      "tapeAlphabetHint": "Tape alphabet: {{alphabet}}",
       "noAcceptState": {
         "title": "No accepting state",
         "detail": "The machine therefore recognizes the empty language."
@@ -116,6 +114,30 @@
       "nondeterministicMachine": {
         "title": "Nondeterministic machine: more than one transition can match in state {{state}}",
         "detail": "The simulation follows every branch; click a highlighted edge on the graph to pick a specific branch."
+      },
+      "storageCharsetNotOneSymbol": {
+        "title": "“{{symbol}}” in the alphabet of {{storageId}} is not one symbol",
+        "detail": "List the alphabet's symbols one by one, separated by commas. A symbol with a subscript is written with _, like {{example}}."
+      },
+      "blankNotInTapeCharset": {
+        "title": "The blank _ is missing from the alphabet of {{storageId}}",
+        "detail": "A tape holds blanks wherever nothing is written, so the blank is one of its symbols: _ ∈ Γ."
+      },
+      "blankInInput": {
+        "title": "The blank _ cannot be an input symbol",
+        "detail": "The input is written onto the tape {{storageId}}, where _ marks the empty cells: _ ∈ Γ \\ Σ."
+      },
+      "inputNotInStorageCharset": {
+        "title": "The alphabet of {{storageId}} lacks the input symbols {{symbols}}",
+        "detail": "The input is written onto this storage, so every input symbol is one of its symbols too: Σ ⊆ Γ."
+      },
+      "initNotInStorageCharset": {
+        "title": "The initial content of {{storageId}} uses “{{symbol}}”, which is not in its alphabet",
+        "detail": "The alphabet of {{storageId}}: Γ = {{gamma}}."
+      },
+      "unknownStorageSymbol": {
+        "title": "Unknown symbol “{{symbol}}” for {{storageId}}",
+        "detail": "Line: \"{{line}}\". The alphabet of {{storageId}} is Γ = {{gamma}} — any other symbol it may hold goes in its charset."
       }
     },
     "grammar": {
@@ -173,20 +195,16 @@
     },
     "unknownStorageType": {
       "title": "Unknown storage type for the \"{{id}}\" storage",
-      "detail": "Allowed: stack, queue, tape — with an initial content:\n  v1:\n    type: stack\n    init: Z"
+      "detail": "Allowed: stack, queue, tape — with an alphabet and an initial content:\n  v1:\n    type: stack\n    charset: Z, A\n    init: Z"
     },
     "storageOp": {
       "badTapeOp": {
         "title": "Invalid tape operation: \"{{tokens}}\" ({{storageId}})",
-        "detail": "Line: \"{{line}}\". Form: READ/WRITE MOVE — e.g. \"a/b >\". Blank symbol: _, \"write the same back\": &."
+        "detail": "Line: \"{{line}}\". Form: READ/WRITE MOVE — e.g. \"a/b R\". Blank symbol: _, \"write the same back\": &."
       },
       "unknownMove": {
         "title": "Unknown move: \"{{tokens}}\" ({{storageId}})",
-        "detail": "Line: \"{{line}}\". Allowed: > < = (or R L S)."
-      },
-      "unknownTapeSymbol": {
-        "title": "Unknown tape symbol: \"{{tokens}}\" ({{storageId}})",
-        "detail": "Line: \"{{line}}\". Tape alphabet: {{alphabet}}"
+        "detail": "Line: \"{{line}}\". Allowed: R (right), L (left), S (stay) — the YAML always uses these English letters, whatever the interface's language."
       },
       "badStackOp": {
         "title": "Invalid storage operation: \"{{tokens}}\" ({{storageId}})",

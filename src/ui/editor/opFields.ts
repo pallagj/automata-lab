@@ -2,7 +2,7 @@ import { StorageSpec } from "../../core/machine/machine";
 
 /**
  * A transition line's storage operations as separate fields and back: a stack's
- * "Z/AZ" is the fields Z and AZ, a tape's "a/b >" the fields a, b and >. Used by the
+ * "Z/AZ" is the fields Z and AZ, a tape's "a/b R" the fields a, b and R. Used by the
  * graph's edge dialog and by the form's δ(q, a, Z) = (p, γ) rows.
  */
 
@@ -19,7 +19,7 @@ export function tokensToFields(hasHead: boolean, storages: Pick<StorageSpec, "id
   for (const s of storages) {
     if (s.type === "tape") {
       const [r, w] = splitSlash(tokens[i++] ?? "");
-      out.push(r, w, tokens[i++] ?? ">");
+      out.push(r, w, tokens[i++] ?? "R");
     } else {
       const [a, b] = splitSlash(tokens[i++] ?? "");
       out.push(a, b);
@@ -37,7 +37,7 @@ export function fieldsToTokens(hasHead: boolean, storages: Pick<StorageSpec, "id
     if (s.type === "tape") {
       const r = fields[i++] ?? "";
       const w = fields[i++] ?? "";
-      out.push(`${r}/${w}`, fields[i++] ?? ">");
+      out.push(`${r}/${w}`, fields[i++] ?? "R");
     } else {
       const a = fields[i++] ?? "";
       const b = fields[i++] ?? "";

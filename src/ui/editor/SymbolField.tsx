@@ -53,7 +53,10 @@ export const SymbolField: React.FC<{
   /** Enter in the field (e.g. to save a dialog) */
   onEnter?: () => void;
   autoFocus?: boolean;
-}> = ({ value, onChange, digits, epsilon = false, placeholder, className, onEnter, autoFocus }) => {
+  /** shown, not edited: a value the context fixes, set like the fields around it */
+  readOnly?: boolean;
+  title?: string;
+}> = ({ value, onChange, digits, epsilon = false, placeholder, className, onEnter, autoFocus, readOnly = false, title }) => {
   const theme = useAppStore((s) => s.theme);
   // the latest rule, without rebuilding the editor's extensions on every render
   const digitsRef = useRef(digits);
@@ -78,8 +81,11 @@ export const SymbolField: React.FC<{
   );
   return (
     <CodeMirror
-      className={`sym-field ${className ?? ""}`}
+      className={`sym-field ${readOnly ? "fixed" : ""} ${className ?? ""}`}
+      title={title}
       value={value}
+      editable={!readOnly}
+      readOnly={readOnly}
       onChange={change}
       theme={theme}
       extensions={extensions}

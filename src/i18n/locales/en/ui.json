@@ -177,9 +177,10 @@
     },
     "storages": {
       "heading": "Storages: stack, queue, tape",
-      "example": "Machine:               # pushdown automaton: one stack\n  name: P\n  charset: a, b\n  states: q0, q1, q2\n  init: q0\n  accept: q2           # or acceptMode: emptyStorages\n  storages:\n    stack: stack       # the stack starts with Z by default; otherwise:\n  transitions:         #   stack: { type: stack, init: X }\n    - q0 a Z/AZ q0     # reading a: push AZ instead of Z\n    - q0 b A/ε q1      # ε = push nothing\n    - q1 ε Z/Z q2      # ε-step (type eps)\n\nMachine:               # Turing machine: one tape, holding the input\n  name: T\n  charset: a, b\n  states: s, ok\n  init: s\n  accept: ok\n  input: tape          # the input is placed on this storage\n  storages:\n    tape: tape\n  transitions:\n    - s a/b > s        # read a, write b, move right\n    - s _/& = ok       # _ = blank symbol, & = write the same symbol back",
+      "example": "Machine:               # pushdown automaton: one stack\n  name: P\n  charset: a, b\n  states: q0, q1, q2\n  init: q0\n  accept: q2           # or acceptMode: emptyStorages\n  storages:\n    stack: stack       # starts with Z; its alphabet is the symbols it uses\n  transitions:         #   or: stack: { type: stack, charset: [Z, A], init: Z }\n    - q0 a Z/AZ q0     # reading a: push AZ instead of Z\n    - q0 b A/ε q1      # ε = push nothing\n    - q1 ε Z/Z q2      # ε-step (type eps)\n\nMachine:               # Turing machine: one tape, holding the input\n  name: T\n  charset: a, b\n  states: s, ok\n  init: s\n  accept: ok\n  input: tape          # the input is placed on this storage\n  storages:\n    tape:\n      type: tape\n      charset: a, b, x, _   # Γ: Σ, the blank _ and more (by default Σ and _)\n  transitions:\n    - s a/x R s        # read a, write x, move right (R, L, S: right, left, stay)\n    - s _/& S ok       # _ = blank symbol, & = write the same symbol back",
+      "body1": "A transition line:",
       "transitionSyntax": "FROM [INPUT] per-storage-operation… TO",
-      "body2": "— a stack/queue takes one element (POP/PUSH), a tape takes two (read/write move). Any number of storages can be combined: two stacks already build a Turing-power machine (e.g. aⁿbⁿcⁿ, which is impossible with a pushdown automaton), a queue gives a queue automaton. The automaton operations (det, min…) only apply to storage-free machines — the app explains why."
+      "body2": "— a stack/queue takes one element (POP/PUSH), a tape takes two (READ/WRITE MOVE). Any number of storages can be combined: two stacks already build a Turing-power machine (e.g. aⁿbⁿcⁿ, which is impossible with a pushdown automaton), a queue gives a queue automaton. The automaton operations (det, min…) only apply to storage-free machines — the app explains why."
     },
     "grammar": {
       "heading": "Grammar",
@@ -361,6 +362,11 @@
         "queue": "queue",
         "tape": "tape"
       },
+      "move": {
+        "R": "R",
+        "L": "L",
+        "S": "S"
+      },
       "tapeStartPlaceholder": "start of the tape — click and type",
       "oneStepAllBranches": "One step (all branches)",
       "hitLimit": "hit the step limit",
@@ -451,13 +457,16 @@
         "rightSide": "right-hand side (| separates)",
         "from": "from",
         "symbol": "symbol",
-        "readWrite": "{{id}} read/write",
-        "move": "move",
-        "pushPop": "{{id}} pop/push",
-        "enqueueDequeue": "{{id}} out/in",
+        "pop": "{{id}} pop",
+        "push": "{{id}} push",
+        "dequeue": "{{id}} out",
+        "enqueue": "{{id}} in",
+        "read": "{{id}} read",
+        "write": "{{id}} write",
+        "move": "{{id}} move",
         "to": "to"
       },
-      "moveHint": "move: → right · ← left · • stay",
+      "moveHint": "move: R right · L left · S stay",
       "kindChangeTitle": "The machine's kind will change",
       "kindChangeBody1": "This change turns the machine from a",
       "kindChangeBody2": "into a",
@@ -472,6 +481,12 @@
       },
       "name": "Name",
       "alphabet": "Alphabet",
+      "storageAlphabet": {
+        "stack": "Stack alphabet",
+        "queue": "Queue alphabet",
+        "tape": "Tape alphabet"
+      },
+      "storageAlphabetColumn": "alphabet",
       "variables": "Variables",
       "states": "States",
       "startVariable": "Start variable",
@@ -516,16 +531,6 @@
     }
   },
   "graph": {
-    "edgeFields": {
-      "symbol": "symbol read (ε: type eps)",
-      "stackPop": "{{id}}: pop from top",
-      "stackPush": "{{id}}: push onto top",
-      "queuePop": "{{id}}: dequeue from front",
-      "queuePush": "{{id}}: enqueue at back",
-      "tapeRead": "{{id}}: read",
-      "tapeWrite": "{{id}}: write",
-      "move": "move"
-    },
     "validation": {
       "emptyName": "The state name can't be empty.",
       "noSpaceComma": "The name must not contain spaces or commas.",
@@ -543,7 +548,7 @@
     "cancel": "Cancel",
     "save": "Save",
     "edgeDialog": {
-      "title": "Transition — {{from}} → {{to}}",
+      "title": "Transition",
       "addRow": "new transition on this edge",
       "emptyNote": "No rows — saving will delete all transitions on this edge."
     },

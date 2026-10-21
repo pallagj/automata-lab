@@ -1046,6 +1046,16 @@ details.card[open] > summary .chev {
   border-color: var(--border);
 }
 
+/* a value the context fixes (the edge dialog's states): set like a field, never boxed */
+.sym-field.fixed .cm-editor,
+.sym-field.fixed .cm-editor:hover {
+  border-color: transparent;
+}
+
+.sym-field.fixed .cm-content {
+  cursor: default;
+}
+
 .ef-grid input:focus,
 .ef-grid select:focus,
 .ef-row input:focus,
@@ -1819,6 +1829,11 @@ details.card[open] > summary .chev {
   align-items: center;
 }
 
+/* several storages: each has its alphabet in a column of its own */
+.ef-storage-row.ef-with-alphabet {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr) minmax(0, 1fr) minmax(0, 1fr) 22px;
+}
+
 .ef-storage-row:not(.ef-storage-head) {
   border-bottom: 1px solid var(--border-soft);
 }
@@ -1831,8 +1846,10 @@ details.card[open] > summary .chev {
   color: var(--muted);
 }
 
+/* the move's letter (J, B, H) is a symbol of the notation: italic like the fields' letters */
 .move-select {
   text-align: center;
+  font-style: italic;
 }
 
 /* ====== Tables ====== */
@@ -2059,6 +2076,11 @@ table.t.cyk tr.cyk-word th {
   padding: 16px 18px;
 }
 
+/* the edge dialog's table: a column per field, as in the form */
+.modal.gdialog.wide {
+  width: min(640px, 94vw);
+}
+
 .gd-head {
   display: flex;
   align-items: center;
@@ -2087,9 +2109,7 @@ table.t.cyk tr.cyk-word th {
   color: var(--muted);
 }
 
-.gd-field input,
-.gd-edge-grid input,
-.gd-edge-grid select {
+.gd-field input {
   background: var(--bg-soft);
   border: 1px solid var(--border);
   border-radius: 8px;
@@ -2101,9 +2121,7 @@ table.t.cyk tr.cyk-word th {
   width: 100%;
 }
 
-.gd-field input:focus,
-.gd-edge-grid input:focus,
-.gd-edge-grid select:focus {
+.gd-field input:focus {
   outline: none;
   border-color: var(--accent);
 }
@@ -2140,20 +2158,6 @@ table.t.cyk tr.cyk-word th {
   border-radius: 8px;
   padding: 8px 11px;
   font-size: 13px;
-}
-
-.gd-edge-grid {
-  display: grid;
-  gap: 6px;
-  align-items: center;
-}
-
-.gd-col-label {
-  font-size: 10.5px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  color: var(--muted);
 }
 
 .gd-actions {

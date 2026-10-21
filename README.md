@@ -31,11 +31,15 @@ an app; everything runs locally, no account needed.
 - **Pushdown automata:** true nondeterministic simulation over configuration sets, stack display,
   acceptance by empty stack or by final state.
 - **Turing machines:** tape visualisation, step-by-step execution, nondeterminism detection and
-  branch selection.
+  branch selection. Transitions read as in the lecture notes, `a → b, D` (and `a; Z → AZ` for a
+  pushdown automaton); the head moves are `R`, `L`, `S` in the YAML and shown in the interface's
+  language (J, B, H in Hungarian).
 - **General machine model:** every machine is a restriction of one model — a finite control plus any
-  number of configurable storages (`stack` / `queue` / `tape`). Custom machines can be built with
-  the `Machine:` key (e.g. a two-stack machine for `aⁿbⁿcⁿ`, a queue automaton), with unified
-  simulation and determinism analysis; automaton operations are gated by capability.
+  number of configurable storages (`stack` / `queue` / `tape`), each with its own alphabet Γ
+  (`charset`; left out, it is the symbols the storage holds — for a tape Σ and the blank).
+  Custom machines can be built with the `Machine:` key (e.g. a two-stack machine for `aⁿbⁿcⁿ`, a
+  queue automaton), with unified simulation and determinism analysis; automaton operations are
+  gated by capability.
 - **Grammars:** exact Chomsky classification — for every level it shows *which rule violates the
   condition and why*; word generation with derivations, RG ↔ NFA and CFG → PDA conversions.
   Context-free grammars follow the lecture notes step by step: ε-rule elimination (`epsfree(G)`),

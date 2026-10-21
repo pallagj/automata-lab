@@ -88,7 +88,7 @@
       "acceptNotInStates": "Az elfogadó állapot ({{state}}) nincs az állapotok között",
       "badStoragesField": {
         "title": "A storages mező kulcs-érték párokat vár",
-        "detail": "Például:\n  storages:\n    v1: stack\n    v2:\n      type: queue\n      init: A"
+        "detail": "Például:\n  storages:\n    v1: stack\n    v2:\n      type: queue\n      charset: A, B\n      init: A"
       },
       "duplicateStorageId": "Kétszer szereplő tároló-azonosító: „{{id}}”",
       "badInputField": {
@@ -107,8 +107,6 @@
       "unknownToState": "Ismeretlen célállapot az átmenetben: „{{state}}”",
       "unknownInputSymbol": "Ismeretlen bemeneti szimbólum: „{{symbol}}”",
       "alphabetHint": "Sor: „{{line}}”. Ábécé: {{alphabet}} (ε-hoz írd: eps).",
-      "unknownWrittenTapeSymbol": "Ismeretlen szalagjel az írásban: „{{symbol}}” ({{storageId}})",
-      "tapeAlphabetHint": "Szalagábécé: {{alphabet}}",
       "noAcceptState": {
         "title": "Nincs elfogadó állapot",
         "detail": "A gép így az üres nyelvet ismeri fel."
@@ -116,6 +114,30 @@
       "nondeterministicMachine": {
         "title": "Nemdeterminisztikus gép: a(z) {{state}} állapotban több átmenet is illeszkedhet",
         "detail": "A szimuláció minden ágat követ; a gráfon kattintással konkrét ág is választható."
+      },
+      "storageCharsetNotOneSymbol": {
+        "title": "„{{symbol}}” nem egyetlen szimbólum a(z) {{storageId}} ábécéjében",
+        "detail": "Az ábécé szimbólumait egyenként, vesszővel elválasztva sorold fel. Az alsó indexes szimbólumot _-sal írd, pl. {{example}}."
+      },
+      "blankNotInTapeCharset": {
+        "title": "Az üres jel (_) hiányzik a(z) {{storageId}} ábécéjéből",
+        "detail": "A szalagon mindenütt üres jel áll, ahová nem írtunk, így az a szalag egyik jele: _ ∈ Γ."
+      },
+      "blankInInput": {
+        "title": "Az üres jel (_) nem lehet bemeneti jel",
+        "detail": "A bemenet a(z) {{storageId}} szalagra kerül, ahol _ jelöli az üres cellákat: _ ∈ Γ \\ Σ."
+      },
+      "inputNotInStorageCharset": {
+        "title": "A(z) {{storageId}} ábécéjéből hiányoznak a bemeneti jelek: {{symbols}}",
+        "detail": "A bemenet erre a tárolóra kerül, így minden bemeneti jel az ő jele is: Σ ⊆ Γ."
+      },
+      "initNotInStorageCharset": {
+        "title": "A(z) {{storageId}} kezdőtartalmában szereplő „{{symbol}}” nincs az ábécéjében",
+        "detail": "A(z) {{storageId}} ábécéje: Γ = {{gamma}}."
+      },
+      "unknownStorageSymbol": {
+        "title": "Ismeretlen szimbólum a(z) {{storageId}} tárolón: „{{symbol}}”",
+        "detail": "Sor: „{{line}}”. A(z) {{storageId}} ábécéje Γ = {{gamma}} — a további jeleit a charset-jébe írd."
       }
     },
     "grammar": {
@@ -173,20 +195,16 @@
     },
     "unknownStorageType": {
       "title": "Ismeretlen tárolótípus a(z) „{{id}}” tárolónál",
-      "detail": "Használható: stack, queue, tape — kezdőtartalommal:\n  v1:\n    type: stack\n    init: Z"
+      "detail": "Használható: stack, queue, tape — ábécével és kezdőtartalommal:\n  v1:\n    type: stack\n    charset: Z, A\n    init: Z"
     },
     "storageOp": {
       "badTapeOp": {
         "title": "Hibás szalagművelet: „{{tokens}}” ({{storageId}})",
-        "detail": "Sor: „{{line}}”. Alak: OLVAS/ÍR MOZGÁS — pl. „a/b >”. Üres jel: _ , „ugyanazt írja”: &."
+        "detail": "Sor: „{{line}}”. Alak: OLVAS/ÍR MOZGÁS — pl. „a/b R”. Üres jel: _ , „ugyanazt írja”: &."
       },
       "unknownMove": {
         "title": "Ismeretlen mozgás: „{{tokens}}” ({{storageId}})",
-        "detail": "Sor: „{{line}}”. Használható: > < = (vagy R L S)."
-      },
-      "unknownTapeSymbol": {
-        "title": "Ismeretlen szalagjel: „{{tokens}}” ({{storageId}})",
-        "detail": "Sor: „{{line}}”. Szalagábécé: {{alphabet}}"
+        "detail": "Sor: „{{line}}”. Használható: R (jobbra), L (balra), S (helyben) — a YAML mindig ezeket az angol betűket használja, a felület J, B, H-ként mutatja őket."
       },
       "badStackOp": {
         "title": "Hibás tárolóművelet: „{{tokens}}” ({{storageId}})",

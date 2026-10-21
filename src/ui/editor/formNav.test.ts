@@ -6,7 +6,7 @@ const row = (y: number, row: number | null, rowKind: string | null, spans: [numb
   spans.map(([left, right], col) => ({ top: y, bottom: y + 26, left, right, row, rowKind, col }));
 
 describe("↑ and ↓ between the form's fields", () => {
-  // δ(start, a) = (sawA, _, →) over δ(matchA, _) = (ok, &, •): the fields' widths differ
+  // δ(start, a) = (sawA, _, J) over δ(matchA, _) = (ok, &, H): the fields' widths differ
   const delta = [
     ...row(100, 0, "row", [[20, 52], [60, 68], [92, 128], [134, 142], [148, 166]]),
     ...row(130, 1, "row", [[20, 66], [74, 82], [106, 120], [126, 134], [140, 158]])

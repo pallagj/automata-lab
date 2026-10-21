@@ -2,6 +2,7 @@ import yaml from "js-yaml";
 import { Diagnostic, EPS, err, failResult, info, okResult, OpResult, tx, warn } from "../types";
 import {
   analyzeMachine,
+  defaultStorageAlphabet,
   Machine,
   MachineTransition,
   StorageOp,
@@ -181,21 +182,30 @@ const STORAGE_TYPES: Record<string, StorageType> = {
 /** Default initial content of a stack when none is given. */
 const STACK_DEFAULT_INIT = "Z";
 
+/** A storage as its entry gives it: its alphabet is null when the entry leaves it out. */
+export interface StorageEntry extends Omit<StorageSpec, "alphabet"> {
+  alphabet: string[] | null;
+}
+
 /**
  * A storage entry in the storages mapping:
- *   v1: stack                      — short form, with the default initial content
- *   v2: { type: stack, init: Z }   — long form (default works instead of init too)
+ *   v1: stack                                  — short form, with the defaults
+ *   v2: { type: stack, charset: [Z, A], init: Z }  — long form (default works instead of init too)
+ * The alphabet Γ (charset) and the initial content may be left out: see
+ * defaultStorageAlphabet and STACK_DEFAULT_INIT.
  */
-export function parseStorageEntry(id: string, raw: unknown): OpResult<StorageSpec> {
+export function parseStorageEntry(id: string, raw: unknown): OpResult<StorageEntry> {
   const bad = () =>
-    failResult<StorageSpec>([
+    failResult<StorageEntry>([
       err(
         tx("definitionParser.unknownStorageType.title", { id }),
         tx("definitionParser.unknownStorageType.detail")
       )
     ]);
+  const diags: Diagnostic[] = [];
   let typeRaw = "";
   let init: string | undefined;
+  let alphabet: string[] | null = null;
   if (raw === null || typeof raw === "string") {
     typeRaw = String(raw ?? "").trim();
   } else if (typeof raw === "object" && !Array.isArray(raw)) {
@@ -203,30 +213,45 @@ export function parseStorageEntry(id: string, raw: unknown): OpResult<StorageSpe
     typeRaw = String(o["type"] ?? "").trim();
     const i = o["init"] ?? o["default"];
     if (i !== undefined && i !== null) init = String(i);
+    const items = parseList(o["charset"], `${id}.charset`, diags);
+    if (items.length > 0) {
+      alphabet = [];
+      for (const item of items) {
+        // one symbol each: Z, Z_0, X_a, Z′, 0, _ — the same reading as the operations'
+        const sym = symbolTokens(item);
+        if (sym.length !== 1)
+          return failResult([
+            err(
+              tx("definitionParser.machine.storageCharsetNotOneSymbol.title", { symbol: item, storageId: id }),
+              tx("definitionParser.machine.storageCharsetNotOneSymbol.detail", {
+                example: formatIdent({ base: "Z", primes: 0, sub: "0" })
+              })
+            )
+          ]);
+        if (!alphabet.includes(sym[0])) alphabet.push(sym[0]);
+      }
+    }
   } else {
     return bad();
   }
   const type = STORAGE_TYPES[typeRaw];
   if (!type) return bad();
   if (init === undefined) init = type === "stack" ? STACK_DEFAULT_INIT : "";
-  return okResult({ id, type, init: symbolTokens(init) });
+  return okResult({ id, type, alphabet, init: symbolTokens(init) }, diags);
 }
 
 /** how many tokens a storage occupies in a transition line */
 const STORAGE_TOKENS: Record<StorageType, number> = { stack: 1, queue: 1, tape: 2 };
 
-const MOVE_MAP: Record<string, "L" | "R" | "S"> = { ">": "R", "<": "L", "=": "S", R: "R", L: "L", S: "S" };
+/** Head moves in the YAML: always the English letters (the UI shows its language's, J B H). */
+const MOVES = ["L", "R", "S"] as const;
 
 /**
  * Parses a storage's operation from the tokens of a transition line.
- * stack: "Z/AZ" · queue: "A/BA" · tape: "a/b >" (two tokens).
+ * stack: "Z/AZ" · queue: "A/BA" · tape: "a/b R" (two tokens). Whether the symbols are in
+ * the storage's alphabet is checked once every alphabet is known.
  */
-function parseStorageOp(
-  spec: StorageSpec,
-  tokens: string[],
-  line: string,
-  alphabet: string[]
-): OpResult<StorageOp> {
+function parseStorageOp(spec: StorageEntry, tokens: string[], line: string): OpResult<StorageOp> {
   const tokStr = tokens.join(" ");
 
   if (spec.type === "tape") {
@@ -239,22 +264,12 @@ function parseStorageOp(
         )
       ]);
     const [read, writeRaw] = rw.split("/");
-    const move = MOVE_MAP[moveRaw];
+    const move = MOVES.find((m) => m === moveRaw);
     if (!move)
       return failResult([
         err(
           tx("definitionParser.storageOp.unknownMove.title", { tokens: tokStr, storageId: spec.id }),
           tx("definitionParser.storageOp.unknownMove.detail", { line })
-        )
-      ]);
-    if (read !== "." && read !== TAPE_BLANK && !alphabet.includes(read))
-      return failResult([
-        err(
-          tx("definitionParser.storageOp.unknownTapeSymbol.title", { tokens: tokStr, storageId: spec.id }),
-          tx("definitionParser.storageOp.unknownTapeSymbol.detail", {
-            line,
-            alphabet: [...alphabet, TAPE_BLANK].join(", ")
-          })
         )
       ]);
     return okResult({ type: "tape", read, write: writeRaw, move });
@@ -298,9 +313,10 @@ function parseStorageOp(
  *       v1: stack            # short form (a stack starts with Z by default)
  *       v2:
  *         type: stack
- *         init: Z
+ *         charset: $, B      # its alphabet Γ (by default the symbols it uses)
+ *         init: $
  *     transitions:
- *       - q0 a Z/AZ $/B q0   # FROM INPUT per-storage-op… TO
+ *       - q0 a Z/AZ $/B$ q0  # FROM INPUT per-storage-op… TO
  *
  * The kind of machine (automaton / pushdown automaton / Turing machine / general
  * machine) is decided by its configuration — there is no separate type key.
@@ -329,8 +345,8 @@ export function parseMachine(source: string): OpResult<Machine> {
     if (!stateSet.has(a))
       return failResult([err(tx("definitionParser.machine.acceptNotInStates", { state: a }))]);
 
-  // storages: a mapping (id → type or {type, init}) or missing (= storage-free machine)
-  const storages: StorageSpec[] = [];
+  // storages: a mapping (id → type or {type, charset, init}) or missing (= storage-free machine)
+  const storages: StorageEntry[] = [];
   const storagesRaw = body["storages"];
   if (storagesRaw !== undefined && storagesRaw !== null) {
     if (typeof storagesRaw !== "object" || Array.isArray(storagesRaw)) {
@@ -341,6 +357,7 @@ export function parseMachine(source: string): OpResult<Machine> {
     for (const [id, raw] of Object.entries(storagesRaw as Record<string, unknown>)) {
       const r = parseStorageEntry(id.trim(), raw);
       if (!r.ok) return failResult(r.diagnostics);
+      diags.push(...r.diagnostics);
       if (storages.some((s) => s.id === r.value!.id))
         return failResult([err(tx("definitionParser.machine.duplicateStorageId", { id }))]);
       storages.push(r.value!);
@@ -375,6 +392,8 @@ export function parseMachine(source: string): OpResult<Machine> {
 
   const tokensPerLine = 2 + (input === "head" ? 1 : 0) + storages.reduce((n, s) => n + STORAGE_TOKENS[s.type], 0);
   const transitions: MachineTransition[] = [];
+  /** the line each transition comes from (a wildcard line gives several) */
+  const lineOf: string[] = [];
   const lines = parseList(body["transitions"], "transitions", diags, false);
   for (const line of lines) {
     const parts = line.split(/\s+/).filter((p) => p !== "");
@@ -420,7 +439,7 @@ export function parseMachine(source: string): OpResult<Machine> {
     for (const s of storages) {
       const toks = parts.slice(idx, idx + STORAGE_TOKENS[s.type]);
       idx += STORAGE_TOKENS[s.type];
-      const r = parseStorageOp(s, toks, line, alphabet);
+      const r = parseStorageOp(s, toks, line);
       if (!r.ok) return failResult(r.diagnostics);
       ops.push(r.value!);
     }
@@ -436,10 +455,11 @@ export function parseMachine(source: string): OpResult<Machine> {
         const inp = input === "head" ? resolved[1] : EPS;
         const t = resolved[resolved.length - 1];
         const target = t === "&" ? f : t;
-        // expand a "." tape read to every alphabet symbol + resolve "&" in the write
+        // expand a "." tape read to every input symbol the tape can hold + resolve "&" in the write
         const expandTapeOps = (i: number, acc: StorageOp[]) => {
           if (i === ops.length) {
             transitions.push({ from: f, to: target, input: inp, ops: acc });
+            lineOf.push(line);
             return;
           }
           const op = ops[i];
@@ -447,7 +467,8 @@ export function parseMachine(source: string): OpResult<Machine> {
             expandTapeOps(i + 1, [...acc, op]);
             return;
           }
-          const reads = op.read === "." ? alphabet : [op.read];
+          const gamma = storages[i].alphabet;
+          const reads = op.read === "." ? alphabet.filter((a) => gamma === null || gamma.includes(a)) : [op.read];
           for (const sym of reads) {
             expandTapeOps(i + 1, [...acc, { ...op, read: sym, write: op.write === "&" ? sym : op.write }]);
           }
@@ -457,15 +478,57 @@ export function parseMachine(source: string): OpResult<Machine> {
     );
   }
 
-  // validate tape writes afterwards (once & and . are resolved)
-  for (const t of transitions) {
-    for (let i = 0; i < t.ops.length; i++) {
-      const op = t.ops[i];
-      if (op.type === "tape" && op.write !== TAPE_BLANK && !alphabet.includes(op.write))
+  // every storage's alphabet Γ: as given, or what it holds by default
+  const specs: StorageSpec[] = storages.map((s, i) => ({
+    ...s,
+    alphabet: s.alphabet ?? defaultStorageAlphabet(alphabet, s, transitions.map((t) => t.ops[i]))
+  }));
+  for (const s of specs) {
+    const gamma = `{${s.alphabet.join(", ")}}`;
+    if (s.type === "tape" && !s.alphabet.includes(TAPE_BLANK))
+      return failResult([
+        err(tx("definitionParser.machine.blankNotInTapeCharset.title", { storageId: s.id }), tx("definitionParser.machine.blankNotInTapeCharset.detail"))
+      ]);
+    if (s.id === input) {
+      if (s.type === "tape" && alphabet.includes(TAPE_BLANK))
+        return failResult([
+          err(tx("definitionParser.machine.blankInInput.title"), tx("definitionParser.machine.blankInInput.detail", { storageId: s.id }))
+        ]);
+      const missing = alphabet.filter((a) => !s.alphabet.includes(a));
+      if (missing.length > 0)
         return failResult([
           err(
-            tx("definitionParser.machine.unknownWrittenTapeSymbol", { symbol: op.write, storageId: storages[i].id }),
-            tx("definitionParser.machine.tapeAlphabetHint", { alphabet: [...alphabet, TAPE_BLANK].join(", ") })
+            tx("definitionParser.machine.inputNotInStorageCharset.title", { storageId: s.id, symbols: missing.join(", ") }),
+            tx("definitionParser.machine.inputNotInStorageCharset.detail")
+          )
+        ]);
+    }
+    const strange = s.init.find((x) => !s.alphabet.includes(x));
+    if (strange !== undefined)
+      return failResult([
+        err(
+          tx("definitionParser.machine.initNotInStorageCharset.title", { storageId: s.id, symbol: strange }),
+          tx("definitionParser.machine.initNotInStorageCharset.detail", { storageId: s.id, gamma })
+        )
+      ]);
+  }
+
+  // the symbols of every operation, once & and . are resolved
+  for (let k = 0; k < transitions.length; k++) {
+    for (let i = 0; i < specs.length; i++) {
+      const op = transitions[k].ops[i];
+      const used =
+        op.type === "stack" ? [op.pop, ...op.push] : op.type === "queue" ? [op.take, ...op.put] : [op.read, op.write];
+      const unknown = used.find((x) => x !== EPS && !specs[i].alphabet.includes(x));
+      if (unknown !== undefined)
+        return failResult([
+          err(
+            tx("definitionParser.machine.unknownStorageSymbol.title", { symbol: unknown, storageId: specs[i].id }),
+            tx("definitionParser.machine.unknownStorageSymbol.detail", {
+              line: lineOf[k],
+              storageId: specs[i].id,
+              gamma: `{${specs[i].alphabet.join(", ")}}`
+            })
           )
         ]);
     }
@@ -480,7 +543,7 @@ export function parseMachine(source: string): OpResult<Machine> {
     accept,
     acceptMode,
     input,
-    storages,
+    storages: specs,
     transitions
   };
 

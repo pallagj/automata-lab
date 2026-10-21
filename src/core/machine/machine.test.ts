@@ -5,6 +5,7 @@ import {
   machineCaps,
   machineToFSM,
   machineTransitionLabel,
+  MoveLetters,
   runMachine,
   stepMachineConfigs,
   tapeWindow,
@@ -110,8 +111,8 @@ Machine:
   storages:
     tape: tape
   transitions:
-    - run ./b > run
-    - run _/_ = done
+    - run ./b R run
+    - run _/_ S done
 `).value!;
 
   it("accepts on halting and rewrites the tape", () => {
@@ -135,7 +136,7 @@ Machine:
   storages:
     t: tape
   transitions:
-    - s a/a > s
+    - s a/a R s
 `).value!;
     // runs over the a's, halts on _, s is accepting → accepts
     expect(runMachine(loop, "aaa").verdict).toBe("accepted");
@@ -290,21 +291,35 @@ Machine:
 });
 
 describe("edge labels", () => {
-  const labels = (src: string) => {
+  const labels = (src: string, moves?: MoveLetters) => {
     const m = parseMachine(src).value!;
-    return m.transitions.map((t) => machineTransitionLabel(m, t));
+    return m.transitions.map((t) => machineTransitionLabel(m, t, moves));
   };
+  const TM = `
+Machine:
+  charset: 0, 1
+  states: r, c, d
+  init: r
+  accept: d
+  input: tape
+  storages:
+    tape: tape
+  transitions:
+    - r 1/0 L c
+    - c 0/& R c
+    - c _/1 S d
+`;
 
   it("custom machines name each storage and leave out untouched ones", () => {
     const m = parseMachine(TWO_STACKS).value!;
     const label = (from: string, input: string) =>
       machineTransitionLabel(m, m.transitions.find((x) => x.from === from && x.input === input)!);
-    expect(label("qb", "b")).toBe("b; v1: A/ε; v2: ε/B");
-    expect(label("qa", "a")).toBe("a; v1: ε/A");
+    expect(label("qb", "b")).toBe("b; v1: A → ε; v2: ε → B");
+    expect(label("qa", "a")).toBe("a; v1: ε → A");
     expect(label("qa", "ε")).toBe("ε");
   });
 
-  it("pushdown automata use the definition's pop/push notation", () => {
+  it("pushdown automata read as in the lecture notes: a; Z → AZ", () => {
     expect(
       labels(`
 Machine:
@@ -317,27 +332,68 @@ Machine:
   transitions:
     - q0 a Z/AZ q0
     - q0 b A/ε q1
+    - q1 ε ε/ε q1
 `)
-    ).toEqual(["a, Z/AZ", "b, A/ε"]);
+    ).toEqual(["a; Z → AZ", "b; A → ε", "ε; ε → ε"]);
   });
 
-  it("Turing machines show read/write and the move arrow of the form, never a second arrow", () => {
-    expect(
-      labels(`
+  it("Turing machines read as in the lecture notes: a → b, D with the move's letter", () => {
+    expect(labels(TM)).toEqual(["1 → 0, L", "0 → 0, R", "_ → 1, S"]);
+  });
+
+  it("the move letters are the UI language's: J, B, H in Hungarian", () => {
+    expect(labels(TM, { R: "J", L: "B", S: "H" })).toEqual(["1 → 0, B", "0 → 0, J", "_ → 1, H"]);
+  });
+
+  it("a tape of a custom machine is named too, with the same notation", () => {
+    const m = parseMachine(`
 Machine:
-  charset: 0, 1
-  states: r, c, d
-  init: r
-  accept: d
+  charset: a
+  states: q
+  init: q
+  accept: q
+  storages:
+    s: stack
+    t: tape
+  transitions:
+    - q a Z/Z a/& R q
+`).value!;
+    expect(machineTransitionLabel(m, m.transitions[0])).toBe("a; s: Z → Z; t: a → a, R");
+  });
+});
+
+describe("head moves in the YAML: R, L, S", () => {
+  const tm = (move: string) =>
+    parseMachine(`
+Machine:
+  charset: a
+  states: q
+  init: q
+  accept: q
   input: tape
   storages:
     tape: tape
   transitions:
-    - r 1/0 < c
-    - c 0/& > c
-    - c _/1 = d
-`)
-    ).toEqual(["1/0, ←", "0/0, →", "_/1, •"]);
+    - q a/a ${move} q
+`);
+
+  it("reads the three English letters", () => {
+    expect(tm("R").value!.transitions[0].ops[0]).toEqual({ type: "tape", read: "a", write: "a", move: "R" });
+    expect(tm("L").value!.transitions[0].ops[0]).toMatchObject({ move: "L" });
+    expect(tm("S").value!.transitions[0].ops[0]).toMatchObject({ move: "S" });
+  });
+
+  it("rejects the old arrows and the localized letters alike", () => {
+    for (const move of [">", "<", "=", "J", "B", "H", "N", "r"]) {
+      const r = tm(move);
+      expect(r.ok).toBe(false);
+      expect(r.diagnostics[0].title.key).toBe("definitionParser.storageOp.unknownMove.title");
+    }
+  });
+
+  it("writes them back as letters", () => {
+    const yaml = serializeMachine(tm("L").value!);
+    expect(yaml).toContain("- q a/a L q");
   });
 });
 

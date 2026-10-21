@@ -2,15 +2,19 @@ import React, { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
 import { Plus, Trash2, X } from "lucide-react";
-import { EdgeField, EdgeMiddle, StatePatch } from "./editing";
-import { MoveSelect } from "../editor/EntityForm";
+import { EdgeMiddle, StatePatch } from "./editing";
 import { SymbolField } from "../editor/SymbolField";
+import { emptyFields, TransitionField, TransitionHead, TransitionRow } from "../editor/TransitionRow";
+import { arrowKeysAcrossFields } from "../editor/formNav";
+import { useAppStore } from "../../state/store";
+import { rich } from "../Rich";
 
 /** Editor dialogs for the graph (state / transition). */
 
-const Modal: React.FC<{ title: string; onClose: () => void; children: React.ReactNode }> = ({
+const Modal: React.FC<{ title: React.ReactNode; onClose: () => void; wide?: boolean; children: React.ReactNode }> = ({
   title,
   onClose,
+  wide = false,
   children
 }) => {
   useEffect(() => {
@@ -20,7 +24,7 @@ const Modal: React.FC<{ title: string; onClose: () => void; children: React.Reac
   }, [onClose]);
   return createPortal(
     <div className="modal-back" onClick={onClose}>
-      <div className="modal gdialog" onClick={(e) => e.stopPropagation()}>
+      <div className={`modal gdialog ${wide ? "wide" : ""}`} onClick={(e) => e.stopPropagation()}>
         <div className="gd-head">
           <h2>{title}</h2>
           <button className="icon-btn" onClick={onClose}>
@@ -111,8 +115,8 @@ export const StateDialog: React.FC<StateDialogProps> = ({ mode, initial, onSave,
 /* --------------------------- transition ---------------------------- */
 
 interface EdgeDialogProps {
-  /** fields generated from the machine's storages (see editing.edgeFieldsFor) */
-  fields: EdgeField[];
+  /** fields generated from the machine's storages (see TransitionRow.transitionFields) */
+  fields: TransitionField[];
   from: string;
   to: string;
   initial: EdgeMiddle[];
@@ -120,13 +124,11 @@ interface EdgeDialogProps {
   onClose: () => void;
 }
 
+/** The transitions of one edge, set as the form sets them — its states fixed. */
 export const EdgeDialog: React.FC<EdgeDialogProps> = ({ fields, from, to, initial, onSave, onClose }) => {
   const { t } = useTranslation();
-  const empty = () => fields.map((f) => (f.widget === "move" ? ">" : ""));
-  const [rows, setRows] = useState<EdgeMiddle[]>(initial.length > 0 ? initial : [empty()]);
-
-  const setCell = (i: number, j: number, v: string) =>
-    setRows((rs) => rs.map((r, k) => (k === i ? r.map((c, l) => (l === j ? v : c)) : r)));
+  const notation = useAppStore((s) => s.formLabels) === "symbols";
+  const [rows, setRows] = useState<EdgeMiddle[]>(initial.length > 0 ? initial : [emptyFields(fields)]);
 
   const save = () => {
     onSave(rows);
@@ -134,43 +136,33 @@ export const EdgeDialog: React.FC<EdgeDialogProps> = ({ fields, from, to, initia
   };
 
   return (
-    <Modal title={t("graph.edgeDialog.title", { from, to })} onClose={onClose}>
+    <Modal
+      title={
+        <>
+          {t("graph.edgeDialog.title")} — {rich(from)} → {rich(to)}
+        </>
+      }
+      onClose={onClose}
+      wide={!notation}
+    >
       <div className="gd-body">
-        <div className="gd-edge-grid" style={{ gridTemplateColumns: `repeat(${fields.length}, 1fr) 28px` }}>
-          {fields.map((f) => (
-            <span key={f.label} className="gd-col-label">
-              {f.label}
-            </span>
-          ))}
-          <span />
+        <div className="ef-rows" onKeyDownCapture={arrowKeysAcrossFields}>
+          {!notation && <TransitionHead fields={fields} />}
           {rows.map((row, i) => (
-            <React.Fragment key={i}>
-              {row.map((val, j) =>
-                fields[j]?.widget === "move" ? (
-                  <MoveSelect key={j} value={val} onChange={(v) => setCell(i, j, v)} />
-                ) : (
-                  <SymbolField
-                    key={j}
-                    value={val}
-                    placeholder={fields[j].placeholder}
-                    onChange={(v) => setCell(i, j, v)}
-                    digits={false}
-                    epsilon
-                    onEnter={save}
-                  />
-                )
-              )}
-              <button
-                className="ef-remove"
-                title={t("graph.removeRow")}
-                onClick={() => setRows((rs) => rs.filter((_, k) => k !== i))}
-              >
-                <X size={13} />
-              </button>
-            </React.Fragment>
+            <TransitionRow
+              key={i}
+              fields={fields}
+              notation={notation}
+              from={from}
+              to={to}
+              values={row}
+              onChange={(values) => setRows((rs) => rs.map((r, k) => (k === i ? values : r)))}
+              onRemove={() => setRows((rs) => rs.filter((_, k) => k !== i))}
+              onEnter={save}
+            />
           ))}
         </div>
-        <button className="ef-add" onClick={() => setRows((rs) => [...rs, empty()])}>
+        <button className="ef-add" onClick={() => setRows((rs) => [...rs, emptyFields(fields)])}>
           <Plus size={13} /> {t("graph.edgeDialog.addRow")}
         </button>
         {rows.length === 0 && (

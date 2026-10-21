@@ -28,7 +28,7 @@ import { notesPanel } from "./DiagnosticsList";
 import { TapeInput } from "./TapeInput";
 import { StepGroup } from "../../core/expr/expression";
 import { Check, Layers, ListTree, Play, RotateCcw, StepForward, Table2, Undo2, X } from "lucide-react";
-import { machineKindLabel } from "../machineLabels";
+import { machineKindLabel, moveLetters } from "../machineLabels";
 import { rich } from "../Rich";
 import { showSymbols } from "../../core/symbols";
 
@@ -81,6 +81,7 @@ export const MachineView: React.FC<{ machine: Machine; stepGroups?: StepGroup[];
   const { t } = useTranslation();
   const { cellId, editing } = useGraphEditing();
   const caps = useMemo(() => machineCaps(m), [m]);
+  const moves = useMemo(() => moveLetters(t), [t]);
   const analysis = useMemo(() => analyzeMachine(m), [m]);
   const head = hasInputHead(m);
 
@@ -169,7 +170,7 @@ export const MachineView: React.FC<{ machine: Machine; stepGroups?: StepGroup[];
       const key = `${t.from}⇒${t.to}`;
       if (!groups.has(key)) groups.set(key, { from: t.from, to: t.to, labels: [], active: false });
       const g = groups.get(key)!;
-      g.labels.push(machineTransitionLabel(m, t));
+      g.labels.push(machineTransitionLabel(m, t, moves));
       if (status === "working" && activeKeys.has(key)) g.active = true;
     }
     const activeStates = new Set(configs.map((c) => c.state));
@@ -191,7 +192,7 @@ export const MachineView: React.FC<{ machine: Machine; stepGroups?: StepGroup[];
         clickable: g.active
       }))
     };
-  }, [m, configs, movesPerConfig, status]);
+  }, [m, configs, movesPerConfig, status, moves]);
 
   const chips = (
     <>
@@ -215,7 +216,7 @@ export const MachineView: React.FC<{ machine: Machine; stepGroups?: StepGroup[];
             : t("detail.machine.conflictingTransitions", {
                 spots: analysis.nondeterministicAt
                   .slice(0, 2)
-                  .map((n) => `${n.state}: ${n.detail}`)
+                  .map((n) => `${n.state}: ${n.pair.map((x) => machineTransitionLabel(m, x, moves)).join("  ‖  ")}`)
                   .join(" · ")
               })
         }
@@ -271,7 +272,7 @@ export const MachineView: React.FC<{ machine: Machine; stepGroups?: StepGroup[];
                   <td>{rich(t.from)}</td>
                   {head && <td>{t.input}</td>}
                   {t.ops.map((op, j) => (
-                    <td key={j}>{rich(storageOpLabel(op))}</td>
+                    <td key={j}>{rich(storageOpLabel(op, moves))}</td>
                   ))}
                   <td>{rich(t.to)}</td>
                 </tr>

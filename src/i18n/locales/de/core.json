@@ -88,7 +88,7 @@
       "acceptNotInStates": "Der akzeptierende Zustand ({{state}}) ist nicht unter den Zuständen",
       "badStoragesField": {
         "title": "Das Feld storages erwartet Schlüssel-Wert-Paare",
-        "detail": "Zum Beispiel:\n  storages:\n    v1: stack\n    v2:\n      type: queue\n      init: A"
+        "detail": "Zum Beispiel:\n  storages:\n    v1: stack\n    v2:\n      type: queue\n      charset: A, B\n      init: A"
       },
       "duplicateStorageId": "Doppelte Speicher-ID: „{{id}}“",
       "badInputField": {
@@ -107,8 +107,6 @@
       "unknownToState": "Unbekannter Zielzustand im Übergang: „{{state}}“",
       "unknownInputSymbol": "Unbekanntes Eingabesymbol: „{{symbol}}“",
       "alphabetHint": "Zeile: „{{line}}“. Alphabet: {{alphabet}} (ε als eps tippen).",
-      "unknownWrittenTapeSymbol": "Unbekanntes geschriebenes Bandsymbol: „{{symbol}}“ ({{storageId}})",
-      "tapeAlphabetHint": "Bandalphabet: {{alphabet}}",
       "noAcceptState": {
         "title": "Kein akzeptierender Zustand",
         "detail": "Die Maschine erkennt damit die leere Sprache."
@@ -116,6 +114,30 @@
       "nondeterministicMachine": {
         "title": "Nichtdeterministische Maschine: im Zustand {{state}} können mehrere Übergänge zutreffen",
         "detail": "Die Simulation verfolgt jeden Zweig; klicke im Graphen auf eine hervorgehobene Kante, um einen bestimmten Zweig zu wählen."
+      },
+      "storageCharsetNotOneSymbol": {
+        "title": "„{{symbol}}“ im Alphabet von {{storageId}} ist nicht ein Symbol",
+        "detail": "Zähle die Symbole des Alphabets einzeln auf, durch Kommas getrennt. Ein Symbol mit Index schreibt man mit _, etwa {{example}}."
+      },
+      "blankNotInTapeCharset": {
+        "title": "Das Leerzeichen _ fehlt im Alphabet von {{storageId}}",
+        "detail": "Auf einem Band steht überall, wo nichts geschrieben ist, das Leerzeichen — es ist also eines seiner Symbole: _ ∈ Γ."
+      },
+      "blankInInput": {
+        "title": "Das Leerzeichen _ kann kein Eingabesymbol sein",
+        "detail": "Die Eingabe kommt auf das Band {{storageId}}, wo _ die leeren Zellen markiert: _ ∈ Γ \\ Σ."
+      },
+      "inputNotInStorageCharset": {
+        "title": "Dem Alphabet von {{storageId}} fehlen die Eingabesymbole {{symbols}}",
+        "detail": "Die Eingabe kommt auf diesen Speicher, also ist jedes Eingabesymbol auch eines seiner Symbole: Σ ⊆ Γ."
+      },
+      "initNotInStorageCharset": {
+        "title": "Der Anfangsinhalt von {{storageId}} enthält „{{symbol}}“, das nicht in seinem Alphabet ist",
+        "detail": "Das Alphabet von {{storageId}}: Γ = {{gamma}}."
+      },
+      "unknownStorageSymbol": {
+        "title": "Unbekanntes Symbol „{{symbol}}“ für {{storageId}}",
+        "detail": "Zeile: „{{line}}“. Das Alphabet von {{storageId}} ist Γ = {{gamma}} — weitere Symbole, die er aufnehmen kann, gehören in sein charset."
       }
     },
     "grammar": {
@@ -173,20 +195,16 @@
     },
     "unknownStorageType": {
       "title": "Unbekannter Speichertyp beim Speicher „{{id}}“",
-      "detail": "Erlaubt: stack, queue, tape — mit Anfangsinhalt:\n  v1:\n    type: stack\n    init: Z"
+      "detail": "Erlaubt: stack, queue, tape — mit einem Alphabet und einem Anfangsinhalt:\n  v1:\n    type: stack\n    charset: Z, A\n    init: Z"
     },
     "storageOp": {
       "badTapeOp": {
         "title": "Ungültige Bandoperation: „{{tokens}}“ ({{storageId}})",
-        "detail": "Zeile: „{{line}}“. Form: LESEN/SCHREIBEN BEWEGUNG — z. B. „a/b >“. Leerzeichen: _, „dasselbe zurückschreiben“: &."
+        "detail": "Zeile: „{{line}}“. Form: LESEN/SCHREIBEN BEWEGUNG — z. B. „a/b R“. Leerzeichen: _, „dasselbe zurückschreiben“: &."
       },
       "unknownMove": {
         "title": "Unbekannte Bewegung: „{{tokens}}“ ({{storageId}})",
-        "detail": "Zeile: „{{line}}“. Erlaubt: > < = (oder R L S)."
-      },
-      "unknownTapeSymbol": {
-        "title": "Unbekanntes Bandsymbol: „{{tokens}}“ ({{storageId}})",
-        "detail": "Zeile: „{{line}}“. Bandalphabet: {{alphabet}}"
+        "detail": "Zeile: „{{line}}“. Erlaubt: R (rechts), L (links), S (bleiben) — im YAML immer diese englischen Buchstaben; die Oberfläche zeigt sie als R, L, N."
       },
       "badStackOp": {
         "title": "Ungültige Speicheroperation: „{{tokens}}“ ({{storageId}})",

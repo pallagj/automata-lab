@@ -137,9 +137,7 @@ function texEscape(s: string): string {
     .replaceAll("ε", "$\\varepsilon$")
     .replaceAll("␣", "\\textvisiblespace{}")
     .replaceAll("∅", "$\\emptyset$")
-    .replaceAll("→", "$\\rightarrow$")
-    .replaceAll("←", "$\\leftarrow$")
-    .replaceAll("•", "$\\bullet$");
+    .replaceAll("→", "$\\rightarrow$");
 }
 
 /** TikZ code in the textbook automaton style (tikz automata library). */

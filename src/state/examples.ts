@@ -162,19 +162,19 @@ export const EXAMPLE_WORKSHEETS: ExampleWorksheet[] = [
   storages:
     tape: tape
   transitions:
-    - start a/_ > sawA
-    - start b/_ > sawB
-    - start _/& = ok
-    - sawA ./& > sawA
-    - sawA _/& < matchA
-    - sawB ./& > sawB
-    - sawB _/& < matchB
-    - matchA a/_ < back
-    - matchA _/& = ok
-    - matchB b/_ < back
-    - matchB _/& = ok
-    - back ./& < back
-    - back _/& > start`,
+    - start a/_ R sawA
+    - start b/_ R sawB
+    - start _/& S ok
+    - sawA ./& R sawA
+    - sawA _/& L matchA
+    - sawB ./& R sawB
+    - sawB _/& L matchB
+    - matchA a/_ L back
+    - matchA _/& S ok
+    - matchB b/_ L back
+    - matchB _/& S ok
+    - back ./& L back
+    - back _/& R start`,
       `Machine:
   name: T_{inc}
   charset: 0, 1
@@ -185,11 +185,39 @@ export const EXAMPLE_WORKSHEETS: ExampleWorksheet[] = [
   storages:
     tape: tape
   transitions:
-    - right ./& > right
-    - right _/& < carry
-    - carry 1/0 < carry
-    - carry 0/1 = done
-    - carry _/1 = done`
+    - right ./& R right
+    - right _/& L carry
+    - carry 1/0 L carry
+    - carry 0/1 S done
+    - carry _/1 S done`,
+      "# The palindrome machine of the lecture notes (example 9.4): x and y are tape symbols beyond Σ, so the tape has its own alphabet Γ.",
+      `Machine:
+  name: T_{pal}
+  charset: a, b
+  states: q0, q1, q2, q3, q4, q5, q6, q7
+  init: q0
+  accept: q6, q7
+  input: tape
+  storages:
+    tape:
+      type: tape
+      charset: a, b, x, y, _
+  transitions:
+    - q0 a/x R q1
+    - q0 b/x R q2
+    - q0 y/y S q7
+    - q1 ./& R q1
+    - q1 _/_ L q3
+    - q1 y/y L q3
+    - q2 ./& R q2
+    - q2 _/_ L q4
+    - q2 y/y L q4
+    - q3 a/y L q5
+    - q3 x/x S q6
+    - q4 b/y L q5
+    - q4 x/x S q6
+    - q5 ./& L q5
+    - q5 x/x R q0`
     ]
   },
   {
@@ -328,8 +356,8 @@ export const CELL_TEMPLATES: Record<string, string> = {
   storages:
     tape: tape
   transitions:
-    - start a/a > start
-    - start _/_ = ok`,
+    - start a/a R start
+    - start _/_ S ok`,
   grammar: `Grammar:
   name: G
   charset: a, b

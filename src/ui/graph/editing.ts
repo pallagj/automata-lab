@@ -1,7 +1,6 @@
 import { useMemo } from "react";
 import { fieldsToTokens, tokensToFields } from "../editor/opFields";
 import { useTranslation } from "react-i18next";
-import type { TFunction } from "i18next";
 import { activeWorkspace, useAppStore } from "../../state/store";
 import {
   draftStorages,
@@ -9,7 +8,8 @@ import {
   parseEntityDraft,
   serializeEntityDraft
 } from "../editor/EntityForm";
-import { StorageSpec } from "../../core/machine/machine";
+import { TransitionField, transitionFields } from "../editor/TransitionRow";
+import { canonicalLabel } from "../../core/symbols";
 
 /**
  * Visual graph editing: modifies the active cell's YAML definition with
@@ -23,20 +23,13 @@ export interface StatePatch {
   isAccept: boolean;
 }
 
-/** One input field of the transition dialog. */
-export interface EdgeField {
-  label: string;
-  placeholder: string;
-  widget: "text" | "move";
-}
-
 /** The "middle part" of a transition split into dialog fields (see edgeFields). */
 export type EdgeMiddle = string[];
 
 export interface GraphEditing {
   states: string[];
   /** fields of the transition dialog — generated from the machine's storages */
-  edgeFields: EdgeField[];
+  edgeFields: TransitionField[];
   getState(name: string): StatePatch;
   /** returns an error message on failure */
   addState(p: StatePatch, x: number, y: number): string | null;
@@ -48,6 +41,9 @@ export interface GraphEditing {
 }
 
 const list = (s: string) => s.split(",").map((x) => x.trim()).filter(Boolean);
+
+/** the graph names a state canonically (q_0), the definition as typed (q0): the same state */
+const same = (typed: string, name: string) => canonicalLabel(typed) === canonicalLabel(name);
 
 function suggestStateName(used: Set<string>): string {
   if (used.size > 0 && [...used].every((s) => /^q\d+$/.test(s))) {
@@ -62,26 +58,6 @@ function suggestStateName(used: Set<string>): string {
 }
 
 export { suggestStateName };
-
-/** The dialog's fields: input symbol + the sub-fields of each storage's operation. */
-export function edgeFieldsFor(t: TFunction, hasHead: boolean, storages: Pick<StorageSpec, "id" | "type">[]): EdgeField[] {
-  const fields: EdgeField[] = [];
-  if (hasHead) fields.push({ label: t("graph.edgeFields.symbol"), placeholder: "a", widget: "text" });
-  for (const s of storages) {
-    if (s.type === "stack") {
-      fields.push({ label: t("graph.edgeFields.stackPop", { id: s.id }), placeholder: "Z", widget: "text" });
-      fields.push({ label: t("graph.edgeFields.stackPush", { id: s.id }), placeholder: "AZ", widget: "text" });
-    } else if (s.type === "queue") {
-      fields.push({ label: t("graph.edgeFields.queuePop", { id: s.id }), placeholder: "A", widget: "text" });
-      fields.push({ label: t("graph.edgeFields.queuePush", { id: s.id }), placeholder: "B", widget: "text" });
-    } else {
-      fields.push({ label: t("graph.edgeFields.tapeRead", { id: s.id }), placeholder: "a", widget: "text" });
-      fields.push({ label: t("graph.edgeFields.tapeWrite", { id: s.id }), placeholder: "b", widget: "text" });
-      fields.push({ label: t("graph.edgeFields.move"), placeholder: ">", widget: "move" });
-    }
-  }
-  return fields;
-}
 
 export function useGraphEditing(): {
   cellId: string | null;
@@ -109,10 +85,12 @@ export function useGraphEditing(): {
   const init = draft.init.trim();
 
   const middleOf = (r: string[]): EdgeMiddle => tokensToFields(hasHead, storages, r.slice(1, -1));
+  /** a state as the definition spells it (q0 rather than the graph's q_0) */
+  const typed = (name: string) => states.find((s) => same(s, name)) ?? name;
   const rowOf = (from: string, to: string, m: EdgeMiddle): string[] => [
-    from,
+    typed(from),
     ...fieldsToTokens(hasHead, storages, m),
-    to
+    typed(to)
   ];
 
   /** shared state-field update based on name/init/accept */
@@ -131,20 +109,22 @@ export function useGraphEditing(): {
   const validateName = (name: string, ignore?: string): string | null => {
     if (name === "") return t("graph.validation.emptyName");
     if (/[\s,]/.test(name)) return t("graph.validation.noSpaceComma");
-    if (states.includes(name) && name !== ignore) return t("graph.validation.duplicateName", { name });
+    if (states.some((s) => same(s, name)) && !(ignore !== undefined && same(name, ignore)))
+      return t("graph.validation.duplicateName", { name });
     return null;
   };
 
   const lastIdx = (r: string[]) => r.length - 1;
+  const onEdge = (r: string[], from: string, to: string) => same(r[0], from) && same(r[lastIdx(r)], to);
 
   const editing: GraphEditing = {
     states,
-    edgeFields: edgeFieldsFor(t, hasHead, storages),
+    edgeFields: transitionFields(t, hasHead, storages),
 
     getState: (name) => ({
       name,
-      isInit: init === name,
-      isAccept: accept.includes(name)
+      isInit: same(init, name),
+      isAccept: accept.some((a) => same(a, name))
     }),
 
     addState: (p, x, y) => {
@@ -165,7 +145,7 @@ export function useGraphEditing(): {
     updateState: (oldName, p) => {
       const err = validateName(p.name, oldName);
       if (err) return err;
-      const renamed = (s: string) => (s === oldName ? p.name : s);
+      const renamed = (s: string) => (same(s, oldName) ? p.name : s);
       const nextStates = states.map(renamed);
       let nextInit = renamed(init);
       if (p.isInit) nextInit = p.name;
@@ -175,11 +155,11 @@ export function useGraphEditing(): {
         ? nextAccept.includes(p.name)
           ? nextAccept
           : [...nextAccept, p.name]
-        : nextAccept.filter((s) => s !== p.name);
+        : nextAccept.filter((s) => !same(s, p.name));
       const rows = draft.rows.map((r) => {
         const c = [...r];
-        if (c[0] === oldName) c[0] = p.name;
-        if (c[lastIdx(c)] === oldName) c[lastIdx(c)] = p.name;
+        if (same(c[0], oldName)) c[0] = p.name;
+        if (same(c[lastIdx(c)], oldName)) c[lastIdx(c)] = p.name;
         return c;
       });
       if (oldName !== p.name) {
@@ -191,18 +171,17 @@ export function useGraphEditing(): {
     },
 
     deleteState: (name) => {
-      const nextStates = states.filter((s) => s !== name);
-      const nextInit = init === name ? (nextStates[0] ?? "") : init;
-      const nextAccept = accept.filter((s) => s !== name);
-      const rows = draft.rows.filter((r) => r[0] !== name && r[lastIdx(r)] !== name);
+      const nextStates = states.filter((s) => !same(s, name));
+      const nextInit = same(init, name) ? (nextStates[0] ?? "") : init;
+      const nextAccept = accept.filter((s) => !same(s, name));
+      const rows = draft.rows.filter((r) => !same(r[0], name) && !same(r[lastIdx(r)], name));
       commit({ ...applyState(draft, nextStates, nextInit, nextAccept), rows });
     },
 
-    getEdge: (from, to) =>
-      draft.rows.filter((r) => r[0] === from && r[lastIdx(r)] === to).map(middleOf),
+    getEdge: (from, to) => draft.rows.filter((r) => onEdge(r, from, to)).map(middleOf),
 
     setEdge: (from, to, middles) => {
-      const keep = draft.rows.filter((r) => !(r[0] === from && r[lastIdx(r)] === to));
+      const keep = draft.rows.filter((r) => !onEdge(r, from, to));
       const added = middles
         .filter((m) => m.some((f) => f.trim() !== ""))
         .map((m) => rowOf(from, to, m.map((f) => f.trim())));
