@@ -311,7 +311,7 @@
       "noDerivableWords": "No derivable word found up to length 8.",
       "moreWordsPossible": "…the language may be larger than this (the enumeration covers length 8).",
       "cnfBadge": "Chomsky normal form",
-      "cykTitle": "CYK table",
+      "cykTitle": "CYK table (lecture notes 8.1)",
       "cykIntro": "Row j, column i holds the variables that derive the j letters long subword starting at the i-th letter; the word is derivable when the start symbol is in the top cell.",
       "cykConverted": "The grammar is not in Chomsky normal form, so the table is computed on {{expr}}:",
       "cykUnambiguous": "The word has exactly one derivation tree.",

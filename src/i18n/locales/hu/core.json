@@ -17,7 +17,7 @@
     "intersect": "metszet",
     "difference": "különbség",
     "concat": "összefűzés",
-    "star": "Kleene-csillag",
+    "star": "tranzitív lezárt",
     "reverse": "megfordítás",
     "toGrammar": "nyelvtanná alakítás",
     "toFsm": "automatává alakítás",
@@ -314,7 +314,7 @@
         "fixLabel": "automatikus név használata"
       },
       "step": {
-        "title": "Csapdaállapot bevezetése: {{trap}}",
+        "title": "Csapdaállapot bevezetése: {{trap}} (jegyzet 2.10)",
         "detail": "Az új {{trap}} állapot nem elfogadó, és minden szimbólumra önmagába megy — innen már nem lehet elfogadni. A hiányzó átmenetek ide kerülnek."
       }
     },
@@ -377,7 +377,7 @@
         "detail": "Ha valahol nincs átmenet, az automata „elakad” és elutasít. Ezeket a szavakat a komplementernek el kellene fogadnia — ehhez előbb csapdaállapottal teljessé kell tenni."
       },
       "step": {
-        "title": "Elfogadó állapotok átfordítása",
+        "title": "Elfogadó állapotok átfordítása (jegyzet 3.6)",
         "detail": "Teljes DFA-ban minden szó pontosan egy úton fut végig, így az elfogadó/elutasító állapotok cseréje pontosan a komplementer nyelvet adja. Új elfogadó halmaz: {{accept}}."
       }
     },
@@ -403,7 +403,7 @@
         "difference": "(p,q) elfogadó, ha p elfogadó, de q NEM (L₁ \\ L₂)"
       },
       "step": {
-        "title": "Szorzat-konstrukció ({{mode}})",
+        "title": "Szorzat-konstrukció ({{mode}}, jegyzet 3.4)",
         "detail": "A két automatát párhuzamosan futtatjuk: az állapotok (p,q) párok, δ((p,q),a) = (δ₁(p,a), δ₂(q,a)). Elfogadás: {{acceptRule}}. Csak az elérhető párokat építjük fel."
       },
       "extend": {
@@ -417,31 +417,31 @@
         "detail": "Új kezdőállapotból ε-átmenet vezet mindkét automata kezdőállapotába. Az eredmény ε-NFA — a det(·) DFA-vá alakítja. (Teljes DFA-k uniója a szorzat-konstrukcióval is elvégezhető.)"
       },
       "step": {
-        "title": "Unió ε-átmenetekkel",
+        "title": "Unió ε-átmenetekkel (jegyzet 3.4)",
         "detail": "Új {{start}} kezdőállapot, ε-átmenetek: {{start}} → {{m1start}}, {{start}} → {{bstart}}. Elfogadó állapotok: a két automata elfogadó állapotainak uniója."
       }
     },
     "concat": {
       "step": {
-        "title": "Konkatenáció",
+        "title": "Összefűzés (jegyzet 3.9)",
         "detail": "Az első automata minden elfogadó állapotából ε-átmenet vezet a második kezdőállapotába ({{start}}). Elfogadók: csak a második automata elfogadó állapotai. Az eredmény ε-NFA."
       }
     },
     "star": {
       "step": {
-        "title": "Kleene-lezárás (csillag)",
+        "title": "Tranzitív lezárt (jegyzet 3.10)",
         "detail": "Új {{start}} kezdőállapot (egyben elfogadó — így az üres szó is a nyelvben van), ε-átmenet az eredeti kezdőállapotba, és minden elfogadó állapotból ε-átmenet vissza {{start}}-ba az ismétléshez."
       }
     },
     "reverse": {
       "step": {
-        "title": "Megfordítás",
+        "title": "Megfordítás (jegyzet 4.23)",
         "detail": "Minden átmenet irányát megfordítjuk, az új kezdőállapotból ({{start}}) ε-átmenet vezet az eredeti elfogadó állapotokba, és az eredeti kezdőállapot lesz az egyetlen elfogadó. L(Mᴿ) = { wᴿ : w ∈ L(M) }."
       }
     },
     "toRegex": {
       "numbering": {
-        "title": "Az állapotok megszámozása",
+        "title": "Az állapotok megszámozása (jegyzet 3.21)",
         "detail": "Az állapotokat 1…{{n}} számozzuk, a(z) {{start}} kezdőállapot kapja az 1-et. r(p, q, t) azokat a szavakat írja le, amelyekkel a p állapotból a q-ba jutunk úgy, hogy minden közbenső állapot az 1…t közül kerül ki."
       },
       "base": {
@@ -562,7 +562,7 @@
         "detail": "A jegyzet 6.3.1 eljárása a jobb oldalakból hagy el változókat, ezért minden bal oldal egyetlen változó kell legyen. A Chomsky-osztályozás panelen látszik, melyik szabály sérti ezt."
       },
       "step1": {
-        "title": "1. Elenyésző változók",
+        "title": "1. Elenyésző változók (jegyzet 6.3.1)",
         "detailNone": "Nincs elenyésző változó — a nyelvtan már ε-mentes.",
         "detailSome": "N₁ az ε-szabállyal rendelkező változókból áll; N(i+1) ehhez hozzáveszi azokat az A változókat, amelyekre van olyan A → α szabály, hogy α minden betűje már N(i)-ben van. Ha egy kör nem bővít, az eljárás leáll. Elenyésző (ε-ra levezethető): {{nullable}}."
       },
@@ -577,7 +577,7 @@
     },
     "unitfree": {
       "step1": {
-        "title": "1. Az egyszeres szabályok gráfja",
+        "title": "1. Az egyszeres szabályok gráfja (jegyzet 6.3.2)",
         "detail": "Egyszeres szabályok (A → B): {{edges}}. U(A) az A-ból ezeken át elérhető változók halmaza (A-t is beleértve).",
         "detailNone": "Nincs egyszeres szabály (A → B) — a nyelvtan változatlan marad."
       },
@@ -593,7 +593,7 @@
     },
     "trim": {
       "step1": {
-        "title": "1. Terminálódó változók",
+        "title": "1. Terminálódó változók (jegyzet 6.3.3)",
         "detail": "B₀ = Σ, és Bᵢ₊₁ hozzáveszi azokat az A változókat, amelyekhez van olyan A → α szabály, hogy α minden szimbóluma Bᵢ-ben van. A végső halmazon kívüli változókból nem vezethető le terminális szó, a szabályaikat elhagyjuk: {{removed}}.",
         "detailNone": "B₀ = Σ, és Bᵢ₊₁ hozzáveszi azokat az A változókat, amelyekhez van olyan A → α szabály, hogy α minden szimbóluma Bᵢ-ben van. Minden változó terminálódik."
       },
@@ -622,7 +622,7 @@
         "detail": "Chomsky-normálformájú nyelvtan nem generálhatja az ε-t, ezért a(z) {{start}} → ε szabályt elhagyjuk: az eredmény L(G) \\ {ε}-t generálja."
       },
       "step2": {
-        "title": "Az ε-szabály elhagyása",
+        "title": "Az ε-szabály elhagyása (jegyzet 6.25)",
         "detail": "A(z) {{start}} → ε szabályt elhagyjuk: Chomsky-normálformában nincs ε-szabály."
       },
       "step3": {

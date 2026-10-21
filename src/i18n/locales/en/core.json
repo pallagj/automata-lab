@@ -314,7 +314,7 @@
         "fixLabel": "Use an automatic name"
       },
       "step": {
-        "title": "Introducing the trap state: {{trap}}",
+        "title": "Introducing the trap state: {{trap}} (lecture notes 2.10)",
         "detail": "The new state {{trap}} is not accepting, and every symbol maps it to itself — once there, it can no longer accept. The missing transitions are routed here."
       }
     },
@@ -377,7 +377,7 @@
         "detail": "If a transition is missing somewhere, the automaton gets \"stuck\" and rejects. The complement should accept these words instead — this requires completing the automaton with a trap state first."
       },
       "step": {
-        "title": "Flipping the accepting states",
+        "title": "Flipping the accepting states (lecture notes 3.6)",
         "detail": "In a complete DFA, every word runs along exactly one path, so swapping accepting/rejecting states yields exactly the complement language. New accepting set: {{accept}}."
       }
     },
@@ -403,7 +403,7 @@
         "difference": "(p,q) is accepting if p is accepting but q is NOT (L₁ \\ L₂)"
       },
       "step": {
-        "title": "Product construction ({{mode}})",
+        "title": "Product construction ({{mode}}, lecture notes 3.4)",
         "detail": "The two automata are run in parallel: the states are (p,q) pairs, δ((p,q),a) = (δ₁(p,a), δ₂(q,a)). Acceptance: {{acceptRule}}. Only reachable pairs are built."
       },
       "extend": {
@@ -417,31 +417,31 @@
         "detail": "An ε-transition leads from a new start state into both automata's start states. The result is an ε-NFA — det(·) turns it into a DFA. (A union of complete DFAs can also be done with the product construction.)"
       },
       "step": {
-        "title": "Union with ε-transitions",
+        "title": "Union with ε-transitions (lecture notes 3.4)",
         "detail": "New start state {{start}}, ε-transitions: {{start}} → {{m1start}}, {{start}} → {{bstart}}. Accepting states: the union of both automata's accepting states."
       }
     },
     "concat": {
       "step": {
-        "title": "Concatenation",
+        "title": "Concatenation (lecture notes 3.9)",
         "detail": "An ε-transition leads from every accepting state of the first automaton to the second automaton's start state ({{start}}). Accepting: only the second automaton's accepting states. The result is an ε-NFA."
       }
     },
     "star": {
       "step": {
-        "title": "Kleene closure (star)",
+        "title": "Kleene closure (star, lecture notes 3.10)",
         "detail": "New start state {{start}} (also accepting — so the empty word is in the language too), an ε-transition to the original start state, and from every accepting state an ε-transition back to {{start}} for repetition."
       }
     },
     "reverse": {
       "step": {
-        "title": "Reversal",
+        "title": "Reversal (lecture notes 4.23)",
         "detail": "Every transition's direction is reversed, an ε-transition leads from the new start state ({{start}}) to the original accepting states, and the original start state becomes the sole accepting state. L(Mᴿ) = { wᴿ : w ∈ L(M) }."
       }
     },
     "toRegex": {
       "numbering": {
-        "title": "Numbering the states",
+        "title": "Numbering the states (lecture notes 3.21)",
         "detail": "The states are numbered 1…{{n}}; the start state {{start}} gets 1. r(p, q, t) describes the words that lead from state p to state q while every intermediate state is among 1…t."
       },
       "base": {
@@ -562,7 +562,7 @@
         "detail": "The procedure of lecture notes 6.3.1 leaves variables out of right-hand sides, so every left-hand side must be a single variable. The Chomsky classification panel shows which rule breaks this."
       },
       "step1": {
-        "title": "1. Nullable nonterminals",
+        "title": "1. Nullable nonterminals (lecture notes 6.3.1)",
         "detailNone": "No nullable nonterminal — the grammar is already ε-free.",
         "detailSome": "N₁ holds the nonterminals with an ε-rule; N(i+1) adds every A that has a rule A → α where every symbol of α is already in N(i). It stops when a round adds nothing. Nullable (derivable to ε): {{nullable}}."
       },
@@ -577,7 +577,7 @@
     },
     "unitfree": {
       "step1": {
-        "title": "1. The graph of unit rules",
+        "title": "1. The graph of unit rules (lecture notes 6.3.2)",
         "detail": "Unit rules (A → B): {{edges}}. U(A) is the set of variables reachable from A along them, A included.",
         "detailNone": "There is no unit rule (A → B) — the grammar stays the same."
       },
@@ -593,7 +593,7 @@
     },
     "trim": {
       "step1": {
-        "title": "1. Variables that derive a terminal word",
+        "title": "1. Variables that derive a terminal word (lecture notes 6.3.3)",
         "detail": "B₀ = Σ, and Bᵢ₊₁ adds every A with a rule A → α whose symbols are all in Bᵢ. The variables outside the final set derive no terminal word; their rules are dropped: {{removed}}.",
         "detailNone": "B₀ = Σ, and Bᵢ₊₁ adds every A with a rule A → α whose symbols are all in Bᵢ. Every variable derives a terminal word."
       },
@@ -622,7 +622,7 @@
         "detail": "A grammar in Chomsky normal form cannot generate ε, so the rule {{start}} → ε is dropped: the result generates L(G) \\ {ε}."
       },
       "step2": {
-        "title": "Dropping the ε-rule",
+        "title": "Dropping the ε-rule (lecture notes 6.25)",
         "detail": "The rule {{start}} → ε is dropped: there is no ε-rule in Chomsky normal form."
       },
       "step3": {

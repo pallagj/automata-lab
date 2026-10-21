@@ -314,7 +314,7 @@
         "fixLabel": "Automatischen Namen verwenden"
       },
       "step": {
-        "title": "Einführen des Fangzustands: {{trap}}",
+        "title": "Einführen des Fangzustands: {{trap}} (Skript 2.10)",
         "detail": "Der neue Zustand {{trap}} ist nicht akzeptierend, und bei jedem Symbol geht er in sich selbst über — von hier aus kann nicht mehr akzeptiert werden. Die fehlenden Übergänge werden hierher geleitet."
       }
     },
@@ -377,7 +377,7 @@
         "detail": "Fehlt irgendwo ein Übergang, „hängt“ der Automat fest und verwirft. Diese Wörter müsste das Komplement eigentlich akzeptieren — dafür muss der Automat zuerst mit einem Fangzustand vervollständigt werden."
       },
       "step": {
-        "title": "Umdrehen der akzeptierenden Zustände",
+        "title": "Umdrehen der akzeptierenden Zustände (Skript 3.6)",
         "detail": "In einem vollständigen DFA durchläuft jedes Wort genau einen Pfad, daher ergibt das Vertauschen von akzeptierenden/verwerfenden Zuständen genau die Komplementsprache. Neue Menge akzeptierender Zustände: {{accept}}."
       }
     },
@@ -403,7 +403,7 @@
         "difference": "(p,q) ist akzeptierend, wenn p akzeptierend ist, q aber NICHT (L₁ \\ L₂)"
       },
       "step": {
-        "title": "Produktkonstruktion ({{mode}})",
+        "title": "Produktkonstruktion ({{mode}}, Skript 3.4)",
         "detail": "Die beiden Automaten laufen parallel: Die Zustände sind (p,q)-Paare, δ((p,q),a) = (δ₁(p,a), δ₂(q,a)). Akzeptanz: {{acceptRule}}. Es werden nur erreichbare Paare aufgebaut."
       },
       "extend": {
@@ -417,31 +417,31 @@
         "detail": "Von einem neuen Startzustand führt je ein ε-Übergang zu den Startzuständen beider Automaten. Das Ergebnis ist ein ε-NFA — det(·) macht daraus einen DFA. (Die Vereinigung vollständiger DFAs lässt sich auch mit der Produktkonstruktion bilden.)"
       },
       "step": {
-        "title": "Vereinigung mit ε-Übergängen",
+        "title": "Vereinigung mit ε-Übergängen (Skript 3.4)",
         "detail": "Neuer Startzustand {{start}}, ε-Übergänge: {{start}} → {{m1start}}, {{start}} → {{bstart}}. Akzeptierende Zustände: die Vereinigung der akzeptierenden Zustände beider Automaten."
       }
     },
     "concat": {
       "step": {
-        "title": "Verkettung",
+        "title": "Verkettung (Skript 3.9)",
         "detail": "Von jedem akzeptierenden Zustand des ersten Automaten führt ein ε-Übergang zum Startzustand des zweiten ({{start}}). Akzeptierend: nur die akzeptierenden Zustände des zweiten Automaten. Das Ergebnis ist ein ε-NFA."
       }
     },
     "star": {
       "step": {
-        "title": "Kleene-Abschluss (Stern)",
+        "title": "Kleene-Abschluss (Stern, Skript 3.10)",
         "detail": "Neuer Startzustand {{start}} (zugleich akzeptierend — so ist auch das leere Wort in der Sprache), ein ε-Übergang zum ursprünglichen Startzustand, und von jedem akzeptierenden Zustand ein ε-Übergang zurück zu {{start}} für die Wiederholung."
       }
     },
     "reverse": {
       "step": {
-        "title": "Umkehrung",
+        "title": "Umkehrung (Skript 4.23)",
         "detail": "Die Richtung jedes Übergangs wird umgekehrt, vom neuen Startzustand ({{start}}) führt ein ε-Übergang zu den ursprünglichen akzeptierenden Zuständen, und der ursprüngliche Startzustand wird der einzige akzeptierende. L(Mᴿ) = { wᴿ : w ∈ L(M) }."
       }
     },
     "toRegex": {
       "numbering": {
-        "title": "Nummerierung der Zustände",
+        "title": "Nummerierung der Zustände (Skript 3.21)",
         "detail": "Die Zustände werden mit 1…{{n}} nummeriert; der Startzustand {{start}} erhält die 1. r(p, q, t) beschreibt die Wörter, die von Zustand p nach Zustand q führen, wobei jeder Zwischenzustand unter 1…t liegt."
       },
       "base": {
@@ -562,7 +562,7 @@
         "detail": "Das Verfahren aus Skript 6.3.1 lässt Variablen aus rechten Seiten weg, daher muss jede linke Seite eine einzelne Variable sein. Das Chomsky-Klassifikationspanel zeigt, welche Regel das verletzt."
       },
       "step1": {
-        "title": "1. Löschbare Nichtterminale",
+        "title": "1. Löschbare Nichtterminale (Skript 6.3.1)",
         "detailNone": "Kein löschbares Nichtterminal — die Grammatik ist bereits ε-frei.",
         "detailSome": "N₁ enthält die Nichtterminale mit einer ε-Regel; N(i+1) fügt jedes A hinzu, das eine Regel A → α hat, bei der jedes Symbol von α schon in N(i) liegt. Das Verfahren endet, wenn eine Runde nichts hinzufügt. Löschbar (auf ε ableitbar): {{nullable}}."
       },
@@ -577,7 +577,7 @@
     },
     "unitfree": {
       "step1": {
-        "title": "1. Der Graph der Kettenregeln",
+        "title": "1. Der Graph der Kettenregeln (Skript 6.3.2)",
         "detail": "Kettenregeln (A → B): {{edges}}. U(A) ist die Menge der von A aus über sie erreichbaren Variablen (A eingeschlossen).",
         "detailNone": "Es gibt keine Kettenregel (A → B) — die Grammatik bleibt unverändert."
       },
@@ -593,7 +593,7 @@
     },
     "trim": {
       "step1": {
-        "title": "1. Variablen, die ein Terminalwort ableiten",
+        "title": "1. Variablen, die ein Terminalwort ableiten (Skript 6.3.3)",
         "detail": "B₀ = Σ, und Bᵢ₊₁ nimmt jedes A hinzu, das eine Regel A → α hat, deren Symbole alle in Bᵢ liegen. Variablen außerhalb der Endmenge leiten kein Terminalwort ab; ihre Regeln entfallen: {{removed}}.",
         "detailNone": "B₀ = Σ, und Bᵢ₊₁ nimmt jedes A hinzu, das eine Regel A → α hat, deren Symbole alle in Bᵢ liegen. Jede Variable leitet ein Terminalwort ab."
       },
@@ -622,7 +622,7 @@
         "detail": "Eine Grammatik in Chomsky-Normalform kann ε nicht erzeugen, daher entfällt die Regel {{start}} → ε: das Ergebnis erzeugt L(G) \\ {ε}."
       },
       "step2": {
-        "title": "Entfernen der ε-Regel",
+        "title": "Entfernen der ε-Regel (Skript 6.25)",
         "detail": "Die Regel {{start}} → ε entfällt: in Chomsky-Normalform gibt es keine ε-Regel."
       },
       "step3": {

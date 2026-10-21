@@ -127,7 +127,7 @@ export function removeEpsilon(f: FSM): OpResult<FSM> {
     steps.push({
       title: tx("ops.epsfree.step2.title"),
       detail: tx("ops.epsfree.step2.detail"),
-      table: { headers: [tx("ops.table.newTransition"), tx("ops.table.reason")], rows: newTransRows.slice(0, 25) }
+      table: { headers: [tx("ops.table.newTransition"), tx("ops.table.reason")], rows: newTransRows }
     });
 
   const newAccept: string[] = [];
