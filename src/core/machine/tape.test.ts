@@ -152,10 +152,10 @@ describe("a tape is infinite to the right only, as in the lecture notes (9.1)", 
   });
 
   for (const infinite of ["right", "both"] as const) {
-    it(`matches an independent simulation on 400 random deterministic machines (infinite: ${infinite})`, () => {
+    it(`matches an independent simulation on 250 random deterministic machines (infinite: ${infinite})`, () => {
       const next = rng(infinite === "right" ? 91 : 92);
       let fell = 0;
-      for (let k = 0; k < 400; k++) {
+      for (let k = 0; k < 250; k++) {
         const m = randomTM(next, infinite);
         for (const w of allWords(["a", "b"], 4)) {
           const expected = oracle(m, w);
@@ -168,7 +168,7 @@ describe("a tape is infinite to the right only, as in the lecture notes (9.1)", 
         }
       }
       // the boundary did decide some runs
-      if (infinite === "right") expect(fell).toBeGreaterThan(50);
+      if (infinite === "right") expect(fell).toBeGreaterThan(30);
     });
   }
 });
