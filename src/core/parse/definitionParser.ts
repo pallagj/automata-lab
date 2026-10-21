@@ -12,17 +12,15 @@ import {
 } from "../machine/machine";
 import { Grammar, GrammarRule } from "../grammar/grammar";
 import { symbolString } from "../epsilon";
+import { deltaShape, fieldCount, readDelta } from "./delta";
 import { canonicalLabel, canonicalName, formatIdent, parseIdent, suggestName, symbolTokens } from "../symbols";
 
 /**
  * Parses YAML-based definitions with friendly, precise error messages.
  *
- * Shorthands in transitions:
- *   - "A a B"      a simple transition
- *   - "."          wildcard: every possible value of that position
- *   - "&"          "the same": the source state for a state, the read symbol for a write
- *   - "a-d"        a range in lists (charset, states)
- *   - "ε" (or "eps", "epsilon") the empty word — see core/epsilon.ts
+ * A machine's transitions are written as the lecture notes write δ (see parse/delta.ts),
+ * a grammar's rules as S -> aS | b. In lists (charset, states) "a-d" is a range, and
+ * everywhere "ε" (or "eps", "epsilon") is the empty word — see core/epsilon.ts.
  */
 
 export type Definition = Machine | Grammar;
@@ -150,25 +148,6 @@ function requireField(
   return null;
 }
 
-/** Expands a wildcard transition line: every option for each "." position. */
-function expandWildcard(
-  parts: string[],
-  options: string[][],
-  cb: (resolved: string[]) => void,
-  i = 0,
-  acc: string[] = []
-) {
-  if (i === parts.length) {
-    cb(acc);
-    return;
-  }
-  if (parts[i] === ".") {
-    for (const o of options[i]) expandWildcard(parts, options, cb, i + 1, [...acc, o]);
-  } else {
-    expandWildcard(parts, options, cb, i + 1, [...acc, parts[i]]);
-  }
-}
-
 /* ------------------------------------------------------------------ */
 /* General machine (Machine)                                           */
 /* ------------------------------------------------------------------ */
@@ -240,60 +219,48 @@ export function parseStorageEntry(id: string, raw: unknown): OpResult<StorageEnt
   return okResult({ id, type, alphabet, init: symbolTokens(init) }, diags);
 }
 
-/** how many tokens a storage occupies in a transition line */
-const STORAGE_TOKENS: Record<StorageType, number> = { stack: 1, queue: 1, tape: 2 };
-
 /** Head moves in the YAML: always the English letters (the UI shows its language's, J B H). */
 const MOVES = ["L", "R", "S"] as const;
 
 /**
- * Parses a storage's operation from the tokens of a transition line.
- * stack: "Z/AZ" · queue: "A/BA" · tape: "a/b R" (two tokens). Whether the symbols are in
- * the storage's alphabet is checked once every alphabet is known.
+ * Parses a storage's operation from its parts of a transition: what it reads (a stack's
+ * top, a tape's cell) and what it gets (the word pushed; the symbol written and the move).
+ * Whether the symbols are in the storage's alphabet is checked once every alphabet is known.
  */
-function parseStorageOp(spec: StorageEntry, tokens: string[], line: string): OpResult<StorageOp> {
-  const tokStr = tokens.join(" ");
-
+function parseStorageOp(spec: StorageEntry, arg: string, values: string[], line: string): OpResult<StorageOp> {
   if (spec.type === "tape") {
-    const [rw, moveRaw] = tokens;
-    if (!rw.includes("/"))
-      return failResult([
-        err(
-          tx("definitionParser.storageOp.badTapeOp.title", { tokens: tokStr, storageId: spec.id }),
-          tx("definitionParser.storageOp.badTapeOp.detail", { line })
-        )
-      ]);
-    const [read, writeRaw] = rw.split("/");
-    const move = MOVES.find((m) => m === moveRaw);
+    // a tape cell always holds exactly one symbol: the blank is _
+    for (const part of [arg, values[0]]) {
+      if (symbolTokens(part).length !== 1)
+        return failResult([
+          err(
+            tx("definitionParser.storageOp.tapeOneSymbol.title", { tokens: part, storageId: spec.id }),
+            tx("definitionParser.storageOp.tapeOneSymbol.detail", { line })
+          )
+        ]);
+    }
+    const move = MOVES.find((m) => m === values[1]);
     if (!move)
       return failResult([
         err(
-          tx("definitionParser.storageOp.unknownMove.title", { tokens: tokStr, storageId: spec.id }),
+          tx("definitionParser.storageOp.unknownMove.title", { tokens: values[1], storageId: spec.id }),
           tx("definitionParser.storageOp.unknownMove.detail", { line })
         )
       ]);
-    return okResult({ type: "tape", read, write: writeRaw, move });
+    return okResult({ type: "tape", read: symbolTokens(arg)[0], write: symbolTokens(values[0])[0], move });
   }
 
-  const tok = tokens[0];
-  if (!tok.includes("/")) {
-    const key = spec.type === "stack" ? "definitionParser.storageOp.badStackOp" : "definitionParser.storageOp.badQueueOp";
-    return failResult([
-      err(tx(`${key}.title`, { tokens: tokStr, storageId: spec.id }), tx(`${key}.detail`, { line }))
-    ]);
-  }
-  const [aRaw, bRaw] = tok.split("/");
   // the symbol taken off is a single symbol (or ε: nothing is taken)
-  const taken = symbolTokens(aRaw);
+  const taken = symbolTokens(arg);
   if (taken.length > 1)
     return failResult([
       err(
-        tx("definitionParser.storageOp.oneSymbol.title", { tokens: aRaw, storageId: spec.id }),
+        tx("definitionParser.storageOp.oneSymbol.title", { tokens: arg, storageId: spec.id }),
         tx("definitionParser.storageOp.oneSymbol.detail", { line, example: formatIdent({ base: "Z", primes: 0, sub: "0" }) })
       )
     ]);
   const a = taken[0] ?? EPS;
-  const b = symbolTokens(bRaw ?? "");
+  const b = symbolTokens(values[0]);
   return okResult<StorageOp>(
     spec.type === "stack" ? { type: "stack", pop: a, push: b } : { type: "queue", take: a, put: b }
   );
@@ -316,7 +283,7 @@ function parseStorageOp(spec: StorageEntry, tokens: string[], line: string): OpR
  *         charset: $, B      # its alphabet Γ (by default the symbols it uses)
  *         init: $
  *     transitions:
- *       - q0 a Z/AZ $/B$ q0  # FROM INPUT per-storage-op… TO
+ *       - (q0, a, Z, $) -> (q0, AZ, B$)   # δ's arguments -> its value, see parse/delta.ts
  *
  * The kind of machine (automaton / pushdown automaton / Turing machine / general
  * machine) is decided by its configuration — there is no separate type key.
@@ -390,92 +357,64 @@ export function parseMachine(source: string): OpResult<Machine> {
       )
     );
 
-  const tokensPerLine = 2 + (input === "head" ? 1 : 0) + storages.reduce((n, s) => n + STORAGE_TOKENS[s.type], 0);
+  const hasHead = input === "head";
+  const types = storages.map((s) => s.type);
+  const shape = deltaShape(hasHead, types);
+  const argCount = 1 + (hasHead ? 1 : 0) + storages.length;
+  const valueCount = 1 + storages.reduce((n, s) => n + fieldCount(s.type) - 1, 0);
   const transitions: MachineTransition[] = [];
-  /** the line each transition comes from (a wildcard line gives several) */
+  /** the line each transition comes from */
   const lineOf: string[] = [];
-  const lines = parseList(body["transitions"], "transitions", diags, false);
+  // one transition per line — commas belong to the line, so a list is not split at them
+  const raw = body["transitions"];
+  const lines = (Array.isArray(raw) ? raw.map((l) => String(l ?? "")) : String(raw ?? "").split("\n"))
+    .map((l) => l.trim())
+    .filter((l) => l !== "");
   for (const line of lines) {
-    const parts = line.split(/\s+/).filter((p) => p !== "");
-    if (parts.length !== tokensPerLine) {
-      const shape = [
-        "FROM",
-        ...(input === "head" ? ["INPUT"] : []),
-        ...storages.map((s) => (s.type === "tape" ? `${s.id}:READ/WRITE MOVE` : `${s.id}:POP/PUSH`)),
-        "TO"
-      ].join(" ");
+    const d = readDelta(line);
+    // every part written out: ε too, as in the notes
+    const complete = [...d.args, ...d.values].every((p) => p !== "");
+    if (!d.wellFormed || !complete || d.args.length !== argCount || d.values.length !== valueCount)
       return failResult([
         err(
           tx("definitionParser.machine.invalidTransition.title", { line }),
-          tx("definitionParser.machine.invalidTransition.detail", { count: tokensPerLine, shape })
+          tx("definitionParser.machine.invalidTransition.detail", { shape })
         )
       ]);
-    }
-    const from = parts[0] === "." ? "." : canonicalLabel(parts[0]);
-    const last = parts[parts.length - 1];
-    const to = last === "." || last === "&" ? last : canonicalLabel(last);
-    if (from !== "." && !stateSet.has(from))
+    const from = canonicalLabel(d.args[0]);
+    const to = canonicalLabel(d.values[0]);
+    if (!stateSet.has(from))
       return failResult([
         err(tx("definitionParser.machine.unknownFromState", { state: from }), tx("definitionParser.line", { line }))
       ]);
-    if (to !== "." && to !== "&" && !stateSet.has(to))
+    if (!stateSet.has(to))
       return failResult([
         err(tx("definitionParser.machine.unknownToState", { state: to }), tx("definitionParser.line", { line }))
       ]);
 
-    let idx = 1;
+    let a = 1;
+    let v = 1;
     let inputSym = EPS;
-    if (input === "head") {
-      inputSym = normEps(parts[idx++]);
-      if (inputSym !== EPS && parts[1] !== "." && !alphabet.includes(inputSym))
+    if (hasHead) {
+      inputSym = normEps(d.args[a++]);
+      if (inputSym !== EPS && !alphabet.includes(inputSym))
         return failResult([
           err(
-            tx("definitionParser.machine.unknownInputSymbol", { symbol: parts[1] }),
+            tx("definitionParser.machine.unknownInputSymbol", { symbol: inputSym }),
             tx("definitionParser.machine.alphabetHint", { line, alphabet: alphabet.join(", ") })
           )
         ]);
     }
     const ops: StorageOp[] = [];
     for (const s of storages) {
-      const toks = parts.slice(idx, idx + STORAGE_TOKENS[s.type]);
-      idx += STORAGE_TOKENS[s.type];
-      const r = parseStorageOp(s, toks, line);
+      const n = fieldCount(s.type) - 1;
+      const r = parseStorageOp(s, d.args[a++], d.values.slice(v, v + n), line);
+      v += n;
       if (!r.ok) return failResult(r.diagnostics);
       ops.push(r.value!);
     }
-
-    // wildcards: "." in the state, input and tape-read positions,
-    // "&" in the target state ("same state") and in tape writes ("write the same")
-    const rawInput = input === "head" ? (parts[1] === "." ? "." : inputSym) : EPS;
-    expandWildcard(
-      [from, ...(input === "head" ? [rawInput] : []), to],
-      [states, ...(input === "head" ? [alphabet] : []), states],
-      (resolved) => {
-        const f = resolved[0];
-        const inp = input === "head" ? resolved[1] : EPS;
-        const t = resolved[resolved.length - 1];
-        const target = t === "&" ? f : t;
-        // expand a "." tape read to every input symbol the tape can hold + resolve "&" in the write
-        const expandTapeOps = (i: number, acc: StorageOp[]) => {
-          if (i === ops.length) {
-            transitions.push({ from: f, to: target, input: inp, ops: acc });
-            lineOf.push(line);
-            return;
-          }
-          const op = ops[i];
-          if (op.type !== "tape") {
-            expandTapeOps(i + 1, [...acc, op]);
-            return;
-          }
-          const gamma = storages[i].alphabet;
-          const reads = op.read === "." ? alphabet.filter((a) => gamma === null || gamma.includes(a)) : [op.read];
-          for (const sym of reads) {
-            expandTapeOps(i + 1, [...acc, { ...op, read: sym, write: op.write === "&" ? sym : op.write }]);
-          }
-        };
-        expandTapeOps(0, []);
-      }
-    );
+    transitions.push({ from, to, input: inputSym, ops });
+    lineOf.push(line);
   }
 
   // every storage's alphabet Γ: as given, or what it holds by default

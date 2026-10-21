@@ -28,7 +28,7 @@ const fsm = valueOf(`Machine:
   init: S
   accept: A
   transitions:
-    - S a A`);
+    - (S, a) -> A`);
 const pda = valueOf(`Machine:
   name: P
   charset: a
@@ -37,7 +37,7 @@ const pda = valueOf(`Machine:
   storages:
     stack: stack
   transitions:
-    - q a Z/AZ q`);
+    - (q, a, Z) -> (q, AZ)`);
 
 describe("operation menu applicability", () => {
   it("epsfree applies to a context-free grammar, not to a context-sensitive one", () => {
@@ -105,6 +105,7 @@ const FSM_SRC = `Machine:
   init: S
   accept: A
   transitions:
-    - S a A
-    - S b S
-    - A . A`;
+    - (S, a) -> A
+    - (S, b) -> S
+    - (A, a) -> A
+    - (A, b) -> A`;

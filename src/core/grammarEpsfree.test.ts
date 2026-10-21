@@ -236,8 +236,8 @@ describe("epsfree on a grammar in a worksheet", () => {
   init: S
   accept: A
   transitions:
-    - S ε A
-    - A a A`,
+    - (S, ε) -> A
+    - (A, a) -> A`,
       "E = epsfree(M)"
     ]);
     expect(rs[1].value?.kind).toBe("machine");

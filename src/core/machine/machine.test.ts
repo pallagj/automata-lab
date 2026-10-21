@@ -26,12 +26,12 @@ Machine:
     v1: stack
     v2: stack
   transitions:
-    - qa a ε/A ε/ε qa
-    - qa ε ε/ε ε/ε qb
-    - qb b A/ε ε/B qb
-    - qb ε ε/ε ε/ε qc
-    - qc c ε/ε B/ε qc
-    - qc ε Z/ε Z/ε ok
+    - (qa, a, ε, ε) -> (qa, A, ε)
+    - (qa, ε, ε, ε) -> (qb, ε, ε)
+    - (qb, b, A, ε) -> (qb, ε, B)
+    - (qb, ε, ε, ε) -> (qc, ε, ε)
+    - (qc, c, ε, B) -> (qc, ε, ε)
+    - (qc, ε, Z, Z) -> (ok, ε, ε)
 `;
 
 describe("general machine — two stacks", () => {
@@ -77,9 +77,9 @@ Machine:
   storages:
     s: queue
   transitions:
-    - collect a ε/A collect
-    - collect ε ε/ε consume
-    - consume b A/ε consume
+    - (collect, a, ε) -> (collect, A)
+    - (collect, ε, ε) -> (consume, ε)
+    - (consume, b, A) -> (consume, ε)
 `).value!;
 
   it("recognises a^n b^n", () => {
@@ -111,8 +111,9 @@ Machine:
   storages:
     tape: tape
   transitions:
-    - run ./b R run
-    - run _/_ S done
+    - (run, a) -> (run, b, R)
+    - (run, b) -> (run, b, R)
+    - (run, _) -> (done, _, S)
 `).value!;
 
   it("accepts on halting and rewrites the tape", () => {
@@ -136,7 +137,7 @@ Machine:
   storages:
     t: tape
   transitions:
-    - s a/a R s
+    - (s, a) -> (s, a, R)
 `).value!;
     // runs over the a's, halts on _, s is accepting → accepts
     expect(runMachine(loop, "aaa").verdict).toBe("accepted");
@@ -155,8 +156,8 @@ Machine:
   storages:
     v: stack
   transitions:
-    - q a Z/AZ q
-    - q b A/ε q
+    - (q, a, Z) -> (q, AZ)
+    - (q, b, A) -> (q, ε)
 `).value!;
     expect(analyzeMachine(m).isDeterministic).toBe(true);
   });
@@ -180,8 +181,8 @@ Machine:
   storages:
     v: stack
   transitions:
-    - q a Z/Z q
-    - q a A/A q
+    - (q, a, Z) -> (q, Z)
+    - (q, a, A) -> (q, A)
 `).value!;
     expect(analyzeMachine(m).isDeterministic).toBe(true);
   });
@@ -196,10 +197,10 @@ Machine:
   init: N
   accept: B
   transitions:
-    - N a N
-    - N b B
-    - B a N
-    - B b B
+    - (N, a) -> N
+    - (N, b) -> B
+    - (B, a) -> N
+    - (B, b) -> B
 `).value!;
 
   it("machineToFSM agrees with the machine simulation", () => {
@@ -240,8 +241,9 @@ Machine:
 });
 
 describe("error reporting", () => {
-  it("a transition with the wrong token count gives a clear error", () => {
-    const r = parseMachine(`
+  it("a transition of the wrong shape gives a clear error, naming the shape", () => {
+    const shape = (line: string) =>
+      parseMachine(`
 Machine:
   name: B
   charset: a
@@ -251,11 +253,13 @@ Machine:
   storages:
     v: stack
   transitions:
-    - q a q
-`);
-    expect(r.ok).toBe(false);
-    expect(r.diagnostics[0].title.key).toBe("definitionParser.machine.invalidTransition.title");
-    expect(r.diagnostics[0].detail?.params?.count).toBe(4);
+    - ${line}
+`).diagnostics[0];
+    for (const line of ["(q, a) -> q", "(q, a, Z) -> q", "(q, a, Z) -> (q, Z, Z)", "q, a, Z -> (q, Z)", "(q, a, Z) (q, Z)", "(q, a, ) -> (q, Z)", "(q, a, Z) -> (q, )"]) {
+      const d = shape(line);
+      expect(d.title, line).toEqual({ key: "definitionParser.machine.invalidTransition.title", params: { line } });
+      expect(d.detail!.params!.shape).toBe("(q, a, Z) -> (p, γ)");
+    }
   });
 
   it("unknown storage type", () => {
@@ -305,9 +309,9 @@ Machine:
   storages:
     tape: tape
   transitions:
-    - r 1/0 L c
-    - c 0/& R c
-    - c _/1 S d
+    - (r, 1) -> (c, 0, L)
+    - (c, 0) -> (c, 0, R)
+    - (c, _) -> (d, 1, S)
 `;
 
   it("custom machines name each storage and leave out untouched ones", () => {
@@ -330,9 +334,9 @@ Machine:
   storages:
     stack: stack
   transitions:
-    - q0 a Z/AZ q0
-    - q0 b A/ε q1
-    - q1 ε ε/ε q1
+    - (q0, a, Z) -> (q0, AZ)
+    - (q0, b, A) -> (q1, ε)
+    - (q1, ε, ε) -> (q1, ε)
 `)
     ).toEqual(["a; Z → AZ", "b; A → ε", "ε; ε → ε"]);
   });
@@ -356,7 +360,7 @@ Machine:
     s: stack
     t: tape
   transitions:
-    - q a Z/Z a/& R q
+    - (q, a, Z, a) -> (q, Z, a, R)
 `).value!;
     expect(machineTransitionLabel(m, m.transitions[0])).toBe("a; s: Z → Z; t: a → a, R");
   });
@@ -374,7 +378,7 @@ Machine:
   storages:
     tape: tape
   transitions:
-    - q a/a ${move} q
+    - (q, a) -> (q, a, ${move})
 `);
 
   it("reads the three English letters", () => {
@@ -393,7 +397,7 @@ Machine:
 
   it("writes them back as letters", () => {
     const yaml = serializeMachine(tm("L").value!);
-    expect(yaml).toContain("- q a/a L q");
+    expect(yaml).toContain("- (q, a) -> (q, a, L)");
   });
 });
 
@@ -411,11 +415,11 @@ Machine:
       type: stack
       init: $
   transitions:
-    - q0 a $/A$ q0
-    - q0 a A/AA q0
-    - q0 b A/ε q1
-    - q1 b A/ε q1
-    - q1 ε $/$ q2
+    - (q0, a, $) -> (q0, A$)
+    - (q0, a, A) -> (q0, AA)
+    - (q0, b, A) -> (q1, ε)
+    - (q1, b, A) -> (q1, ε)
+    - (q1, ε, $) -> (q2, $)
 `);
     expect(r.ok).toBe(true);
     expect(runMachine(r.value!, "aabb").verdict).toBe("accepted");

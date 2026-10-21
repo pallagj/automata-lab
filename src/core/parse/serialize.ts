@@ -9,6 +9,7 @@ const syms = (s: string[]) => (s.length === 0 ? EPS : symbolsText(s));
 import { defaultStorageAlphabet, Machine, StorageOp, TAPE_BLANK } from "../machine/machine";
 import { Grammar } from "../grammar/grammar";
 import { Definition } from "./definitionParser";
+import { transitionScalar, writeDelta } from "./delta";
 
 /** Writes a definition back to the editable YAML format. */
 export function serializeDefinition(d: Definition): string {
@@ -25,14 +26,18 @@ const NEEDS_QUOTE = /[{}[\]:#'"&*?|>%@`]|^[\s-]|^$/;
 const scalar = (s: string) => (NEEDS_QUOTE.test(s) ? `"${s.replaceAll('"', '\\"')}"` : s);
 const listLine = (items: string[]) => scalar(items.join(", "));
 
-function storageOpToken(op: StorageOp): string {
+/** one symbol, read back as itself; a lone blank needs no escape */
+const one = (x: string) => (x === TAPE_BLANK ? x : symbolsText([x]));
+
+/** A storage operation's parts of δ: what it reads, and what it gets (see parse/delta.ts). */
+function storageOpParts(op: StorageOp): { arg: string; values: string[] } {
   switch (op.type) {
     case "stack":
-      return `${op.pop === EPS ? EPS : symbolsText([op.pop])}/${syms(op.push)}`;
+      return { arg: op.pop === EPS ? EPS : one(op.pop), values: [syms(op.push)] };
     case "queue":
-      return `${op.take === EPS ? EPS : symbolsText([op.take])}/${syms(op.put)}`;
+      return { arg: op.take === EPS ? EPS : one(op.take), values: [syms(op.put)] };
     case "tape":
-      return `${op.read}/${op.write} ${op.move}`;
+      return { arg: one(op.read), values: [one(op.write), op.move] };
   }
 }
 
@@ -41,8 +46,8 @@ const isDefaultInit = (type: string, init: string[]) =>
   type === "stack" ? init.length === 1 && init[0] === "Z" : init.length === 0;
 
 const sameSet = (a: string[], b: string[]) => a.length === b.length && a.every((x) => b.includes(x));
-/** an alphabet's symbols one by one; a lone blank needs no escape */
-const alphabetLine = (symbols: string[]) => listLine(symbols.map((x) => (x === TAPE_BLANK ? x : symbolsText([x]))));
+/** an alphabet's symbols one by one */
+const alphabetLine = (symbols: string[]) => listLine(symbols.map(one));
 
 export function serializeMachine(m: Machine): string {
   const lines = [
@@ -73,13 +78,10 @@ export function serializeMachine(m: Machine): string {
   }
   lines.push("  transitions:");
   for (const t of m.transitions) {
-    const tokens = [
-      t.from,
-      ...(m.input === "head" ? [sym(t.input)] : []),
-      ...t.ops.map(storageOpToken),
-      t.to
-    ];
-    lines.push(`    - ${scalar(tokens.join(" "))}`);
+    const parts = t.ops.map(storageOpParts);
+    const args = [t.from, ...(m.input === "head" ? [sym(t.input)] : []), ...parts.map((p) => p.arg)];
+    const values = [t.to, ...parts.flatMap((p) => p.values)];
+    lines.push(`    - ${transitionScalar(writeDelta(args, values))}`);
   }
   return lines.join("\n");
 }

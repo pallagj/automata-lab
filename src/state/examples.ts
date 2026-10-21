@@ -20,9 +20,10 @@ const NFA_M1 = `Machine:
   init: S
   accept: F
   transitions:
-    - S . S
-    - S a A
-    - A b F`;
+    - (S, a) -> S
+    - (S, b) -> S
+    - (S, a) -> A
+    - (A, b) -> F`;
 
 const DFA_EVEN_A = `Machine:
   name: E
@@ -31,10 +32,10 @@ const DFA_EVEN_A = `Machine:
   init: E
   accept: E
   transitions:
-    - E a O
-    - O a E
-    - E b E
-    - O b O`;
+    - (E, a) -> O
+    - (O, a) -> E
+    - (E, b) -> E
+    - (O, b) -> O`;
 
 const DFA_ENDS_B = `Machine:
   name: B
@@ -43,10 +44,10 @@ const DFA_ENDS_B = `Machine:
   init: N
   accept: B
   transitions:
-    - N a N
-    - N b B
-    - B a N
-    - B b B`;
+    - (N, a) -> N
+    - (N, b) -> B
+    - (B, a) -> N
+    - (B, b) -> B`;
 
 const ENFA_A_OR_B = `Machine:
   name: N
@@ -55,10 +56,10 @@ const ENFA_A_OR_B = `Machine:
   init: S
   accept: A, B
   transitions:
-    - S ε A
-    - S ε B
-    - A a A
-    - B b B`;
+    - (S, ε) -> A
+    - (S, ε) -> B
+    - (A, a) -> A
+    - (B, b) -> B`;
 
 const DFA_HAS_B = `Machine:
   name: H
@@ -67,9 +68,10 @@ const DFA_HAS_B = `Machine:
   init: "1"
   accept: "2"
   transitions:
-    - 1 a 1
-    - 1 b 2
-    - 2 . 2`;
+    - (1, a) -> 1
+    - (1, b) -> 2
+    - (2, a) -> 2
+    - (2, b) -> 2`;
 
 export const EXAMPLE_WORKSHEETS: ExampleWorksheet[] = [
   {
@@ -125,12 +127,12 @@ export const EXAMPLE_WORKSHEETS: ExampleWorksheet[] = [
   storages:
     stack: stack
   transitions:
-    - q0 a Z/AZ q0
-    - q0 a A/AA q0
-    - q0 b A/ε q1
-    - q1 b A/ε q1
-    - q1 ε Z/Z q2
-    - q0 ε Z/Z q2`,
+    - (q0, a, Z) -> (q0, AZ)
+    - (q0, a, A) -> (q0, AA)
+    - (q0, b, A) -> (q1, ε)
+    - (q1, b, A) -> (q1, ε)
+    - (q1, ε, Z) -> (q2, Z)
+    - (q0, ε, Z) -> (q2, Z)`,
       `Machine:
   name: P_{pal}
   charset: a, b
@@ -140,12 +142,12 @@ export const EXAMPLE_WORKSHEETS: ExampleWorksheet[] = [
   storages:
     stack: stack
   transitions:
-    - read a ε/a read
-    - read b ε/b read
-    - read ε ε/ε match
-    - match a a/ε match
-    - match b b/ε match
-    - match ε Z/Z done`
+    - (read, a, ε) -> (read, a)
+    - (read, b, ε) -> (read, b)
+    - (read, ε, ε) -> (match, ε)
+    - (match, a, a) -> (match, ε)
+    - (match, b, b) -> (match, ε)
+    - (match, ε, Z) -> (done, Z)`
     ]
   },
   {
@@ -162,19 +164,22 @@ export const EXAMPLE_WORKSHEETS: ExampleWorksheet[] = [
   storages:
     tape: tape
   transitions:
-    - start a/_ R sawA
-    - start b/_ R sawB
-    - start _/& S ok
-    - sawA ./& R sawA
-    - sawA _/& L matchA
-    - sawB ./& R sawB
-    - sawB _/& L matchB
-    - matchA a/_ L back
-    - matchA _/& S ok
-    - matchB b/_ L back
-    - matchB _/& S ok
-    - back ./& L back
-    - back _/& R start`,
+    - (start, a) -> (sawA, _, R)
+    - (start, b) -> (sawB, _, R)
+    - (start, _) -> (ok, _, S)
+    - (sawA, a) -> (sawA, a, R)
+    - (sawA, b) -> (sawA, b, R)
+    - (sawA, _) -> (matchA, _, L)
+    - (sawB, a) -> (sawB, a, R)
+    - (sawB, b) -> (sawB, b, R)
+    - (sawB, _) -> (matchB, _, L)
+    - (matchA, a) -> (back, _, L)
+    - (matchA, _) -> (ok, _, S)
+    - (matchB, b) -> (back, _, L)
+    - (matchB, _) -> (ok, _, S)
+    - (back, a) -> (back, a, L)
+    - (back, b) -> (back, b, L)
+    - (back, _) -> (start, _, R)`,
       `Machine:
   name: T_{inc}
   charset: 0, 1
@@ -185,11 +190,12 @@ export const EXAMPLE_WORKSHEETS: ExampleWorksheet[] = [
   storages:
     tape: tape
   transitions:
-    - right ./& R right
-    - right _/& L carry
-    - carry 1/0 L carry
-    - carry 0/1 S done
-    - carry _/1 S done`,
+    - (right, 0) -> (right, 0, R)
+    - (right, 1) -> (right, 1, R)
+    - (right, _) -> (carry, _, L)
+    - (carry, 1) -> (carry, 0, L)
+    - (carry, 0) -> (done, 1, S)
+    - (carry, _) -> (done, 1, S)`,
       "# The palindrome machine of the lecture notes (example 9.4): x and y are tape symbols beyond Σ, so the tape has its own alphabet Γ.",
       `Machine:
   name: T_{pal}
@@ -203,21 +209,24 @@ export const EXAMPLE_WORKSHEETS: ExampleWorksheet[] = [
       type: tape
       charset: a, b, x, y, _
   transitions:
-    - q0 a/x R q1
-    - q0 b/x R q2
-    - q0 y/y S q7
-    - q1 ./& R q1
-    - q1 _/_ L q3
-    - q1 y/y L q3
-    - q2 ./& R q2
-    - q2 _/_ L q4
-    - q2 y/y L q4
-    - q3 a/y L q5
-    - q3 x/x S q6
-    - q4 b/y L q5
-    - q4 x/x S q6
-    - q5 ./& L q5
-    - q5 x/x R q0`
+    - (q0, a) -> (q1, x, R)
+    - (q0, b) -> (q2, x, R)
+    - (q0, y) -> (q7, y, S)
+    - (q1, a) -> (q1, a, R)
+    - (q1, b) -> (q1, b, R)
+    - (q1, _) -> (q3, _, L)
+    - (q1, y) -> (q3, y, L)
+    - (q2, a) -> (q2, a, R)
+    - (q2, b) -> (q2, b, R)
+    - (q2, _) -> (q4, _, L)
+    - (q2, y) -> (q4, y, L)
+    - (q3, a) -> (q5, y, L)
+    - (q3, x) -> (q6, x, S)
+    - (q4, b) -> (q5, y, L)
+    - (q4, x) -> (q6, x, S)
+    - (q5, a) -> (q5, a, L)
+    - (q5, b) -> (q5, b, L)
+    - (q5, x) -> (q0, x, R)`
     ]
   },
   {
@@ -234,12 +243,12 @@ export const EXAMPLE_WORKSHEETS: ExampleWorksheet[] = [
     v1: stack
     v2: stack
   transitions:
-    - qa a ε/A ε/ε qa
-    - qa ε ε/ε ε/ε qb
-    - qb b A/ε ε/B qb
-    - qb ε ε/ε ε/ε qc
-    - qc c ε/ε B/ε qc
-    - qc ε Z/ε Z/ε ok`,
+    - (qa, a, ε, ε) -> (qa, A, ε)
+    - (qa, ε, ε, ε) -> (qb, ε, ε)
+    - (qb, b, A, ε) -> (qb, ε, B)
+    - (qb, ε, ε, ε) -> (qc, ε, ε)
+    - (qc, c, ε, B) -> (qc, ε, ε)
+    - (qc, ε, Z, Z) -> (ok, ε, ε)`,
       `Machine:
   name: Q
   charset: a, b
@@ -249,9 +258,9 @@ export const EXAMPLE_WORKSHEETS: ExampleWorksheet[] = [
   storages:
     s: queue
   transitions:
-    - collect a ε/A collect
-    - collect ε ε/ε consume
-    - consume b A/ε consume`
+    - (collect, a, ε) -> (collect, A)
+    - (collect, ε, ε) -> (consume, ε)
+    - (consume, b, A) -> (consume, ε)`
     ]
   },
   {
@@ -331,10 +340,10 @@ export const CELL_TEMPLATES: Record<string, string> = {
   init: S
   accept: A
   transitions:
-    - S a A
-    - S b S
-    - A a A
-    - A b S`,
+    - (S, a) -> A
+    - (S, b) -> S
+    - (A, a) -> A
+    - (A, b) -> S`,
   pda: `Machine:
   name: P
   charset: a, b
@@ -344,8 +353,8 @@ export const CELL_TEMPLATES: Record<string, string> = {
   storages:
     stack: stack
   transitions:
-    - q0 a Z/AZ q0
-    - q0 ε Z/Z q1`,
+    - (q0, a, Z) -> (q0, AZ)
+    - (q0, ε, Z) -> (q1, Z)`,
   tm: `Machine:
   name: T
   charset: a, b
@@ -356,8 +365,8 @@ export const CELL_TEMPLATES: Record<string, string> = {
   storages:
     tape: tape
   transitions:
-    - start a/a R start
-    - start _/_ S ok`,
+    - (start, a) -> (start, a, R)
+    - (start, _) -> (ok, _, S)`,
   grammar: `Grammar:
   name: G
   charset: a, b
@@ -375,8 +384,8 @@ export const CELL_TEMPLATES: Record<string, string> = {
     v1: stack
     v2: stack
   transitions:
-    - q0 a Z/AZ ε/ε q0
-    - q0 ε Z/Z ε/ε q1`
+    - (q0, a, Z, ε) -> (q0, AZ, ε)
+    - (q0, ε, Z, ε) -> (q1, Z, ε)`
 };
 
 export const STARTER_CELLS: string[] = EXAMPLE_WORKSHEETS[0].cells;

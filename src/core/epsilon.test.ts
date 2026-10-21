@@ -55,8 +55,8 @@ describe("ε in machines", () => {
   storages:
     stack: stack
   transitions:
-    - q0 eps Z/Aeps q1
-    - q0 a Z/epsilon q0`).value!;
+    - (q0, eps, Z) -> (q1, Aeps)
+    - (q0, a, Z) -> (q0, epsilon)`).value!;
     expect(m.transitions[0].input).toBe("ε");
     expect(m.transitions[0].ops[0]).toEqual({ type: "stack", pop: "Z", push: ["A"] });
     expect(m.transitions[1].ops[0]).toEqual({ type: "stack", pop: "Z", push: [] });
@@ -70,7 +70,7 @@ describe("ε in machines", () => {
   init: steps
   accept: keeps
   transitions:
-    - steps a keeps`).value!;
+    - (steps, a) -> keeps`).value!;
     expect(m.states).toEqual(["steps", "keeps"]);
   });
 });

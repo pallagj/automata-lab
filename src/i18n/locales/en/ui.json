@@ -150,7 +150,7 @@
       "body2": "key: a finite control plus any number of storages.",
       "emphasis": "Its kind is decided by the configuration",
       "body3": "— no storage means a finite automaton, one stack means a pushdown automaton, one tape (holding the input) means a Turing machine, another combination means a general machine. The interface recognizes it and names it accordingly.",
-      "example": "Machine:               # finite automaton: no storage\n  name: M_1\n  charset: a, b\n  states: S, A, F\n  init: S\n  accept: F\n  transitions:\n    - S . S      # \".\" = every letter of the alphabet\n    - S a A\n    - A b F      # ε-transition: S ε A (type eps)"
+      "example": "Machine:               # finite automaton: no storage\n  name: M_1\n  charset: a, b\n  states: S, A, F\n  init: S\n  accept: F\n  transitions:         # δ(q, a) = p is written (q, a) -> p\n    - (S, a) -> S\n    - (S, b) -> S\n    - (S, a) -> A\n    - (A, b) -> F      # an ε-transition: (S, ε) -> A (type eps)"
     },
     "names": {
       "heading": "Names",
@@ -177,10 +177,10 @@
     },
     "storages": {
       "heading": "Storages: stack, queue, tape",
-      "example": "Machine:               # pushdown automaton: one stack\n  name: P\n  charset: a, b\n  states: q0, q1, q2\n  init: q0\n  accept: q2           # or acceptMode: emptyStorages\n  storages:\n    stack: stack       # starts with Z; its alphabet is the symbols it uses\n  transitions:         #   or: stack: { type: stack, charset: [Z, A], init: Z }\n    - q0 a Z/AZ q0     # reading a: push AZ instead of Z\n    - q0 b A/ε q1      # ε = push nothing\n    - q1 ε Z/Z q2      # ε-step (type eps)\n\nMachine:               # Turing machine: one tape, holding the input\n  name: T\n  charset: a, b\n  states: s, ok\n  init: s\n  accept: ok\n  input: tape          # the input is placed on this storage\n  storages:\n    tape:\n      type: tape\n      charset: a, b, x, _   # Γ: Σ, the blank _ and more (by default Σ and _)\n  transitions:\n    - s a/x R s        # read a, write x, move right (R, L, S: right, left, stay)\n    - s _/& S ok       # _ = blank symbol, & = write the same symbol back",
-      "body1": "A transition line:",
-      "transitionSyntax": "FROM [INPUT] per-storage-operation… TO",
-      "body2": "— a stack/queue takes one element (POP/PUSH), a tape takes two (READ/WRITE MOVE). Any number of storages can be combined: two stacks already build a Turing-power machine (e.g. aⁿbⁿcⁿ, which is impossible with a pushdown automaton), a queue gives a queue automaton. The automaton operations (det, min…) only apply to storage-free machines — the app explains why."
+      "example": "Machine:               # pushdown automaton: one stack\n  name: P\n  charset: a, b\n  states: q0, q1, q2\n  init: q0\n  accept: q2           # or acceptMode: emptyStorages\n  storages:\n    stack: stack       # starts with Z; its alphabet is the symbols it uses\n  transitions:         #   or: stack: { type: stack, charset: [Z, A], init: Z }\n    - (q0, a, Z) -> (q0, AZ)   # reading a with Z on top: AZ instead of Z\n    - (q0, b, A) -> (q1, ε)    # ε = push nothing\n    - (q1, ε, Z) -> (q2, Z)    # ε-step (type eps)\n\nMachine:               # Turing machine: one tape, holding the input\n  name: T\n  charset: a, b\n  states: s, ok\n  init: s\n  accept: ok\n  input: tape          # the input is placed on this storage\n  storages:\n    tape:\n      type: tape\n      charset: a, b, x, _   # Γ: Σ, the blank _ and more (by default Σ and _)\n  transitions:\n    - (s, a) -> (s, x, R)    # read a, write x, move right (R, L, S: right, left, stay)\n    - (s, _) -> (ok, _, S)   # _ = the blank",
+      "body1": "A transition is written as δ in the lecture notes:",
+      "transitionSyntax": "(q, a, Z) -> (p, γ)",
+      "body2": "— δ's arguments are the state, the symbol read and what each storage reads (a stack's top, a tape's cell); its value is the next state and what each storage gets (the word pushed; the symbol written and the move). Any number of storages can be combined, one argument and one result each, in their order: two stacks already build a Turing-power machine (e.g. aⁿbⁿcⁿ, which is impossible with a pushdown automaton), a queue gives a queue automaton. The automaton operations (det, min…) only apply to storage-free machines — the app explains why."
     },
     "grammar": {
       "heading": "Grammar",

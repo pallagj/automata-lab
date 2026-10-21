@@ -3,10 +3,10 @@ import { createPortal } from "react-dom";
 import yaml from "js-yaml";
 import { useTranslation } from "react-i18next";
 import { ChevronRight, Plus, TriangleAlert, X } from "lucide-react";
-import { Machine, machineCaps, MachineCaps, StorageType } from "../../core/machine/machine";
+import { Machine, machineCaps, MachineCaps, StorageType, TAPE_BLANK } from "../../core/machine/machine";
+import { deltaToRow, fieldCount, readDelta, rowToDelta, transitionScalar, writeDelta } from "../../core/parse/delta";
 import { symbolsText } from "../../core/symbols";
 import { SymbolField } from "./SymbolField";
-import { fieldsToTokens, tokensToFields } from "./opFields";
 import { arrowKeysAcrossFields } from "./formNav";
 import { emptyFields, TransitionHead, TransitionRow, transitionFields } from "./TransitionRow";
 import { parseMachine, parseStorageEntry } from "../../core/parse/definitionParser";
@@ -37,7 +37,10 @@ export interface EntityDraft {
   /** "head" (read head) or the id of a storage */
   input: string;
   storages: DraftStorage[];
-  /** transitions / rules split into parts (tokens) */
+  /**
+   * transitions as δ's fields — the state, the input symbol, each storage's fields, the next
+   * state (see parse/delta.ts) — and rules as their two sides
+   */
   rows: string[][];
 }
 
@@ -66,28 +69,18 @@ export function draftStorages(d: EntityDraft): DraftStorage[] {
   return d.kind === "machine" ? d.storages : [];
 }
 
-/** how many tokens a storage occupies in a transition line */
-const tokensOf = (t: StorageType) => (t === "tape" ? 2 : 1);
-
-export function rowArity(d: EntityDraft): number {
-  if (d.kind === "grammar") return 2;
-  return 2 + (d.input === "head" ? 1 : 0) + d.storages.reduce((n, s) => n + tokensOf(s.type), 0);
-}
-
 function fieldText(v: unknown): string {
   if (v === undefined || v === null) return "";
   if (Array.isArray(v)) return v.map((x) => String(x)).join(", ");
   return String(v);
 }
 
-function splitRow(arity: number, isGrammar: boolean, raw: string): string[] {
-  if (isGrammar) {
-    const i = raw.indexOf("->");
-    return i >= 0 ? [raw.slice(0, i).trim(), raw.slice(i + 2).trim()] : [raw.trim(), ""];
-  }
-  const parts = raw.trim() === "" ? [] : raw.trim().split(/\s+/);
-  while (parts.length < arity) parts.push("");
-  return parts.slice(0, arity);
+const list = (s: string) => s.split(",").map((x) => x.trim()).filter(Boolean);
+
+/** A rule's two sides. */
+function splitRule(raw: string): string[] {
+  const i = raw.indexOf("->");
+  return i >= 0 ? [raw.slice(0, i).trim(), raw.slice(i + 2).trim()] : [raw.trim(), ""];
 }
 
 /** YAML → form draft; null if it cannot be interpreted (right now). */
@@ -133,11 +126,12 @@ export function parseEntityDraft(source: string): EntityDraft | null {
     storages,
     rows: []
   };
-  const arity = rowArity(draft);
   const rowsRaw = b[kind === "grammar" ? "rules" : "transitions"];
-  draft.rows = (Array.isArray(rowsRaw) ? rowsRaw : []).map((r) =>
-    splitRow(arity, kind === "grammar", r === null ? "" : String(r))
-  );
+  const types = storages.map((s) => s.type);
+  draft.rows = (Array.isArray(rowsRaw) ? rowsRaw : []).map((r) => {
+    const raw = r === null ? "" : String(r);
+    return kind === "grammar" ? splitRule(raw) : deltaToRow(readDelta(raw), draft.input === "head", types);
+  });
   return draft;
 }
 
@@ -190,7 +184,11 @@ export function serializeEntityDraft(d: EntityDraft): string {
     }
   }
   lines.push("  transitions:");
-  for (const r of d.rows) lines.push(`    - ${scalar(r.join(" ").trim())}`);
+  const types = d.storages.map((s) => s.type);
+  for (const r of d.rows) {
+    const { args, values } = rowToDelta(r.map((p) => p.trim()), d.input === "head", types);
+    lines.push(`    - ${transitionScalar(writeDelta(args, values))}`);
+  }
   return lines.join("\n");
 }
 
@@ -347,8 +345,14 @@ export const EntityForm: React.FC<Props> = ({ source, onChange }) => {
     onChange(s);
   };
 
-  /** the token(s) that leave the given storage untouched in a transition line */
-  const noOpTokens = (s: DraftStorage): string[] => (s.type === "tape" ? ["./&", "S"] : [`${EPS}/${EPS}`]);
+  /**
+   * the fields that leave a storage untouched: ε for a stack or a queue; a tape cell always
+   * holds a symbol, which is written back — one row per symbol of the tape's alphabet
+   */
+  const noOps = (s: DraftStorage, d: EntityDraft): string[][] =>
+    s.type !== "tape"
+      ? [[EPS, EPS]]
+      : (list(s.charset).length > 0 ? list(s.charset) : [...list(d.charset), TAPE_BLANK]).map((x) => [x, x, "S"]);
 
   /**
    * When the storages or the input change, the existing rows are rearranged: the
@@ -359,7 +363,7 @@ export const EntityForm: React.FC<Props> = ({ source, onChange }) => {
     const prevStorages = prev.storages;
     return {
       ...next,
-      rows: prev.rows.map((r) => {
+      rows: prev.rows.flatMap((r) => {
         const from = r[0] ?? "";
         const to = r[r.length - 1] ?? "";
         let i = 1;
@@ -367,21 +371,20 @@ export const EntityForm: React.FC<Props> = ({ source, onChange }) => {
         if (prev.input === "head") oldInput = r[i++] ?? EPS;
         const oldOps = new Map<string, string[]>();
         for (const s of prevStorages) {
-          const n = tokensOf(s.type);
+          const n = fieldCount(s.type);
           oldOps.set(s.id, r.slice(i, i + n));
           i += n;
         }
-        const middle: string[] = [];
-        if (next.input === "head") middle.push(oldInput ?? EPS);
+        let middles: string[][] = [next.input === "head" ? [oldInput ?? EPS] : []];
         for (const s of next.storages) {
           const oldId = renames?.get(s.id) ?? s.id;
           const old = oldOps.get(oldId);
           const prevSpec = prevStorages.find((x) => x.id === oldId);
           // on a type change the old operation becomes meaningless → no-op
-          if (old && prevSpec && prevSpec.type === s.type) middle.push(...old);
-          else middle.push(...noOpTokens(s));
+          const options = old && prevSpec && prevSpec.type === s.type ? [old] : noOps(s, next);
+          middles = middles.flatMap((m) => options.map((o) => [...m, ...o]));
         }
-        return [from, ...middle, to];
+        return middles.map((m) => [from, ...m, to]);
       })
     };
   };
@@ -453,7 +456,7 @@ export const EntityForm: React.FC<Props> = ({ source, onChange }) => {
   const addRow = () =>
     update({
       ...draft,
-      rows: [...draft.rows, draft.kind === "grammar" ? ["", ""] : ["", ...fieldsToTokens(hasHead, draft.storages, emptyFields(fields)), ""]]
+      rows: [...draft.rows, draft.kind === "grammar" ? ["", ""] : ["", ...emptyFields(fields), ""]]
     });
   const removeRow = (i: number) => update({ ...draft, rows: draft.rows.filter((_, k) => k !== i) });
 
@@ -611,8 +614,8 @@ export const EntityForm: React.FC<Props> = ({ source, onChange }) => {
                 notation={symbols}
                 from={from}
                 to={to}
-                values={tokensToFields(hasHead, draft.storages, row.slice(1, -1))}
-                onChange={(values) => setRowParts(i, [from, ...fieldsToTokens(hasHead, draft.storages, values), to])}
+                values={row.slice(1, -1)}
+                onChange={(values) => setRowParts(i, [from, ...values, to])}
                 onFrom={(v) => setRowParts(i, [v, ...row.slice(1)])}
                 onTo={(v) => setRowParts(i, [...row.slice(0, -1), v])}
                 onRemove={() => removeRow(i)}

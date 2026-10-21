@@ -1,5 +1,4 @@
 import { useMemo } from "react";
-import { fieldsToTokens, tokensToFields } from "../editor/opFields";
 import { useTranslation } from "react-i18next";
 import { activeWorkspace, useAppStore } from "../../state/store";
 import {
@@ -84,12 +83,12 @@ export function useGraphEditing(): {
   const accept = list(draft.accept);
   const init = draft.init.trim();
 
-  const middleOf = (r: string[]): EdgeMiddle => tokensToFields(hasHead, storages, r.slice(1, -1));
+  const middleOf = (r: string[]): EdgeMiddle => r.slice(1, -1);
   /** a state as the definition spells it (q0 rather than the graph's q_0) */
   const typed = (name: string) => states.find((s) => same(s, name)) ?? name;
   const rowOf = (from: string, to: string, m: EdgeMiddle): string[] => [
     typed(from),
-    ...fieldsToTokens(hasHead, storages, m),
+    ...m,
     typed(to)
   ];
 

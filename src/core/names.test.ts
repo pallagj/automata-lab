@@ -17,8 +17,8 @@ const M = (name: string) => `Machine:
   init: S
   accept: A
   transitions:
-    - S a A
-    - A b A`;
+    - (S, a) -> A
+    - (A, b) -> A`;
 
 describe("cell names: one letter with a subscript", () => {
   it("a definition's name is canonical: M1 is M_1", () => {
@@ -139,10 +139,10 @@ describe("stack symbols are names too", () => {
       init: Z_0
   acceptMode: emptyStorages
   transitions:
-    - q a Z_0/X_aZ_0 q
-    - q a X_a/X_aX_a q
-    - q b X_a/ε q
-    - q ε Z_0/ε q`).value!;
+    - (q, a, Z_0) -> (q, X_aZ_0)
+    - (q, a, X_a) -> (q, X_aX_a)
+    - (q, b, X_a) -> (q, ε)
+    - (q, ε, Z_0) -> (q, ε)`).value!;
     expect(p.storages[0].init).toEqual(["Z_0"]);
     expect(p.transitions[0].ops[0]).toEqual({ type: "stack", pop: "Z_0", push: ["X_a", "Z_0"] });
     expect(runMachine(p, "aabb").verdict).toBe("accepted");
@@ -162,7 +162,7 @@ describe("stack symbols are names too", () => {
   storages:
     stack: stack
   transitions:
-    - q a Z0/Z q`);
+    - (q, a, Z0) -> (q, Z)`);
     expect(r.ok).toBe(false);
     expect(r.diagnostics[0].title.key).toBe("definitionParser.storageOp.oneSymbol.title");
     expect(r.diagnostics[0].detail?.params?.example).toBe("Z_0");

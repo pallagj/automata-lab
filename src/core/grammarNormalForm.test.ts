@@ -462,7 +462,7 @@ describe("grammar transformations in a worksheet", () => {
   init: S
   accept: S
   transitions:
-    - S a S`,
+    - (S, a) -> S`,
       "X = cnf(M)"
     ]);
     expect(rs[1].value).toBeNull();

@@ -10,8 +10,8 @@ import { SymbolField } from "./SymbolField";
  * One transition, the same in the form and in the graph's edge dialog: either in the lecture
  * notes' notation — δ(q, a) = p, δ(q, a, Z) = (p, γ), δ(q, a) = (p, b, D), with more storages
  * one argument and one result per storage — or as a table row under column headers. Between
- * the states are the parts of the storage operations (editor/opFields.ts); the dialog edits
- * the transitions of one edge, so there the states are fixed.
+ * the states are the parts of the storage operations (parse/delta.ts); the dialog edits the
+ * transitions of one edge, so there the states are fixed.
  */
 
 /** A field between the states: a symbol read, a word written, or a head move. */
@@ -24,7 +24,7 @@ export interface TransitionField {
   side: "arg" | "value";
 }
 
-/** The fields in the order of tokensToFields: the input symbol, then each storage's parts. */
+/** The fields in the order of a form row (parse/delta.ts): the input symbol, then each storage's parts. */
 export function transitionFields(
   t: TFunction,
   hasHead: boolean,

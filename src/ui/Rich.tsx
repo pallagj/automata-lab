@@ -3,7 +3,7 @@ import React from "react";
 /**
  * Names in any displayed text: X_a and X_{ab} are shown with a real
  * subscript (core/symbols.ts writes them so). A "_" that does not follow a letter —
- * the tape blank in a/_ — stays as it is.
+ * the tape blank in a → _ — stays as it is.
  */
 const NAME = /(\p{L}′*)_(\{[^{}\s]+\}|[^\s{}_])/gu;
 

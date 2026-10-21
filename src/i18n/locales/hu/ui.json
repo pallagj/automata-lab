@@ -150,7 +150,7 @@
       "body2": "kulccsal készül: véges vezérlő + tetszőleges tárolók.",
       "emphasis": "A fajtáját a konfiguráció dönti el",
       "body3": "— tároló nélkül véges automata, egy veremmel veremautomata, egy szalaggal (amelyre a bemenet kerül) Turing-gép, más kombinációval általános gép. A felület felismeri és ennek megfelelően nevezi el.",
-      "example": "Machine:               # véges automata: nincs tároló\n  name: M_1\n  charset: a, b\n  states: S, A, F\n  init: S\n  accept: F\n  transitions:\n    - S . S      # \".\" = az ábécé minden betűje\n    - S a A\n    - A b F      # ε-átmenet: S ε A (írd: eps)"
+      "example": "Machine:               # véges automata: nincs tároló\n  name: M_1\n  charset: a, b\n  states: S, A, F\n  init: S\n  accept: F\n  transitions:         # δ(q, a) = p így írandó: (q, a) -> p\n    - (S, a) -> S\n    - (S, b) -> S\n    - (S, a) -> A\n    - (A, b) -> F      # ε-átmenet: (S, ε) -> A (írd: eps)"
     },
     "names": {
       "heading": "Nevek",
@@ -177,10 +177,10 @@
     },
     "storages": {
       "heading": "Tárolók: verem, sor, szalag",
-      "example": "Machine:               # veremautomata: egy verem\n  name: P\n  charset: a, b\n  states: q0, q1, q2\n  init: q0\n  accept: q2           # vagy acceptMode: emptyStorages\n  storages:\n    verem: stack       # Z-vel indul; ábécéje a használt jelek\n  transitions:         #   vagy: verem: { type: stack, charset: [Z, A], init: Z }\n    - q0 a Z/AZ q0     # a beolvasása: Z helyett AZ a verembe\n    - q0 b A/ε q1      # ε = nem ír semmit\n    - q1 ε Z/Z q2      # ε-lépés (írd: eps)\n\nMachine:               # Turing-gép: egy szalag, rajta a bemenet\n  name: T\n  charset: a, b\n  states: s, ok\n  init: s\n  accept: ok\n  input: szalag        # a bemenet erre a tárolóra kerül\n  storages:\n    szalag:\n      type: tape\n      charset: a, b, x, _   # Γ: Σ, az üres jel (_) és más jelek (alapból Σ és _)\n  transitions:\n    - s a/x R s        # a-t olvas, x-et ír, jobbra lép (a YAML-ban R, L, S; a felület J, B, H)\n    - s _/& S ok       # _ = üres jel, & = ugyanazt írja vissza",
-      "body1": "Egy átmenet sora:",
-      "transitionSyntax": "HONNAN [BEMENET] tárolónként-művelet… HOVA",
-      "body2": "— verem/sor egy elem (LE/FEL), szalag kettő (OLVAS/ÍR MOZGÁS). Akárhány tároló kombinálható: két veremmel már Turing-erejű gép építhető (pl. aⁿbⁿcⁿ, ami veremautomatával nem lehetséges), sorral (queue) sorautomata. Az automata-műveletek (det, min…) csak tárolómentes gépre alkalmazhatók — az alkalmazás megmondja, miért."
+      "example": "Machine:               # veremautomata: egy verem\n  name: P\n  charset: a, b\n  states: q0, q1, q2\n  init: q0\n  accept: q2           # vagy acceptMode: emptyStorages\n  storages:\n    verem: stack       # Z-vel indul; ábécéje a használt jelek\n  transitions:         #   vagy: verem: { type: stack, charset: [Z, A], init: Z }\n    - (q0, a, Z) -> (q0, AZ)   # a-t olvas, Z a tetőn: Z helyett AZ\n    - (q0, b, A) -> (q1, ε)    # ε = nem ír semmit\n    - (q1, ε, Z) -> (q2, Z)    # ε-lépés (írd: eps)\n\nMachine:               # Turing-gép: egy szalag, rajta a bemenet\n  name: T\n  charset: a, b\n  states: s, ok\n  init: s\n  accept: ok\n  input: szalag        # a bemenet erre a tárolóra kerül\n  storages:\n    szalag:\n      type: tape\n      charset: a, b, x, _   # Γ: Σ, az üres jel (_) és más jelek (alapból Σ és _)\n  transitions:\n    - (s, a) -> (s, x, R)    # a-t olvas, x-et ír, jobbra lép (a YAML-ban R, L, S; a felület J, B, H)\n    - (s, _) -> (ok, _, S)   # _ = az üres jel",
+      "body1": "Egy átmenet úgy írandó, ahogy a jegyzet a δ-t írja:",
+      "transitionSyntax": "(q, a, Z) -> (p, γ)",
+      "body2": "— δ argumentumai az állapot, az olvasott jel és amit az egyes tárolók olvasnak (a verem teteje, a szalag cellája); értéke a következő állapot és amit a tárolók kapnak (a verembe írt szó; a szalagra írt jel és a mozgás). Akárhány tároló kombinálható, mindegyik egy argumentummal és egy eredménnyel, a sorrendjükben: két veremmel már Turing-erejű gép építhető (pl. aⁿbⁿcⁿ, ami veremautomatával nem lehetséges), sorral (queue) sorautomata. Az automata-műveletek (det, min…) csak tárolómentes gépre alkalmazhatók — az alkalmazás megmondja, miért."
     },
     "grammar": {
       "heading": "Nyelvtan",

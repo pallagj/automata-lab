@@ -101,7 +101,7 @@
       },
       "invalidTransition": {
         "title": "Hibás átmenet: „{{line}}”",
-        "detail": "Ehhez a géphez {{count}} elem kell: {{shape}}"
+        "detail": "Ennek a gépnek az átmenetei így néznek ki: {{shape}} — δ argumentumai zárójelben, nyíl, majd az értéke, minden rész kiírva (az ε is)."
       },
       "unknownFromState": "Ismeretlen állapot az átmenetben: „{{state}}”",
       "unknownToState": "Ismeretlen célállapot az átmenetben: „{{state}}”",
@@ -198,25 +198,17 @@
       "detail": "Használható: stack, queue, tape — ábécével és kezdőtartalommal:\n  v1:\n    type: stack\n    charset: Z, A\n    init: Z"
     },
     "storageOp": {
-      "badTapeOp": {
-        "title": "Hibás szalagművelet: „{{tokens}}” ({{storageId}})",
-        "detail": "Sor: „{{line}}”. Alak: OLVAS/ÍR MOZGÁS — pl. „a/b R”. Üres jel: _ , „ugyanazt írja”: &."
-      },
       "unknownMove": {
         "title": "Ismeretlen mozgás: „{{tokens}}” ({{storageId}})",
         "detail": "Sor: „{{line}}”. Használható: R (jobbra), L (balra), S (helyben) — a YAML mindig ezeket az angol betűket használja, a felület J, B, H-ként mutatja őket."
       },
-      "badStackOp": {
-        "title": "Hibás tárolóművelet: „{{tokens}}” ({{storageId}})",
-        "detail": "Sor: „{{line}}”. Verem-alak: LEVESZ/FELÍR — pl. „Z/AZ”; semmihez ε (vagy eps)."
-      },
-      "badQueueOp": {
-        "title": "Hibás tárolóművelet: „{{tokens}}” ({{storageId}})",
-        "detail": "Sor: „{{line}}”. Sor-alak: KIVESZ/BETESZ — pl. „A/BA”; semmihez ε (vagy eps)."
-      },
       "oneSymbol": {
         "title": "„{{tokens}}” több szimbólum ({{storageId}})",
         "detail": "Egy művelet egyetlen szimbólumot vesz le a tárolóról (vagy ε-t, ha semmit). Az alsó indexes szimbólumot _-sal írd, pl. {{example}}. ({{line}})"
+      },
+      "tapeOneSymbol": {
+        "title": "„{{tokens}}” nem egyetlen szalagjel ({{storageId}})",
+        "detail": "Sor: „{{line}}”. Egy szalagcellában mindig pontosan egy jel áll — az üresben a _."
       }
     },
     "badName": {

@@ -101,7 +101,7 @@
       },
       "invalidTransition": {
         "title": "Ungültiger Übergang: „{{line}}“",
-        "detail": "Diese Maschine benötigt {{count}} Elemente pro Zeile: {{shape}}"
+        "detail": "Die Übergänge dieser Maschine lauten {{shape}}: die Argumente von δ in Klammern, ein Pfeil, dann ihr Wert, jeder Teil ausgeschrieben (auch ε)."
       },
       "unknownFromState": "Unbekannter Zustand im Übergang: „{{state}}“",
       "unknownToState": "Unbekannter Zielzustand im Übergang: „{{state}}“",
@@ -198,25 +198,17 @@
       "detail": "Erlaubt: stack, queue, tape — mit einem Alphabet und einem Anfangsinhalt:\n  v1:\n    type: stack\n    charset: Z, A\n    init: Z"
     },
     "storageOp": {
-      "badTapeOp": {
-        "title": "Ungültige Bandoperation: „{{tokens}}“ ({{storageId}})",
-        "detail": "Zeile: „{{line}}“. Form: LESEN/SCHREIBEN BEWEGUNG — z. B. „a/b R“. Leerzeichen: _, „dasselbe zurückschreiben“: &."
-      },
       "unknownMove": {
         "title": "Unbekannte Bewegung: „{{tokens}}“ ({{storageId}})",
         "detail": "Zeile: „{{line}}“. Erlaubt: R (rechts), L (links), S (bleiben) — im YAML immer diese englischen Buchstaben; die Oberfläche zeigt sie als R, L, N."
       },
-      "badStackOp": {
-        "title": "Ungültige Speicheroperation: „{{tokens}}“ ({{storageId}})",
-        "detail": "Zeile: „{{line}}“. Keller-Form: POP/PUSH — z. B. „Z/AZ“; ε (oder eps) für nichts."
-      },
-      "badQueueOp": {
-        "title": "Ungültige Speicheroperation: „{{tokens}}“ ({{storageId}})",
-        "detail": "Zeile: „{{line}}“. Warteschlangen-Form: ENTNEHMEN/EINFÜGEN — z. B. „A/BA“; ε (oder eps) für nichts."
-      },
       "oneSymbol": {
         "title": "„{{tokens}}“ ist mehr als ein Symbol ({{storageId}})",
         "detail": "Eine Operation nimmt ein einzelnes Symbol vom Speicher (oder ε für nichts). Ein Symbol mit Index schreibt man mit _, etwa {{example}}. ({{line}})"
+      },
+      "tapeOneSymbol": {
+        "title": "„{{tokens}}“ ist nicht ein Bandsymbol ({{storageId}})",
+        "detail": "Zeile: „{{line}}“. Eine Bandzelle enthält immer genau ein Symbol — eine leere das Leerzeichen _."
       }
     },
     "badName": {

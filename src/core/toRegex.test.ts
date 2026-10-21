@@ -309,9 +309,10 @@ describe("toRegex in a worksheet", () => {
   init: "1"
   accept: "2"
   transitions:
-    - 1 a 1
-    - 1 b 2
-    - 2 . 2`;
+    - (1, a) -> 1
+    - (1, b) -> 2
+    - (2, a) -> 2
+    - (2, b) -> 2`;
 
   it("returns a regex value that is equivalent to the automaton", () => {
     const rs = evaluateCells([machine, "R = toRegex(M)", "V = equal(M, R)", "A = toFsm(R)"]);
@@ -348,7 +349,7 @@ describe("toRegex in a worksheet", () => {
   storages:
     stack: stack
   transitions:
-    - q a Z/AZ q`,
+    - (q, a, Z) -> (q, AZ)`,
       "R = toRegex(P)"
     ]);
     expect(rs[1].value).toBeNull();

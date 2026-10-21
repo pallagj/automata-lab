@@ -101,7 +101,7 @@
       },
       "invalidTransition": {
         "title": "Invalid transition: \"{{line}}\"",
-        "detail": "This machine needs {{count}} tokens per line: {{shape}}"
+        "detail": "This machine's transitions read {{shape}}: δ's arguments in parentheses, an arrow, then its value, every part written out (ε too)."
       },
       "unknownFromState": "Unknown state in the transition: \"{{state}}\"",
       "unknownToState": "Unknown target state in the transition: \"{{state}}\"",
@@ -198,25 +198,17 @@
       "detail": "Allowed: stack, queue, tape — with an alphabet and an initial content:\n  v1:\n    type: stack\n    charset: Z, A\n    init: Z"
     },
     "storageOp": {
-      "badTapeOp": {
-        "title": "Invalid tape operation: \"{{tokens}}\" ({{storageId}})",
-        "detail": "Line: \"{{line}}\". Form: READ/WRITE MOVE — e.g. \"a/b R\". Blank symbol: _, \"write the same back\": &."
-      },
       "unknownMove": {
         "title": "Unknown move: \"{{tokens}}\" ({{storageId}})",
         "detail": "Line: \"{{line}}\". Allowed: R (right), L (left), S (stay) — the YAML always uses these English letters, whatever the interface's language."
       },
-      "badStackOp": {
-        "title": "Invalid storage operation: \"{{tokens}}\" ({{storageId}})",
-        "detail": "Line: \"{{line}}\". Stack form: POP/PUSH — e.g. \"Z/AZ\"; ε (or eps) for nothing."
-      },
-      "badQueueOp": {
-        "title": "Invalid storage operation: \"{{tokens}}\" ({{storageId}})",
-        "detail": "Line: \"{{line}}\". Queue form: TAKE/PUT — e.g. \"A/BA\"; ε (or eps) for nothing."
-      },
       "oneSymbol": {
         "title": "“{{tokens}}” is more than one symbol ({{storageId}})",
         "detail": "An operation takes a single symbol off the storage (or ε for nothing). A symbol with a subscript is written with _, like {{example}}. ({{line}})"
+      },
+      "tapeOneSymbol": {
+        "title": "“{{tokens}}” is not one tape symbol ({{storageId}})",
+        "detail": "Line: \"{{line}}\". A tape cell always holds exactly one symbol — an empty one the blank _."
       }
     },
     "badName": {

@@ -257,7 +257,7 @@ describe("regex", () => {
 });
 
 describe("parser", () => {
-  it("automaton with wildcards and a range", () => {
+  it("automaton with a range of states", () => {
     const r = parseMachine(`
 Machine:
   name: M
@@ -266,14 +266,15 @@ Machine:
   init: S
   accept: C
   transitions:
-    - S . S
-    - S a A
-    - A b B
-    - B a C
+    - (S, a) -> S
+    - (S, b) -> S
+    - (S, a) -> A
+    - (A, b) -> B
+    - (B, a) -> C
 `);
     expect(r.ok).toBe(true);
     expect(r.value!.states).toEqual(["S", "A", "B", "C"]);
-    // wildcard: S loops to itself on every symbol
+    // S loops to itself on every symbol
     expect(runMachine(r.value!, "bbaba").verdict).toBe("accepted");
   });
   it("an unknown state is an error", () => {
@@ -285,7 +286,7 @@ Machine:
   init: S
   accept: S
   transitions:
-    - S a X
+    - (S, a) -> X
 `);
     expect(r.ok).toBe(false);
     expect(r.diagnostics[0].title.key).toBe("definitionParser.machine.unknownToState");
@@ -407,11 +408,11 @@ Machine:
   storages:
     stack: stack
   transitions:
-    - q0 a Z/AZ q0
-    - q0 a A/AA q0
-    - q0 b A/ε q1
-    - q1 b A/ε q1
-    - q1 ε Z/Z q2
+    - (q0, a, Z) -> (q0, AZ)
+    - (q0, a, A) -> (q0, AA)
+    - (q0, b, A) -> (q1, ε)
+    - (q1, b, A) -> (q1, ε)
+    - (q1, ε, Z) -> (q2, Z)
 `).value!;
     expect(machineCaps(p).isPDALike).toBe(true);
     expect(runMachine(p, "aabb").verdict).toBe("accepted");
@@ -431,15 +432,15 @@ Machine:
   storages:
     stack: stack
   transitions:
-    - q0 a Z/AZ q0
-    - q0 eps Z/Z q1
+    - (q0, a, Z) -> (q0, AZ)
+    - (q0, eps, Z) -> (q1, Z)
 `).value!;
     const ser = serializeDefinition(p);
     expect(ser).toContain("Machine:");
     expect(ser).toContain("stack: stack");
     // the eps alias is written back as ε
     // q0 is the name q₀: written canonically
-    expect(ser).toContain("- q_0 ε Z/Z q_1");
+    expect(ser).toContain("- (q_0, ε, Z) -> (q_1, Z)");
     expect(ser).not.toContain("$");
     const back = parseMachine(ser).value!;
     for (const w of ["", "a", "aa"]) {
@@ -479,19 +480,22 @@ Machine:
   storages:
     tape: tape
   transitions:
-    - start a/_ R haveA
-    - start b/_ R haveB
-    - start _/& S ok
-    - haveA ./& R haveA
-    - haveA _/& L matchA
-    - haveB ./& R haveB
-    - haveB _/& L matchB
-    - matchA a/_ L back
-    - matchA _/& S ok
-    - matchB b/_ L back
-    - matchB _/& S ok
-    - back ./& L back
-    - back _/& R start
+    - (start, a) -> (haveA, _, R)
+    - (start, b) -> (haveB, _, R)
+    - (start, _) -> (ok, _, S)
+    - (haveA, a) -> (haveA, a, R)
+    - (haveA, b) -> (haveA, b, R)
+    - (haveA, _) -> (matchA, _, L)
+    - (haveB, a) -> (haveB, a, R)
+    - (haveB, b) -> (haveB, b, R)
+    - (haveB, _) -> (matchB, _, L)
+    - (matchA, a) -> (back, _, L)
+    - (matchA, _) -> (ok, _, S)
+    - (matchB, b) -> (back, _, L)
+    - (matchB, _) -> (ok, _, S)
+    - (back, a) -> (back, a, L)
+    - (back, b) -> (back, b, L)
+    - (back, _) -> (start, _, R)
 `).value!;
     expect(machineCaps(t).isTMLike).toBe(true);
     expect(runMachine(t, "abba").verdict).toBe("accepted");
@@ -512,12 +516,12 @@ Machine:
   storages:
     tape: tape
   transitions:
-    - s a/a R s
-    - s _/_ S ok
+    - (s, a) -> (s, a, R)
+    - (s, _) -> (ok, _, S)
 `).value!;
     const ser = serializeDefinition(t);
     expect(ser).toContain("Machine:");
-    expect(ser).toContain("a/a R s");
+    expect(ser).toContain("- (s, a) -> (s, a, R)");
     const back = parseMachine(ser).value!;
     expect(runMachine(back, "aaa").verdict).toBe("accepted");
   });
@@ -533,10 +537,10 @@ describe("worksheet evaluation", () => {
   init: "0"
   accept: "2"
   transitions:
-    - 0 a 0
-    - 0 b 0
-    - 0 a 1
-    - 1 b 2`,
+    - (0, a) -> 0
+    - (0, b) -> 0
+    - (0, a) -> 1
+    - (1, b) -> 2`,
       "D = det(M)",
       "N = min(D)",
       "V = equal(M, N)"
@@ -600,8 +604,8 @@ describe("worksheet evaluation", () => {
   init: S
   accept: A
   transitions:
-    - S ε A
-    - A a A`,
+    - (S, ε) -> A
+    - (A, a) -> A`,
       "K = min(M)",
       "J = min(complete(det(epsfree(M))))"
     ];
@@ -621,7 +625,7 @@ describe("worksheet evaluation", () => {
   storages:
     stack: stack
   transitions:
-    - q0 a Z/Z q0`,
+    - (q0, a, Z) -> (q0, Z)`,
       "D = det(P)"
     ];
     const rs = evaluateCells(cells);
@@ -642,8 +646,8 @@ describe("worksheet evaluation", () => {
   init: S
   accept: A
   transitions:
-    - S a A
-    - A b A`,
+    - (S, a) -> A
+    - (A, b) -> A`,
       "D = min(complete(det(M)))",
       "F = toFsm(M)"
     ];
@@ -692,8 +696,8 @@ describe("unnamed cells", () => {
   init: S
   accept: A
   transitions:
-    - S a A
-    - S b S`;
+    - (S, a) -> A
+    - (S, b) -> S`;
   const unnamed = M1.replace("  name: M1\n", "");
 
   it("evaluates an expression without a name", () => {

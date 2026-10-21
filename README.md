@@ -83,9 +83,10 @@ Machine:
   init: S
   accept: F
   transitions:
-    - S . S      # "." = every symbol
-    - S a A
-    - A b F
+    - (S, a) -> S      # δ(S, a) = S, as in the lecture notes
+    - (S, b) -> S
+    - (S, a) -> A
+    - (A, b) -> F
 ```
 
 and the following cells can transform it with expressions:
