@@ -152,6 +152,10 @@
         "title": "Widersprüchliche Symbole: {{symbols}}",
         "detail": "Ein Symbol kann nicht gleichzeitig Terminal und Nichtterminal sein."
       },
+      "emptyAlternative": {
+        "title": "Leere Alternative in der Regel: „{{line}}“",
+        "detail": "Schreibe ε (oder eps) für das leere Wort, z. B. „S -> aS | ε“."
+      },
       "invalidRule": {
         "title": "Ungültige Regel: „{{line}}“",
         "detail": "Form: LINKS -> RECHTS1 | RECHTS2 — z. B. „S -> aA | b“. Für das leere Wort ε (oder eps) schreiben."

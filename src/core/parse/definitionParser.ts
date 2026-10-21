@@ -625,6 +625,11 @@ export function parseGrammar(source: string): OpResult<Grammar> {
       ]);
 
     for (const alt of m[2].split("|")) {
+      // the empty word is written as ε, as in the notes: an empty alternative is a slip
+      if (alt.trim() === "")
+        return failResult([
+          err(tx("definitionParser.grammar.emptyAlternative.title", { line }), tx("definitionParser.grammar.emptyAlternative.detail"))
+        ]);
       const rightR = readSide(alt, line);
       if (!rightR.ok) return failResult(rightR.diagnostics);
       const right = rightR.value!;

@@ -152,6 +152,10 @@
         "title": "Ütköző jelek: {{symbols}}",
         "detail": "Egy jel nem lehet egyszerre terminális és nemterminális."
       },
+      "emptyAlternative": {
+        "title": "Üres alternatíva a szabályban: „{{line}}”",
+        "detail": "Az üres szót ε-nal (vagy eps-szel) írd, például „S -> aS | ε”."
+      },
       "invalidRule": {
         "title": "Hibás szabály: „{{line}}”",
         "detail": "Alak: BAL -> JOBB1 | JOBB2 — pl. „S -> aA | b”. Az üres szó: ε (vagy eps)."

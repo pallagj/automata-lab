@@ -330,6 +330,32 @@ Grammar:
     expect(v.ok).toBe(false);
     expect(v.diagnostics[0].title).toEqual({ key: "definitionParser.badName.title", params: { name: "A-C" } });
   });
+  it("a rule's empty alternative is an error: the empty word is written ε", () => {
+    const grammar = (rule: string) =>
+      parseGrammar(`
+Grammar:
+  name: G
+  charset: a
+  variables: S
+  init: S
+  rules:
+    - ${rule}
+`);
+    for (const rule of ["S -> aS |", "S -> | aS", "S -> aS || ε", "S ->", "S -> aS |  "]) {
+      const r = grammar(rule);
+      expect(r.ok, rule).toBe(false);
+      expect(r.diagnostics[0].title, rule).toEqual({
+        key: "definitionParser.grammar.emptyAlternative.title",
+        params: { line: rule.trim() }
+      });
+    }
+    const ok = grammar("S -> aS | ε");
+    expect(ok.ok).toBe(true);
+    expect(ok.value!.rules).toEqual([
+      { left: ["S"], right: ["a", "S"] },
+      { left: ["S"], right: [] }
+    ]);
+  });
   it("an unknown state is an error", () => {
     const r = parseMachine(`
 Machine:

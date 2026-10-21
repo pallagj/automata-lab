@@ -9,6 +9,7 @@ import { symbolsText } from "../../core/symbols";
 import { SymbolField } from "./SymbolField";
 import { arrowKeysAcrossFields } from "./formNav";
 import { emptyFields, TransitionHead, TransitionRow, transitionFields } from "./TransitionRow";
+import { RuleHead, RuleRow } from "./RuleRow";
 import { parseMachine, parseStorageEntry } from "../../core/parse/definitionParser";
 import { useAppStore } from "../../state/store";
 import { machineKindLabel } from "../machineLabels";
@@ -39,7 +40,7 @@ export interface EntityDraft {
   storages: DraftStorage[];
   /**
    * transitions as δ's fields — the state, the input symbol, each storage's fields, the next
-   * state (see parse/delta.ts) — and rules as their two sides
+   * state (see parse/delta.ts) — and rules as the left-hand side, then each alternative
    */
   rows: string[][];
 }
@@ -77,10 +78,11 @@ function fieldText(v: unknown): string {
 
 const list = (s: string) => s.split(",").map((x) => x.trim()).filter(Boolean);
 
-/** A rule's two sides. */
+/** A rule: its left-hand side, then the alternatives of its right-hand side. */
 function splitRule(raw: string): string[] {
   const i = raw.indexOf("->");
-  return i >= 0 ? [raw.slice(0, i).trim(), raw.slice(i + 2).trim()] : [raw.trim(), ""];
+  if (i < 0) return [raw.trim(), ""];
+  return [raw.slice(0, i).trim(), ...raw.slice(i + 2).split("|").map((alt) => alt.trim())];
 }
 
 /** YAML → form draft; null if it cannot be interpreted (right now). */
@@ -155,7 +157,11 @@ export function serializeEntityDraft(d: EntityDraft): string {
       `  init: ${scalar(d.init)}`,
       "  rules:"
     ];
-    for (const r of d.rows) lines.push(`    - ${r[0].trim()} -> ${r[1].trim()}`);
+    // an alternative left empty in the form is not written: the empty word is ε
+    for (const r of d.rows) {
+      const right = r.slice(1).map((alt) => alt.trim()).filter((alt) => alt !== "");
+      lines.push(`    - ${r[0].trim()} -> ${right.join(" | ")}`);
+    }
     return lines.join("\n");
   }
 
@@ -447,10 +453,6 @@ export const EntityForm: React.FC<Props> = ({ source, onChange }) => {
 
   const setRowParts = (i: number, parts: string[]) =>
     update({ ...draft, rows: draft.rows.map((r, k) => (k === i ? parts : r)) });
-  const setRow = (i: number, j: number, value: string) => {
-    const rows = draft.rows.map((r, k) => (k === i ? r.map((p, l) => (l === j ? value : p)) : r));
-    update({ ...draft, rows });
-  };
   const hasHead = draft.input === "head";
   const fields = transitionFields(t, hasHead, draft.storages);
   const kindCaps = draftKindCaps(draft);
@@ -576,7 +578,7 @@ export const EntityForm: React.FC<Props> = ({ source, onChange }) => {
                 onChange={(init) => setStorage(i, { init })}
                 digits={false}
                 epsilon
-                placeholder={s.type === "tape" ? t("editor.form.tapeInitPlaceholder") : t("editor.form.initialContentPlaceholder")}
+                placeholder={s.type === "tape" ? undefined : t("editor.form.initialContentPlaceholder")}
               />
               <button
                 className="ef-remove"
@@ -606,13 +608,7 @@ export const EntityForm: React.FC<Props> = ({ source, onChange }) => {
           <span className="ef-count">{draft.rows.length}</span>
         </button>
         {rowsOpen && k === "machine" && !symbols && <TransitionHead fields={fields} />}
-        {rowsOpen && k === "grammar" && !symbols && (
-          <div className="ef-row ef-row-head">
-            <span>{t("editor.form.col.leftSide")}</span>
-            <span>{t("editor.form.col.rightSide")}</span>
-            <span />
-          </div>
-        )}
+        {rowsOpen && k === "grammar" && !symbols && <RuleHead />}
         {rowsOpen && draft.rows.map((row, i) => {
           if (k === "machine") {
             const from = row[0] ?? "";
@@ -632,24 +628,18 @@ export const EntityForm: React.FC<Props> = ({ source, onChange }) => {
               />
             );
           }
-          // digits go to subscripts in variables, unless the digit is a terminal (S → 0S1)
-          const digits = (ch: string) => !terminals.includes(ch);
           return (
-            <div className={`ef-row ${symbols ? "ef-row-rule" : ""}`} key={i}>
-              <SymbolField value={row[0]} onChange={(v) => setRow(i, 0, v)} digits={digits} placeholder="S" />
-              {symbols && <span className="ef-op">→</span>}
-              <SymbolField
-                value={row[1]}
-                onChange={(v) => setRow(i, 1, v)}
-                epsilon
-                digits={digits}
-                placeholder="aS | b"
-                className="wide"
-              />
-              <button className="ef-remove" title={t("editor.form.deleteRow")} onClick={() => removeRow(i)}>
-                <X size={13} />
-              </button>
-            </div>
+            <RuleRow
+              key={i}
+              notation={symbols}
+              left={row[0]}
+              right={row.slice(1)}
+              onLeft={(v) => setRowParts(i, [v, ...row.slice(1)])}
+              onRight={(alternatives) => setRowParts(i, [row[0], ...alternatives])}
+              onRemove={() => removeRow(i)}
+              // digits go to subscripts in variables, unless the digit is a terminal (S → 0S1)
+              digits={(ch) => !terminals.includes(ch)}
+            />
           );
         })}
         {rowsOpen && (

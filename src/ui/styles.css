@@ -1093,8 +1093,62 @@ details.card[open] > summary .chev {
   flex: 1;
 }
 
-.ef-row > .sym-field.wide {
+/* a rule's alternatives (editor/RuleRow.tsx), | between them: each as wide as its content,
+   the right-hand side takes the rest of the row — under the headers, 2.5 parts of it */
+.ef-alts {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.ef-row:not(.ef-row-rule) > .ef-alts,
+.ef-rule-head span:nth-child(2) {
   flex: 2.5;
+}
+
+.ef-alts > .sym-field {
+  flex: 0 1 auto;
+  width: auto;
+  min-width: 18px;
+}
+
+.ef-alts .sym-field .cm-line {
+  padding: 0 2px;
+}
+
+.ef-alts > .ef-bar {
+  margin: 0 4px;
+}
+
+/* over the alternatives' tight fields */
+.ef-rule-head span:nth-child(2) {
+  padding-left: 0;
+}
+
+.ef-alt-add {
+  flex: none;
+  display: inline-flex;
+  margin-left: 4px;
+  padding: 2px;
+  background: none;
+  border: none;
+  border-radius: 5px;
+  color: var(--muted);
+  cursor: pointer;
+  opacity: 0;
+}
+
+.ef-alt-add:hover {
+  color: var(--accent);
+  background: var(--bg-soft);
+}
+
+.ef-row:hover .ef-alt-add,
+.ef-row:focus-within .ef-alt-add,
+.ef-alt-add:focus-visible {
+  opacity: 1;
 }
 
 /* the notation around the fields: δ(q, a) = p, A → α */

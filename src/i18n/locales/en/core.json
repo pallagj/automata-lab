@@ -152,6 +152,10 @@
         "title": "Conflicting symbols: {{symbols}}",
         "detail": "A symbol cannot be both a terminal and a nonterminal."
       },
+      "emptyAlternative": {
+        "title": "Empty alternative in the rule: \"{{line}}\"",
+        "detail": "Write ε (or eps) for the empty word, e.g. \"S -> aS | ε\"."
+      },
       "invalidRule": {
         "title": "Invalid rule: \"{{line}}\"",
         "detail": "Form: LEFT -> RIGHT1 | RIGHT2 — e.g. \"S -> aA | b\". Write ε (or eps) for the empty word."

@@ -454,7 +454,7 @@
     "form": {
       "col": {
         "leftSide": "left-hand side",
-        "rightSide": "right-hand side (| separates)",
+        "rightSide": "right-hand side",
         "from": "from",
         "symbol": "symbol",
         "pop": "{{id}} pop",
@@ -502,7 +502,6 @@
       "type": "type",
       "initialContent": "initial content",
       "namePlaceholder": "name",
-      "tapeInitPlaceholder": "(the input may go here)",
       "initialContentPlaceholder": "initial content",
       "deleteStorage": "Delete storage",
       "configHint": "The machine's setup: storages, input, acceptance",
@@ -511,6 +510,7 @@
       "newStorage": "new storage",
       "deleteRow": "Delete row",
       "newRule": "new rule",
+      "newAlternative": "new alternative (or type |)",
       "newTransition": "new transition",
       "transitions": "Transitions",
       "rules": "Rules"

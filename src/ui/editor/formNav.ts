@@ -56,7 +56,7 @@ const viewOf = (el: HTMLElement) => {
 };
 
 /** Whether the caret is at the field's start (or end), with nothing selected; a select has no caret. */
-function caretAt(el: HTMLElement, edge: "start" | "end"): boolean {
+export function caretAt(el: HTMLElement, edge: "start" | "end"): boolean {
   const view = viewOf(el);
   if (view) {
     const sel = view.state.selection.main;
@@ -70,17 +70,16 @@ function caretAt(el: HTMLElement, edge: "start" | "end"): boolean {
   return true;
 }
 
-function focusField(el: HTMLElement, caret: "start" | "end"): void {
+/** Puts the caret in a field (a CodeMirror field's content, or an input): at its start, its end, or a position. */
+export function focusField(el: HTMLElement, caret: "start" | "end" | number): void {
   const view = viewOf(el);
+  const at = (length: number) => (caret === "start" ? 0 : caret === "end" ? length : Math.min(caret, length));
   if (view) {
     view.focus();
-    view.dispatch({ selection: { anchor: caret === "start" ? 0 : view.state.doc.length } });
+    view.dispatch({ selection: { anchor: at(view.state.doc.length) } });
   } else {
     el.focus();
-    if (el instanceof HTMLInputElement) {
-      const at = caret === "start" ? 0 : el.value.length;
-      el.setSelectionRange(at, at);
-    }
+    if (el instanceof HTMLInputElement) el.setSelectionRange(at(el.value.length), at(el.value.length));
   }
 }
 

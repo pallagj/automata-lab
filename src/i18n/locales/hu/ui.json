@@ -454,7 +454,7 @@
     "form": {
       "col": {
         "leftSide": "bal oldal",
-        "rightSide": "jobb oldal (| választ el)",
+        "rightSide": "jobb oldal",
         "from": "honnan",
         "symbol": "jel",
         "pop": "{{id}} le",
@@ -502,7 +502,6 @@
       "type": "típus",
       "initialContent": "kezdőtartalom",
       "namePlaceholder": "név",
-      "tapeInitPlaceholder": "(a bemenet kerülhet rá)",
       "initialContentPlaceholder": "kezdőtartalom",
       "deleteStorage": "Tároló törlése",
       "configHint": "A gép beállításai: tárolók, bemenet, elfogadás",
@@ -511,6 +510,7 @@
       "newStorage": "új tároló",
       "deleteRow": "Sor törlése",
       "newRule": "új szabály",
+      "newAlternative": "új alternatíva (vagy írj |-t)",
       "newTransition": "új átmenet",
       "transitions": "Átmenetek",
       "rules": "Szabályok"

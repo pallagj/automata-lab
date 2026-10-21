@@ -25,6 +25,20 @@ const epsilonEverywhere = EditorView.inputHandler.of((view, from, to, text) => {
 });
 
 /**
+ * | typed or pasted, where the field splits at it (a rule's alternatives): the edit is not
+ * made, the text it would give goes to `split` cut at each | — once the edit is over.
+ */
+const splitAtBar = (split: () => ((parts: string[]) => void) | undefined) =>
+  EditorState.transactionFilter.of((tr) => {
+    const onSplit = split();
+    if (!onSplit || !tr.docChanged) return tr;
+    const text = tr.newDoc.toString();
+    if (!text.includes("|")) return tr;
+    queueMicrotask(() => onSplit(text.split("|")));
+    return [];
+  });
+
+/**
  * The editor is reconfigured whenever its basicSetup object or onChange function is a
  * new one (see @uiw/react-codemirror's useCodeMirror) — with dozens of fields in a form
  * that happened on every keystroke. So both stay the same objects for the field's life.
@@ -56,7 +70,9 @@ export const SymbolField: React.FC<{
   /** shown, not edited: a value the context fixes, set like the fields around it */
   readOnly?: boolean;
   title?: string;
-}> = ({ value, onChange, digits, epsilon = false, placeholder, className, onEnter, autoFocus, readOnly = false, title }) => {
+  /** | typed or pasted: the text cut at each | instead of the edit (a rule's alternatives) */
+  onSplit?: (parts: string[]) => void;
+}> = ({ value, onChange, digits, epsilon = false, placeholder, className, onEnter, autoFocus, readOnly = false, title, onSplit }) => {
   const theme = useAppStore((s) => s.theme);
   // the latest rule, without rebuilding the editor's extensions on every render
   const digitsRef = useRef(digits);
@@ -65,6 +81,8 @@ export const SymbolField: React.FC<{
   enterRef.current = onEnter;
   const changeRef = useRef(onChange);
   changeRef.current = onChange;
+  const splitRef = useRef(onSplit);
+  splitRef.current = onSplit;
   const change = useCallback((v: string) => changeRef.current(v), []);
   const extensions = useMemo(
     () => [
@@ -75,6 +93,7 @@ export const SymbolField: React.FC<{
         return typeof d === "function" ? d(ch) : d;
       }),
       ...(epsilon ? [epsilonEverywhere] : []),
+      splitAtBar(() => splitRef.current),
       Prec.high(keymap.of([{ key: "Enter", run: () => (enterRef.current?.(), true) }]))
     ],
     [epsilon]

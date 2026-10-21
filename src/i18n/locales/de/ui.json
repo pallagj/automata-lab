@@ -454,7 +454,7 @@
     "form": {
       "col": {
         "leftSide": "linke Seite",
-        "rightSide": "rechte Seite (| trennt)",
+        "rightSide": "rechte Seite",
         "from": "von",
         "symbol": "Zeichen",
         "pop": "{{id}} runter",
@@ -502,7 +502,6 @@
       "type": "Typ",
       "initialContent": "Anfangsinhalt",
       "namePlaceholder": "Name",
-      "tapeInitPlaceholder": "(die Eingabe kann hierauf kommen)",
       "initialContentPlaceholder": "Anfangsinhalt",
       "deleteStorage": "Speicher löschen",
       "configHint": "Einrichtung der Maschine: Speicher, Eingabe, Akzeptanz",
@@ -511,6 +510,7 @@
       "newStorage": "neuer Speicher",
       "deleteRow": "Zeile löschen",
       "newRule": "neue Regel",
+      "newAlternative": "neue Alternative (oder tippe |)",
       "newTransition": "neuer Übergang",
       "transitions": "Übergänge",
       "rules": "Regeln"
