@@ -2085,6 +2085,73 @@ table.t td.state-cell.accept {
   margin-bottom: 8px;
 }
 
+/* what an operation means, set apart before its steps */
+.definition {
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 9px 12px 10px;
+  margin-bottom: 14px;
+  font-size: 13px;
+}
+
+.definition-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 8px;
+}
+
+.definition-label {
+  color: var(--accent);
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.definition-name {
+  display: inline-block;
+  font-weight: 700;
+}
+
+.definition-name::first-letter {
+  text-transform: uppercase;
+}
+
+.definition-op {
+  margin-left: auto;
+  font-family: var(--font-mono);
+  color: var(--accent-2);
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+
+.definition-summary {
+  color: var(--text-soft);
+  margin-top: 5px;
+}
+
+.definition-terms {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  gap: 3px 12px;
+  margin: 8px 0 0;
+}
+
+.definition-terms dt {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.definition-terms dd {
+  margin: 0;
+}
+
+.definition-guarantee {
+  font-weight: 600;
+}
+
 /* ====== Words ====== */
 
 .words {

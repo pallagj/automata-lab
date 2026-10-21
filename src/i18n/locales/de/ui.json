@@ -218,6 +218,12 @@
     "stepsPanel": {
       "title": "Wie entstand das? — die Schritte des Algorithmus"
     },
+    "definition": {
+      "label": "Definition",
+      "input": "Eingabe",
+      "output": "Ausgabe",
+      "guarantee": "Garantie"
+    },
     "note": "Notiz",
     "notes": "Hinweise",
     "panelEnlarge": "Vergrößern",

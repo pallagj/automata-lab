@@ -1,7 +1,7 @@
 import React from "react";
 import { rich } from "../Rich";
 import { useTranslation } from "react-i18next";
-import { StepGroup } from "../../core/expr/expression";
+import { OpDefinition, StepGroup } from "../../core/expr/expression";
 import { AlgoStep } from "../../core/types";
 import { tr } from "../../i18n/translate";
 import { ChevronRight, ListTree } from "lucide-react";
@@ -38,12 +38,43 @@ const Step: React.FC<{ step: AlgoStep }> = ({ step }) => {
   );
 };
 
+/** What an operation means — input, output and what it guarantees — set apart before its steps. */
+const DefinitionBox: React.FC<{ group: StepGroup; definition: OpDefinition }> = ({ group, definition }) => {
+  const { t } = useTranslation();
+  const params = { op: group.operation, a: definition.args[0] ?? "", b: definition.args[1] ?? "" };
+  const text = (field: string) => rich(t(`definition.${definition.id}.${field}`, { ns: "core", ...params }));
+  // an operation done in two ways has one name: union.product and union.epsilon are both a union
+  const name = t(`opNames.${definition.id.split(".")[0]}`, { ns: "core" });
+  return (
+    <div className="definition">
+      <div className="definition-head">
+        <span className="definition-label">{t("detail.definition.label")}</span>
+        <span className="definition-name">{name}</span>
+        <code className="definition-op">{rich(group.operation)}</code>
+      </div>
+      <div className="definition-summary">{text("summary")}</div>
+      <dl className="definition-terms">
+        <dt>{t("detail.definition.input")}</dt>
+        <dd>{text("input")}</dd>
+        <dt>{t("detail.definition.output")}</dt>
+        <dd>{text("output")}</dd>
+        <dt>{t("detail.definition.guarantee")}</dt>
+        <dd className="definition-guarantee">{text("guarantee")}</dd>
+      </dl>
+    </div>
+  );
+};
+
 /** The step list's content — usable both in a card and in a floating panel. */
 export const StepsContent: React.FC<{ stepGroups: StepGroup[] }> = ({ stepGroups }) => (
   <>
     {stepGroups.map((g, i) => (
       <div key={i}>
-        {stepGroups.length > 1 && <div className="step-op">{g.operation}</div>}
+        {g.definition ? (
+          <DefinitionBox group={g} definition={g.definition} />
+        ) : (
+          stepGroups.length > 1 && <div className="step-op">{g.operation}</div>
+        )}
         {g.steps.map((s, j) => (
           <Step key={j} step={s} />
         ))}

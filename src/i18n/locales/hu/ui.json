@@ -218,6 +218,12 @@
     "stepsPanel": {
       "title": "Hogyan készült? — az algoritmus lépései"
     },
+    "definition": {
+      "label": "Definíció",
+      "input": "Bemenet",
+      "output": "Kimenet",
+      "guarantee": "Garancia"
+    },
     "note": "Jegyzet",
     "notes": "Megjegyzések",
     "panelEnlarge": "Nagyítás",

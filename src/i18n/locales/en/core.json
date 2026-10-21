@@ -869,5 +869,195 @@
       "title": "{{names}} in regex(…) is just letters",
       "detail": "A regular expression can't refer to other definitions — here {{name}} means the letters {{letters}}. To combine it with the definition {{name}}, do it outside the regex, e.g. {{name}} + regex(…) or union({{name}}, …). For the regular expression of the automaton {{name}}, use toRegex({{name}})."
     }
+  },
+  "definition": {
+    "det": {
+      "summary": "A deterministic automaton whose states are sets of states of {{a}}: a state holds every state {{a}} can be in after the letters read so far.",
+      "input": "{{a}}: a finite automaton — nondeterministic too, with ε-transitions too",
+      "output": "a complete deterministic finite automaton; only the sets reachable from the start are made",
+      "guarantee": "L({{op}}) = L({{a}})"
+    },
+    "min": {
+      "summary": "States that no word tells apart are merged, so the language is accepted with as few states as possible.",
+      "input": "{{a}}: a complete deterministic finite automaton",
+      "output": "a complete deterministic finite automaton with the fewest states, unique up to the names of its states",
+      "guarantee": "L({{op}}) = L({{a}}), and no complete deterministic automaton of fewer states accepts it"
+    },
+    "epsfree": {
+      "fsm": {
+        "summary": "The ε-transitions go: a letter moves wherever it could move together with ε-transitions before and after it.",
+        "input": "{{a}}: a finite automaton with ε-transitions",
+        "output": "a finite automaton with the same states and no ε-transition — nondeterministic in general",
+        "guarantee": "L({{op}}) = L({{a}})"
+      },
+      "grammar": {
+        "summary": "The ε-rules go: every rule also gets its variants without the variables that can derive ε.",
+        "input": "{{a}}: a context-free grammar (every rule of the form A → α)",
+        "output": "an ε-free grammar: no ε-rule, except that a new start variable, on no right-hand side, derives ε when ε is in the language",
+        "guarantee": "L({{op}}) = L({{a}})"
+      }
+    },
+    "complete": {
+      "summary": "Every missing transition leads into a new trap state, which no word leaves again.",
+      "input": "{{a}}: a finite automaton",
+      "output": "a finite automaton with a transition from every state on every letter",
+      "guarantee": "L({{op}}) = L({{a}})"
+    },
+    "reachable": {
+      "summary": "The states that no word leads to from the start state are dropped.",
+      "input": "{{a}}: a finite automaton",
+      "output": "the part of {{a}} reachable from its start state",
+      "guarantee": "L({{op}}) = L({{a}})"
+    },
+    "complement": {
+      "summary": "The accepting and the rejecting states swap roles.",
+      "input": "{{a}}: a complete deterministic finite automaton over the alphabet Σ",
+      "output": "a complete deterministic finite automaton with the same states and transitions",
+      "guarantee": "L({{op}}) = Σ* \\ L({{a}})"
+    },
+    "union": {
+      "product": {
+        "summary": "The two automata run side by side: a state is a pair of their states, and a pair accepts when either part does.",
+        "input": "{{a}}, {{b}}: complete deterministic finite automata — over different alphabets, each is completed over the common one",
+        "output": "a complete deterministic finite automaton on the pairs of states",
+        "guarantee": "L({{op}}) = L({{a}}) ∪ L({{b}})"
+      },
+      "epsilon": {
+        "summary": "A new start state leads by ε-transitions to both start states: a word may follow a path of either automaton.",
+        "input": "{{a}}, {{b}}: finite automata — nondeterministic too",
+        "output": "a nondeterministic finite automaton with ε-transitions that contains both",
+        "guarantee": "L({{op}}) = L({{a}}) ∪ L({{b}})"
+      }
+    },
+    "intersect": {
+      "summary": "The two automata run side by side: a state is a pair of their states, and a pair accepts when both parts do.",
+      "input": "{{a}}, {{b}}: complete deterministic finite automata — over different alphabets, each is completed over the common one",
+      "output": "a complete deterministic finite automaton on the pairs of states",
+      "guarantee": "L({{op}}) = L({{a}}) ∩ L({{b}})"
+    },
+    "difference": {
+      "summary": "The two automata run side by side: a state is a pair of their states, and a pair accepts when the first part accepts and the second does not.",
+      "input": "{{a}}, {{b}}: complete deterministic finite automata — over different alphabets, each is completed over the common one",
+      "output": "a complete deterministic finite automaton on the pairs of states",
+      "guarantee": "L({{op}}) = L({{a}}) \\ L({{b}})"
+    },
+    "concat": {
+      "summary": "An ε-transition leads from every accepting state of {{a}} to the start state of {{b}}: a word is read first by {{a}}, then by {{b}}.",
+      "input": "{{a}}, {{b}}: finite automata",
+      "output": "a nondeterministic finite automaton with ε-transitions; its accepting states are those of {{b}}",
+      "guarantee": "L({{op}}) = L({{a}})L({{b}})"
+    },
+    "star": {
+      "summary": "A new start state, itself accepting, leads by ε into {{a}}, and the accepting states of {{a}} lead back to it: any number of words of the language, one after the other, are read.",
+      "input": "{{a}}: a finite automaton",
+      "output": "a nondeterministic finite automaton with ε-transitions",
+      "guarantee": "L({{op}}) = L({{a}})*"
+    },
+    "reverse": {
+      "summary": "Every transition turns around; a new start state leads by ε to the accepting states, and the old start state is the only accepting one.",
+      "input": "{{a}}: a finite automaton",
+      "output": "a nondeterministic finite automaton with ε-transitions",
+      "guarantee": "L({{op}}) = { wᴿ : w ∈ L({{a}}) }"
+    },
+    "clean": {
+      "summary": "The states are renamed A, B, C, … in breadth-first order from the start state.",
+      "input": "{{a}}: a finite automaton",
+      "output": "the same automaton with new state names",
+      "guarantee": "L({{op}}) = L({{a}})"
+    },
+    "toGrammar": {
+      "fsm": {
+        "summary": "Every state becomes a variable, and a transition from q to p on a becomes the rule A_q → aA_p.",
+        "input": "{{a}}: a finite automaton without ε-transitions",
+        "output": "a regular (type 3) grammar",
+        "guarantee": "L({{op}}) = L({{a}})"
+      },
+      "pda": {
+        "summary": "The variable [qAp] derives exactly the words that take the machine from state q to state p while A leaves the stack.",
+        "input": "{{a}}: a pushdown automaton, accepting by final state or by empty stack",
+        "output": "a context-free grammar",
+        "guarantee": "L({{op}}) = L({{a}})"
+      }
+    },
+    "toFsm": {
+      "regex": {
+        "summary": "An automaton for every part of the expression, from the letters up, joined as its operators say.",
+        "input": "{{a}}: a regular expression",
+        "output": "a nondeterministic finite automaton with ε-transitions",
+        "guarantee": "L({{op}}) = L({{a}})"
+      },
+      "grammar": {
+        "summary": "Every variable becomes a state, and the rule A → aB becomes a transition from A to B on a; A → a leads into a new accepting state.",
+        "input": "{{a}}: a right-linear grammar",
+        "output": "a nondeterministic finite automaton",
+        "guarantee": "L({{op}}) = L({{a}})"
+      }
+    },
+    "toRegex": {
+      "summary": "The states are numbered, and r(p, q, t) — the words leading from p to q through states numbered at most t — is built for t = 0, 1, 2, …",
+      "input": "{{a}}: a finite automaton",
+      "output": "a regular expression",
+      "guarantee": "L({{op}}) = L({{a}})"
+    },
+    "toPda": {
+      "summary": "A machine of one state carries out a leftmost derivation on its stack: a variable on top is replaced by a right-hand side of it, a letter on top is matched with the input.",
+      "input": "{{a}}: a context-free grammar",
+      "output": "a pushdown automaton accepting by empty stack",
+      "guarantee": "L({{op}}) = L({{a}})"
+    },
+    "unitfree": {
+      "summary": "A variable A takes over the other rules of every variable it reaches through rules A → B, and those rules go.",
+      "input": "{{a}}: a context-free grammar, best ε-free",
+      "output": "a grammar without rules of the form A → B",
+      "guarantee": "L({{op}}) = L({{a}})"
+    },
+    "trim": {
+      "summary": "First the variables that derive no terminal word go, then the symbols the start variable cannot reach.",
+      "input": "{{a}}: a context-free grammar",
+      "output": "a grammar in which every symbol takes part in deriving some word",
+      "guarantee": "L({{op}}) = L({{a}})"
+    },
+    "cnf": {
+      "summary": "Unit rules out, the letters of long right-hand sides replaced by new variables X_a → a, and right-hand sides longer than two cut into a chain of new variables.",
+      "input": "{{a}}: an ε-free context-free grammar",
+      "output": "a grammar in Chomsky normal form: every rule is A → BC or A → a",
+      "guarantee": "L({{op}}) = L({{a}}) \\ {ε}"
+    },
+    "toEmptyStack": {
+      "summary": "In an accepting state the machine may empty its stack; a new bottom symbol keeps the stack from emptying any earlier.",
+      "input": "{{a}}: a pushdown automaton accepting by final state",
+      "output": "a pushdown automaton accepting by empty stack",
+      "guarantee": "L({{op}}) = L({{a}})"
+    },
+    "toFinalState": {
+      "summary": "A new bottom symbol shows when the stack of {{a}} would be empty: then the machine moves into a new accepting state.",
+      "input": "{{a}}: a pushdown automaton accepting by empty stack",
+      "output": "a pushdown automaton accepting by final state",
+      "guarantee": "L({{op}}) = L({{a}})"
+    },
+    "equal": {
+      "summary": "A breadth-first search over the pairs of states of the two automata looks for a word that exactly one of them accepts.",
+      "input": "{{a}}, {{b}}: finite automata",
+      "output": "yes or no — when no, with a shortest word that tells them apart",
+      "guarantee": "yes exactly when L({{a}}) = L({{b}})"
+    },
+    "empty": {
+      "summary": "A word of the language is looked for: a path from the start state to an accepting state, or a terminal word the start variable derives.",
+      "input": "{{a}}: a finite automaton, a regular expression, a context-free grammar or a pushdown automaton",
+      "output": "yes or no — when no, with a shortest word of the language",
+      "guarantee": "yes exactly when L({{a}}) = ∅"
+    },
+    "finite": {
+      "summary": "The language is infinite exactly when one of its words can be pumped: a state repeats while it is read, or a variable derives itself again.",
+      "input": "{{a}}: a finite automaton, a regular expression, a context-free grammar or a pushdown automaton",
+      "output": "yes or no — when yes, the words of the language; when no, a word that can be pumped",
+      "guarantee": "yes exactly when L({{a}}) is finite"
+    },
+    "disjoint": {
+      "summary": "The two automata run side by side, and a word both of them accept is looked for.",
+      "input": "{{a}}, {{b}}: finite automata",
+      "output": "yes or no — when no, with a shortest word of both languages",
+      "guarantee": "yes exactly when L({{a}}) ∩ L({{b}}) = ∅"
+    }
   }
 }

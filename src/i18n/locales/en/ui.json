@@ -218,6 +218,12 @@
     "stepsPanel": {
       "title": "How was this built? — the algorithm's steps"
     },
+    "definition": {
+      "label": "Definition",
+      "input": "Input",
+      "output": "Output",
+      "guarantee": "Guarantee"
+    },
     "note": "Note",
     "notes": "Notes",
     "panelEnlarge": "Enlarge",

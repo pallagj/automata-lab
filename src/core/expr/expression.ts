@@ -53,8 +53,19 @@ class ExprError extends Error {
  */
 export type ExprValue = Definition | FSM | RegexDef | Verdict;
 
+/**
+ * What an operation means, shown before its steps: the texts core:definition.<id>.* —
+ * what it does, its input, its output and the guarantee about the language — with the
+ * arguments as written ({{a}}, {{b}}) and the operation itself ({{op}}).
+ */
+export interface OpDefinition {
+  id: DefinitionId;
+  args: string[];
+}
+
 export interface StepGroup {
   operation: string;
+  definition?: OpDefinition;
   steps: AlgoStep[];
 }
 
@@ -96,6 +107,42 @@ export const FUNCTION_NAMES = [
 
 type FuncName = (typeof FUNCTION_NAMES)[number];
 
+/** Every operation with a definition; an operation done in two ways has one for each. */
+export const DEFINITION_IDS = [
+  "det",
+  "min",
+  "epsfree.fsm",
+  "epsfree.grammar",
+  "complete",
+  "reachable",
+  "complement",
+  "union.product",
+  "union.epsilon",
+  "intersect",
+  "difference",
+  "concat",
+  "star",
+  "reverse",
+  "clean",
+  "toGrammar.fsm",
+  "toGrammar.pda",
+  "toFsm.regex",
+  "toFsm.grammar",
+  "toRegex",
+  "toPda",
+  "unitfree",
+  "trim",
+  "cnf",
+  "toEmptyStack",
+  "toFinalState",
+  "equal",
+  "empty",
+  "finite",
+  "disjoint"
+] as const;
+
+export type DefinitionId = (typeof DEFINITION_IDS)[number];
+
 /* --------------------------- AST --------------------------- */
 
 type Expr =
@@ -105,6 +152,29 @@ type Expr =
   | { t: "union"; items: Expr[] }
   | { t: "star"; inner: Expr }
   | { t: "call"; fn: FuncName; args: Expr[]; rawArgs: string[] };
+
+/** An expression written back as text, with the parentheses its operators need. */
+function exprText(e: Expr): string {
+  switch (e.t) {
+    case "var":
+      return e.name;
+    case "lit":
+      return e.c;
+    case "call":
+      return `${e.fn}(${e.rawArgs.join(", ")})`;
+    case "union":
+      return e.items.map(exprText).join(" + ");
+    case "concat":
+      return e.items.map((x) => (x.t === "union" ? `(${exprText(x)})` : exprText(x))).join(" ");
+    case "star":
+      return e.inner.t === "union" || e.inner.t === "concat" ? `(${exprText(e.inner)})*` : `${exprText(e.inner)}*`;
+  }
+}
+
+/** The first `n` operands of a concatenation or union, as text. */
+function operandsText(e: Extract<Expr, { t: "union" | "concat" }>, n: number): string {
+  return n === 1 ? exprText(e.items[0]) : exprText({ ...e, items: e.items.slice(0, n) });
+}
 
 /* --------------------------- Parser --------------------------- */
 
@@ -332,9 +402,10 @@ class Evaluator {
     private names: Set<string> = new Set(env.keys())
   ) {}
 
-  take<T>(operation: string, r: OpResult<T>): T {
+  take<T>(operation: string, r: OpResult<T>, definition?: OpDefinition): T {
     this.diagnostics.push(...r.diagnostics);
-    if (r.steps.length > 0) this.stepGroups.push({ operation, steps: r.steps });
+    // an operation that had nothing to do still says what it means
+    if (r.steps.length > 0 || (r.ok && definition)) this.stepGroups.push({ operation, definition, steps: r.steps });
     if (!r.ok) throw new EvalDiagError(r.diagnostics);
     return r.value!;
   }
@@ -349,7 +420,7 @@ class Evaluator {
           tx("expression.autoConvert.regex.detail", { name: v.name })
         )
       );
-      return this.take(`toFsm(${v.name})`, regexToNFA(v.pattern, v.name));
+      return this.take(`toFsm(${v.name})`, regexToNFA(v.pattern, v.name), { id: "toFsm.regex", args: [v.name] });
     }
     if (v.kind === "grammar") {
       // convenience auto-conversion for type-3 grammars
@@ -358,7 +429,7 @@ class Evaluator {
         this.diagnostics.push(
           info(tx("expression.autoConvert.grammar.title", { name: v.name }), tx("expression.autoConvert.grammar.detail"))
         );
-        return this.take(`toFsm(${v.name})`, r);
+        return this.take(`toFsm(${v.name})`, r, { id: "toFsm.grammar", args: [v.name] });
       }
     }
     if (v.kind === "machine") {
@@ -391,7 +462,8 @@ class Evaluator {
         let acc = this.asFSM(this.evaluate(e.items[0]), "concat");
         for (let i = 1; i < e.items.length; i++) {
           const next = this.asFSM(this.evaluate(e.items[i]), "concat");
-          acc = this.take(`concat`, concatFSM(acc, next));
+          const args = [operandsText(e, i), exprText(e.items[i])];
+          acc = this.take(operandsText(e, i + 1), concatFSM(acc, next), { id: "concat", args });
         }
         return acc;
       }
@@ -399,12 +471,16 @@ class Evaluator {
         let acc = this.asFSM(this.evaluate(e.items[0]), "union");
         for (let i = 1; i < e.items.length; i++) {
           const next = this.asFSM(this.evaluate(e.items[i]), "union");
-          acc = this.take(`union`, unionEpsilon(acc, next));
+          const args = [operandsText(e, i), exprText(e.items[i])];
+          acc = this.take(operandsText(e, i + 1), unionEpsilon(acc, next), { id: "union.epsilon", args });
         }
         return acc;
       }
       case "star":
-        return this.take("star", starFSM(this.asFSM(this.evaluate(e.inner), "star")));
+        return this.take(exprText(e), starFSM(this.asFSM(this.evaluate(e.inner), "star")), {
+          id: "star",
+          args: [exprText(e.inner)]
+        });
       case "call":
         return this.call(e);
     }
@@ -427,6 +503,8 @@ class Evaluator {
       return v;
     };
     const label = (base: string) => `${base}(${e.rawArgs.join(", ")})`;
+    // the definition shown before the steps, with the arguments as written
+    const def = (id: DefinitionId): OpDefinition => ({ id, args: e.rawArgs });
     // what a verdict calls an argument: its name, or the argument as written
     const argName = (i: number) => {
       const a = e.args[i];
@@ -436,26 +514,30 @@ class Evaluator {
     switch (e.fn) {
       case "det":
         expectArgs(1);
-        return this.take(label("det"), determinize(fsmArg(0)));
+        return this.take(label("det"), determinize(fsmArg(0)), def("det"));
       case "min":
         expectArgs(1);
-        return this.take(label("min"), minimize(fsmArg(0)));
+        return this.take(label("min"), minimize(fsmArg(0)), def("min"));
       case "epsfree": {
         expectArgs(1);
         // a grammar keeps being a grammar: ε-rule elimination instead of ε-transition removal
         const v = this.evaluate(e.args[0]);
-        if (v.kind === "grammar") return this.take(label("epsfree"), removeEpsilonRules(v));
-        return this.take(label("epsfree"), removeEpsilon(this.asFSM(v, "epsfree")));
+        if (v.kind === "grammar") return this.take(label("epsfree"), removeEpsilonRules(v), def("epsfree.grammar"));
+        return this.take(label("epsfree"), removeEpsilon(this.asFSM(v, "epsfree")), def("epsfree.fsm"));
       }
       case "complete":
         expectArgs(1, 2);
-        return this.take(label("complete"), complete(fsmArg(0), e.args.length > 1 ? canonicalLabel(e.rawArgs[1]) : undefined));
+        return this.take(
+          label("complete"),
+          complete(fsmArg(0), e.args.length > 1 ? canonicalLabel(e.rawArgs[1]) : undefined),
+          def("complete")
+        );
       case "reachable":
         expectArgs(1);
-        return this.take(label("reachable"), reachable(fsmArg(0)));
+        return this.take(label("reachable"), reachable(fsmArg(0)), def("reachable"));
       case "complement":
         expectArgs(1);
-        return this.take(label("complement"), complement(fsmArg(0)));
+        return this.take(label("complement"), complement(fsmArg(0)), def("complement"));
       case "union":
       case "intersect":
       case "difference": {
@@ -465,29 +547,29 @@ class Evaluator {
         if (e.fn === "union") {
           // product for complete DFAs, ε-construction otherwise
           const r = product(a, b, "union");
-          if (r.ok) return this.take(label("union"), r);
-          return this.take(label("union"), unionEpsilon(a, b));
+          if (r.ok) return this.take(label("union"), r, def("union.product"));
+          return this.take(label("union"), unionEpsilon(a, b), def("union.epsilon"));
         }
-        return this.take(label(e.fn), product(a, b, e.fn));
+        return this.take(label(e.fn), product(a, b, e.fn), def(e.fn));
       }
       case "concat":
         expectArgs(2);
-        return this.take(label("concat"), concatFSM(fsmArg(0), fsmArg(1)));
+        return this.take(label("concat"), concatFSM(fsmArg(0), fsmArg(1)), def("concat"));
       case "star":
         expectArgs(1);
-        return this.take(label("star"), starFSM(fsmArg(0)));
+        return this.take(label("star"), starFSM(fsmArg(0)), def("star"));
       case "reverse":
         expectArgs(1);
-        return this.take(label("reverse"), reverseFSM(fsmArg(0)));
+        return this.take(label("reverse"), reverseFSM(fsmArg(0)), def("reverse"));
       case "clean":
         expectArgs(1);
-        return this.take(label("clean"), cleanFSM(fsmArg(0)));
+        return this.take(label("clean"), cleanFSM(fsmArg(0)), def("clean"));
       case "toGrammar": {
         expectArgs(1);
         // a machine with a stack: the grammar of the pushdown automaton (7.16)
         const v = this.evaluate(e.args[0]);
-        if (v.kind === "machine" && !machineCaps(v).isFSMLike) return this.take(label("toGrammar"), pdaToGrammar(v));
-        return this.take(label("toGrammar"), fsmToGrammar(this.asFSM(v, "toGrammar")));
+        if (v.kind === "machine" && !machineCaps(v).isFSMLike) return this.take(label("toGrammar"), pdaToGrammar(v), def("toGrammar.pda"));
+        return this.take(label("toGrammar"), fsmToGrammar(this.asFSM(v, "toGrammar")), def("toGrammar.fsm"));
       }
       case "toEmptyStack":
       case "toFinalState": {
@@ -495,12 +577,12 @@ class Evaluator {
         const v = this.evaluate(e.args[0]);
         if (v.kind !== "machine")
           throw new ExprError(tx("expression.error.needsPda", { opKey: `opNames.${e.fn}`, kindKey: describeKind(v) }));
-        return this.take(label(e.fn), e.fn === "toEmptyStack" ? toEmptyStack(v) : toFinalState(v));
+        return this.take(label(e.fn), e.fn === "toEmptyStack" ? toEmptyStack(v) : toFinalState(v), def(e.fn));
       }
       case "toFsm": {
         expectArgs(1);
         const v = this.evaluate(e.args[0]);
-        if (v.kind === "regex") return this.take(label("toFsm"), regexToNFA(v.pattern, v.name));
+        if (v.kind === "regex") return this.take(label("toFsm"), regexToNFA(v.pattern, v.name), def("toFsm.regex"));
         if (v.kind === "machine") {
           const f = machineToFSM(v);
           if (f) return f;
@@ -509,16 +591,16 @@ class Evaluator {
           );
         }
         if (v.kind !== "grammar") throw new ExprError(tx("expression.error.toFsmExpects"));
-        return this.take(label("toFsm"), grammarToFSM(v));
+        return this.take(label("toFsm"), grammarToFSM(v), def("toFsm.grammar"));
       }
       case "toRegex":
         expectArgs(1);
-        return this.take(label("toRegex"), fsmToRegex(fsmArg(0)));
+        return this.take(label("toRegex"), fsmToRegex(fsmArg(0)), def("toRegex"));
       case "toPda": {
         expectArgs(1);
         const v = this.evaluate(e.args[0]);
         if (v.kind !== "grammar") throw new ExprError(tx("expression.error.toPdaExpects"));
-        return this.take(label("toPda"), grammarToPDA(v));
+        return this.take(label("toPda"), grammarToPDA(v), def("toPda"));
       }
       case "regex": {
         expectArgs(1);
@@ -536,25 +618,25 @@ class Evaluator {
       }
       case "unitfree":
         expectArgs(1);
-        return this.take(label("unitfree"), removeUnitRules(grammarArg(0)));
+        return this.take(label("unitfree"), removeUnitRules(grammarArg(0)), def("unitfree"));
       case "trim":
         expectArgs(1);
-        return this.take(label("trim"), removeUselessSymbols(grammarArg(0)));
+        return this.take(label("trim"), removeUselessSymbols(grammarArg(0)), def("trim"));
       case "cnf":
         expectArgs(1);
-        return this.take(label("cnf"), toCNF(grammarArg(0)));
+        return this.take(label("cnf"), toCNF(grammarArg(0)), def("cnf"));
       case "equal": {
         expectArgs(2);
-        return this.take(label("equal"), checkEquivalence(fsmArg(0), fsmArg(1)));
+        return this.take(label("equal"), checkEquivalence(fsmArg(0), fsmArg(1)), def("equal"));
       }
       case "empty":
       case "finite": {
         expectArgs(1);
-        return this.decideLanguage(e.fn, this.evaluate(e.args[0]), argName(0), label(e.fn));
+        return this.decideLanguage(e.fn, this.evaluate(e.args[0]), argName(0), label(e.fn), def(e.fn));
       }
       case "disjoint": {
         expectArgs(2);
-        const r = this.take(label("disjoint"), decideDisjointFSM(fsmArg(0), fsmArg(1)));
+        const r = this.take(label("disjoint"), decideDisjointFSM(fsmArg(0), fsmArg(1)), def("disjoint"));
         return { ...r, machineA: argName(0), machineB: argName(1) };
       }
     }
@@ -566,9 +648,16 @@ class Evaluator {
    * as its grammar (7.16) — by chapter 8. For a Turing machine or a grammar of type 0 or 1
    * no algorithm decides either question in general.
    */
-  decideLanguage(fn: "empty" | "finite", value: ExprValue, name: string, stepLabel: string): EmptinessVerdict | FinitenessVerdict {
+  decideLanguage(
+    fn: "empty" | "finite",
+    value: ExprValue,
+    name: string,
+    stepLabel: string,
+    definition: OpDefinition
+  ): EmptinessVerdict | FinitenessVerdict {
     let v = value;
-    if (v.kind === "machine" && machineCaps(v).isPDALike) v = this.take(`toGrammar(${name})`, pdaToGrammar(v));
+    if (v.kind === "machine" && machineCaps(v).isPDALike)
+      v = this.take(`toGrammar(${name})`, pdaToGrammar(v), { id: "toGrammar.pda", args: [name] });
     if (v.kind === "machine" && !machineCaps(v).isFSMLike)
       throw new ExprError(
         tx("expression.error.undecidableMachine", { opKey: `opNames.${fn}`, name, machineKindKey: `machineKind.${machineCaps(v).kind}` })
@@ -577,11 +666,11 @@ class Evaluator {
       if (!classify(v).contextFreeForm)
         throw new ExprError(tx("expression.error.undecidableGrammar", { opKey: `opNames.${fn}`, name }));
       const r: OpResult<EmptinessVerdict | FinitenessVerdict> = fn === "empty" ? decideEmptyGrammar(v) : decideFiniteGrammar(v);
-      return { ...this.take(stepLabel, r), subject: name };
+      return { ...this.take(stepLabel, r, definition), subject: name };
     }
     const f = this.asFSM(v, fn);
     const r: OpResult<EmptinessVerdict | FinitenessVerdict> = fn === "empty" ? decideEmptyFSM(f) : decideFiniteFSM(f);
-    return { ...this.take(stepLabel, r), subject: name };
+    return { ...this.take(stepLabel, r, definition), subject: name };
   }
 }
 

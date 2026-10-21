@@ -869,5 +869,195 @@
       "title": "{{names}} in regex(…) sind nur Buchstaben",
       "detail": "Ein regulärer Ausdruck kann nicht auf andere Definitionen verweisen — hier bedeutet {{name}} die Buchstaben {{letters}}. Um ihn mit der Definition {{name}} zu kombinieren, tu das außerhalb des Ausdrucks, z. B. {{name}} + regex(…) oder union({{name}}, …). Für den regulären Ausdruck des Automaten {{name}} nimm toRegex({{name}})."
     }
+  },
+  "definition": {
+    "det": {
+      "summary": "Ein deterministischer Automat, dessen Zustände Mengen von Zuständen von {{a}} sind: ein Zustand enthält jeden Zustand, in dem {{a}} nach den bisher gelesenen Buchstaben sein kann.",
+      "input": "{{a}}: ein endlicher Automat — auch nichtdeterministisch, auch mit ε-Übergängen",
+      "output": "ein vollständiger deterministischer endlicher Automat; nur die vom Start erreichbaren Mengen werden gebildet",
+      "guarantee": "L({{op}}) = L({{a}})"
+    },
+    "min": {
+      "summary": "Zustände, die kein Wort unterscheidet, werden verschmolzen, sodass die Sprache mit möglichst wenigen Zuständen akzeptiert wird.",
+      "input": "{{a}}: ein vollständiger deterministischer endlicher Automat",
+      "output": "ein vollständiger deterministischer endlicher Automat mit den wenigsten Zuständen, eindeutig bis auf die Namen der Zustände",
+      "guarantee": "L({{op}}) = L({{a}}), und kein vollständiger deterministischer Automat mit weniger Zuständen akzeptiert sie"
+    },
+    "epsfree": {
+      "fsm": {
+        "summary": "Die ε-Übergänge fallen weg: ein Buchstabe führt dorthin, wohin er zusammen mit ε-Übergängen davor und danach führen könnte.",
+        "input": "{{a}}: ein endlicher Automat mit ε-Übergängen",
+        "output": "ein endlicher Automat mit denselben Zuständen und ohne ε-Übergang — im Allgemeinen nichtdeterministisch",
+        "guarantee": "L({{op}}) = L({{a}})"
+      },
+      "grammar": {
+        "summary": "Die ε-Regeln fallen weg: jede Regel erhält auch ihre Varianten ohne die Variablen, die ε ableiten können.",
+        "input": "{{a}}: eine kontextfreie Grammatik (jede Regel der Form A → α)",
+        "output": "eine ε-freie Grammatik: keine ε-Regel, außer dass eine neue Startvariable, die auf keiner rechten Seite steht, ε ableitet, wenn ε in der Sprache liegt",
+        "guarantee": "L({{op}}) = L({{a}})"
+      }
+    },
+    "complete": {
+      "summary": "Jeder fehlende Übergang führt in einen neuen Fangzustand, den kein Wort wieder verlässt.",
+      "input": "{{a}}: ein endlicher Automat",
+      "output": "ein endlicher Automat mit einem Übergang aus jedem Zustand für jeden Buchstaben",
+      "guarantee": "L({{op}}) = L({{a}})"
+    },
+    "reachable": {
+      "summary": "Die Zustände, zu denen vom Startzustand kein Wort führt, fallen weg.",
+      "input": "{{a}}: ein endlicher Automat",
+      "output": "der vom Startzustand aus erreichbare Teil von {{a}}",
+      "guarantee": "L({{op}}) = L({{a}})"
+    },
+    "complement": {
+      "summary": "Akzeptierende und ablehnende Zustände tauschen die Rollen.",
+      "input": "{{a}}: ein vollständiger deterministischer endlicher Automat über dem Alphabet Σ",
+      "output": "ein vollständiger deterministischer endlicher Automat mit denselben Zuständen und Übergängen",
+      "guarantee": "L({{op}}) = Σ* \\ L({{a}})"
+    },
+    "union": {
+      "product": {
+        "summary": "Die beiden Automaten laufen nebeneinander: ein Zustand ist ein Paar ihrer Zustände, und ein Paar akzeptiert, wenn einer der beiden Teile akzeptiert.",
+        "input": "{{a}}, {{b}}: vollständige deterministische endliche Automaten — bei verschiedenen Alphabeten wird jeder über dem gemeinsamen vervollständigt",
+        "output": "ein vollständiger deterministischer endlicher Automat auf den Zustandspaaren",
+        "guarantee": "L({{op}}) = L({{a}}) ∪ L({{b}})"
+      },
+      "epsilon": {
+        "summary": "Ein neuer Startzustand führt mit ε-Übergängen zu beiden Startzuständen: ein Wort kann einem Pfad jedes der beiden Automaten folgen.",
+        "input": "{{a}}, {{b}}: endliche Automaten — auch nichtdeterministisch",
+        "output": "ein nichtdeterministischer endlicher Automat mit ε-Übergängen, der beide enthält",
+        "guarantee": "L({{op}}) = L({{a}}) ∪ L({{b}})"
+      }
+    },
+    "intersect": {
+      "summary": "Die beiden Automaten laufen nebeneinander: ein Zustand ist ein Paar ihrer Zustände, und ein Paar akzeptiert, wenn beide Teile akzeptieren.",
+      "input": "{{a}}, {{b}}: vollständige deterministische endliche Automaten — bei verschiedenen Alphabeten wird jeder über dem gemeinsamen vervollständigt",
+      "output": "ein vollständiger deterministischer endlicher Automat auf den Zustandspaaren",
+      "guarantee": "L({{op}}) = L({{a}}) ∩ L({{b}})"
+    },
+    "difference": {
+      "summary": "Die beiden Automaten laufen nebeneinander: ein Zustand ist ein Paar ihrer Zustände, und ein Paar akzeptiert, wenn der erste Teil akzeptiert und der zweite nicht.",
+      "input": "{{a}}, {{b}}: vollständige deterministische endliche Automaten — bei verschiedenen Alphabeten wird jeder über dem gemeinsamen vervollständigt",
+      "output": "ein vollständiger deterministischer endlicher Automat auf den Zustandspaaren",
+      "guarantee": "L({{op}}) = L({{a}}) \\ L({{b}})"
+    },
+    "concat": {
+      "summary": "Aus jedem akzeptierenden Zustand von {{a}} führt ein ε-Übergang zum Startzustand von {{b}}: ein Wort wird erst von {{a}}, dann von {{b}} gelesen.",
+      "input": "{{a}}, {{b}}: endliche Automaten",
+      "output": "ein nichtdeterministischer endlicher Automat mit ε-Übergängen; seine akzeptierenden Zustände sind die von {{b}}",
+      "guarantee": "L({{op}}) = L({{a}})L({{b}})"
+    },
+    "star": {
+      "summary": "Ein neuer, selbst akzeptierender Startzustand führt mit ε in {{a}}, und die akzeptierenden Zustände von {{a}} führen zu ihm zurück: beliebig viele Wörter der Sprache werden nacheinander gelesen.",
+      "input": "{{a}}: ein endlicher Automat",
+      "output": "ein nichtdeterministischer endlicher Automat mit ε-Übergängen",
+      "guarantee": "L({{op}}) = L({{a}})*"
+    },
+    "reverse": {
+      "summary": "Jeder Übergang wird umgedreht; ein neuer Startzustand führt mit ε zu den akzeptierenden Zuständen, und der alte Startzustand ist der einzige akzeptierende.",
+      "input": "{{a}}: ein endlicher Automat",
+      "output": "ein nichtdeterministischer endlicher Automat mit ε-Übergängen",
+      "guarantee": "L({{op}}) = { wᴿ : w ∈ L({{a}}) }"
+    },
+    "clean": {
+      "summary": "Die Zustände heißen neu A, B, C, … in der Reihenfolge einer Breitensuche ab dem Startzustand.",
+      "input": "{{a}}: ein endlicher Automat",
+      "output": "derselbe Automat mit neuen Zustandsnamen",
+      "guarantee": "L({{op}}) = L({{a}})"
+    },
+    "toGrammar": {
+      "fsm": {
+        "summary": "Jeder Zustand wird eine Variable, und ein Übergang von q nach p mit a wird die Regel A_q → aA_p.",
+        "input": "{{a}}: ein endlicher Automat ohne ε-Übergänge",
+        "output": "eine reguläre Grammatik (Typ 3)",
+        "guarantee": "L({{op}}) = L({{a}})"
+      },
+      "pda": {
+        "summary": "Die Variable [qAp] leitet genau die Wörter ab, die die Maschine vom Zustand q in den Zustand p bringen, während A den Keller verlässt.",
+        "input": "{{a}}: ein Kellerautomat, mit Akzeptanz durch Endzustand oder durch leeren Keller",
+        "output": "eine kontextfreie Grammatik",
+        "guarantee": "L({{op}}) = L({{a}})"
+      }
+    },
+    "toFsm": {
+      "regex": {
+        "summary": "Ein Automat für jeden Teil des Ausdrucks, von den Buchstaben aufwärts, verbunden so, wie es seine Operatoren sagen.",
+        "input": "{{a}}: ein regulärer Ausdruck",
+        "output": "ein nichtdeterministischer endlicher Automat mit ε-Übergängen",
+        "guarantee": "L({{op}}) = L({{a}})"
+      },
+      "grammar": {
+        "summary": "Jede Variable wird ein Zustand, und die Regel A → aB wird ein Übergang von A nach B mit a; A → a führt in einen neuen akzeptierenden Zustand.",
+        "input": "{{a}}: eine rechtslineare Grammatik",
+        "output": "ein nichtdeterministischer endlicher Automat",
+        "guarantee": "L({{op}}) = L({{a}})"
+      }
+    },
+    "toRegex": {
+      "summary": "Die Zustände werden nummeriert, und r(p, q, t) — die Wörter, die von p nach q über Zustände mit Nummer höchstens t führen — wird für t = 0, 1, 2, … gebildet.",
+      "input": "{{a}}: ein endlicher Automat",
+      "output": "ein regulärer Ausdruck",
+      "guarantee": "L({{op}}) = L({{a}})"
+    },
+    "toPda": {
+      "summary": "Eine Maschine mit einem Zustand führt auf ihrem Keller eine Linksableitung aus: eine Variable oben wird durch eine ihrer rechten Seiten ersetzt, ein Buchstabe oben mit der Eingabe abgeglichen.",
+      "input": "{{a}}: eine kontextfreie Grammatik",
+      "output": "ein Kellerautomat mit Akzeptanz durch leeren Keller",
+      "guarantee": "L({{op}}) = L({{a}})"
+    },
+    "unitfree": {
+      "summary": "Eine Variable A übernimmt die übrigen Regeln jeder Variablen, die sie über Regeln A → B erreicht, und diese Regeln fallen weg.",
+      "input": "{{a}}: eine kontextfreie Grammatik, am besten ε-frei",
+      "output": "eine Grammatik ohne Regeln der Form A → B",
+      "guarantee": "L({{op}}) = L({{a}})"
+    },
+    "trim": {
+      "summary": "Zuerst fallen die Variablen weg, die kein Terminalwort ableiten, dann die Symbole, die die Startvariable nicht erreicht.",
+      "input": "{{a}}: eine kontextfreie Grammatik",
+      "output": "eine Grammatik, in der jedes Symbol an der Ableitung eines Wortes beteiligt ist",
+      "guarantee": "L({{op}}) = L({{a}})"
+    },
+    "cnf": {
+      "summary": "Kettenregeln fallen weg, die Buchstaben langer rechter Seiten werden durch neue Variablen X_a → a ersetzt, und rechte Seiten mit mehr als zwei Symbolen werden in eine Kette neuer Variablen zerlegt.",
+      "input": "{{a}}: eine ε-freie kontextfreie Grammatik",
+      "output": "eine Grammatik in Chomsky-Normalform: jede Regel ist A → BC oder A → a",
+      "guarantee": "L({{op}}) = L({{a}}) \\ {ε}"
+    },
+    "toEmptyStack": {
+      "summary": "In einem akzeptierenden Zustand darf die Maschine ihren Keller leeren; ein neues Kellerbodensymbol verhindert, dass er früher leer wird.",
+      "input": "{{a}}: ein Kellerautomat mit Akzeptanz durch Endzustand",
+      "output": "ein Kellerautomat mit Akzeptanz durch leeren Keller",
+      "guarantee": "L({{op}}) = L({{a}})"
+    },
+    "toFinalState": {
+      "summary": "Ein neues Kellerbodensymbol zeigt, wann der Keller von {{a}} leer wäre: dann geht die Maschine in einen neuen akzeptierenden Zustand.",
+      "input": "{{a}}: ein Kellerautomat mit Akzeptanz durch leeren Keller",
+      "output": "ein Kellerautomat mit Akzeptanz durch Endzustand",
+      "guarantee": "L({{op}}) = L({{a}})"
+    },
+    "equal": {
+      "summary": "Eine Breitensuche über die Zustandspaare der beiden Automaten sucht ein Wort, das genau einer von ihnen akzeptiert.",
+      "input": "{{a}}, {{b}}: endliche Automaten",
+      "output": "ja oder nein — bei nein mit einem kürzesten unterscheidenden Wort",
+      "guarantee": "ja genau dann, wenn L({{a}}) = L({{b}})"
+    },
+    "empty": {
+      "summary": "Ein Wort der Sprache wird gesucht: ein Pfad vom Startzustand zu einem akzeptierenden Zustand oder ein Terminalwort, das die Startvariable ableitet.",
+      "input": "{{a}}: ein endlicher Automat, ein regulärer Ausdruck, eine kontextfreie Grammatik oder ein Kellerautomat",
+      "output": "ja oder nein — bei nein mit einem kürzesten Wort der Sprache",
+      "guarantee": "ja genau dann, wenn L({{a}}) = ∅"
+    },
+    "finite": {
+      "summary": "Die Sprache ist genau dann unendlich, wenn eines ihrer Wörter gepumpt werden kann: beim Lesen wiederholt sich ein Zustand, oder eine Variable leitet sich selbst wieder ab.",
+      "input": "{{a}}: ein endlicher Automat, ein regulärer Ausdruck, eine kontextfreie Grammatik oder ein Kellerautomat",
+      "output": "ja oder nein — bei ja die Wörter der Sprache, bei nein ein Wort, das sich pumpen lässt",
+      "guarantee": "ja genau dann, wenn L({{a}}) endlich ist"
+    },
+    "disjoint": {
+      "summary": "Die beiden Automaten laufen nebeneinander, und ein Wort, das beide akzeptieren, wird gesucht.",
+      "input": "{{a}}, {{b}}: endliche Automaten",
+      "output": "ja oder nein — bei nein mit einem kürzesten gemeinsamen Wort beider Sprachen",
+      "guarantee": "ja genau dann, wenn L({{a}}) ∩ L({{b}}) = ∅"
+    }
   }
 }

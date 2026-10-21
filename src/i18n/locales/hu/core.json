@@ -869,5 +869,195 @@
       "title": "A regex(…)-en belül a(z) {{names}} csak betűk",
       "detail": "Reguláris kifejezés nem hivatkozhat más definíciókra — itt a(z) {{name}} a(z) {{letters}} betűket jelenti. Ha a(z) {{name}} definícióval akarod kombinálni, azt a regexen kívül teheted meg, pl. {{name}} + regex(…) vagy union({{name}}, …). A(z) {{name}} automata reguláris kifejezéséhez használd a toRegex({{name}}) függvényt."
     }
+  },
+  "definition": {
+    "det": {
+      "summary": "Determinisztikus automata, amelynek állapotai {{a}} állapotainak halmazai: egy állapot azokat az állapotokat tartja számon, ahol {{a}} az eddig olvasott betűk után lehet.",
+      "input": "{{a}}: véges automata — lehet nemdeterminisztikus, lehetnek benne ε-átmenetek is",
+      "output": "teljes determinisztikus véges automata; csak a kezdőállapotból elérhető halmazok készülnek el",
+      "guarantee": "L({{op}}) = L({{a}})"
+    },
+    "min": {
+      "summary": "Azokat az állapotokat, amelyeket egyetlen szó sem különböztet meg, összevonjuk, így a nyelvet a lehető legkevesebb állapottal fogadjuk el.",
+      "input": "{{a}}: teljes determinisztikus véges automata",
+      "output": "a legkevesebb állapotú teljes determinisztikus véges automata, amely az állapotok nevétől eltekintve egyértelmű",
+      "guarantee": "L({{op}}) = L({{a}}), és ezt a nyelvet egyetlen kevesebb állapotú teljes determinisztikus automata sem fogadja el"
+    },
+    "epsfree": {
+      "fsm": {
+        "summary": "Az ε-átmenetek elmaradnak: egy betű oda visz, ahová az előtte és utána tett ε-átmenetekkel együtt vihetne.",
+        "input": "{{a}}: véges automata ε-átmenetekkel",
+        "output": "véges automata ugyanazokkal az állapotokkal, ε-átmenet nélkül — általában nemdeterminisztikus",
+        "guarantee": "L({{op}}) = L({{a}})"
+      },
+      "grammar": {
+        "summary": "Az ε-szabályok elmaradnak: minden szabály megkapja azokat a változatait is, amelyekből az ε-t levezető változók hiányoznak.",
+        "input": "{{a}}: környezetfüggetlen nyelvtan (minden szabály A → α alakú)",
+        "output": "ε-mentes nyelvtan: nincs benne ε-szabály, kivéve hogy ha ε a nyelvben van, egy új, jobb oldalon nem szereplő kezdőváltozó vezeti le",
+        "guarantee": "L({{op}}) = L({{a}})"
+      }
+    },
+    "complete": {
+      "summary": "Minden hiányzó átmenet egy új csapdaállapotba vezet, ahonnan egyetlen szó sem jut ki többé.",
+      "input": "{{a}}: véges automata",
+      "output": "véges automata, amelyben minden állapotból minden betűre van átmenet",
+      "guarantee": "L({{op}}) = L({{a}})"
+    },
+    "reachable": {
+      "summary": "Elhagyjuk azokat az állapotokat, amelyekbe a kezdőállapotból egyetlen szó sem vezet.",
+      "input": "{{a}}: véges automata",
+      "output": "{{a}} kezdőállapotából elérhető része",
+      "guarantee": "L({{op}}) = L({{a}})"
+    },
+    "complement": {
+      "summary": "Az elfogadó és az elutasító állapotok szerepet cserélnek.",
+      "input": "{{a}}: teljes determinisztikus véges automata a Σ ábécé fölött",
+      "output": "teljes determinisztikus véges automata ugyanazokkal az állapotokkal és átmenetekkel",
+      "guarantee": "L({{op}}) = Σ* \\ L({{a}})"
+    },
+    "union": {
+      "product": {
+        "summary": "A két automata egymás mellett fut: egy állapot az ő állapotaik egy párja, és a pár akkor elfogadó, ha valamelyik tagja az.",
+        "input": "{{a}}, {{b}}: teljes determinisztikus véges automaták — különböző ábécék esetén mindkettőt a közös ábécé fölött tesszük teljessé",
+        "output": "teljes determinisztikus véges automata az állapotpárokon",
+        "guarantee": "L({{op}}) = L({{a}}) ∪ L({{b}})"
+      },
+      "epsilon": {
+        "summary": "Egy új kezdőállapotból ε-átmenet vezet mindkét kezdőállapotba: egy szó bármelyik automata útját követheti.",
+        "input": "{{a}}, {{b}}: véges automaták — lehetnek nemdeterminisztikusak is",
+        "output": "mindkettőt tartalmazó nemdeterminisztikus véges automata ε-átmenetekkel",
+        "guarantee": "L({{op}}) = L({{a}}) ∪ L({{b}})"
+      }
+    },
+    "intersect": {
+      "summary": "A két automata egymás mellett fut: egy állapot az ő állapotaik egy párja, és a pár akkor elfogadó, ha mindkét tagja az.",
+      "input": "{{a}}, {{b}}: teljes determinisztikus véges automaták — különböző ábécék esetén mindkettőt a közös ábécé fölött tesszük teljessé",
+      "output": "teljes determinisztikus véges automata az állapotpárokon",
+      "guarantee": "L({{op}}) = L({{a}}) ∩ L({{b}})"
+    },
+    "difference": {
+      "summary": "A két automata egymás mellett fut: egy állapot az ő állapotaik egy párja, és a pár akkor elfogadó, ha az első tagja elfogadó, a második nem.",
+      "input": "{{a}}, {{b}}: teljes determinisztikus véges automaták — különböző ábécék esetén mindkettőt a közös ábécé fölött tesszük teljessé",
+      "output": "teljes determinisztikus véges automata az állapotpárokon",
+      "guarantee": "L({{op}}) = L({{a}}) \\ L({{b}})"
+    },
+    "concat": {
+      "summary": "{{a}} minden elfogadó állapotából ε-átmenet vezet {{b}} kezdőállapotába: egy szót előbb {{a}}, aztán {{b}} olvas.",
+      "input": "{{a}}, {{b}}: véges automaták",
+      "output": "nemdeterminisztikus véges automata ε-átmenetekkel; elfogadó állapotai {{b}} elfogadó állapotai",
+      "guarantee": "L({{op}}) = L({{a}})L({{b}})"
+    },
+    "star": {
+      "summary": "Egy új, maga is elfogadó kezdőállapotból ε-átmenet vezet {{a}} kezdőállapotába, {{a}} elfogadó állapotaiból pedig vissza az új állapotba: a gép a nyelv akárhány szavát olvashatja egymás után.",
+      "input": "{{a}}: véges automata",
+      "output": "nemdeterminisztikus véges automata ε-átmenetekkel",
+      "guarantee": "L({{op}}) = L({{a}})*"
+    },
+    "reverse": {
+      "summary": "Minden átmenet megfordul; egy új kezdőállapotból ε-átmenet vezet az elfogadó állapotokba, és a régi kezdőállapot lesz az egyetlen elfogadó.",
+      "input": "{{a}}: véges automata",
+      "output": "nemdeterminisztikus véges automata ε-átmenetekkel",
+      "guarantee": "L({{op}}) = { wᴿ : w ∈ L({{a}}) }"
+    },
+    "clean": {
+      "summary": "Az állapotok új nevet kapnak: A, B, C, … a kezdőállapotból induló szélességi bejárás sorrendjében.",
+      "input": "{{a}}: véges automata",
+      "output": "ugyanaz az automata új állapotnevekkel",
+      "guarantee": "L({{op}}) = L({{a}})"
+    },
+    "toGrammar": {
+      "fsm": {
+        "summary": "Minden állapotból változó lesz, a q-ból a-ra p-be vezető átmenetből pedig az A_q → aA_p szabály.",
+        "input": "{{a}}: véges automata ε-átmenetek nélkül",
+        "output": "reguláris (3. típusú) nyelvtan",
+        "guarantee": "L({{op}}) = L({{a}})"
+      },
+      "pda": {
+        "summary": "A [qAp] változóból pontosan azok a szavak vezethetők le, amelyek a gépet a q állapotból a p-be viszik, miközben A lekerül a veremből.",
+        "input": "{{a}}: veremautomata — állapottal vagy üres veremmel elfogadó",
+        "output": "környezetfüggetlen nyelvtan",
+        "guarantee": "L({{op}}) = L({{a}})"
+      }
+    },
+    "toFsm": {
+      "regex": {
+        "summary": "A kifejezés minden részéhez automata készül, a betűktől felfelé, és ezeket a műveleti jelek szerint kapcsoljuk össze.",
+        "input": "{{a}}: reguláris kifejezés",
+        "output": "nemdeterminisztikus véges automata ε-átmenetekkel",
+        "guarantee": "L({{op}}) = L({{a}})"
+      },
+      "grammar": {
+        "summary": "Minden változóból állapot lesz, az A → aB szabályból A-ból a-ra B-be vezető átmenet; az A → a szabály egy új elfogadó állapotba vezet.",
+        "input": "{{a}}: jobb-lineáris nyelvtan",
+        "output": "nemdeterminisztikus véges automata",
+        "guarantee": "L({{op}}) = L({{a}})"
+      }
+    },
+    "toRegex": {
+      "summary": "Az állapotokat megszámozzuk, és t = 0, 1, 2, … sorban felírjuk r(p, q, t)-t: a p-ből q-ba legfeljebb t sorszámú közbenső állapotokon át vezető szavakat.",
+      "input": "{{a}}: véges automata",
+      "output": "reguláris kifejezés",
+      "guarantee": "L({{op}}) = L({{a}})"
+    },
+    "toPda": {
+      "summary": "Egyetlen állapotú gép a vermében baloldali levezetést végez: a verem tetején álló változót egy jobb oldalára cseréli, a tetőn álló betűt a bemenettel veti össze.",
+      "input": "{{a}}: környezetfüggetlen nyelvtan",
+      "output": "üres veremmel elfogadó veremautomata",
+      "guarantee": "L({{op}}) = L({{a}})"
+    },
+    "unitfree": {
+      "summary": "Az A változó megkapja minden olyan változó többi szabályát, ahová A → B alakú szabályokon át eljut, és ezek a szabályok elmaradnak.",
+      "input": "{{a}}: környezetfüggetlen nyelvtan, lehetőleg ε-mentes",
+      "output": "nyelvtan A → B alakú szabályok nélkül",
+      "guarantee": "L({{op}}) = L({{a}})"
+    },
+    "trim": {
+      "summary": "Előbb azok a változók maradnak el, amelyekből nem vezethető le terminális szó, aztán azok a szimbólumok, amelyekhez a kezdőváltozóból nem lehet eljutni.",
+      "input": "{{a}}: környezetfüggetlen nyelvtan",
+      "output": "nyelvtan, amelynek minden szimbóluma részt vesz valamelyik szó levezetésében",
+      "guarantee": "L({{op}}) = L({{a}})"
+    },
+    "cnf": {
+      "summary": "Az egyszeres szabályok elmaradnak, a hosszú jobb oldalak betűi helyére új X_a → a változók kerülnek, a kettőnél hosszabb jobb oldalakat pedig új változók láncára bontjuk.",
+      "input": "{{a}}: ε-mentes környezetfüggetlen nyelvtan",
+      "output": "Chomsky-normálformájú nyelvtan: minden szabály A → BC vagy A → a alakú",
+      "guarantee": "L({{op}}) = L({{a}}) \\ {ε}"
+    },
+    "toEmptyStack": {
+      "summary": "Elfogadó állapotban a gép kiürítheti a vermét; egy új veremalja-jel gondoskodik arról, hogy a verem korábban ne ürüljön ki.",
+      "input": "{{a}}: állapottal elfogadó veremautomata",
+      "output": "üres veremmel elfogadó veremautomata",
+      "guarantee": "L({{op}}) = L({{a}})"
+    },
+    "toFinalState": {
+      "summary": "Egy új veremalja-jel jelzi, amikor {{a}} verme kiürülne: ekkor a gép egy új elfogadó állapotba lép.",
+      "input": "{{a}}: üres veremmel elfogadó veremautomata",
+      "output": "állapottal elfogadó veremautomata",
+      "guarantee": "L({{op}}) = L({{a}})"
+    },
+    "equal": {
+      "summary": "A két automata állapotpárjain szélességi kereséssel olyan szót keresünk, amelyet pontosan az egyikük fogad el.",
+      "input": "{{a}}, {{b}}: véges automaták",
+      "output": "igen vagy nem — nem esetén egy legrövidebb megkülönböztető szóval",
+      "guarantee": "igen pontosan akkor, ha L({{a}}) = L({{b}})"
+    },
+    "empty": {
+      "summary": "A nyelv egy szavát keressük: utat a kezdőállapotból egy elfogadó állapotba, vagy a kezdőváltozóból levezethető terminális szót.",
+      "input": "{{a}}: véges automata, reguláris kifejezés, környezetfüggetlen nyelvtan vagy veremautomata",
+      "output": "igen vagy nem — nem esetén a nyelv egy legrövidebb szavával",
+      "guarantee": "igen pontosan akkor, ha L({{a}}) = ∅"
+    },
+    "finite": {
+      "summary": "A nyelv pontosan akkor végtelen, ha valamelyik szava pumpálható: olvasása közben egy állapot ismétlődik, vagy egy változóból önmaga újra levezethető.",
+      "input": "{{a}}: véges automata, reguláris kifejezés, környezetfüggetlen nyelvtan vagy veremautomata",
+      "output": "igen vagy nem — igen esetén a nyelv szavai, nem esetén egy pumpálható szó",
+      "guarantee": "igen pontosan akkor, ha L({{a}}) véges"
+    },
+    "disjoint": {
+      "summary": "A két automata egymás mellett fut, és olyan szót keresünk, amelyet mindkettő elfogad.",
+      "input": "{{a}}, {{b}}: véges automaták",
+      "output": "igen vagy nem — nem esetén mindkét nyelv egy legrövidebb közös szavával",
+      "guarantee": "igen pontosan akkor, ha L({{a}}) ∩ L({{b}}) = ∅"
+    }
   }
 }
