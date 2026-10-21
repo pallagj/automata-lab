@@ -340,17 +340,72 @@ export function grammarToFSM(g: Grammar): OpResult<FSM> {
   return okResult(fsm, [], steps);
 }
 
+/** A state label not used yet, with one more prime: q₀ → q′₀, {A,B} → {A,B}′. */
+function primedLabel(label: string, used: Set<string>): string {
+  const id = parseIdent(label, false);
+  for (let primes = 1; ; primes++) {
+    const name = id ? formatIdent({ ...id, primes: id.primes + primes }) : label + "′".repeat(primes);
+    if (!used.has(name)) return name;
+  }
+}
+
 /**
- * NFA → right-linear grammar (lecture notes, Theorem 4.20). Every state q gets a variable:
- * the state's own name when that is a valid variable name (S, A, q_0), otherwise A_q —
- * the state's label in the subscript (A_{00}, A_{A,B}).
+ * Finite automaton → regular grammar, the construction of the lecture notes (4.20): every
+ * state q gets a variable A_q (the state's own name when that is a valid variable name), a
+ * transition δ(q, a) = p gives A_q → aA_p — and A_q → a too when p accepts — and S → ε
+ * comes when the start state accepts. That S → ε needs S on no right-hand side, so first
+ * no transition may lead into the start state (4.19): a copy q′₀ of it takes them over.
+ * The result is of class 3. An ε-transition has no such rule: it must be removed first.
  */
 export function fsmToGrammar(f: FSM): OpResult<Grammar> {
+  const eps = f.transitions.filter((t) => t.symbol === EPS);
+  if (eps.length > 0)
+    return failResult([
+      err(
+        tx("grammar.fsmToGrammar.needsEpsilonFree.title"),
+        tx("grammar.fsmToGrammar.needsEpsilonFree.detail", {
+          list: eps.slice(0, 4).map((t) => `${t.from} →ε ${t.to}`).join(", ") + (eps.length > 4 ? ", …" : "")
+        }),
+        { label: tx("ops.fix.insertEpsfree"), code: `toGrammar(epsfree(${f.name}))` }
+      )
+    ]);
+
   const diags: Diagnostic[] = [];
-  const order = [f.start, ...f.states.filter((s) => s !== f.start)];
+  const steps: AlgoStep[] = [];
+  let states = [...f.states];
+  let accept = [...f.accept];
+  let transitions = f.transitions.map((t) => ({ ...t }));
+
+  // 4.19: the start state accepts (S → ε) but transitions lead into it — a copy takes them over
+  const intoStart = f.transitions.filter((t) => t.to === f.start);
+  if (f.accept.includes(f.start) && intoStart.length > 0) {
+    const copy = primedLabel(f.start, new Set(f.states));
+    const redirect = (s: string) => (s === f.start ? copy : s);
+    transitions = [
+      ...f.transitions.map((t) => ({ ...t, to: redirect(t.to) })),
+      ...f.transitions.filter((t) => t.from === f.start).map((t) => ({ from: copy, symbol: t.symbol, to: redirect(t.to) }))
+    ];
+    states = [...f.states, copy];
+    accept = [...f.accept, copy];
+    steps.push({
+      title: tx("grammar.fsmToGrammar.newStart.title"),
+      detail: tx("grammar.fsmToGrammar.newStart.detail", { start: f.start, copy }),
+      table: {
+        headers: [tx("grammar.table.transition"), tx("grammar.fsmToGrammar.table.instead")],
+        rows: [
+          ...intoStart.map((t) => [`δ(${t.from}, ${t.symbol}) = ${t.to}`, `δ(${t.from}, ${t.symbol}) = ${copy}`]),
+          ...f.transitions
+            .filter((t) => t.from === f.start)
+            .map((t) => ["", `δ(${copy}, ${t.symbol}) = ${redirect(t.to)}`])
+        ]
+      }
+    });
+  }
+
+  // the variables: the states whose names can stay first, so that renamed ones never take their names
+  const order = [f.start, ...states.filter((s) => s !== f.start)];
   const used = new Set<string>(f.alphabet);
   const mapName = new Map<string, string>();
-  // the states whose names can stay first, so that renamed ones never take their names
   for (const s of order) {
     const own = canonicalName(s);
     if (own !== null && !used.has(own) && parseIdent(s, false) !== null) {
@@ -364,12 +419,43 @@ export function fsmToGrammar(f: FSM): OpResult<Grammar> {
     mapName.set(s, freshVariable({ base: "A", primes: 0, sub }, used));
   }
   const v = (s: string) => mapName.get(s)!;
+  steps.push({
+    title: tx("grammar.fsmToGrammar.step.title"),
+    detail: tx("grammar.fsmToGrammar.step.detail"),
+    table: { headers: [tx("ops.table.state"), tx("grammar.table.variable")], rows: order.map((s) => [s, v(s)]) }
+  });
 
+  // the rules, state by state
   const rules: GrammarRule[] = [];
-  for (const t of f.transitions) {
-    rules.push({ left: [v(t.from)], right: t.symbol === EPS ? [v(t.to)] : [t.symbol, v(t.to)] });
+  const seen = new Set<string>();
+  const add = (left: string, right: string[]) => {
+    const key = `${left}\u0002${symbolsKey(right)}`;
+    if (seen.has(key)) return;
+    seen.add(key);
+    rules.push({ left: [left], right });
+  };
+  const rows: string[][] = [];
+  const symbolOrder = (c: string) => f.alphabet.indexOf(c);
+  for (const q of order) {
+    const out = transitions
+      .filter((t) => t.from === q)
+      .sort((a, b) => symbolOrder(a.symbol) - symbolOrder(b.symbol) || order.indexOf(a.to) - order.indexOf(b.to));
+    for (const t of out) {
+      const made = [[t.symbol, v(t.to)]];
+      if (accept.includes(t.to)) made.push([t.symbol]);
+      made.forEach((r) => add(v(q), r));
+      rows.push([`δ(${q}, ${t.symbol}) = ${t.to}`, `${v(q)} → ${made.map(showSymbols).join(" | ")}`]);
+    }
   }
-  for (const a of f.accept) rules.push({ left: [v(a)], right: [] });
+  if (accept.includes(f.start)) {
+    add(v(f.start), []);
+    rows.push([`${f.start} ∈ F`, `${v(f.start)} → ε`]);
+  }
+  steps.push({
+    title: tx("grammar.fsmToGrammar.rules.title"),
+    detail: tx("grammar.fsmToGrammar.rules.detail"),
+    table: { headers: [tx("grammar.table.transition"), tx("grammar.table.newRules")], rows }
+  });
 
   const renamed = order.filter((s) => s !== v(s));
   if (renamed.length)
@@ -388,16 +474,7 @@ export function fsmToGrammar(f: FSM): OpResult<Grammar> {
     start: v(f.start),
     rules
   };
-  return okResult(g, diags, [
-    {
-      title: tx("grammar.fsmToGrammar.step.title"),
-      detail: tx("grammar.fsmToGrammar.step.detail"),
-      table: {
-        headers: [tx("ops.table.state"), tx("grammar.table.variable")],
-        rows: order.map((s) => [s, v(s)])
-      }
-    }
-  ]);
+  return okResult(g, diags, steps);
 }
 
 /** Context-free grammar → pushdown automaton (top-down parser). */

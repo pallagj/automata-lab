@@ -506,8 +506,23 @@
         "detail": "{{mapping}}"
       },
       "step": {
-        "title": "NEA → rechtslineare Grammatik",
-        "detail": "Jeder Zustand q erhält eine Variable A_q — den eigenen Namen des Zustands, wenn dieser schon ein gültiger Variablenname ist. Jeder Übergang q →a p wird zur Regel A_q → aA_p, und jeder akzeptierende Zustand q ergibt A_q → ε. Die Grammatik ist vom Typ 3 und erzeugt dieselbe Sprache."
+        "title": "Variablen für die Zustände (Skript 4.20)",
+        "detail": "Jeder Zustand q erhält eine Variable A_q — den eigenen Namen des Zustands, wenn dieser schon ein gültiger Variablenname ist. Die Variable des Startzustands ist die Startvariable."
+      },
+      "needsEpsilonFree": {
+        "title": "Für eine Grammatik braucht es einen Automaten ohne ε-Übergänge",
+        "detail": "Die Konstruktion aus Skript 4.20 macht aus einem Übergang δ(q, a) = p die Regel A_q → aA_p — ein ε-Übergang ({{list}}) ergäbe A_q → A_p, eine Regel, die keine Typ-3-Grammatik hat. Entferne zuerst die ε-Übergänge."
+      },
+      "newStart": {
+        "title": "Ein Startzustand ohne eingehende Übergänge (Skript 4.19)",
+        "detail": "{{start}} akzeptiert, also bekommt die Grammatik S → ε — dann darf S aber auf keiner rechten Seite stehen. Es führen jedoch Übergänge nach {{start}}: ein neuer Zustand {{copy}}, eine Kopie von {{start}} (ebenfalls akzeptierend), übernimmt sie und geht weiter wie {{start}}. Die Sprache bleibt dieselbe."
+      },
+      "table": {
+        "instead": "stattdessen"
+      },
+      "rules": {
+        "title": "Regeln aus den Übergängen",
+        "detail": "Aus δ(q, a) = p wird A_q → aA_p: nach dem Lesen von a geht die Ableitung bei p weiter. Akzeptiert p, dann auch A_q → a: das Wort darf dort enden. Akzeptiert der Startzustand, S → ε. Jede Regel ist A → aB oder A → a, und S → ε kommt nur, wenn S auf keiner rechten Seite steht: die Grammatik ist vom Typ 3 und erzeugt die Sprache des Automaten."
       }
     },
     "toPda": {

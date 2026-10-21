@@ -506,8 +506,23 @@
         "detail": "{{mapping}}"
       },
       "step": {
-        "title": "NFA → jobb-lineáris nyelvtan",
-        "detail": "Minden q állapot kap egy A_q változót — az állapot saját nevét, ha az már érvényes változónév. Minden q →a p átmenetből A_q → aA_p szabály lesz, minden elfogadó q állapotból A_q → ε. Az eredmény 3. típusú, és ugyanazt a nyelvet generálja."
+        "title": "Változók az állapotokhoz (jegyzet 4.20)",
+        "detail": "Minden q állapot kap egy A_q változót — az állapot saját nevét, ha az már érvényes változónév. A kezdőállapot változója a kezdőváltozó."
+      },
+      "needsEpsilonFree": {
+        "title": "A nyelvtanná alakításhoz ε-átmenet nélküli automata kell",
+        "detail": "A jegyzet 4.20 konstrukciója a δ(q, a) = p átmenetből A_q → aA_p szabályt készít — egy ε-átmenetből ({{list}}) A_q → A_p lenne, ilyen szabály 3. típusú nyelvtanban nincs. Előbb az ε-átmeneteket kell elhagyni."
+      },
+      "newStart": {
+        "title": "Kezdőállapot bejövő átmenet nélkül (jegyzet 4.19)",
+        "detail": "{{start}} elfogadó, ezért a nyelvtanba S → ε kerül — ekkor viszont S egyetlen jobb oldalon sem állhat. A(z) {{start}} állapotba azonban vezet átmenet: egy új {{copy}} állapot, {{start}} másolata (szintén elfogadó) veszi át ezeket, és onnan ugyanúgy lép tovább, mint {{start}}. A nyelv nem változik."
+      },
+      "table": {
+        "instead": "helyette"
+      },
+      "rules": {
+        "title": "Szabályok az átmenetekből",
+        "detail": "δ(q, a) = p-ből A_q → aA_p lesz: a beolvasása után a levezetés p-ből folytatódik. Ha p elfogadó, A_q → a is: a szó ott véget érhet. Ha a kezdőállapot elfogadó, S → ε. Minden szabály A → aB vagy A → a alakú, S → ε pedig csak úgy kerül be, hogy S egyetlen jobb oldalon sem áll: a nyelvtan 3. típusú, és az automata nyelvét generálja."
       }
     },
     "toPda": {

@@ -506,8 +506,23 @@
         "detail": "{{mapping}}"
       },
       "step": {
-        "title": "NFA → right-linear grammar",
-        "detail": "Every state q gets a variable A_q — the state's own name when it already is a valid variable name. Every transition q →a p becomes the rule A_q → aA_p, and every accepting state q gives A_q → ε. The resulting grammar is type 3 and generates the same language."
+        "title": "Variables for the states (lecture notes 4.20)",
+        "detail": "Every state q gets a variable A_q — the state's own name when it already is a valid variable name. The start state's variable is the start variable."
+      },
+      "needsEpsilonFree": {
+        "title": "An automaton without ε-transitions is needed for a grammar",
+        "detail": "The construction of lecture notes 4.20 turns a transition δ(q, a) = p into A_q → aA_p — an ε-transition ({{list}}) would give a rule A_q → A_p, which no type-3 grammar has. Remove the ε-transitions first."
+      },
+      "newStart": {
+        "title": "A start state with no incoming transition (lecture notes 4.19)",
+        "detail": "{{start}} accepts, so the grammar gets S → ε — and then S may occur on no right-hand side. But transitions lead into {{start}}: a new state {{copy}}, a copy of {{start}} (accepting as well), takes them over and moves on just as {{start}} does. The language stays the same."
+      },
+      "table": {
+        "instead": "instead"
+      },
+      "rules": {
+        "title": "Rules from the transitions",
+        "detail": "δ(q, a) = p gives A_q → aA_p: after reading a, the derivation goes on from p. When p accepts, A_q → a as well: the word may end there. When the start state accepts, S → ε. Every rule is A → aB or A → a, and S → ε comes only with S on no right-hand side: the grammar is type 3 and generates the automaton's language."
       }
     },
     "toPda": {

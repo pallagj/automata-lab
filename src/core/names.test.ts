@@ -90,7 +90,7 @@ describe("automaton → grammar names the variables A_q", () => {
       "S→a A_{00}",
       "A_{00}→b A_{A,B}",
       "A_{A,B}→a q_0",
-      "q_0→"
+      "A_{A,B}→a"
     ]);
   });
 
