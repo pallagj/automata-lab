@@ -381,10 +381,6 @@
         "detailUnion": "If one automaton gets stuck, the pair can no longer step even though the other could still run — for a union, the other automaton's acceptance still matters. Completion (a trap state) fixes this.",
         "detailOther": "If one automaton gets stuck, the pair can no longer step even though the other could still run — the result would be incorrect. Completion (a trap state) fixes this."
       },
-      "differentAlphabets": {
-        "title": "The two automata have different alphabets",
-        "detail": "Missing from the first automaton: {{missing1}}. Missing from the second: {{missing2}}. {{mode}} is only meaningful over a common alphabet — extend the alphabets and complete the automata."
-      },
       "acceptRule": {
         "union": "(p,q) is accepting if p OR q is accepting",
         "intersect": "(p,q) is accepting if p AND q are both accepting",
@@ -393,6 +389,10 @@
       "step": {
         "title": "Product construction ({{mode}})",
         "detail": "The two automata are run in parallel: the states are (p,q) pairs, δ((p,q),a) = (δ₁(p,a), δ₂(q,a)). Acceptance: {{acceptRule}}. Only reachable pairs are built."
+      },
+      "extend": {
+        "title": "The {{part}} automaton over the common alphabet (lecture notes 3.4)",
+        "detail": "{{name}} has no transition on {{missing}}: over Σ = {{sigma}} it is an incomplete automaton, so it is completed first (2.10) — every missing transition leads into a new trap state {{trap}}, which never leaves. Its language does not change."
       }
     },
     "unionEpsilon": {

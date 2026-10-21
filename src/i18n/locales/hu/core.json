@@ -381,10 +381,6 @@
         "detailUnion": "Ha az egyik automata elakad, a pár nem tud tovább lépni, pedig a másik még futna — az unióhoz a másik automata elfogadása is számít. Teljessé tétellel (csapdaállapot) ez megoldható.",
         "detailOther": "Ha az egyik automata elakad, a pár nem tud tovább lépni, pedig a másik még futna — az eredmény hibás lenne. Teljessé tétellel (csapdaállapot) ez megoldható."
       },
-      "differentAlphabets": {
-        "title": "A két automata ábécéje különbözik",
-        "detail": "Az első automatából hiányzik: {{missing1}}. A másodikból hiányzik: {{missing2}}. A(z) {{mode}} csak közös ábécé fölött értelmes — bővítsd az ábécéket és tedd teljessé az automatákat."
-      },
       "acceptRule": {
         "union": "(p,q) elfogadó, ha p VAGY q elfogadó",
         "intersect": "(p,q) elfogadó, ha p ÉS q is elfogadó",
@@ -393,6 +389,10 @@
       "step": {
         "title": "Szorzat-konstrukció ({{mode}})",
         "detail": "A két automatát párhuzamosan futtatjuk: az állapotok (p,q) párok, δ((p,q),a) = (δ₁(p,a), δ₂(q,a)). Elfogadás: {{acceptRule}}. Csak az elérhető párokat építjük fel."
+      },
+      "extend": {
+        "title": "A(z) {{part}} automata a közös ábécé fölött (jegyzet 3.4)",
+        "detail": "{{name}} nem lép a(z) {{missing}} betűre: a Σ = {{sigma}} ábécé fölött hiányos automata, ezért előbb teljessé tesszük (2.10) — minden hiányzó átmenet egy új {{trap}} csapdaállapotba vezet, ahonnan nincs kiút. A nyelve nem változik."
       }
     },
     "unionEpsilon": {

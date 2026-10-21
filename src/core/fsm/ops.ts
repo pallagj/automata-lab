@@ -474,7 +474,9 @@ export function complement(f: FSM): OpResult<FSM> {
 
 export type ProductMode = "union" | "intersect" | "difference";
 
-export function product(m1: FSM, m2: FSM, mode: ProductMode): OpResult<FSM> {
+export function product(first: FSM, second: FSM, mode: ProductMode): OpResult<FSM> {
+  let m1 = first;
+  let m2 = second;
   const diags: Diagnostic[] = [];
   const fixes: Diagnostic[] = [];
 
@@ -518,22 +520,28 @@ export function product(m1: FSM, m2: FSM, mode: ProductMode): OpResult<FSM> {
   }
   if (fixes.length > 0) return failResult(fixes);
 
-  // common alphabet
+  // a common alphabet Σ = Σ₁ ∪ Σ₂ (lecture notes 3.4): an automaton lacking letters of it is
+  // incomplete over Σ, and it is completed first (2.10) — the missing letters lead to a trap
   const alphabet = [...new Set([...m1.alphabet, ...m2.alphabet])];
-  const missing1 = alphabet.filter((c) => !m1.alphabet.includes(c));
-  const missing2 = alphabet.filter((c) => !m2.alphabet.includes(c));
-  if (missing1.length || missing2.length) {
-    return failResult([
-      err(
-        tx("ops.product.differentAlphabets.title"),
-        tx("ops.product.differentAlphabets.detail", {
-          missing1: missing1.length ? missing1.join(", ") : "—",
-          missing2: missing2.length ? missing2.join(", ") : "—",
-          modeKey: `opNames.${mode}`
-        })
-      )
-    ]);
-  }
+  const preSteps: AlgoStep[] = [];
+  const extend = (m: FSM, partKey: string): FSM => {
+    const missing = alphabet.filter((c) => !m.alphabet.includes(c));
+    if (missing.length === 0) return m;
+    const out = withAlphabet(m, alphabet);
+    const trap = out.states[out.states.length - 1];
+    preSteps.push({
+      title: tx("ops.product.extend.title", { partKey, name: m.name }),
+      detail: tx("ops.product.extend.detail", {
+        name: m.name,
+        missing: missing.join(", "),
+        sigma: `{${alphabet.join(", ")}}`,
+        trap
+      })
+    });
+    return out;
+  };
+  m1 = extend(m1, "ops.product.first");
+  m2 = extend(m2, "ops.product.second");
 
   const t1 = transMap(m1);
   const t2 = transMap(m2);
@@ -590,6 +598,7 @@ export function product(m1: FSM, m2: FSM, mode: ProductMode): OpResult<FSM> {
         : "ops.product.acceptRule.difference";
 
   const steps: AlgoStep[] = [
+    ...preSteps,
     {
       title: tx("ops.product.step.title", { modeKey: `opNames.${mode}` }),
       detail: tx("ops.product.step.detail", { acceptRuleKey: acceptDetailKey }),

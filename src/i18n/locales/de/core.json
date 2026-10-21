@@ -381,10 +381,6 @@
         "detailUnion": "Bleibt ein Automat stecken, kann das Paar nicht weiterlaufen, obwohl der andere noch könnte — bei der Vereinigung zählt auch die Akzeptanz des anderen Automaten. Vervollständigung (ein Fangzustand) löst das.",
         "detailOther": "Bleibt ein Automat stecken, kann das Paar nicht weiterlaufen, obwohl der andere noch könnte — das Ergebnis wäre falsch. Vervollständigung (ein Fangzustand) löst das."
       },
-      "differentAlphabets": {
-        "title": "Die beiden Automaten haben unterschiedliche Alphabete",
-        "detail": "Im ersten Automaten fehlt: {{missing1}}. Im zweiten fehlt: {{missing2}}. {{mode}} ist nur über einem gemeinsamen Alphabet sinnvoll — erweitere die Alphabete und vervollständige die Automaten."
-      },
       "acceptRule": {
         "union": "(p,q) ist akzeptierend, wenn p ODER q akzeptierend ist",
         "intersect": "(p,q) ist akzeptierend, wenn p UND q akzeptierend sind",
@@ -393,6 +389,10 @@
       "step": {
         "title": "Produktkonstruktion ({{mode}})",
         "detail": "Die beiden Automaten laufen parallel: Die Zustände sind (p,q)-Paare, δ((p,q),a) = (δ₁(p,a), δ₂(q,a)). Akzeptanz: {{acceptRule}}. Es werden nur erreichbare Paare aufgebaut."
+      },
+      "extend": {
+        "title": "Der {{part}} Automat über dem gemeinsamen Alphabet (Skript 3.4)",
+        "detail": "{{name}} hat keinen Übergang mit {{missing}}: über Σ = {{sigma}} ist er ein unvollständiger Automat, also wird er zuerst vervollständigt (2.10) — jeder fehlende Übergang führt in einen neuen Fangzustand {{trap}}, der nie verlassen wird. Seine Sprache ändert sich nicht."
       }
     },
     "unionEpsilon": {
