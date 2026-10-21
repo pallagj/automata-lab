@@ -135,7 +135,6 @@ function texEscape(s: string): string {
     .replaceAll("~", "\\textasciitilde{}")
     .replaceAll("^", "\\textasciicircum{}")
     .replaceAll("ε", "$\\varepsilon$")
-    .replaceAll("␣", "\\textvisiblespace{}")
     .replaceAll("∅", "$\\emptyset$")
     .replaceAll("→", "$\\rightarrow$");
 }

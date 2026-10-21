@@ -16,7 +16,6 @@ import {
   stepMachineConfigs,
   storageOpLabel,
   StorageState,
-  TAPE_BLANK,
   TapeState,
   tapeWindow
 } from "../../core/machine/machine";
@@ -50,7 +49,7 @@ const StorageCells: React.FC<{ type: "stack" | "queue" | "tape"; st: StorageStat
       <div className="tape">
         {w.cells.map((c, i) => (
           <span key={w.startPos + i} className={`tape-cell ${i === w.headIndex ? "head" : ""}`}>
-            {c === TAPE_BLANK ? "␣" : c}
+            {c}
           </span>
         ))}
       </div>

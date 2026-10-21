@@ -54,7 +54,6 @@ export interface OpResult<T> {
 }
 
 export const EPS = "ε";
-export const BLANK = "␣";
 
 export function err(title: I18nText, detail?: I18nText, fix?: Diagnostic["fix"]): Diagnostic {
   return { level: "error", title, detail, fix };
