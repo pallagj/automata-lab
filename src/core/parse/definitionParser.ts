@@ -19,8 +19,9 @@ import { canonicalLabel, canonicalName, formatIdent, parseIdent, suggestName, sy
  * Parses YAML-based definitions with friendly, precise error messages.
  *
  * A machine's transitions are written as the lecture notes write δ (see parse/delta.ts),
- * a grammar's rules as S -> aS | b. In lists (charset, states) "a-d" is a range, and
- * everywhere "ε" (or "eps", "epsilon") is the empty word — see core/epsilon.ts.
+ * a grammar's rules as S -> aS | b. In an alphabet (charset) "a-d" is a range of symbols;
+ * states and variables are names, so a dash is part of the name. Everywhere "ε" (or "eps",
+ * "epsilon") is the empty word — see core/epsilon.ts.
  */
 
 export type Definition = Machine | Grammar;
@@ -48,7 +49,7 @@ function splitTopLevel(s: string): string[] {
   return out;
 }
 
-/** comma-separated list / YAML list → array, with range expansion */
+/** comma-separated list / YAML list → array; an alphabet's list expands ranges (a-d) */
 function parseList(value: unknown, field: string, diags: Diagnostic[], expandRanges = true): string[] {
   if (value === undefined || value === null) return [];
   let items: string[] = [];
@@ -301,8 +302,8 @@ export function parseMachine(source: string): OpResult<Machine> {
 
   const alphabet = parseList(body["charset"], "charset", diags);
   // a state label that is a name is canonical (q0 = q_0); see canonicalLabel
-  const states = parseList(body["states"], "states", diags).map(canonicalLabel);
-  const accept = parseList(body["accept"], "accept", diags).map(canonicalLabel);
+  const states = parseList(body["states"], "states", diags, false).map(canonicalLabel);
+  const accept = parseList(body["accept"], "accept", diags, false).map(canonicalLabel);
   const start = canonicalLabel(String(body["init"]));
 
   const stateSet = new Set(states);
@@ -529,7 +530,7 @@ export function parseGrammar(source: string): OpResult<Grammar> {
       err(tx("definitionParser.grammar.terminalNotOneChar.title", { symbol: long }), tx("definitionParser.grammar.terminalNotOneChar.detail"))
     ]);
   const nonterminals: string[] = [];
-  for (const raw of parseList(body["variables"], "variables", diags)) {
+  for (const raw of parseList(body["variables"], "variables", diags, false)) {
     const v = canonicalName(raw);
     if (v === null) return failResult([badName(raw)]);
     nonterminals.push(v);

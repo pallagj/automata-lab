@@ -257,25 +257,78 @@ describe("regex", () => {
 });
 
 describe("parser", () => {
-  it("automaton with a range of states", () => {
+  it("a dash in a state name is part of the name, not a range", () => {
     const r = parseMachine(`
 Machine:
   name: M
   charset: a, b
-  states: S, A-C
+  states: S, 1-2, C-A
   init: S
-  accept: C
+  accept: 1-2, C-A
   transitions:
-    - (S, a) -> S
-    - (S, b) -> S
-    - (S, a) -> A
-    - (A, b) -> B
-    - (B, a) -> C
+    - (S, a) -> 1-2
+    - (1-2, b) -> C-A
 `);
     expect(r.ok).toBe(true);
-    expect(r.value!.states).toEqual(["S", "A", "B", "C"]);
-    // S loops to itself on every symbol
-    expect(runMachine(r.value!, "bbaba").verdict).toBe("accepted");
+    expect(r.diagnostics).toEqual([]);
+    expect(r.value!.states).toEqual(["S", "1-2", "C-A"]);
+    expect(r.value!.accept).toEqual(["1-2", "C-A"]);
+    expect(runMachine(r.value!, "a").verdict).toBe("accepted");
+    expect(runMachine(r.value!, "ab").verdict).toBe("accepted");
+    expect(runMachine(r.value!, "b").verdict).toBe("rejected");
+    expect(parseMachine(serializeDefinition(r.value!)).value!.states).toEqual(["S", "1-2", "C-A"]);
+  });
+  it("a range of states is not expanded: its states are unknown", () => {
+    const r = parseMachine(`
+Machine:
+  name: M
+  charset: a
+  states: A-C
+  init: A
+  accept: C
+  transitions:
+    - (A, a) -> C
+`);
+    expect(r.ok).toBe(false);
+    expect(r.diagnostics[0].title).toEqual({ key: "definitionParser.machine.startNotInStates", params: { start: "A" } });
+  });
+  it("an alphabet still expands a range", () => {
+    const r = parseMachine(`
+Machine:
+  name: M
+  charset: a-c, x
+  states: S
+  init: S
+  accept: S
+  transitions:
+    - (S, b) -> S
+`);
+    expect(r.ok).toBe(true);
+    expect(r.value!.alphabet).toEqual(["a", "b", "c", "x"]);
+  });
+  it("a grammar's terminals expand a range, its variables do not", () => {
+    const g = parseGrammar(`
+Grammar:
+  name: G
+  charset: 0-2
+  variables: S
+  init: S
+  rules:
+    - S -> 0S | 2
+`);
+    expect(g.ok).toBe(true);
+    expect(g.value!.terminals).toEqual(["0", "1", "2"]);
+    const v = parseGrammar(`
+Grammar:
+  name: G
+  charset: a
+  variables: S, A-C
+  init: S
+  rules:
+    - S -> aB
+`);
+    expect(v.ok).toBe(false);
+    expect(v.diagnostics[0].title).toEqual({ key: "definitionParser.badName.title", params: { name: "A-C" } });
   });
   it("an unknown state is an error", () => {
     const r = parseMachine(`
