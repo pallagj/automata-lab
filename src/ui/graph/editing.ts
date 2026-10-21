@@ -41,14 +41,16 @@ export interface GraphEditing {
 
 const list = (s: string) => s.split(",").map((x) => x.trim()).filter(Boolean);
 
-/** the graph names a state canonically (q_0), the definition as typed (q0): the same state */
+/** the graph names a state canonically (q_0), the definition as typed (q0, q_{0}): the same state */
 const same = (typed: string, name: string) => canonicalLabel(typed) === canonicalLabel(name);
 
 function suggestStateName(used: Set<string>): string {
-  if (used.size > 0 && [...used].every((s) => /^q\d+$/.test(s))) {
+  const names = new Set([...used].map(canonicalLabel));
+  // numbered states (q_0, q_1, …) get the next number
+  if (names.size > 0 && [...names].every((s) => /^q_(\d|\{\d+\})$/.test(s))) {
     let i = 0;
-    while (used.has(`q${i}`)) i++;
-    return `q${i}`;
+    while (names.has(canonicalLabel(`q${i}`))) i++;
+    return canonicalLabel(`q${i}`);
   }
   for (const c of "ABCDEFGHIJKLMNOPQRSTUVWXYZ") if (!used.has(c)) return c;
   let i = 0;
@@ -84,7 +86,7 @@ export function useGraphEditing(): {
   const init = draft.init.trim();
 
   const middleOf = (r: string[]): EdgeMiddle => r.slice(1, -1);
-  /** a state as the definition spells it (q0 rather than the graph's q_0) */
+  /** a state as the definition spells it (q_{0} or q0 rather than the graph's q_0) */
   const typed = (name: string) => states.find((s) => same(s, name)) ?? name;
   const rowOf = (from: string, to: string, m: EdgeMiddle): string[] => [
     typed(from),

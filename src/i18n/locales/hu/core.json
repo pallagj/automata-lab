@@ -233,6 +233,14 @@
     "badInfinite": {
       "title": "A(z) „{{id}}” tároló: ismeretlen szalagkiterjedés: „{{value}}”",
       "detail": "infinite: right — az első cellától jobbra végtelen szalag, mint a jegyzetben (ez az alapértelmezés); infinite: both — mindkét irányban végtelen szalag."
+    },
+    "writableOnlyForTape": {
+      "title": "A(z) „{{id}}” tároló: a writable csak szalagra vonatkozik",
+      "detail": "Veremre és sorra a gép mindig ír — hagyd el a writable kulcsot."
+    },
+    "badWritable": {
+      "title": "A(z) „{{id}}” tároló: a writable értéke true vagy false, nem „{{value}}”",
+      "detail": "writable: true — a gép a szalagra írhat is; writable: false — csak olvassa. Alapból a több tárolós gép bemeneti szalagja csak olvasható, mint a jegyzet k-szalagos Turing-gépén (9.9); minden más szalag írható."
     }
   },
   "ops": {

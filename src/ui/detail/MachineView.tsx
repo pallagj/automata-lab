@@ -7,12 +7,14 @@ import {
   initialMachineConfig,
   isAcceptingMachineConfig,
   isOneWayTape,
+  isReadOnlyTape,
   Machine,
   machineCaps,
   MachineConfig,
   machineConfigKey,
   machineMoves,
   machineTransitionLabel,
+  readOnlyByDefault,
   runMachine,
   stepMachineConfigs,
   storageOpLabel,
@@ -222,6 +224,17 @@ export const MachineView: React.FC<{ machine: Machine; stepGroups?: StepGroup[];
           </span>
         ))}
       {m.storages
+        .filter((s) => s.type === "tape" && isReadOnlyTape(s) !== readOnlyByDefault(m.input, m.storages, s.id))
+        .map((s) => {
+          // a write access other than the default one: the notes' k-tape machine reads its input tape only (9.9)
+          const key = isReadOnlyTape(s) ? "tapeReadOnly" : "inputTapeWritable";
+          return (
+            <span key={`${s.id}-access`} className="badge accent" title={t(`detail.machine.${key}Hint`)}>
+              {t(`detail.machine.${key}`, { id: s.id })}
+            </span>
+          );
+        })}
+      {m.storages
         .filter((s) => s.init.length > 0)
         .map((s) => (
           <span key={s.id} className="badge accent" title={t("detail.machine.initialContentHint", { id: s.id })}>
@@ -280,7 +293,7 @@ export const MachineView: React.FC<{ machine: Machine; stepGroups?: StepGroup[];
                 {head && <th>{t("detail.machine.input")}</th>}
                 {m.storages.map((s) => (
                   <th key={s.id}>
-                    {s.id} ({t(`detail.machine.storageType.${s.type}`)})
+                    {s.id} ({t(isReadOnlyTape(s) ? "detail.machine.storageType.readOnlyTape" : `detail.machine.storageType.${s.type}`)})
                   </th>
                 ))}
                 <th>{t("detail.machine.to")}</th>
@@ -292,7 +305,7 @@ export const MachineView: React.FC<{ machine: Machine; stepGroups?: StepGroup[];
                   <td>{rich(t.from)}</td>
                   {head && <td>{t.input}</td>}
                   {t.ops.map((op, j) => (
-                    <td key={j}>{rich(storageOpLabel(op, moves))}</td>
+                    <td key={j}>{rich(storageOpLabel(op, moves, isReadOnlyTape(m.storages[j])))}</td>
                   ))}
                   <td>{rich(t.to)}</td>
                 </tr>
@@ -367,7 +380,10 @@ export const MachineView: React.FC<{ machine: Machine; stepGroups?: StepGroup[];
         <div className="storages">
           {m.storages.map((s, i) => (
             <div className="storage-row" key={s.id}>
-              <span className="storage-name" title={t(`detail.machine.storageType.${s.type}`)}>
+              <span
+                className="storage-name"
+                title={t(isReadOnlyTape(s) ? "detail.machine.storageType.readOnlyTape" : `detail.machine.storageType.${s.type}`)}
+              >
                 {s.id}
                 {s.type === "stack" ? " ⊓" : s.type === "queue" ? " ⇉" : ""}
               </span>

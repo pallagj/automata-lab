@@ -6,7 +6,15 @@ import { symbolsText } from "../symbols";
 const sym = (s: string) => (s === EPS || s === "" ? EPS : escapeSymbols(s));
 /** a string of stack/queue/grammar symbols, ε for none */
 const syms = (s: string[]) => (s.length === 0 ? EPS : symbolsText(s));
-import { defaultStorageAlphabet, Machine, StorageOp, TAPE_BLANK } from "../machine/machine";
+import {
+  defaultStorageAlphabet,
+  isReadOnlyTape,
+  Machine,
+  readOnlyByDefault,
+  StorageOp,
+  StorageSpec,
+  TAPE_BLANK
+} from "../machine/machine";
 import { Grammar } from "../grammar/grammar";
 import { Definition } from "./definitionParser";
 import { transitionScalar, writeDelta } from "./delta";
@@ -29,15 +37,18 @@ const listLine = (items: string[]) => scalar(items.join(", "));
 /** one symbol, read back as itself; a lone blank needs no escape */
 const one = (x: string) => (x === TAPE_BLANK ? x : symbolsText([x]));
 
-/** A storage operation's parts of δ: what it reads, and what it gets (see parse/delta.ts). */
-function storageOpParts(op: StorageOp): { arg: string; values: string[] } {
+/**
+ * A storage operation's parts of δ (see parse/delta.ts): what it reads, what is written —
+ * nothing on a read-only tape — and a head's move.
+ */
+function storageOpParts(op: StorageOp, spec: StorageSpec): { arg: string; write: string[]; move: string[] } {
   switch (op.type) {
     case "stack":
-      return { arg: op.pop === EPS ? EPS : one(op.pop), values: [syms(op.push)] };
+      return { arg: op.pop === EPS ? EPS : one(op.pop), write: [syms(op.push)], move: [] };
     case "queue":
-      return { arg: op.take === EPS ? EPS : one(op.take), values: [syms(op.put)] };
+      return { arg: op.take === EPS ? EPS : one(op.take), write: [syms(op.put)], move: [] };
     case "tape":
-      return { arg: one(op.read), values: [one(op.write), op.move] };
+      return { arg: one(op.read), write: isReadOnlyTape(spec) ? [] : [one(op.write)], move: [op.move] };
   }
 }
 
@@ -68,22 +79,25 @@ export function serializeMachine(m: Machine): string {
       const ownAlphabet = !sameSet(s.alphabet, defaultStorageAlphabet(m.alphabet, s, m.transitions.map((t) => t.ops[i])));
       // a tape is infinite to the right by default: only the other way is written out
       const bothWays = s.type === "tape" && s.infinite === "both";
-      if (!ownAlphabet && isDefaultInit(s.type, s.init) && !bothWays) {
+      // whether a tape is written is said only where it is not the default (readOnlyByDefault)
+      const access = s.type === "tape" && isReadOnlyTape(s) !== readOnlyByDefault(m.input, m.storages, s.id);
+      if (!ownAlphabet && isDefaultInit(s.type, s.init) && !bothWays && !access) {
         lines.push(`    ${s.id}: ${s.type}`);
         return;
       }
       lines.push(`    ${s.id}:`);
       lines.push(`      type: ${s.type}`);
       if (bothWays) lines.push("      infinite: both");
+      if (access) lines.push(`      writable: ${!isReadOnlyTape(s)}`);
       if (ownAlphabet) lines.push(`      charset: ${alphabetLine(s.alphabet)}`);
       if (!isDefaultInit(s.type, s.init)) lines.push(`      init: ${scalar(syms(s.init))}`);
     });
   }
   lines.push("  transitions:");
   for (const t of m.transitions) {
-    const parts = t.ops.map(storageOpParts);
+    const parts = t.ops.map((op, i) => storageOpParts(op, m.storages[i]));
     const args = [t.from, ...(m.input === "head" ? [sym(t.input)] : []), ...parts.map((p) => p.arg)];
-    const values = [t.to, ...parts.flatMap((p) => p.values)];
+    const values = [t.to, ...parts.flatMap((p) => p.write), ...parts.flatMap((p) => p.move)];
     lines.push(`    - ${transitionScalar(writeDelta(args, values))}`);
   }
   return lines.join("\n");

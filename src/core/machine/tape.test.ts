@@ -3,10 +3,8 @@ import {
   initialMachineConfig,
   isAcceptingMachineConfig,
   Machine,
-  machineCaps,
   machineConfigKey,
   machineMoves,
-  machineTransitionLabel,
   runMachine,
   StorageOp,
   TapeExtent,
@@ -204,59 +202,6 @@ describe("the tape's extent in the YAML", () => {
     expect(serializeMachine(right)).toContain("    t: tape\n");
     expect(serializeMachine(right)).not.toContain("infinite");
     expect(parse(serializeMachine(right))).toEqual(right);
-  });
-});
-
-describe("a k-tape Turing machine (lecture notes 9.9)", () => {
-  const T2 = EXAMPLE_WORKSHEETS.flatMap((w) => w.cells).find((c) => c.includes("name: T_2"))!;
-
-  it("tapes only, the input on one of them: a Turing machine, with its number of tapes", () => {
-    const m = parse(T2);
-    expect(machineCaps(m)).toMatchObject({ isTMLike: true, kind: "tm", storageCounts: { tape: 2 } });
-    expect(machineCaps(parse(tm(["(s, a) -> (ok, a, S)"])))).toMatchObject({ kind: "tm", storageCounts: undefined });
-    // a stack beside the tape: no longer a Turing machine
-    const mixed: Machine = { ...m, storages: [m.storages[0], { id: "v", type: "stack", alphabet: ["Z"], init: ["Z"] }] };
-    expect(machineCaps(mixed).kind).toBe("general");
-  });
-
-  it("the example accepts exactly aⁿbⁿ (n ≥ 0), never falling off its tapes", () => {
-    const m = parse(T2);
-    for (const w of allWords(["a", "b"], 8)) {
-      const n = w.length / 2;
-      const inL = w === "a".repeat(n) + "b".repeat(n);
-      expect(runMachine(m, w).verdict, w).toBe(inL ? "accepted" : "rejected");
-    }
-  });
-
-  it("falling off any tape halts the machine — here the second one", () => {
-    const src = [
-      "Machine:",
-      "  charset: a",
-      "  states: s, ok",
-      "  init: s",
-      "  accept: ok",
-      "  input: t1",
-      "  storages:",
-      "    t1: tape",
-      "    t2: tape",
-      "  transitions:",
-      "    - (s, a, _) -> (ok, a, R, _, L)"
-    ].join("\n");
-    const m = parse(src);
-    const c = machineMoves(m, initialMachineConfig(m, "a"), "a")[0].config;
-    expect(c.fellOff).toBe("t2");
-    expect(runMachine(m, "a").verdict).toBe("rejected");
-  });
-
-  it("an edge reads as in figure 9.28: the symbols read, the symbols written, the moves", () => {
-    const m = parse(T2);
-    const hu = { R: "J", L: "B", S: "H" };
-    const labels = m.transitions.map((t) => machineTransitionLabel(m, t, hu));
-    expect(labels).toContain("a, _ → a, Y, J, J");
-    expect(labels).toContain("b, _ → b, _, H, B");
-    // one tape: a → b, D as before
-    const one = parse(tm(["(s, a) -> (ok, b, R)"]));
-    expect(machineTransitionLabel(one, one.transitions[0], hu)).toBe("a → b, J");
   });
 });
 

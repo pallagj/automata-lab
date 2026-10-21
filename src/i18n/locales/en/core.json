@@ -233,6 +233,14 @@
     "badInfinite": {
       "title": "Storage \"{{id}}\": unknown tape extent \"{{value}}\"",
       "detail": "infinite: right — a tape infinite to the right from its first cell, as in the lecture notes (the default); infinite: both — a tape infinite in both directions."
+    },
+    "writableOnlyForTape": {
+      "title": "Storage \"{{id}}\": writable only applies to a tape",
+      "detail": "A stack or a queue is always written — leave the writable key out."
+    },
+    "badWritable": {
+      "title": "Storage \"{{id}}\": writable is true or false, not \"{{value}}\"",
+      "detail": "writable: true — the machine may write on the tape too; writable: false — it only reads it. By default the input tape of a machine with several storages is read-only, as on the k-tape Turing machine of the lecture notes (9.9); every other tape is writable."
     }
   },
   "ops": {

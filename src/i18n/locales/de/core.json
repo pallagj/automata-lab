@@ -233,6 +233,14 @@
     "badInfinite": {
       "title": "Speicher „{{id}}“: unbekannte Bandausdehnung „{{value}}“",
       "detail": "infinite: right — ein Band, das ab seiner ersten Zelle nach rechts unendlich ist, wie im Skript (der Standard); infinite: both — ein beidseitig unendliches Band."
+    },
+    "writableOnlyForTape": {
+      "title": "Speicher „{{id}}“: writable gilt nur für ein Band",
+      "detail": "Auf einen Keller oder eine Warteschlange wird immer geschrieben — lass den Schlüssel writable weg."
+    },
+    "badWritable": {
+      "title": "Speicher „{{id}}“: writable ist true oder false, nicht „{{value}}“",
+      "detail": "writable: true — die Maschine darf auch auf das Band schreiben; writable: false — sie liest es nur. Standardmäßig ist das Eingabeband einer Maschine mit mehreren Speichern nur lesbar, wie bei der k-Band-Turingmaschine des Skripts (9.9); jedes andere Band ist beschreibbar."
     }
   },
   "ops": {

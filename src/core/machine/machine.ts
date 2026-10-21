@@ -16,7 +16,9 @@ import { showSymbols } from "../symbols";
  *
  * A tape is infinite to the right only, as in the lecture notes (9.1): it has a first
  * cell, and a head stepping left from it falls off — the machine halts with an error.
- * A tape may be made infinite in both directions instead.
+ * A tape may be made infinite in both directions instead. The input tape of a machine with
+ * other storages too is only read, as the first tape of a k-tape machine (9.9): see
+ * readOnlyByDefault.
  */
 
 export const TAPE_BLANK = "_";
@@ -41,6 +43,11 @@ export interface StorageSpec {
   init: string[];
   /** a tape's extent — "right" when left out (see isOneWayTape) */
   infinite?: TapeExtent;
+  /**
+   * a tape whose head only reads: δ writes nothing on it, every operation on it writes back
+   * the symbol it reads (see isReadOnlyTape and readOnlyByDefault)
+   */
+  readOnly?: boolean;
 }
 
 /** A tape with a first cell, infinite only to the right: the lecture notes' tape. */
@@ -48,11 +55,25 @@ export function isOneWayTape(spec: Pick<StorageSpec, "type" | "infinite">): bool
   return spec.type === "tape" && spec.infinite !== "both";
 }
 
+/** A tape that is only read: nothing is written on it. */
+export function isReadOnlyTape(spec: Pick<StorageSpec, "type" | "readOnly">): boolean {
+  return spec.type === "tape" && spec.readOnly === true;
+}
+
+/**
+ * Whether a tape is read-only when its definition does not say: the input tape of a machine
+ * with other storages too, as the k-tape Turing machine's first tape (lecture notes 9.9) —
+ * the others are its work tapes. A one-tape machine writes its only tape (9.1).
+ */
+export function readOnlyByDefault(input: string, storages: Pick<StorageSpec, "id" | "type">[], id: string): boolean {
+  return input === id && storages.length > 1 && storages.some((s) => s.id === id && s.type === "tape");
+}
+
 /** An operation on one storage — its type follows the storage's type. */
 export type StorageOp =
   | { type: "stack"; pop: string; push: string[] } // pop: EPS = does not inspect/pop; push: the new top first
   | { type: "queue"; take: string; put: string[] } // take: EPS = does not read from the front
-  | { type: "tape"; read: string; write: string; move: "L" | "R" | "S" };
+  | { type: "tape"; read: string; write: string; move: "L" | "R" | "S" }; // on a read-only tape write = read
 
 export interface MachineTransition {
   from: string;
@@ -498,18 +519,22 @@ export const MOVE_LETTERS: MoveLetters = { R: "R", L: "L", S: "S" };
 
 /**
  * One storage operation as the lecture notes write it: stack Z → AZ, queue A → B, tape
- * a → b, D — `_` is the blank, as it is typed.
+ * a → b, D — a read-only tape a, D, as it writes nothing — `_` is the blank, as it is typed.
  */
-export function storageOpLabel(op: StorageOp, moves: MoveLetters = MOVE_LETTERS): string {
+export function storageOpLabel(op: StorageOp, moves: MoveLetters = MOVE_LETTERS, readOnly = false): string {
   switch (op.type) {
     case "stack":
       return `${op.pop} → ${showSymbols(op.push)}`;
     case "queue":
       return `${op.take} → ${showSymbols(op.put)}`;
     case "tape":
-      return `${op.read} → ${op.write}, ${moves[op.move]}`;
+      return `${tapeReadWrite(op, readOnly)}, ${moves[op.move]}`;
   }
 }
+
+/** What a head reads and writes: a → b, or the symbol alone on a read-only tape. */
+const tapeReadWrite = (op: Extract<StorageOp, { type: "tape" }>, readOnly: boolean) =>
+  readOnly ? op.read : `${op.read} → ${op.write}`;
 
 /** A stack/queue operation that neither inspects nor changes the storage (ε/ε). */
 function isNoOp(op: StorageOp): boolean {
@@ -520,9 +545,11 @@ function isNoOp(op: StorageOp): boolean {
 
 /**
  * Edge label for the graph, as in the lecture notes: a; Z → AZ for a pushdown automaton,
- * a → b, D for a Turing machine and a₁, a₂ → b₁, b₂, D₁, D₂ for one with several tapes
- * (as in figure 9.28); for custom machines the input symbol, then each storage's operation
- * named by its id (operations that leave a storage untouched are left out).
+ * a → b, D for a Turing machine; with several tapes each tape's a → b, then the moves —
+ * a₁ → b₁, a₂ → b₂, D₁, D₂ — where a read-only tape shows the symbol it reads alone, so the
+ * notes' k-tape machine reads a₁, a₂ → b₂, D₁, D₂ as figure 9.28 does. For custom machines
+ * the input symbol, then each storage's operation named by its id (operations that leave
+ * a storage untouched are left out).
  */
 export function machineTransitionLabel(m: Machine, t: MachineTransition, moves: MoveLetters = MOVE_LETTERS): string {
   const caps = machineCaps(m);
@@ -530,12 +557,13 @@ export function machineTransitionLabel(m: Machine, t: MachineTransition, moves: 
   if (caps.isPDALike) return `${t.input}; ${storageOpLabel(t.ops[0], moves)}`;
   if (caps.isTMLike) {
     const ops = t.ops as Extract<StorageOp, { type: "tape" }>[];
-    return `${ops.map((o) => o.read).join(", ")} → ${ops.map((o) => o.write).join(", ")}, ${ops.map((o) => moves[o.move]).join(", ")}`;
+    const heads = ops.map((o, i) => tapeReadWrite(o, isReadOnlyTape(m.storages[i])));
+    return [...heads, ...ops.map((o) => moves[o.move])].join(", ");
   }
   const parts: string[] = [];
   if (hasInputHead(m)) parts.push(t.input);
   t.ops.forEach((op, i) => {
-    if (!isNoOp(op)) parts.push(`${m.storages[i].id}: ${storageOpLabel(op, moves)}`);
+    if (!isNoOp(op)) parts.push(`${m.storages[i].id}: ${storageOpLabel(op, moves, isReadOnlyTape(m.storages[i]))}`);
   });
   return parts.length > 0 ? parts.join("; ") : EPS;
 }

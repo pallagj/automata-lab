@@ -233,7 +233,7 @@ export const EXAMPLE_WORKSHEETS: ExampleWorksheet[] = [
     - (q5, a) -> (q5, a, L)
     - (q5, b) -> (q5, b, L)
     - (q5, x) -> (q0, x, R)`,
-      "# A 2-tape Turing machine (lecture notes 9.2) for aⁿbⁿ: the second tape counts the a's, then every b takes one back. Its tapes have a first cell too, so the first a is marked Y — that is where the head of tape 2 must stop.",
+      "# A 2-tape Turing machine (lecture notes 9.9) for aⁿbⁿ: the input tape t1 is only read, so δ writes on t2 alone — δ(q, a₁a₂) = (q′, b₂, d₁d₂). The second tape counts the a's, then every b takes one back. Its tapes have a first cell too, so the first a is marked Y — that is where the head of tape 2 must stop.",
       `Machine:
   name: T_2
   charset: a, b
@@ -247,13 +247,13 @@ export const EXAMPLE_WORKSHEETS: ExampleWorksheet[] = [
       type: tape
       charset: X, Y, _
   transitions:
-    - (q0, _, _) -> (ok, _, S, _, S)
-    - (q0, a, _) -> (q1, a, R, Y, R)
-    - (q1, a, _) -> (q1, a, R, X, R)
-    - (q1, b, _) -> (q2, b, S, _, L)
-    - (q2, b, X) -> (q2, b, R, X, L)
-    - (q2, b, Y) -> (q3, b, R, Y, S)
-    - (q3, _, Y) -> (ok, _, S, Y, S)`
+    - (q0, _, _) -> (ok, _, S, S)
+    - (q0, a, _) -> (q1, Y, R, R)
+    - (q1, a, _) -> (q1, X, R, R)
+    - (q1, b, _) -> (q2, _, S, L)
+    - (q2, b, X) -> (q2, X, R, L)
+    - (q2, b, Y) -> (q3, Y, R, S)
+    - (q3, _, Y) -> (ok, Y, S, S)`
     ]
   },
   {

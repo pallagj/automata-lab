@@ -5,6 +5,7 @@ import {
   defaultStorageAlphabet,
   Machine,
   MachineTransition,
+  readOnlyByDefault,
   StorageOp,
   StorageSpec,
   StorageType,
@@ -12,7 +13,7 @@ import {
 } from "../machine/machine";
 import { Grammar, GrammarRule } from "../grammar/grammar";
 import { symbolString } from "../epsilon";
-import { deltaShape, fieldCount, readDelta } from "./delta";
+import { deltaShape, readDelta, valueCount } from "./delta";
 import { canonicalLabel, canonicalName, formatIdent, parseIdent, suggestName, symbolTokens } from "../symbols";
 
 /**
@@ -162,9 +163,14 @@ const STORAGE_TYPES: Record<string, StorageType> = {
 /** Default initial content of a stack when none is given. */
 const STACK_DEFAULT_INIT = "Z";
 
-/** A storage as its entry gives it: its alphabet is null when the entry leaves it out. */
-export interface StorageEntry extends Omit<StorageSpec, "alphabet"> {
+/**
+ * A storage as its entry gives it: its alphabet is null when the entry leaves it out, and
+ * whether a tape is writable is known only with the machine's input (see readOnlyByDefault).
+ */
+export interface StorageEntry extends Omit<StorageSpec, "alphabet" | "readOnly"> {
   alphabet: string[] | null;
+  /** a tape's writable key, when the entry has one */
+  writable?: boolean;
 }
 
 /**
@@ -172,9 +178,11 @@ export interface StorageEntry extends Omit<StorageSpec, "alphabet"> {
  *   v1: stack                                  — short form, with the defaults
  *   v2: { type: stack, charset: [Z, A], init: Z }  — long form (default works instead of init too)
  *   t:  { type: tape, infinite: both }         — a tape infinite both ways
+ *   t1: { type: tape, writable: true }         — an input tape written too
  * The alphabet Γ (charset) and the initial content may be left out: see
  * defaultStorageAlphabet and STACK_DEFAULT_INIT. A tape is infinite to the right only
- * unless it says otherwise (see isOneWayTape).
+ * unless it says otherwise (see isOneWayTape); the input tape of a machine with other
+ * storages is only read unless it says otherwise (see readOnlyByDefault).
  */
 export function parseStorageEntry(id: string, raw: unknown): OpResult<StorageEntry> {
   const bad = () =>
@@ -189,6 +197,7 @@ export function parseStorageEntry(id: string, raw: unknown): OpResult<StorageEnt
   let init: string | undefined;
   let alphabet: string[] | null = null;
   let infiniteRaw: string | undefined;
+  let writableRaw: unknown;
   if (raw === null || typeof raw === "string") {
     typeRaw = String(raw ?? "").trim();
   } else if (typeof raw === "object" && !Array.isArray(raw)) {
@@ -198,6 +207,7 @@ export function parseStorageEntry(id: string, raw: unknown): OpResult<StorageEnt
     if (i !== undefined && i !== null) init = String(i);
     const inf = o["infinite"];
     if (inf !== undefined && inf !== null) infiniteRaw = String(inf).trim();
+    writableRaw = o["writable"] ?? undefined;
     const items = parseList(o["charset"], `${id}.charset`, diags);
     if (items.length > 0) {
       alphabet = [];
@@ -239,6 +249,20 @@ export function parseStorageEntry(id: string, raw: unknown): OpResult<StorageEnt
   } else if (type === "tape") {
     entry.infinite = "right";
   }
+  if (writableRaw !== undefined) {
+    if (type !== "tape")
+      return failResult([
+        err(tx("definitionParser.writableOnlyForTape.title", { id }), tx("definitionParser.writableOnlyForTape.detail"))
+      ]);
+    if (typeof writableRaw !== "boolean")
+      return failResult([
+        err(
+          tx("definitionParser.badWritable.title", { id, value: String(writableRaw) }),
+          tx("definitionParser.badWritable.detail")
+        )
+      ]);
+    entry.writable = writableRaw;
+  }
   return okResult(entry, diags);
 }
 
@@ -247,13 +271,21 @@ const MOVES = ["L", "R", "S"] as const;
 
 /**
  * Parses a storage's operation from its parts of a transition: what it reads (a stack's
- * top, a tape's cell) and what it gets (the word pushed; the symbol written and the move).
- * Whether the symbols are in the storage's alphabet is checked once every alphabet is known.
+ * top, a tape's cell), what is written (the word pushed, the symbol written — none on a
+ * read-only tape, which keeps what it reads) and a head's move. Whether the symbols are in
+ * the storage's alphabet is checked once every alphabet is known.
  */
-function parseStorageOp(spec: StorageEntry, arg: string, values: string[], line: string): OpResult<StorageOp> {
+function parseStorageOp(
+  spec: StorageEntry & { readOnly: boolean },
+  arg: string,
+  write: string | undefined,
+  moveRaw: string | undefined,
+  line: string
+): OpResult<StorageOp> {
   if (spec.type === "tape") {
+    const written = write ?? arg;
     // a tape cell always holds exactly one symbol: the blank is _
-    for (const part of [arg, values[0]]) {
+    for (const part of [arg, written]) {
       if (symbolTokens(part).length !== 1)
         return failResult([
           err(
@@ -262,15 +294,15 @@ function parseStorageOp(spec: StorageEntry, arg: string, values: string[], line:
           )
         ]);
     }
-    const move = MOVES.find((m) => m === values[1]);
+    const move = MOVES.find((m) => m === moveRaw);
     if (!move)
       return failResult([
         err(
-          tx("definitionParser.storageOp.unknownMove.title", { tokens: values[1], storageId: spec.id }),
+          tx("definitionParser.storageOp.unknownMove.title", { tokens: moveRaw ?? "", storageId: spec.id }),
           tx("definitionParser.storageOp.unknownMove.detail", { line })
         )
       ]);
-    return okResult({ type: "tape", read: symbolTokens(arg)[0], write: symbolTokens(values[0])[0], move });
+    return okResult({ type: "tape", read: symbolTokens(arg)[0], write: symbolTokens(written)[0], move });
   }
 
   // the symbol taken off is a single symbol (or ε: nothing is taken)
@@ -283,7 +315,7 @@ function parseStorageOp(spec: StorageEntry, arg: string, values: string[], line:
       )
     ]);
   const a = taken[0] ?? EPS;
-  const b = symbolTokens(values[0]);
+  const b = symbolTokens(write ?? "");
   return okResult<StorageOp>(
     spec.type === "stack" ? { type: "stack", pop: a, push: b } : { type: "queue", take: a, put: b }
   );
@@ -381,10 +413,14 @@ export function parseMachine(source: string): OpResult<Machine> {
     );
 
   const hasHead = input === "head";
-  const types = storages.map((s) => s.type);
-  const shape = deltaShape(hasHead, types);
+  // a tape is read-only as its entry says, or by default the input tape beside other storages (9.9)
+  const shaped = storages.map((s) => ({
+    ...s,
+    readOnly: s.type === "tape" && (s.writable === undefined ? readOnlyByDefault(input, storages, s.id) : !s.writable)
+  }));
+  const shape = deltaShape(hasHead, shaped);
   const argCount = 1 + (hasHead ? 1 : 0) + storages.length;
-  const valueCount = 1 + storages.reduce((n, s) => n + fieldCount(s.type) - 1, 0);
+  const values = valueCount(shaped);
   const transitions: MachineTransition[] = [];
   /** the line each transition comes from */
   const lineOf: string[] = [];
@@ -397,7 +433,7 @@ export function parseMachine(source: string): OpResult<Machine> {
     const d = readDelta(line);
     // every part written out: ε too, as in the notes
     const complete = [...d.args, ...d.values].every((p) => p !== "");
-    if (!d.wellFormed || !complete || d.args.length !== argCount || d.values.length !== valueCount)
+    if (!d.wellFormed || !complete || d.args.length !== argCount || d.values.length !== values)
       return failResult([
         err(
           tx("definitionParser.machine.invalidTransition.title", { line }),
@@ -416,7 +452,9 @@ export function parseMachine(source: string): OpResult<Machine> {
       ]);
 
     let a = 1;
-    let v = 1;
+    // the value: the next state, what is written on each storage, then each tape's move
+    let w = 1;
+    let mv = 1 + shaped.filter((s) => !s.readOnly).length;
     let inputSym = EPS;
     if (hasHead) {
       inputSym = normEps(d.args[a++]);
@@ -429,10 +467,10 @@ export function parseMachine(source: string): OpResult<Machine> {
         ]);
     }
     const ops: StorageOp[] = [];
-    for (const s of storages) {
-      const n = fieldCount(s.type) - 1;
-      const r = parseStorageOp(s, d.args[a++], d.values.slice(v, v + n), line);
-      v += n;
+    for (const s of shaped) {
+      const write = s.readOnly ? undefined : d.values[w++];
+      const move = s.type === "tape" ? d.values[mv++] : undefined;
+      const r = parseStorageOp(s, d.args[a++], write, move, line);
       if (!r.ok) return failResult(r.diagnostics);
       ops.push(r.value!);
     }
@@ -441,10 +479,17 @@ export function parseMachine(source: string): OpResult<Machine> {
   }
 
   // every storage's alphabet Γ: as given, or what it holds by default
-  const specs: StorageSpec[] = storages.map((s, i) => ({
-    ...s,
-    alphabet: s.alphabet ?? defaultStorageAlphabet(alphabet, s, transitions.map((t) => t.ops[i]))
-  }));
+  const specs: StorageSpec[] = shaped.map((s, i) => {
+    const spec: StorageSpec = {
+      id: s.id,
+      type: s.type,
+      alphabet: s.alphabet ?? defaultStorageAlphabet(alphabet, s, transitions.map((t) => t.ops[i])),
+      init: s.init
+    };
+    if (s.infinite !== undefined) spec.infinite = s.infinite;
+    if (s.readOnly) spec.readOnly = true;
+    return spec;
+  });
   for (const s of specs) {
     const gamma = `{${s.alphabet.join(", ")}}`;
     if (s.type === "tape" && !s.alphabet.includes(TAPE_BLANK))

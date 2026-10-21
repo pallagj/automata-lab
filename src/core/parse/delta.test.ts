@@ -41,24 +41,56 @@ describe("a transition as the notes write δ", () => {
     }
   });
 
+  const STACK = { type: "stack" } as const;
+  const QUEUE = { type: "queue" } as const;
+  const TAPE = { type: "tape" } as const;
+  const READ_ONLY = { type: "tape", readOnly: true } as const;
+
   it("orders the parts as the form's fields: input, then each storage's", () => {
     const d = readDelta("(q, a, Z, b) -> (p, AZ, c, R)");
-    const row = deltaToRow(d, true, ["stack", "tape"]);
+    const row = deltaToRow(d, true, [STACK, TAPE]);
     expect(row).toEqual(["q", "a", "Z", "AZ", "b", "c", "R", "p"]);
-    expect(rowToDelta(row, true, ["stack", "tape"])).toEqual({ args: d.args, values: d.values });
-    expect(deltaToRow(readDelta("(s, a) -> (s, x, R)"), false, ["tape"])).toEqual(["s", "a", "x", "R", "s"]);
+    expect(rowToDelta(row, true, [STACK, TAPE])).toEqual({ args: d.args, values: d.values });
+    expect(deltaToRow(readDelta("(s, a) -> (s, x, R)"), false, [TAPE])).toEqual(["s", "a", "x", "R", "s"]);
     expect(deltaToRow(readDelta("(q, a) -> p"), true, [])).toEqual(["q", "a", "p"]);
   });
 
+  it("takes δ's value as the notes write it: what is written on each storage, then each tape's move", () => {
+    // δ(q, a₁a₂) = (p, b₂, d₁d₂): the input tape read-only (9.9)
+    const ro = readDelta("(q, a, c) -> (p, d, R, L)");
+    expect(deltaToRow(ro, false, [READ_ONLY, TAPE])).toEqual(["q", "a", "R", "c", "d", "L", "p"]);
+    expect(rowToDelta(["q", "a", "R", "c", "d", "L", "p"], false, [READ_ONLY, TAPE])).toEqual({ args: ro.args, values: ro.values });
+    // both tapes written: (p, b₁, b₂, d₁, d₂)
+    const rw = readDelta("(q, a, c) -> (p, b, d, R, L)");
+    expect(deltaToRow(rw, false, [TAPE, TAPE])).toEqual(["q", "a", "b", "R", "c", "d", "L", "p"]);
+    expect(rowToDelta(deltaToRow(rw, false, [TAPE, TAPE]), false, [TAPE, TAPE])).toEqual({ args: rw.args, values: rw.values });
+    // a tape before a stack: its symbol, the stack's word, then the tape's move
+    const mixed = readDelta("(q, a, x, Z) -> (p, y, AZ, R)");
+    expect(deltaToRow(mixed, true, [TAPE, STACK])).toEqual(["q", "a", "x", "y", "R", "Z", "AZ", "p"]);
+    expect(rowToDelta(deltaToRow(mixed, true, [TAPE, STACK]), true, [TAPE, STACK])).toEqual({
+      args: mixed.args,
+      values: mixed.values
+    });
+    // three tapes, the first read-only: (p, b₂, b₃, d₁, d₂, d₃)
+    const three = readDelta("(q, a, b, c) -> (p, x, y, R, S, L)");
+    const shape = [READ_ONLY, TAPE, TAPE];
+    expect(deltaToRow(three, false, shape)).toEqual(["q", "a", "R", "b", "x", "S", "c", "y", "L", "p"]);
+    expect(rowToDelta(deltaToRow(three, false, shape), false, shape)).toEqual({ args: three.args, values: three.values });
+  });
+
   it("pads an unfinished line to the shape, for the form", () => {
-    expect(deltaToRow(readDelta("(q, a"), true, ["stack"])).toEqual(["q", "a", "", "", ""]);
+    expect(deltaToRow(readDelta("(q, a"), true, [STACK])).toEqual(["q", "a", "", "", ""]);
+    expect(deltaToRow(readDelta("(q, a, b) -> (p"), false, [READ_ONLY, TAPE])).toEqual(["q", "a", "", "b", "", "", "p"]);
   });
 
   it("names the shape a machine's transitions take", () => {
     expect(deltaShape(true, [])).toBe("(q, a) -> p");
-    expect(deltaShape(true, ["stack"])).toBe("(q, a, Z) -> (p, γ)");
-    expect(deltaShape(false, ["tape"])).toBe("(q, a) -> (p, b, D)");
-    expect(deltaShape(true, ["stack", "queue"])).toBe("(q, a, Z, Z) -> (p, γ, γ)");
+    expect(deltaShape(true, [STACK])).toBe("(q, a, Z) -> (p, γ)");
+    expect(deltaShape(false, [TAPE])).toBe("(q, a) -> (p, b, D)");
+    expect(deltaShape(true, [STACK, QUEUE])).toBe("(q, a, Z₁, Z₂) -> (p, γ₁, γ₂)");
+    expect(deltaShape(false, [READ_ONLY, TAPE])).toBe("(q, a₁, a₂) -> (p, b₂, D₁, D₂)");
+    expect(deltaShape(false, [TAPE, TAPE])).toBe("(q, a₁, a₂) -> (p, b₁, b₂, D₁, D₂)");
+    expect(deltaShape(false, [READ_ONLY, TAPE, TAPE])).toBe("(q, a₁, a₂, a₃) -> (p, b₂, b₃, D₁, D₂, D₃)");
   });
 
   it("quotes a line for YAML only where it would be cut: ': ' and ' #'", () => {

@@ -9,9 +9,10 @@ import { SymbolField } from "./SymbolField";
 /**
  * One transition, the same in the form and in the graph's edge dialog: either in the lecture
  * notes' notation — δ(q, a) = p, δ(q, a, Z) = (p, γ), δ(q, a) = (p, b, D), with more storages
- * one argument and one result per storage — or as a table row under column headers. Between
- * the states are the parts of the storage operations (parse/delta.ts); the dialog edits the
- * transitions of one edge, so there the states are fixed.
+ * one argument per storage and a value of what is written, then the moves, as
+ * δ(q, a₁, a₂) = (p, b₂, D₁, D₂) — or as a table row under column headers, each storage's
+ * fields side by side. Between the states are the parts of the storage operations
+ * (parse/delta.ts); the dialog edits the transitions of one edge, so there the states are fixed.
  */
 
 /** A field between the states: a symbol read, a word written, or a head move. */
@@ -24,18 +25,22 @@ export interface TransitionField {
   side: "arg" | "value";
 }
 
-/** The fields in the order of a form row (parse/delta.ts): the input symbol, then each storage's parts. */
+/**
+ * The fields in the order of a form row (parse/delta.ts): the input symbol, then each
+ * storage's parts — a read-only tape has nothing written.
+ */
 export function transitionFields(
   t: TFunction,
   hasHead: boolean,
-  storages: Pick<StorageSpec, "id" | "type">[]
+  storages: Pick<StorageSpec, "id" | "type" | "readOnly">[]
 ): TransitionField[] {
   const fields: TransitionField[] = [];
   if (hasHead) fields.push({ label: t("editor.form.col.symbol"), placeholder: "a", kind: "symbol", side: "arg" });
-  for (const { id, type } of storages) {
+  for (const { id, type, readOnly } of storages) {
     if (type === "tape") {
       fields.push({ label: t("editor.form.col.read", { id }), placeholder: "a", kind: "symbol", side: "arg" });
-      fields.push({ label: t("editor.form.col.write", { id }), placeholder: "b", kind: "symbol", side: "value" });
+      if (!readOnly)
+        fields.push({ label: t("editor.form.col.write", { id }), placeholder: "b", kind: "symbol", side: "value" });
       fields.push({ label: t("editor.form.col.move", { id }), placeholder: "", kind: "move", side: "value" });
     } else if (type === "stack") {
       fields.push({ label: t("editor.form.col.pop", { id }), placeholder: "Z", kind: "symbol", side: "arg" });
@@ -150,7 +155,12 @@ export const TransitionRow: React.FC<{
     );
 
   const args = [state("from", from, onFrom, "q"), ...fields.flatMap((f, n) => (f.side === "arg" ? [field(n)] : []))];
-  const results = [state("to", to, onTo, "p"), ...fields.flatMap((f, n) => (f.side === "value" ? [field(n)] : []))];
+  // δ's value as the notes write it: what is written, then the moves (9.9)
+  const results = [
+    state("to", to, onTo, "p"),
+    ...fields.flatMap((f, n) => (f.side === "value" && f.kind !== "move" ? [field(n)] : [])),
+    ...fields.flatMap((f, n) => (f.kind === "move" ? [field(n)] : []))
+  ];
   const list = (els: React.ReactElement[]) =>
     els.flatMap((el, i) => (i === 0 ? [el] : [<span key={`c${el.key}`} className="ef-op ef-comma">,</span>, el]));
   return (

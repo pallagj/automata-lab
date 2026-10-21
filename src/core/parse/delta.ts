@@ -1,4 +1,4 @@
-import { StorageType } from "../machine/machine";
+import { StorageSpec } from "../machine/machine";
 
 /**
  * A transition in the YAML is written as the lecture notes write δ: its arguments in
@@ -7,10 +7,14 @@ import { StorageType } from "../machine/machine";
  *   (q, a) -> p                  automaton: δ(q, a) = p
  *   (q, a, Z) -> (p, AZ)         pushdown automaton: (p, AZ) ∈ δ(q, a, Z)
  *   (q, a) -> (p, b, R)          Turing machine: δ(q, a) = (p, b, D)
- *   (q, a, Z, Y) -> (p, AZ, ε)   one argument and one result per storage, in their order
+ *   (q, a, c) -> (p, d, R, L)    k-tape Turing machine: δ(q, a₁a₂) = (p, b₂, d₁d₂) (9.9) —
+ *                                its input tape is read-only, nothing is written on it
+ *   (q, a, Z, Y) -> (p, AZ, ε)   one argument per storage, in their order
  *
- * → may stand for ->. The parts are separated by commas; the states come first and may be
- * set names with commas of their own ({A,B}).
+ * The value is the next state, then what is written on each storage in their order (a
+ * stack's word, a writable tape's symbol), then each tape's move — the notes' order of
+ * (q′, b₂…b_k, d₁…d_k). → may stand for ->. The parts are separated by commas; the states
+ * come first and may be set names with commas of their own ({A,B}).
  */
 
 export interface DeltaText {
@@ -63,49 +67,72 @@ export function writeDelta(args: string[], values: string[]): string {
   return `(${args.join(", ")}) -> ${value}`;
 }
 
-/** The parts a storage adds to δ's arguments and to its value. */
-const ARG_PARTS = 1;
-const VALUE_PARTS: Record<StorageType, number> = { stack: 1, queue: 1, tape: 2 };
+/** A storage as δ sees it: its type, and whether a tape is only read. */
+export type StorageShape = Pick<StorageSpec, "type" | "readOnly">;
 
-/** How many fields a storage has in a transition: a stack's pop and push, a tape's read, write and move. */
-export const fieldCount = (type: StorageType) => ARG_PARTS + VALUE_PARTS[type];
+/** The parts a storage adds to δ's value: what is written on it, how its head moves. */
+const writeParts = (s: StorageShape) => (s.type === "tape" && s.readOnly ? 0 : 1);
+const moveParts = (s: StorageShape) => (s.type === "tape" ? 1 : 0);
+
+/**
+ * How many fields a storage has in a transition: a stack's pop and push, a tape's read,
+ * write and move — a read-only tape's read and move.
+ */
+export const fieldCount = (s: StorageShape) => 1 + writeParts(s) + moveParts(s);
+
+/** How many parts δ's value has: the next state, what is written, the moves. */
+export const valueCount = (storages: StorageShape[]) =>
+  1 + storages.reduce((n, s) => n + writeParts(s) + moveParts(s), 0);
 
 /**
  * δ's parts as the fields of a form row — the state, the input symbol, each storage's fields
  * one after the other (pop, push · read, write, move), the next state — padded to the shape.
  */
-export function deltaToRow(d: Pick<DeltaText, "args" | "values">, hasHead: boolean, types: StorageType[]): string[] {
+export function deltaToRow(d: Pick<DeltaText, "args" | "values">, hasHead: boolean, storages: StorageShape[]): string[] {
   const arg = (i: number) => d.args[i] ?? "";
   const value = (i: number) => d.values[i] ?? "";
   let a = 1;
-  let v = 1;
+  // the writes come first in the value, the moves after them
+  let w = 1;
+  let m = 1 + storages.reduce((n, s) => n + writeParts(s), 0);
   const fields: string[] = [];
   if (hasHead) fields.push(arg(a++));
-  for (const t of types) {
+  for (const s of storages) {
     fields.push(arg(a++));
-    for (let k = 0; k < VALUE_PARTS[t]; k++) fields.push(value(v++));
+    if (writeParts(s)) fields.push(value(w++));
+    if (moveParts(s)) fields.push(value(m++));
   }
   return [arg(0), ...fields, value(0)];
 }
 
 /** A form row back to δ's arguments and value. */
-export function rowToDelta(row: string[], hasHead: boolean, types: StorageType[]): Pick<DeltaText, "args" | "values"> {
+export function rowToDelta(row: string[], hasHead: boolean, storages: StorageShape[]): Pick<DeltaText, "args" | "values"> {
   const args = [row[0] ?? ""];
-  const values = [row[row.length - 1] ?? ""];
+  const writes: string[] = [];
+  const moves: string[] = [];
   let i = 1;
   if (hasHead) args.push(row[i++] ?? "");
-  for (const t of types) {
+  for (const s of storages) {
     args.push(row[i++] ?? "");
-    for (let k = 0; k < VALUE_PARTS[t]; k++) values.push(row[i++] ?? "");
+    if (writeParts(s)) writes.push(row[i++] ?? "");
+    if (moveParts(s)) moves.push(row[i++] ?? "");
   }
-  return { args, values };
+  return { args, values: [row[row.length - 1] ?? "", ...writes, ...moves] };
 }
 
-/** The shape this machine's transitions take, for an error message: (q, a, Z) -> (p, γ). */
-export function deltaShape(hasHead: boolean, types: StorageType[]): string {
-  const args = ["q", ...(hasHead ? ["a"] : []), ...types.map((t) => (t === "tape" ? "a" : "Z"))];
-  const values = ["p", ...types.flatMap((t) => (t === "tape" ? ["b", "D"] : ["γ"]))];
-  return writeDelta(args, values);
+const SUBSCRIPT_DIGITS = "₀₁₂₃₄₅₆₇₈₉";
+
+/**
+ * The shape this machine's transitions take, for an error message: (q, a, Z) -> (p, γ);
+ * with several storages each part has the storage's number, (q, a₁, a₂) -> (p, b₂, D₁, D₂).
+ */
+export function deltaShape(hasHead: boolean, storages: StorageShape[]): string {
+  const n = (i: number) =>
+    storages.length > 1 ? [...String(i + 1)].map((c) => SUBSCRIPT_DIGITS[Number(c)]).join("") : "";
+  const args = ["q", ...(hasHead ? ["a"] : []), ...storages.map((s, i) => (s.type === "tape" ? "a" : "Z") + n(i))];
+  const writes = storages.flatMap((s, i) => (writeParts(s) ? [(s.type === "tape" ? "b" : "γ") + n(i)] : []));
+  const moves = storages.flatMap((s, i) => (moveParts(s) ? ["D" + n(i)] : []));
+  return writeDelta(args, ["p", ...writes, ...moves]);
 }
 
 /**

@@ -1,6 +1,9 @@
 import { describe, expect, it, vi } from "vitest";
-import { parseEntityDraft, serializeEntityDraft } from "./EntityForm";
+import { DraftStorage, EntityDraft, parseEntityDraft, reshapeDraft, serializeEntityDraft } from "./EntityForm";
 import { parseGrammar, parseMachine } from "../../core/parse/definitionParser";
+import { isReadOnlyTape, Machine, runMachine } from "../../core/machine/machine";
+import { CELL_TEMPLATES, EXAMPLE_WORKSHEETS } from "../../state/examples";
+import { allWords } from "../../core/testing";
 
 // the draft is plain data; the store (and the i18n it loads) wants a browser
 vi.mock("../../state/store", () => ({ useAppStore: () => undefined }));
@@ -67,5 +70,121 @@ describe("a tape's extent in the form", () => {
     expect(d.storages[0].infinite).toBe("both");
     expect(serializeEntityDraft(d)).toBe(src);
     expect(parseMachine(serializeEntityDraft(d)).value!.storages[0].infinite).toBe("both");
+  });
+});
+
+describe("a k-tape machine's input tape in the form (lecture notes 9.9)", () => {
+  const cells = EXAMPLE_WORKSHEETS.flatMap((w) => w.cells);
+  const T2 = cells.find((c) => c.includes("name: T_2"))!;
+  const PAL = cells.find((c) => c.includes("name: T_{pal}"))!;
+  const machine = (src: string): Machine => {
+    const r = parseMachine(src);
+    expect(r.ok, JSON.stringify(r.diagnostics)).toBe(true);
+    return r.value!;
+  };
+  /** the same verdict on every word up to the length */
+  const sameLanguage = (a: Machine, b: Machine, n: number) => {
+    for (const w of allWords(a.alphabet, n)) expect(runMachine(b, w).verdict, w).toBe(runMachine(a, w).verdict);
+  };
+  const tape = (id: string): DraftStorage => ({ id, type: "tape", charset: "", init: "", infinite: "right", readOnly: false });
+  const withStorages = (d: EntityDraft, storages: DraftStorage[]): EntityDraft => ({ ...d, storages });
+
+  it("is read-only: its row has no field written on it, and the YAML reads back unchanged", () => {
+    const d = parseEntityDraft(T2)!;
+    expect(d.storages.map((s) => s.readOnly)).toEqual([true, false]);
+    // from, t1 read, t1 move, t2 read, t2 write, t2 move, to
+    expect(d.rows[1]).toEqual(["q0", "a", "R", "_", "Y", "R", "q1"]);
+    expect(serializeEntityDraft(d)).toBe(T2);
+  });
+
+  it("a chosen write access reads back unchanged too", () => {
+    for (const storages of [
+      ["    t1:", "      type: tape", "      writable: true", "    t2: tape"],
+      ["    t1: tape", "    t2:", "      type: tape", "      writable: false"]
+    ]) {
+      const src = [
+        "Machine:",
+        "  name: T",
+        "  charset: a, b",
+        "  states: s, ok",
+        "  init: s",
+        "  accept: ok",
+        "  input: t1",
+        "  storages:",
+        ...storages,
+        "  transitions:",
+        storages[2].includes("writable") ? "    - (s, a, _) -> (ok, b, a, R, L)" : "    - (s, a, _) -> (ok, R, L)"
+      ].join("\n");
+      expect(serializeEntityDraft(parseEntityDraft(src)!)).toBe(src);
+    }
+  });
+
+  it("a second tape on a machine that writes back what it reads: the input tape becomes the notes' read-only one", () => {
+    const prev = parseEntityDraft(CELL_TEMPLATES.tm)!;
+    const next = reshapeDraft(prev, withStorages(prev, [...prev.storages, tape("t2")]));
+    expect(next.storages.map((s) => s.readOnly)).toEqual([true, false]);
+    const yaml = serializeEntityDraft(next);
+    expect(yaml).not.toContain("writable");
+    expect(yaml).toContain("- (start, a, a) -> (start, a, R, S)");
+    sameLanguage(machine(CELL_TEMPLATES.tm), machine(yaml), 6);
+  });
+
+  it("a second tape on a machine that writes its tape: the input tape stays writable, so nothing changes", () => {
+    const prev = parseEntityDraft(PAL)!;
+    const next = reshapeDraft(prev, withStorages(prev, [...prev.storages, tape("t2")]));
+    expect(next.storages.map((s) => s.readOnly)).toEqual([false, false]);
+    const yaml = serializeEntityDraft(next);
+    expect(yaml).toContain("      writable: true");
+    const m = machine(yaml);
+    expect(m.storages.map(isReadOnlyTape)).toEqual([false, false]);
+    sameLanguage(machine(PAL), m, 6);
+  });
+
+  it("the work tape removed: one tape again, written as the notes' one-tape machine (9.1)", () => {
+    const one = parseEntityDraft(CELL_TEMPLATES.tm)!;
+    const two = reshapeDraft(one, withStorages(one, [...one.storages, tape("t2")]));
+    const back = reshapeDraft(two, withStorages(two, [two.storages[0]]));
+    expect(back.storages.map((s) => s.readOnly)).toEqual([false]);
+    const yaml = serializeEntityDraft(back);
+    expect(yaml).not.toContain("writable");
+    expect(yaml).toContain("- (start, a) -> (start, a, R)");
+    sameLanguage(machine(CELL_TEMPLATES.tm), machine(yaml), 6);
+  });
+
+  it("made writable by choice: each row writes back what it reads, the language stays", () => {
+    const prev = parseEntityDraft(T2)!;
+    const next = reshapeDraft(prev, withStorages(prev, [{ ...prev.storages[0], readOnly: false }, prev.storages[1]]));
+    expect(next.rows[1]).toEqual(["q0", "a", "a", "R", "_", "Y", "R", "q1"]);
+    const yaml = serializeEntityDraft(next);
+    expect(yaml).toContain("      writable: true");
+    expect(yaml).toContain("- (q0, a, _) -> (q1, a, Y, R, R)");
+    sameLanguage(machine(T2), machine(yaml), 8);
+    // and read-only again: the notes' machine as it was
+    const again = reshapeDraft(next, withStorages(next, [{ ...next.storages[0], readOnly: true }, next.storages[1]]));
+    expect(serializeEntityDraft(again)).toBe(T2);
+  });
+
+  it("the input moved to the other tape: the old one becomes a work tape, the new one keeps its writes", () => {
+    const src = [
+      "Machine:",
+      "  charset: a, b",
+      "  states: s, ok",
+      "  init: s",
+      "  accept: ok",
+      "  input: t1",
+      "  storages:",
+      "    t1: tape",
+      "    t2: tape",
+      "  transitions:",
+      "    - (s, a, _) -> (ok, a, R, R)"
+    ].join("\n");
+    const prev = parseEntityDraft(src)!;
+    const next = reshapeDraft(prev, { ...prev, input: "t2" });
+    expect(next.storages.map((s) => s.readOnly)).toEqual([false, false]);
+    const yaml = serializeEntityDraft(next);
+    expect(machine(yaml).storages.map(isReadOnlyTape)).toEqual([false, false]);
+    expect(yaml).toContain("    t2:\n      type: tape\n      writable: true");
+    // t1 writes back what it reads, t2 what it wrote
+    expect(yaml).toContain("- (s, a, _) -> (ok, a, a, R, R)");
   });
 });

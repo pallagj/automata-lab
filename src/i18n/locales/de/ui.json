@@ -177,10 +177,10 @@
     },
     "storages": {
       "heading": "Speicher: Keller, Warteschlange, Band",
-      "example": "Machine:               # Kellerautomat: ein Keller\n  name: P\n  charset: a, b\n  states: q0, q1, q2\n  init: q0\n  accept: q2           # oder acceptMode: emptyStorages\n  storages:\n    keller: stack      # startet mit Z; sein Alphabet sind die benutzten Symbole\n  transitions:         #   oder: keller: { type: stack, charset: [Z, A], init: Z }\n    - (q0, a, Z) -> (q0, AZ)   # liest a, Z oben: statt Z wird AZ abgelegt\n    - (q0, b, A) -> (q1, ε)    # ε = schreibt nichts\n    - (q1, ε, Z) -> (q2, Z)    # ε-Schritt (tippe eps)\n\nMachine:               # Turingmaschine: ein Band, darauf die Eingabe\n  name: T\n  charset: a, b\n  states: s, ok\n  init: s\n  accept: ok\n  input: band          # die Eingabe kommt auf diesen Speicher\n  storages:\n    band:\n      type: tape\n      charset: a, b, x, _   # Γ: Σ, das Leerzeichen _ und mehr (standardmäßig Σ und _)\n  transitions:\n    - (s, a) -> (s, x, R)    # liest a, schreibt x, nach rechts (im YAML R, L, S; die Oberfläche zeigt R, L, N)\n    - (s, _) -> (ok, _, S)   # _ = das Leerzeichen",
+      "example": "Machine:               # Kellerautomat: ein Keller\n  name: P\n  charset: a, b\n  states: q0, q1, q2\n  init: q0\n  accept: q2           # oder acceptMode: emptyStorages\n  storages:\n    keller: stack      # startet mit Z; sein Alphabet sind die benutzten Symbole\n  transitions:         #   oder: keller: { type: stack, charset: [Z, A], init: Z }\n    - (q0, a, Z) -> (q0, AZ)   # liest a, Z oben: statt Z wird AZ abgelegt\n    - (q0, b, A) -> (q1, ε)    # ε = schreibt nichts\n    - (q1, ε, Z) -> (q2, Z)    # ε-Schritt (tippe eps)\n\nMachine:               # Turingmaschine: ein Band, darauf die Eingabe\n  name: T\n  charset: a, b\n  states: s, ok\n  init: s\n  accept: ok\n  input: band          # die Eingabe kommt auf diesen Speicher\n  storages:\n    band:\n      type: tape\n      charset: a, b, x, _   # Γ: Σ, das Leerzeichen _ und mehr (standardmäßig Σ und _)\n  transitions:\n    - (s, a) -> (s, x, R)    # liest a, schreibt x, nach rechts (im YAML R, L, S; die Oberfläche zeigt R, L, N)\n    - (s, _) -> (ok, _, S)   # _ = das Leerzeichen\n\nMachine:               # 2-Band-Turingmaschine: kopiert die Eingabe auf t2\n  charset: a, b\n  states: q0, ok\n  init: q0\n  accept: ok\n  input: t1            # das Eingabeband ist nur lesbar (Skript 9.9)\n  storages:\n    t1: tape           # t1: { type: tape, writable: true } — auch beschreibbar\n    t2: tape\n  transitions:\n    - (q0, a, _) -> (q0, a, R, R)   # liest a und _, schreibt a auf t2, beide Köpfe nach rechts\n    - (q0, b, _) -> (q0, b, R, R)\n    - (q0, _, _) -> (ok, _, S, S)",
       "body1": "Ein Übergang wird geschrieben wie δ im Skript:",
       "transitionSyntax": "(q, a, Z) -> (p, γ)",
-      "body2": "— die Argumente von δ sind der Zustand, das gelesene Zeichen und was jeder Speicher liest (die Kellerspitze, die Bandzelle); ihr Wert ist der nächste Zustand und was jeder Speicher bekommt (das abgelegte Wort; das geschriebene Zeichen und die Bewegung). Ein Band ist wie im Skript ab seiner ersten Zelle nach rechts unendlich: läuft der Kopf links darüber hinaus, hält die Maschine mit einem Fehler (mit infinite: both ist es beidseitig unendlich). Beliebig viele Speicher lassen sich kombinieren, jeder mit einem Argument und einem Ergebnis, in ihrer Reihenfolge: zwei Keller ergeben bereits eine Maschine mit Turing-Mächtigkeit (z. B. aⁿbⁿcⁿ, was mit einem Kellerautomaten nicht möglich ist), eine Warteschlange ergibt einen Warteschlangenautomaten. Die Automaten-Operationen (det, min…) gelten nur für speicherfreie Maschinen — die App erklärt, warum."
+      "body2": "— die Argumente von δ sind der Zustand, das gelesene Zeichen und was jeder Speicher liest (die Kellerspitze, die Bandzelle); ihr Wert ist der nächste Zustand und was jeder Speicher bekommt (das abgelegte Wort; das auf ein Band geschriebene Zeichen), danach die Bewegungen der Bandköpfe — wie das Skript δ(q, a₁…a_k) = (q′, b₂…b_k, d₁…d_k) schreibt. Hat eine Maschine mehrere Speicher, ist ihr Eingabeband nur lesbar, wie das erste Band der k-Band-Turingmaschine des Skripts (9.9): darauf wird nichts geschrieben, im Wert von δ hat es also keinen Platz (mit writable: true ist es beschreibbar). Im Graphen zeigt eine Kante für jedes Band a → b (ein nur lesbares Band nur das gelesene Zeichen), danach die Bewegungen: a, _ → b, R, R. Ein Band ist wie im Skript ab seiner ersten Zelle nach rechts unendlich: läuft der Kopf links darüber hinaus, hält die Maschine mit einem Fehler (mit infinite: both ist es beidseitig unendlich). Beliebig viele Speicher lassen sich kombinieren, jeder mit einem Argument, in ihrer Reihenfolge: zwei Keller ergeben bereits eine Maschine mit Turing-Mächtigkeit (z. B. aⁿbⁿcⁿ, was mit einem Kellerautomaten nicht möglich ist), eine Warteschlange ergibt einen Warteschlangenautomaten. Die Automaten-Operationen (det, min…) gelten nur für speicherfreie Maschinen — die App erklärt, warum."
     },
     "grammar": {
       "heading": "Grammatik",
@@ -369,7 +369,8 @@
       "storageType": {
         "stack": "Keller",
         "queue": "Warteschlange",
-        "tape": "Band"
+        "tape": "Band",
+        "readOnlyTape": "Band, nur lesbar"
       },
       "move": {
         "R": "R",
@@ -392,7 +393,11 @@
       "fellOffCell": "hier hat der Kopf das Band verlassen",
       "firstCell": "die erste Zelle des Bandes — das Band ist nur nach rechts unendlich",
       "tapeBothWays": "{{id}}: beidseitig unendlich",
-      "tapeBothWaysHint": "Dieses Band hat keine erste Zelle: der Kopf kann beliebig weit nach links gehen. Das Band des Skripts ist nur nach rechts unendlich (infinite: right, der Standard)."
+      "tapeBothWaysHint": "Dieses Band hat keine erste Zelle: der Kopf kann beliebig weit nach links gehen. Das Band des Skripts ist nur nach rechts unendlich (infinite: right, der Standard).",
+      "tapeReadOnly": "{{id}}: nur lesbar",
+      "tapeReadOnlyHint": "Die Maschine liest dieses Band nur und schreibt nichts darauf (writable: false).",
+      "inputTapeWritable": "{{id}}: beschreibbares Eingabeband",
+      "inputTapeWritableHint": "Bei der k-Band-Turingmaschine des Skripts (9.9) ist das Eingabeband nur lesbar; diese Maschine darf auch darauf schreiben (writable: true)."
     }
   },
   "editor": {
@@ -511,6 +516,10 @@
       "input": "Eingabe",
       "readHead": "Lesekopf",
       "writtenToStorage": "wird auf Speicher {{id}} geschrieben",
+      "inputTape": "Eingabeband",
+      "inputTapeHint": "Die k-Band-Turingmaschine des Skripts (9.9) liest ihr Eingabeband nur; die anderen Bänder sind Arbeitsbänder. Mit einem beschreibbaren Eingabeband darf die Maschine auch ihre Eingabe überschreiben (writable: true).",
+      "inputTapeReadOnly": "nur lesbar (Skript 9.9)",
+      "inputTapeWritable": "auch beschreibbar",
       "acceptance": "Akzeptanz",
       "acceptFinalState": "mit akzeptierendem Zustand",
       "acceptEmptyStorages": "mit leeren Speichern",

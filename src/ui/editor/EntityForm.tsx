@@ -3,7 +3,15 @@ import { createPortal } from "react-dom";
 import yaml from "js-yaml";
 import { useTranslation } from "react-i18next";
 import { ChevronRight, Plus, TriangleAlert, X } from "lucide-react";
-import { Machine, machineCaps, MachineCaps, StorageType, TAPE_BLANK, TapeExtent } from "../../core/machine/machine";
+import {
+  Machine,
+  machineCaps,
+  MachineCaps,
+  readOnlyByDefault,
+  StorageType,
+  TAPE_BLANK,
+  TapeExtent
+} from "../../core/machine/machine";
 import { deltaToRow, fieldCount, readDelta, rowToDelta, transitionScalar, writeDelta } from "../../core/parse/delta";
 import { symbolsText } from "../../core/symbols";
 import { SymbolField } from "./SymbolField";
@@ -66,7 +74,13 @@ export interface DraftStorage {
   init: string;
   /** a tape's extent; "right" for the other storages too, where it means nothing */
   infinite: TapeExtent;
+  /** a tape that is only read (see readOnlyByDefault); false for the other storages */
+  readOnly: boolean;
 }
+
+/** Whether a storage's write access is other than its default — the definition says so. */
+const accessChosen = (d: Pick<EntityDraft, "input" | "storages">, s: DraftStorage) =>
+  s.type === "tape" && s.readOnly !== readOnlyByDefault(d.input, d.storages, s.id);
 
 export function draftStorages(d: EntityDraft): DraftStorage[] {
   return d.kind === "machine" ? d.storages : [];
@@ -105,20 +119,27 @@ export function parseEntityDraft(source: string): EntityDraft | null {
   const b = body as Record<string, unknown>;
 
   const storages: DraftStorage[] = [];
+  const input = fieldText(b["input"]) || "head";
   if (kind === "machine") {
     const raw = b["storages"];
     if (raw !== undefined && raw !== null) {
       if (typeof raw !== "object" || Array.isArray(raw)) return null;
+      const entries = [];
       for (const [id, v] of Object.entries(raw as Record<string, unknown>)) {
         const r = parseStorageEntry(id.trim(), v);
         if (!r.ok) return null;
+        entries.push({ entry: r.value!, v });
+      }
+      for (const { entry, v } of entries) {
         const charset = typeof v === "object" && v !== null ? fieldText((v as Record<string, unknown>)["charset"]) : "";
+        const byDefault = readOnlyByDefault(input, entries.map((e) => e.entry), entry.id);
         storages.push({
-          id: r.value!.id,
-          type: r.value!.type,
+          id: entry.id,
+          type: entry.type,
           charset,
-          init: symbolsText(r.value!.init),
-          infinite: r.value!.infinite ?? "right"
+          init: symbolsText(entry.init),
+          infinite: entry.infinite ?? "right",
+          readOnly: entry.type === "tape" && (entry.writable === undefined ? byDefault : !entry.writable)
         });
       }
     }
@@ -132,15 +153,14 @@ export function parseEntityDraft(source: string): EntityDraft | null {
     init: fieldText(b["init"]),
     accept: fieldText(b["accept"]),
     acceptMode: fieldText(b["acceptMode"]) === "emptyStorages" ? "emptyStorages" : "finalState",
-    input: fieldText(b["input"]) || "head",
+    input,
     storages,
     rows: []
   };
   const rowsRaw = b[kind === "grammar" ? "rules" : "transitions"];
-  const types = storages.map((s) => s.type);
   draft.rows = (Array.isArray(rowsRaw) ? rowsRaw : []).map((r) => {
     const raw = r === null ? "" : String(r);
-    return kind === "grammar" ? splitRule(raw) : deltaToRow(readDelta(raw), draft.input === "head", types);
+    return kind === "grammar" ? splitRule(raw) : deltaToRow(readDelta(raw), draft.input === "head", storages);
   });
   return draft;
 }
@@ -188,21 +208,22 @@ export function serializeEntityDraft(d: EntityDraft): string {
     for (const s of d.storages) {
       const charset = s.charset.trim();
       const bothWays = s.type === "tape" && s.infinite === "both";
-      if (charset === "" && s.init === defaultInit(s.type) && !bothWays) {
+      const access = accessChosen(d, s);
+      if (charset === "" && s.init === defaultInit(s.type) && !bothWays && !access) {
         lines.push(`    ${s.id}: ${s.type}`);
       } else {
         lines.push(`    ${s.id}:`);
         lines.push(`      type: ${s.type}`);
         if (bothWays) lines.push("      infinite: both");
+        if (access) lines.push(`      writable: ${!s.readOnly}`);
         if (charset !== "") lines.push(`      charset: ${scalar(charset)}`);
         if (s.init !== defaultInit(s.type)) lines.push(`      init: ${scalar(s.init)}`);
       }
     }
   }
   lines.push("  transitions:");
-  const types = d.storages.map((s) => s.type);
   for (const r of d.rows) {
-    const { args, values } = rowToDelta(r.map((p) => p.trim()), d.input === "head", types);
+    const { args, values } = rowToDelta(r.map((p) => p.trim()), d.input === "head", d.storages);
     lines.push(`    - ${transitionScalar(writeDelta(args, values))}`);
   }
   return lines.join("\n");
@@ -234,8 +255,8 @@ function draftKindCaps(d: EntityDraft): MachineCaps {
 function setupFollowsKind(d: EntityDraft): boolean {
   if (draftKindCaps(d).kind === "general") return false;
   if (d.storages.some((s) => s.init !== defaultInit(s.type))) return false;
-  // a tape infinite both ways differs from the notes' tape: it stays in sight
-  if (d.storages.some((s) => s.type === "tape" && s.infinite === "both")) return false;
+  // a tape infinite both ways, or written other than by default, differs from the notes' tape: it stays in sight
+  if (d.storages.some((s) => s.type === "tape" && (s.infinite === "both" || accessChosen(d, s)))) return false;
   return !(d.input === "head" && d.storages.length > 0 && d.acceptMode === "emptyStorages");
 }
 
@@ -307,6 +328,100 @@ const KindChangeDialog: React.FC<{ req: KindChangeRequest; onClose: () => void }
 
 /* ----------------------------- storages ---------------------------- */
 
+/** A transition row's parts: its states, the input symbol (with a read head) and each storage's fields by id. */
+function splitRow(d: EntityDraft, r: string[]): { from: string; to: string; input: string | null; ops: Map<string, string[]> } {
+  let i = 1;
+  const input = d.input === "head" ? (r[i++] ?? EPS) : null;
+  const ops = new Map<string, string[]>();
+  for (const s of d.storages) {
+    const n = fieldCount(s);
+    ops.set(s.id, r.slice(i, i + n));
+    i += n;
+  }
+  return { from: r[0] ?? "", to: r[r.length - 1] ?? "", input, ops };
+}
+
+/** A tape's fields when it turns read-only (read, move) or writable again (read, the same symbol written, move). */
+function tapeFields(fields: string[], readOnly: boolean): string[] {
+  const read = fields[0] ?? "";
+  const move = fields[fields.length - 1] ?? "R";
+  if (readOnly) return fields.length === 2 ? fields : [read, move];
+  return fields.length === 3 ? fields : [read, read, move];
+}
+
+/** Whether a transition writes another symbol on the tape than it reads there. */
+const writesOn = (d: EntityDraft, id: string) =>
+  d.rows.some((r) => {
+    const f = splitRow(d, r).ops.get(id);
+    return f !== undefined && f.length === 3 && f[1].trim() !== f[0].trim();
+  });
+
+/**
+ * The write access of the tapes after a change of the storages or the input: one chosen in
+ * the definition, or just now, stays; one that had its default takes the new default
+ * (readOnlyByDefault) — except a tape the transitions write on, which stays writable, so
+ * the machine's behaviour does not change.
+ */
+function followAccess(prev: EntityDraft, next: EntityDraft, renames?: Map<string, string>): EntityDraft {
+  return {
+    ...next,
+    storages: next.storages.map((s) => {
+      if (s.type !== "tape") return { ...s, readOnly: false };
+      const oldId = renames?.get(s.id) ?? s.id;
+      const old = prev.storages.find((x) => x.id === oldId);
+      const oldTape = old !== undefined && old.type === "tape" ? old : undefined;
+      if (oldTape && (s.readOnly !== oldTape.readOnly || accessChosen(prev, oldTape))) return s;
+      const readOnly = readOnlyByDefault(next.input, next.storages, s.id);
+      if (readOnly && oldTape && !oldTape.readOnly && writesOn(prev, oldId)) return { ...s, readOnly: false };
+      return { ...s, readOnly };
+    })
+  };
+}
+
+/**
+ * the fields that leave a storage untouched: ε for a stack or a queue; a tape cell always
+ * holds a symbol, which is written back — one row per symbol of the tape's alphabet
+ */
+const noOps = (s: DraftStorage, d: EntityDraft): string[][] =>
+  s.type !== "tape"
+    ? [[EPS, EPS]]
+    : (list(s.charset).length > 0 ? list(s.charset) : [...list(d.charset), TAPE_BLANK]).map((x) =>
+        tapeFields([x, x, "S"], s.readOnly)
+      );
+
+/**
+ * When the storages or the input change, the existing rows are rearranged: the
+ * remaining storages keep their operations (matched by id) and new ones get a
+ * no-op — so the machine's behaviour does not change, it is only extended.
+ */
+const reshapeRows = (prev: EntityDraft, next: EntityDraft, renames?: Map<string, string>): EntityDraft => ({
+  ...next,
+  rows: prev.rows.flatMap((r) => {
+    const { from, to, input, ops } = splitRow(prev, r);
+    let middles: string[][] = [next.input === "head" ? [input ?? EPS] : []];
+    for (const s of next.storages) {
+      const oldId = renames?.get(s.id) ?? s.id;
+      const old = ops.get(oldId);
+      const prevSpec = prev.storages.find((x) => x.id === oldId);
+      // on a type change the old operation becomes meaningless → no-op; a tape keeps its
+      // operation, with or without what is written as it turns read-only or writable
+      const options =
+        old && prevSpec && prevSpec.type === s.type
+          ? [s.type === "tape" ? tapeFields(old, s.readOnly) : old]
+          : noOps(s, next);
+      middles = middles.flatMap((m) => options.map((o) => [...m, ...o]));
+    }
+    return middles.map((m) => [from, ...m, to]);
+  })
+});
+
+/**
+ * A change of the storages or the input (`changed`, its storages renamed as `renames` says,
+ * new id → old id): the tapes' write access follows (followAccess), then the rows.
+ */
+export const reshapeDraft = (prev: EntityDraft, changed: EntityDraft, renames?: Map<string, string>): EntityDraft =>
+  reshapeRows(prev, followAccess(prev, changed, renames), renames);
+
 /** The storage kinds to choose from: a tape is infinite to the right (the notes' tape) or both ways. */
 const STORAGE_CHOICES: { value: string; type: StorageType; infinite: TapeExtent; key: string }[] = [
   { value: "stack", type: "stack", infinite: "right", key: "editor.form.storageType.stack" },
@@ -368,56 +483,14 @@ export const EntityForm: React.FC<Props> = ({ source, onChange }) => {
     onChange(s);
   };
 
-  /**
-   * the fields that leave a storage untouched: ε for a stack or a queue; a tape cell always
-   * holds a symbol, which is written back — one row per symbol of the tape's alphabet
-   */
-  const noOps = (s: DraftStorage, d: EntityDraft): string[][] =>
-    s.type !== "tape"
-      ? [[EPS, EPS]]
-      : (list(s.charset).length > 0 ? list(s.charset) : [...list(d.charset), TAPE_BLANK]).map((x) => [x, x, "S"]);
 
-  /**
-   * When the storages or the input change, the existing rows are rearranged: the
-   * remaining storages keep their operations (matched by id) and new ones get a
-   * no-op — so the machine's behaviour does not change, it is only extended.
-   */
-  const reshapeRows = (prev: EntityDraft, next: EntityDraft, renames?: Map<string, string>): EntityDraft => {
-    const prevStorages = prev.storages;
-    return {
-      ...next,
-      rows: prev.rows.flatMap((r) => {
-        const from = r[0] ?? "";
-        const to = r[r.length - 1] ?? "";
-        let i = 1;
-        let oldInput: string | null = null;
-        if (prev.input === "head") oldInput = r[i++] ?? EPS;
-        const oldOps = new Map<string, string[]>();
-        for (const s of prevStorages) {
-          const n = fieldCount(s.type);
-          oldOps.set(s.id, r.slice(i, i + n));
-          i += n;
-        }
-        let middles: string[][] = [next.input === "head" ? [oldInput ?? EPS] : []];
-        for (const s of next.storages) {
-          const oldId = renames?.get(s.id) ?? s.id;
-          const old = oldOps.get(oldId);
-          const prevSpec = prevStorages.find((x) => x.id === oldId);
-          // on a type change the old operation becomes meaningless → no-op
-          const options = old && prevSpec && prevSpec.type === s.type ? [old] : noOps(s, next);
-          middles = middles.flatMap((m) => options.map((o) => [...m, ...o]));
-        }
-        return middles.map((m) => [from, ...m, to]);
-      })
-    };
-  };
 
   /**
    * Structural change (storages/input): if it would change the machine's recognised
    * kind, ask for confirmation first — unless the user has turned that off.
    */
   const commitStructural = (next: EntityDraft, renames?: Map<string, string>) => {
-    const apply = () => update(reshapeRows(draft, next, renames));
+    const apply = () => update(reshapeDraft(draft, next, renames));
     const fromCaps = draftKindCaps(draft);
     const toCaps = draftKindCaps(next);
     const sig = (c: MachineCaps) => `${c.kind}:${JSON.stringify(c.storageCounts ?? {})}`;
@@ -458,7 +531,10 @@ export const EntityForm: React.FC<Props> = ({ source, onChange }) => {
 
   const addStorage = () => {
     const used = new Set(draft.storages.map((s) => s.id));
-    setStorages([...draft.storages, { id: freshStorageId(used), type: "stack", charset: "", init: "Z", infinite: "right" }]);
+    setStorages([
+      ...draft.storages,
+      { id: freshStorageId(used), type: "stack", charset: "", init: "Z", infinite: "right", readOnly: false }
+    ]);
   };
   // the alphabet does not change the machine's shape: no rows to rearrange
   const setCharset = (i: number, charset: string) =>
@@ -469,6 +545,7 @@ export const EntityForm: React.FC<Props> = ({ source, onChange }) => {
   const setRowParts = (i: number, parts: string[]) =>
     update({ ...draft, rows: draft.rows.map((r, k) => (k === i ? parts : r)) });
   const hasHead = draft.input === "head";
+  const inputTape = draft.storages.find((s) => s.id === draft.input && s.type === "tape");
   const fields = transitionFields(t, hasHead, draft.storages);
   const kindCaps = draftKindCaps(draft);
   const kindName = kindCaps.kind === "general" ? t("detail.machine.kind.general") : machineKindLabel(t, kindCaps);
@@ -550,6 +627,18 @@ export const EntityForm: React.FC<Props> = ({ source, onChange }) => {
                   ))}
                 </select>
               </label>
+              {inputTape && (draft.storages.length > 1 || inputTape.readOnly) && (
+                <label className="ef-choice" title={t("editor.form.inputTapeHint")}>
+                  <span>{t("editor.form.inputTape")}</span>
+                  <select
+                    value={inputTape.readOnly ? "read" : "write"}
+                    onChange={(e) => setStorage(draft.storages.indexOf(inputTape), { readOnly: e.target.value === "read" })}
+                  >
+                    <option value="read">{t("editor.form.inputTapeReadOnly")}</option>
+                    <option value="write">{t("editor.form.inputTapeWritable")}</option>
+                  </select>
+                </label>
+              )}
               {draft.input === "head" && (
                 <label className="ef-choice">
                   <span>{t("editor.form.acceptance")}</span>
