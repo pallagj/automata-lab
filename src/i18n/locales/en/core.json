@@ -218,6 +218,14 @@
     "badName": {
       "title": "“{{name}}” is not a name",
       "detail": "A name is a single letter with an optional subscript — for example {{suggestion}}. Type _ to start the subscript; digits right after the letter go there by themselves (M1 is M₁)."
+    },
+    "infiniteOnlyForTape": {
+      "title": "Storage \"{{id}}\": infinite only applies to a tape",
+      "detail": "A stack or a queue has no extent to choose — leave the infinite key out."
+    },
+    "badInfinite": {
+      "title": "Storage \"{{id}}\": unknown tape extent \"{{value}}\"",
+      "detail": "infinite: right — a tape infinite to the right from its first cell, as in the lecture notes (the default); infinite: both — a tape infinite in both directions."
     }
   },
   "ops": {

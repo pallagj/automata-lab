@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { parseEntityDraft, serializeEntityDraft } from "./EntityForm";
-import { parseGrammar } from "../../core/parse/definitionParser";
+import { parseGrammar, parseMachine } from "../../core/parse/definitionParser";
 
 // the draft is plain data; the store (and the i18n it loads) wants a browser
 vi.mock("../../state/store", () => ({ useAppStore: () => undefined }));
@@ -35,5 +35,37 @@ describe("a grammar's rules in the form", () => {
     const yaml = serializeEntityDraft(d);
     expect(yaml).toBe(grammar(["S -> "]));
     expect(parseGrammar(yaml).diagnostics[0].title.key).toBe("definitionParser.grammar.emptyAlternative.title");
+  });
+});
+
+describe("a tape's extent in the form", () => {
+  const machine = (storage: string) =>
+    [
+      "Machine:",
+      "  name: T",
+      "  charset: a, b",
+      "  states: s, ok",
+      "  init: s",
+      "  accept: ok",
+      "  input: t",
+      "  storages:",
+      storage,
+      "  transitions:",
+      "    - (s, a) -> (ok, a, L)"
+    ].join("\n");
+
+  it("is the notes' tape by default, and the short form stays short", () => {
+    const src = machine("    t: tape");
+    const d = parseEntityDraft(src)!;
+    expect(d.storages[0].infinite).toBe("right");
+    expect(serializeEntityDraft(d)).toBe(src);
+  });
+
+  it("a tape infinite both ways reads back unchanged", () => {
+    const src = machine("    t:\n      type: tape\n      infinite: both");
+    const d = parseEntityDraft(src)!;
+    expect(d.storages[0].infinite).toBe("both");
+    expect(serializeEntityDraft(d)).toBe(src);
+    expect(parseMachine(serializeEntityDraft(d)).value!.storages[0].infinite).toBe("both");
   });
 });

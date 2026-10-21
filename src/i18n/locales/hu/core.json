@@ -218,6 +218,14 @@
     "badName": {
       "title": "„{{name}}” nem név",
       "detail": "A név egyetlen betű, opcionális alsó indexszel — például {{suggestion}}. Az _ leütésével kezdődik az alsó index; a betű utáni számjegyek maguktól oda kerülnek (M1 = M₁)."
+    },
+    "infiniteOnlyForTape": {
+      "title": "A(z) „{{id}}” tároló: az infinite csak szalagra vonatkozik",
+      "detail": "Veremnél és sornál nincs mit beállítani — hagyd el az infinite kulcsot."
+    },
+    "badInfinite": {
+      "title": "A(z) „{{id}}” tároló: ismeretlen szalagkiterjedés: „{{value}}”",
+      "detail": "infinite: right — az első cellától jobbra végtelen szalag, mint a jegyzetben (ez az alapértelmezés); infinite: both — mindkét irányban végtelen szalag."
     }
   },
   "ops": {

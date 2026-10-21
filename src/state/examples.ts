@@ -180,6 +180,7 @@ export const EXAMPLE_WORKSHEETS: ExampleWorksheet[] = [
     - (back, a) -> (back, a, L)
     - (back, b) -> (back, b, L)
     - (back, _) -> (start, _, R)`,
+      "# A tape is infinite to the right only, as in the lecture notes — a head stepping left off its first cell halts the machine with an error. Adding 1 to a binary number may need a new digit left of the word (11 + 1 = 100), so this tape is infinite both ways.",
       `Machine:
   name: T_{inc}
   charset: 0, 1
@@ -188,7 +189,9 @@ export const EXAMPLE_WORKSHEETS: ExampleWorksheet[] = [
   accept: done
   input: tape
   storages:
-    tape: tape
+    tape:
+      type: tape
+      infinite: both
   transitions:
     - (right, 0) -> (right, 0, R)
     - (right, 1) -> (right, 1, R)
@@ -226,7 +229,28 @@ export const EXAMPLE_WORKSHEETS: ExampleWorksheet[] = [
     - (q4, x) -> (q6, x, S)
     - (q5, a) -> (q5, a, L)
     - (q5, b) -> (q5, b, L)
-    - (q5, x) -> (q0, x, R)`
+    - (q5, x) -> (q0, x, R)`,
+      "# A 2-tape Turing machine (lecture notes 9.2) for aⁿbⁿ: the second tape counts the a's, then every b takes one back. Its tapes have a first cell too, so the first a is marked Y — that is where the head of tape 2 must stop.",
+      `Machine:
+  name: T_2
+  charset: a, b
+  states: q0, q1, q2, q3, ok
+  init: q0
+  accept: ok
+  input: t1
+  storages:
+    t1: tape
+    t2:
+      type: tape
+      charset: X, Y, _
+  transitions:
+    - (q0, _, _) -> (ok, _, S, _, S)
+    - (q0, a, _) -> (q1, a, R, Y, R)
+    - (q1, a, _) -> (q1, a, R, X, R)
+    - (q1, b, _) -> (q2, b, S, _, L)
+    - (q2, b, X) -> (q2, b, R, X, L)
+    - (q2, b, Y) -> (q3, b, R, Y, S)
+    - (q3, _, Y) -> (ok, _, S, Y, S)`
     ]
   },
   {

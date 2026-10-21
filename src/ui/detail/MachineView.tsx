@@ -6,6 +6,7 @@ import {
   hasInputHead,
   initialMachineConfig,
   isAcceptingMachineConfig,
+  isOneWayTape,
   Machine,
   machineCaps,
   MachineConfig,
@@ -15,6 +16,7 @@ import {
   runMachine,
   stepMachineConfigs,
   storageOpLabel,
+  StorageSpec,
   StorageState,
   TapeState,
   tapeWindow
@@ -33,22 +35,34 @@ import { showSymbols } from "../../core/symbols";
 
 const MAX_RUN_LEVELS = 300;
 
-/** Compact text of a storage's content for the configuration list. */
-function storageText(st: StorageState): string {
+/** Compact text of a storage's content for the configuration list; [✗] is a head that fell off. */
+function storageText(spec: StorageSpec, st: StorageState): string {
   if (Array.isArray(st)) return showSymbols(st);
-  const w = tapeWindow(st, 8);
-  return w.cells.map((c, i) => (i === w.headIndex ? `[${c}]` : c)).join("");
+  const w = tapeWindow(st, 8, isOneWayTape(spec));
+  const cells = w.cells.map((c, i) => (i === w.headIndex ? `[${c}]` : c)).join("");
+  return w.headIndex < 0 ? `[✗]${cells}` : cells;
 }
 
 /** Shows a storage as a row of cells (stack: top on the left, queue: front on the left). */
-const StorageCells: React.FC<{ type: "stack" | "queue" | "tape"; st: StorageState }> = ({ type, st }) => {
+const StorageCells: React.FC<{ spec: StorageSpec; st: StorageState }> = ({ spec, st }) => {
   const { t } = useTranslation();
+  const type = spec.type;
   if (type === "tape") {
-    const w = tapeWindow(st as TapeState, 12);
+    const oneWay = isOneWayTape(spec);
+    const w = tapeWindow(st as TapeState, 12, oneWay);
     return (
       <div className="tape">
+        {w.headIndex < 0 && (
+          <span className="tape-cell head fell" title={t("detail.machine.fellOffCell")}>
+            ✗
+          </span>
+        )}
         {w.cells.map((c, i) => (
-          <span key={w.startPos + i} className={`tape-cell ${i === w.headIndex ? "head" : ""}`}>
+          <span
+            key={w.startPos + i}
+            className={`tape-cell ${i === w.headIndex ? "head" : ""} ${oneWay && w.startPos + i === 0 ? "first" : ""}`}
+            title={oneWay && w.startPos + i === 0 ? t("detail.machine.firstCell") : undefined}
+          >
             {c}
           </span>
         ))}
@@ -201,6 +215,13 @@ export const MachineView: React.FC<{ machine: Machine; stepGroups?: StepGroup[];
       </span>
       <span className="badge accent">{t("detail.fsm.stateCount", { count: m.states.length })}</span>
       {m.storages
+        .filter((s) => s.type === "tape" && !isOneWayTape(s))
+        .map((s) => (
+          <span key={`${s.id}-extent`} className="badge accent" title={t("detail.machine.tapeBothWaysHint")}>
+            {t("detail.machine.tapeBothWays", { id: s.id })}
+          </span>
+        ))}
+      {m.storages
         .filter((s) => s.init.length > 0)
         .map((s) => (
           <span key={s.id} className="badge accent" title={t("detail.machine.initialContentHint", { id: s.id })}>
@@ -350,9 +371,15 @@ export const MachineView: React.FC<{ machine: Machine; stepGroups?: StepGroup[];
                 {s.id}
                 {s.type === "stack" ? " ⊓" : s.type === "queue" ? " ⇉" : ""}
               </span>
-              <StorageCells type={s.type} st={featured.storages[i]} />
+              <StorageCells spec={s} st={featured.storages[i]} />
             </div>
           ))}
+        </div>
+      )}
+
+      {featured?.fellOff !== undefined && (
+        <div style={{ marginTop: 8, fontSize: 12.5, color: "var(--danger)" }}>
+          {t("detail.machine.fellOff", { id: featured.fellOff })}
         </div>
       )}
 
@@ -380,6 +407,9 @@ export const MachineView: React.FC<{ machine: Machine; stepGroups?: StepGroup[];
               <span className="cfg-label">{t("detail.fsm.state")} </span>
               <span className="cfg-state">{c.state}</span>
             </span>
+            {c.fellOff !== undefined && (
+              <span style={{ color: "var(--danger)" }}>{t("detail.machine.fellOffShort", { id: c.fellOff })}</span>
+            )}
             {head && (
               <span>
                 <span className="cfg-label">{t("detail.machine.remainingInput")} </span>
@@ -392,7 +422,7 @@ export const MachineView: React.FC<{ machine: Machine; stepGroups?: StepGroup[];
                   {s.id}
                   {s.type === "stack" ? ` (${t("detail.machine.topLeft")}) ` : s.type === "queue" ? ` (${t("detail.machine.frontLeft")}) ` : " "}
                 </span>
-                {rich(storageText(c.storages[j]))}
+                {rich(storageText(s, c.storages[j]))}
               </span>
             ))}
           </div>

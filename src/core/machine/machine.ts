@@ -12,12 +12,19 @@ import { showSymbols } from "../symbols";
  * The classic machine classes are restricted cases:
  *   - finite automaton:   no storage, input: head
  *   - pushdown automaton: 1 stack, input: head
- *   - Turing machine:     1 tape, input: the tape
+ *   - Turing machine:     k ≥ 1 tapes, input: one of the tapes
+ *
+ * A tape is infinite to the right only, as in the lecture notes (9.1): it has a first
+ * cell, and a head stepping left from it falls off — the machine halts with an error.
+ * A tape may be made infinite in both directions instead.
  */
 
 export const TAPE_BLANK = "_";
 
 export type StorageType = "stack" | "queue" | "tape";
+
+/** Which way a tape is infinite: only to the right (from a first cell) or both ways. */
+export type TapeExtent = "right" | "both";
 
 export interface StorageSpec {
   id: string;
@@ -32,6 +39,13 @@ export interface StorageSpec {
    * the front); stack and queue symbols are names like Z, Z_0, X_a or single characters
    */
   init: string[];
+  /** a tape's extent — "right" when left out (see isOneWayTape) */
+  infinite?: TapeExtent;
+}
+
+/** A tape with a first cell, infinite only to the right: the lecture notes' tape. */
+export function isOneWayTape(spec: Pick<StorageSpec, "type" | "infinite">): boolean {
+  return spec.type === "tape" && spec.infinite !== "both";
 }
 
 /** An operation on one storage — its type follows the storage's type. */
@@ -79,6 +93,11 @@ export interface MachineConfig {
   /** current content per storage, in the order of storages */
   storages: StorageState[];
   steps: number;
+  /**
+   * the id of the one-way tape whose head stepped left off its first cell: the machine
+   * has halted with an error there (lecture notes 9.1) — no further move, no acceptance
+   */
+  fellOff?: string;
 }
 
 export function hasInputHead(m: Machine): boolean {
@@ -129,7 +148,7 @@ export function readTapeCell(t: TapeState, pos: number): string {
 }
 
 export function machineConfigKey(c: MachineConfig): string {
-  const parts = [c.state, String(c.pos)];
+  const parts = [c.state, String(c.pos), c.fellOff ?? ""];
   for (const s of c.storages) {
     if (Array.isArray(s)) parts.push(s.join("\u0001"));
     else {
@@ -177,6 +196,8 @@ export function machineMoves(
   input: string
 ): { config: MachineConfig; transition: MachineTransition }[] {
   const result: { config: MachineConfig; transition: MachineTransition }[] = [];
+  // a machine that fell off a tape has halted
+  if (c.fellOff !== undefined) return result;
   const head = hasInputHead(m);
   const nextChar = head && c.pos < input.length ? input[c.pos] : null;
 
@@ -196,10 +217,11 @@ export function machineMoves(
       if (next === null) continue outer;
       storages.push(next);
     }
-    result.push({
-      config: { state: t.to, pos: newPos, storages, steps: c.steps + 1 },
-      transition: t
-    });
+    // the step is made — the write and the move — and a head left of a first cell falls off
+    const fell = m.storages.find((s, i) => isOneWayTape(s) && (storages[i] as TapeState).head < 0);
+    const config: MachineConfig = { state: t.to, pos: newPos, storages, steps: c.steps + 1 };
+    if (fell) config.fellOff = fell.id;
+    result.push({ config, transition: t });
   }
   return result;
 }
@@ -208,8 +230,10 @@ export function machineMoves(
  * Is the configuration accepting?
  *  - read-head machine: the input is consumed AND (accepting state / every stack and queue empty)
  *  - tape-input machine: it has halted (no applicable transition) in an accepting state
+ * A machine that fell off a tape has halted with an error: that is never acceptance.
  */
 export function isAcceptingMachineConfig(m: Machine, c: MachineConfig, input: string): boolean {
+  if (c.fellOff !== undefined) return false;
   if (hasInputHead(m)) {
     if (c.pos !== input.length) return false;
     if (m.acceptMode === "emptyStorages")
@@ -257,10 +281,14 @@ export function runMachine(
     return path;
   };
 
+  // a branch whose storage outgrows the bound is not followed: a stack growing on ε-steps,
+  // a head running off along an endless tape
   const tooBig = (c: MachineConfig) =>
-    c.storages.some((s, i) =>
-      m.storages[i].type === "tape" ? false : (s as string[]).length > maxStorage
-    );
+    c.storages.some((s, i) => {
+      if (m.storages[i].type !== "tape") return (s as string[]).length > maxStorage;
+      const t = s as TapeState;
+      return Math.abs(t.head) > maxStorage || t.cells.size > maxStorage;
+    });
 
   if (isAcceptingMachineConfig(m, start.config, input)) {
     return { verdict: "accepted", acceptingPath: buildPath(start), exploredConfigs: explored };
@@ -374,11 +402,11 @@ export interface MachineCaps {
   isFSMLike: boolean;
   /** read head + exactly 1 stack */
   isPDALike: boolean;
-  /** exactly 1 tape, holding the input */
+  /** only tapes (k ≥ 1), the input written onto one of them — a k-tape Turing machine (9.9) */
   isTMLike: boolean;
   /** machine-kind identifier for the UI label (i18n key) */
   kind: "fsm" | "pda" | "tm" | "general";
-  /** only for kind === "general": number of storages per type, to build the label */
+  /** for kind === "general" the number of storages per type, for a k-tape TM (k > 1) the tapes */
   storageCounts?: Partial<Record<StorageType, number>>;
 }
 
@@ -387,13 +415,15 @@ export function machineCaps(m: Machine): MachineCaps {
   const types = m.storages.map((s) => s.type);
   const isFSMLike = head && types.length === 0;
   const isPDALike = head && types.length === 1 && types[0] === "stack";
-  const isTMLike = !head && types.length === 1 && types[0] === "tape" && m.input === m.storages[0].id;
+  const isTMLike = !head && types.length > 0 && types.every((t) => t === "tape") && m.storages.some((s) => s.id === m.input);
   let kind: MachineCaps["kind"] = "general";
   let storageCounts: Partial<Record<StorageType, number>> | undefined;
   if (isFSMLike) kind = "fsm";
   else if (isPDALike) kind = "pda";
-  else if (isTMLike) kind = "tm";
-  else if (types.length > 0) {
+  else if (isTMLike) {
+    kind = "tm";
+    if (types.length > 1) storageCounts = { tape: types.length };
+  } else if (types.length > 0) {
     const cnt = (t: StorageType) => types.filter((x) => x === t).length;
     storageCounts = { stack: cnt("stack"), queue: cnt("queue"), tape: cnt("tape") };
   }
@@ -463,15 +493,18 @@ function isNoOp(op: StorageOp): boolean {
 
 /**
  * Edge label for the graph, as in the lecture notes: a; Z → AZ for a pushdown automaton,
- * a → b, D for a Turing machine; for custom machines the input symbol, then each
- * storage's operation named by its id (operations that leave a storage untouched are
- * left out).
+ * a → b, D for a Turing machine and a₁, a₂ → b₁, b₂, D₁, D₂ for one with several tapes
+ * (as in figure 9.28); for custom machines the input symbol, then each storage's operation
+ * named by its id (operations that leave a storage untouched are left out).
  */
 export function machineTransitionLabel(m: Machine, t: MachineTransition, moves: MoveLetters = MOVE_LETTERS): string {
   const caps = machineCaps(m);
   if (caps.isFSMLike) return t.input;
   if (caps.isPDALike) return `${t.input}; ${storageOpLabel(t.ops[0], moves)}`;
-  if (caps.isTMLike) return storageOpLabel(t.ops[0], moves);
+  if (caps.isTMLike) {
+    const ops = t.ops as Extract<StorageOp, { type: "tape" }>[];
+    return `${ops.map((o) => o.read).join(", ")} → ${ops.map((o) => o.write).join(", ")}, ${ops.map((o) => moves[o.move]).join(", ")}`;
+  }
   const parts: string[] = [];
   if (hasInputHead(m)) parts.push(t.input);
   t.ops.forEach((op, i) => {
@@ -480,10 +513,14 @@ export function machineTransitionLabel(m: Machine, t: MachineTransition, moves: 
   return parts.length > 0 ? parts.join("; ") : EPS;
 }
 
-/** The visible slice of the tape + the head's relative position (for display). */
+/**
+ * The visible slice of the tape + the head's relative position (for display). A one-way
+ * tape starts at its first cell: a head that fell off it has headIndex −1.
+ */
 export function tapeWindow(
   t: TapeState,
-  radius = 10
+  radius = 10,
+  oneWay = false
 ): { cells: string[]; headIndex: number; startPos: number } {
   let min = t.head;
   let max = t.head;
@@ -493,6 +530,10 @@ export function tapeWindow(
   }
   min = Math.max(min, t.head - radius);
   max = Math.min(max, t.head + radius);
+  if (oneWay) {
+    min = Math.max(min, 0);
+    max = Math.max(max, 0);
+  }
   const cells: string[] = [];
   for (let i = min; i <= max; i++) cells.push(readTapeCell(t, i));
   return { cells, headIndex: t.head - min, startPos: min };

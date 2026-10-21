@@ -11,7 +11,10 @@ export function machineKindLabel(t: TFunction, caps: MachineCaps, lowercase = fa
   const key = lowercase ? "detail.machine.kindLower" : "detail.machine.kind";
   if (caps.kind === "fsm") return t(`${key}.fsm`);
   if (caps.kind === "pda") return t(`${key}.pda`);
-  if (caps.kind === "tm") return t(`${key}.tm`);
+  if (caps.kind === "tm") {
+    const tapes = caps.storageCounts?.tape ?? 1;
+    return tapes > 1 ? t(`${key}.tmMulti`, { count: tapes }) : t(`${key}.tm`);
+  }
   const c = caps.storageCounts ?? {};
   const parts: string[] = [];
   if (c.stack) parts.push(t("detail.machine.storageCount.stack", { count: c.stack }));

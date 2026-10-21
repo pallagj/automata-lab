@@ -218,6 +218,14 @@
     "badName": {
       "title": "„{{name}}“ ist kein Name",
       "detail": "Ein Name ist ein einzelner Buchstabe mit optionalem Index — zum Beispiel {{suggestion}}. Mit _ beginnt der Index; Ziffern direkt nach dem Buchstaben kommen von selbst hinein (M1 ist M₁)."
+    },
+    "infiniteOnlyForTape": {
+      "title": "Speicher „{{id}}“: infinite gilt nur für ein Band",
+      "detail": "Ein Keller oder eine Warteschlange hat keine Ausdehnung zu wählen — lass den Schlüssel infinite weg."
+    },
+    "badInfinite": {
+      "title": "Speicher „{{id}}“: unbekannte Bandausdehnung „{{value}}“",
+      "detail": "infinite: right — ein Band, das ab seiner ersten Zelle nach rechts unendlich ist, wie im Skript (der Standard); infinite: both — ein beidseitig unendliches Band."
     }
   },
   "ops": {

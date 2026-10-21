@@ -171,8 +171,10 @@ export interface StorageEntry extends Omit<StorageSpec, "alphabet"> {
  * A storage entry in the storages mapping:
  *   v1: stack                                  — short form, with the defaults
  *   v2: { type: stack, charset: [Z, A], init: Z }  — long form (default works instead of init too)
+ *   t:  { type: tape, infinite: both }         — a tape infinite both ways
  * The alphabet Γ (charset) and the initial content may be left out: see
- * defaultStorageAlphabet and STACK_DEFAULT_INIT.
+ * defaultStorageAlphabet and STACK_DEFAULT_INIT. A tape is infinite to the right only
+ * unless it says otherwise (see isOneWayTape).
  */
 export function parseStorageEntry(id: string, raw: unknown): OpResult<StorageEntry> {
   const bad = () =>
@@ -186,6 +188,7 @@ export function parseStorageEntry(id: string, raw: unknown): OpResult<StorageEnt
   let typeRaw = "";
   let init: string | undefined;
   let alphabet: string[] | null = null;
+  let infiniteRaw: string | undefined;
   if (raw === null || typeof raw === "string") {
     typeRaw = String(raw ?? "").trim();
   } else if (typeof raw === "object" && !Array.isArray(raw)) {
@@ -193,6 +196,8 @@ export function parseStorageEntry(id: string, raw: unknown): OpResult<StorageEnt
     typeRaw = String(o["type"] ?? "").trim();
     const i = o["init"] ?? o["default"];
     if (i !== undefined && i !== null) init = String(i);
+    const inf = o["infinite"];
+    if (inf !== undefined && inf !== null) infiniteRaw = String(inf).trim();
     const items = parseList(o["charset"], `${id}.charset`, diags);
     if (items.length > 0) {
       alphabet = [];
@@ -217,7 +222,24 @@ export function parseStorageEntry(id: string, raw: unknown): OpResult<StorageEnt
   const type = STORAGE_TYPES[typeRaw];
   if (!type) return bad();
   if (init === undefined) init = type === "stack" ? STACK_DEFAULT_INIT : "";
-  return okResult({ id, type, alphabet, init: symbolTokens(init) }, diags);
+  const entry: StorageEntry = { id, type, alphabet, init: symbolTokens(init) };
+  if (infiniteRaw !== undefined) {
+    if (type !== "tape")
+      return failResult([
+        err(tx("definitionParser.infiniteOnlyForTape.title", { id }), tx("definitionParser.infiniteOnlyForTape.detail"))
+      ]);
+    if (infiniteRaw !== "right" && infiniteRaw !== "both")
+      return failResult([
+        err(
+          tx("definitionParser.badInfinite.title", { id, value: infiniteRaw }),
+          tx("definitionParser.badInfinite.detail")
+        )
+      ]);
+    entry.infinite = infiniteRaw;
+  } else if (type === "tape") {
+    entry.infinite = "right";
+  }
+  return okResult(entry, diags);
 }
 
 /** Head moves in the YAML: always the English letters (the UI shows its language's, J B H). */

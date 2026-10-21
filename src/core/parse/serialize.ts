@@ -66,12 +66,15 @@ export function serializeMachine(m: Machine): string {
     m.storages.forEach((s, i) => {
       // the alphabet is written only where it is not the default one
       const ownAlphabet = !sameSet(s.alphabet, defaultStorageAlphabet(m.alphabet, s, m.transitions.map((t) => t.ops[i])));
-      if (!ownAlphabet && isDefaultInit(s.type, s.init)) {
+      // a tape is infinite to the right by default: only the other way is written out
+      const bothWays = s.type === "tape" && s.infinite === "both";
+      if (!ownAlphabet && isDefaultInit(s.type, s.init) && !bothWays) {
         lines.push(`    ${s.id}: ${s.type}`);
         return;
       }
       lines.push(`    ${s.id}:`);
       lines.push(`      type: ${s.type}`);
+      if (bothWays) lines.push("      infinite: both");
       if (ownAlphabet) lines.push(`      charset: ${alphabetLine(s.alphabet)}`);
       if (!isDefaultInit(s.type, s.init)) lines.push(`      init: ${scalar(syms(s.init))}`);
     });

@@ -3,7 +3,7 @@ import { createPortal } from "react-dom";
 import yaml from "js-yaml";
 import { useTranslation } from "react-i18next";
 import { ChevronRight, Plus, TriangleAlert, X } from "lucide-react";
-import { Machine, machineCaps, MachineCaps, StorageType, TAPE_BLANK } from "../../core/machine/machine";
+import { Machine, machineCaps, MachineCaps, StorageType, TAPE_BLANK, TapeExtent } from "../../core/machine/machine";
 import { deltaToRow, fieldCount, readDelta, rowToDelta, transitionScalar, writeDelta } from "../../core/parse/delta";
 import { symbolsText } from "../../core/symbols";
 import { SymbolField } from "./SymbolField";
@@ -64,6 +64,8 @@ export interface DraftStorage {
   type: StorageType;
   charset: string;
   init: string;
+  /** a tape's extent; "right" for the other storages too, where it means nothing */
+  infinite: TapeExtent;
 }
 
 export function draftStorages(d: EntityDraft): DraftStorage[] {
@@ -111,7 +113,13 @@ export function parseEntityDraft(source: string): EntityDraft | null {
         const r = parseStorageEntry(id.trim(), v);
         if (!r.ok) return null;
         const charset = typeof v === "object" && v !== null ? fieldText((v as Record<string, unknown>)["charset"]) : "";
-        storages.push({ id: r.value!.id, type: r.value!.type, charset, init: symbolsText(r.value!.init) });
+        storages.push({
+          id: r.value!.id,
+          type: r.value!.type,
+          charset,
+          init: symbolsText(r.value!.init),
+          infinite: r.value!.infinite ?? "right"
+        });
       }
     }
   }
@@ -179,11 +187,13 @@ export function serializeEntityDraft(d: EntityDraft): string {
     lines.push("  storages:");
     for (const s of d.storages) {
       const charset = s.charset.trim();
-      if (charset === "" && s.init === defaultInit(s.type)) {
+      const bothWays = s.type === "tape" && s.infinite === "both";
+      if (charset === "" && s.init === defaultInit(s.type) && !bothWays) {
         lines.push(`    ${s.id}: ${s.type}`);
       } else {
         lines.push(`    ${s.id}:`);
         lines.push(`      type: ${s.type}`);
+        if (bothWays) lines.push("      infinite: both");
         if (charset !== "") lines.push(`      charset: ${scalar(charset)}`);
         if (s.init !== defaultInit(s.type)) lines.push(`      init: ${scalar(s.init)}`);
       }
@@ -224,6 +234,8 @@ function draftKindCaps(d: EntityDraft): MachineCaps {
 function setupFollowsKind(d: EntityDraft): boolean {
   if (draftKindCaps(d).kind === "general") return false;
   if (d.storages.some((s) => s.init !== defaultInit(s.type))) return false;
+  // a tape infinite both ways differs from the notes' tape: it stays in sight
+  if (d.storages.some((s) => s.type === "tape" && s.infinite === "both")) return false;
   return !(d.input === "head" && d.storages.length > 0 && d.acceptMode === "emptyStorages");
 }
 
@@ -295,11 +307,14 @@ const KindChangeDialog: React.FC<{ req: KindChangeRequest; onClose: () => void }
 
 /* ----------------------------- storages ---------------------------- */
 
-const STORAGE_TYPE_KEY: Record<StorageType, string> = {
-  stack: "editor.form.storageType.stack",
-  queue: "editor.form.storageType.queue",
-  tape: "editor.form.storageType.tape"
-};
+/** The storage kinds to choose from: a tape is infinite to the right (the notes' tape) or both ways. */
+const STORAGE_CHOICES: { value: string; type: StorageType; infinite: TapeExtent; key: string }[] = [
+  { value: "stack", type: "stack", infinite: "right", key: "editor.form.storageType.stack" },
+  { value: "queue", type: "queue", infinite: "right", key: "editor.form.storageType.queue" },
+  { value: "tape", type: "tape", infinite: "right", key: "editor.form.storageType.tape" },
+  { value: "tape-both", type: "tape", infinite: "both", key: "editor.form.storageType.tapeBothWays" }
+];
+const storageChoice = (s: DraftStorage) => (s.type === "tape" && s.infinite === "both" ? "tape-both" : s.type);
 
 function freshStorageId(used: Set<string>): string {
   for (const base of ["v", "t", "s"]) {
@@ -443,7 +458,7 @@ export const EntityForm: React.FC<Props> = ({ source, onChange }) => {
 
   const addStorage = () => {
     const used = new Set(draft.storages.map((s) => s.id));
-    setStorages([...draft.storages, { id: freshStorageId(used), type: "stack", charset: "", init: "Z" }]);
+    setStorages([...draft.storages, { id: freshStorageId(used), type: "stack", charset: "", init: "Z", infinite: "right" }]);
   };
   // the alphabet does not change the machine's shape: no rows to rearrange
   const setCharset = (i: number, charset: string) =>
@@ -563,10 +578,17 @@ export const EntityForm: React.FC<Props> = ({ source, onChange }) => {
                 placeholder={t("editor.form.namePlaceholder")}
                 spellCheck={false}
               />
-              <select value={s.type} onChange={(e) => setStorage(i, { type: e.target.value as StorageType })}>
-                {(Object.keys(STORAGE_TYPE_KEY) as StorageType[]).map((ty) => (
-                  <option key={ty} value={ty}>
-                    {t(STORAGE_TYPE_KEY[ty])}
+              <select
+                value={storageChoice(s)}
+                onChange={(e) => {
+                  const c = STORAGE_CHOICES.find((x) => x.value === e.target.value)!;
+                  // the extent alone keeps the tape's operations: only a new type resets them
+                  setStorage(i, c.type === s.type ? { infinite: c.infinite } : { type: c.type, infinite: c.infinite });
+                }}
+              >
+                {STORAGE_CHOICES.map((c) => (
+                  <option key={c.value} value={c.value}>
+                    {t(c.key)}
                   </option>
                 ))}
               </select>

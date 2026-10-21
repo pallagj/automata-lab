@@ -1763,6 +1763,19 @@ details.card[open] > summary .chev {
   border-style: dashed;
 }
 
+/* a one-way tape's first cell: the tape ends on its left */
+.tape-cell.first {
+  border-left: 3px solid var(--text);
+}
+
+/* the head that stepped left off a one-way tape */
+.tape-cell.fell {
+  border-color: var(--danger);
+  background: transparent;
+  color: var(--danger);
+  border-style: dashed;
+}
+
 /* ====== Directly editable tape ====== */
 
 .tape-input {
