@@ -8,7 +8,7 @@ Built as a study companion for the
 [*Languages and Automata* (Nyelvek és automaták, VISZMA12)](https://cs.bme.hu/nyau/) course at the
 Budapest University of Technology and Economics (BME).
 
-**Try it:** https://automata.78-46-230-35.sslip.io/ — works in the browser and can be installed as
+**Try it:** https://automatalab.app/ — works in the browser and can be installed as
 an app; everything runs locally, no account needed.
 
 ## Features
