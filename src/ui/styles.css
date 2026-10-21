@@ -34,6 +34,7 @@
   --node-stroke: #4a5468;
   --edge: #566077;
   --shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.3);
   color-scheme: dark;
 }
 
@@ -64,6 +65,7 @@
   --node-stroke: #97a0b5;
   --edge: #8a93a8;
   --shadow: 0 10px 30px rgba(30, 40, 70, 0.12);
+  --shadow-sm: 0 1px 3px rgba(30, 40, 70, 0.08);
   color-scheme: light;
 }
 
@@ -215,7 +217,8 @@ button {
   backdrop-filter: blur(10px);
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
-  box-shadow: var(--shadow);
+  /* a tight shadow: a wide one piles up in the gaps and is cut off at the scrolling column's edges */
+  box-shadow: var(--shadow-sm);
   flex-shrink: 0;
 }
 
