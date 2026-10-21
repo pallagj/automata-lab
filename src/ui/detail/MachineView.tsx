@@ -421,7 +421,7 @@ export const MachineView: React.FC<{ machine: Machine; stepGroups?: StepGroup[];
           >
             <span>
               <span className="cfg-label">{t("detail.fsm.state")} </span>
-              <span className="cfg-state">{c.state}</span>
+              <span className="cfg-state">{rich(c.state)}</span>
             </span>
             {c.fellOff !== undefined && (
               <span style={{ color: "var(--danger)" }}>{t("detail.machine.fellOffShort", { id: c.fellOff })}</span>
