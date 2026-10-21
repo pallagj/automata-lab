@@ -9,44 +9,44 @@ const edges = (f: FSM) => f.transitions.map((t) => `${t.from} ${t.symbol} ${t.to
 describe("regular expression → automaton (lecture notes 3.20)", () => {
   it("a letter: one transition (3.3)", () => {
     const f = regexToNFA("a").value!;
-    expect(f.states).toEqual(["q0", "q1"]);
-    expect(edges(f)).toEqual(["q0 a q1"]);
-    expect(f.accept).toEqual(["q1"]);
+    expect(f.states).toEqual(["q_0", "q_1"]);
+    expect(edges(f)).toEqual(["q_0 a q_1"]);
+    expect(f.accept).toEqual(["q_1"]);
   });
 
   it("ε is one accepting state, ∅ one state that never accepts (3.3)", () => {
     const e = regexToNFA("ε").value!;
-    expect([e.states, e.accept, e.transitions]).toEqual([["q0"], ["q0"], []]);
+    expect([e.states, e.accept, e.transitions]).toEqual([["q_0"], ["q_0"], []]);
     const empty = regexToNFA("∅").value!;
-    expect([empty.states, empty.accept, empty.transitions]).toEqual([["q0"], [], []]);
+    expect([empty.states, empty.accept, empty.transitions]).toEqual([["q_0"], [], []]);
   });
 
   it("a + b: a new start state with ε into both, accepting where either does (3.4)", () => {
     const r = regexToNFA("a+b");
     const f = r.value!;
-    expect(f.start).toBe("q0");
-    expect(edges(f)).toEqual(["q1 a q2", "q3 b q4", `q0 ${EPS} q1`, `q0 ${EPS} q3`]);
-    expect(f.accept).toEqual(["q2", "q4"]);
+    expect(f.start).toBe("q_0");
+    expect(edges(f)).toEqual(["q_1 a q_2", "q_3 b q_4", `q_0 ${EPS} q_1`, `q_0 ${EPS} q_3`]);
+    expect(f.accept).toEqual(["q_2", "q_4"]);
     // one row per subexpression, inside out
     expect(r.steps[0].table!.rows).toEqual([
-      ["a", "3.3", "q1 →a q2", "q1", "q2"],
-      ["b", "3.3", "q3 →b q4", "q3", "q4"],
-      ["a+b", "3.4", "q0 →ε q1, q0 →ε q3", "q0", "q2, q4"]
+      ["a", "3.3", "q_1 →a q_2", "q_1", "q_2"],
+      ["b", "3.3", "q_3 →b q_4", "q_3", "q_4"],
+      ["a+b", "3.4", "q_0 →ε q_1, q_0 →ε q_3", "q_0", "q_2, q_4"]
     ]);
   });
 
   it("ab: ε from the first one's accepting states into the second's start (3.9)", () => {
     const f = regexToNFA("ab").value!;
-    expect(edges(f)).toEqual(["q0 a q1", "q2 b q3", `q1 ${EPS} q2`]);
-    expect(f.accept).toEqual(["q3"]);
+    expect(edges(f)).toEqual(["q_0 a q_1", "q_2 b q_3", `q_1 ${EPS} q_2`]);
+    expect(f.accept).toEqual(["q_3"]);
   });
 
   it("(a+b)*: a new accepting start state, ε in and ε back from the accepting states (3.10)", () => {
     const r = regexToNFA("(a+b)*");
     const f = r.value!;
-    expect(f.start).toBe("q0");
-    expect(f.accept).toEqual(["q0"]);
-    expect(r.steps[0].table!.rows.at(-1)).toEqual(["(a+b)*", "3.10", "q0 →ε q1, q3 →ε q0, q5 →ε q0", "q0", "q0"]);
+    expect(f.start).toBe("q_0");
+    expect(f.accept).toEqual(["q_0"]);
+    expect(r.steps[0].table!.rows.at(-1)).toEqual(["(a+b)*", "3.10", "q_0 →ε q_1, q_3 →ε q_0, q_5 →ε q_0", "q_0", "q_0"]);
     for (const w of allWords(["a", "b"], 5)) expect(acceptsFSM(f, w)).toBe(true);
   });
 

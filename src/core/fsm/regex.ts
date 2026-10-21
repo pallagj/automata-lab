@@ -1,6 +1,7 @@
 import { EPS, err, failResult, I18nText, okResult, OpResult, tx } from "../types";
 import { FSM, makeFSM } from "./fsm";
 import { epsilonWords } from "../epsilon";
+import { formatIdent } from "../symbols";
 
 class RegexSyntaxError extends Error {
   constructor(public i18n: I18nText) {
@@ -149,7 +150,8 @@ class Builder {
   rows: string[][] = [];
 
   newState(): string {
-    const s = `q${this.counter++}`;
+    // q_0, q_1, …, q_{10}: names, written canonically
+    const s = formatIdent({ base: "q", primes: 0, sub: String(this.counter++) });
     this.states.push(s);
     return s;
   }

@@ -34,7 +34,7 @@ function normEps(s: string): string {
 }
 
 /** comma split that does not split inside {A,B} set names */
-function splitTopLevel(s: string): string[] {
+export function splitTopLevel(s: string): string[] {
   const out: string[] = [];
   let depth = 0;
   let cur = "";
@@ -327,9 +327,9 @@ function parseStorageOp(
  *   Machine:
  *     name: AnBnCn
  *     charset: a, b, c
- *     states: q0, q1, q2
- *     init: q0
- *     accept: q2
+ *     states: q_0, q_1, q_2
+ *     init: q_0
+ *     accept: q_2
  *     input: head            # default; or the id of a storage
  *     storages:
  *       v1: stack            # short form (a stack starts with Z by default)
@@ -338,7 +338,7 @@ function parseStorageOp(
  *         charset: $, B      # its alphabet Γ (by default the symbols it uses)
  *         init: $
  *     transitions:
- *       - (q0, a, Z, $) -> (q0, AZ, B$)   # δ's arguments -> its value, see parse/delta.ts
+ *       - (q_0, a, Z, $) -> (q_0, AZ, B$)   # δ's arguments -> its value, see parse/delta.ts
  *
  * The kind of machine (automaton / pushdown automaton / Turing machine / general
  * machine) is decided by its configuration — there is no separate type key.

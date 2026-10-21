@@ -93,7 +93,7 @@ describe("a k-tape machine's input tape in the form (lecture notes 9.9)", () => 
     const d = parseEntityDraft(T2)!;
     expect(d.storages.map((s) => s.readOnly)).toEqual([true, false]);
     // from, t1 read, t1 move, t2 read, t2 write, t2 move, to
-    expect(d.rows[1]).toEqual(["q0", "a", "R", "_", "Y", "R", "q1"]);
+    expect(d.rows[1]).toEqual(["q_0", "a", "R", "_", "Y", "R", "q_1"]);
     expect(serializeEntityDraft(d)).toBe(T2);
   });
 
@@ -154,10 +154,10 @@ describe("a k-tape machine's input tape in the form (lecture notes 9.9)", () => 
   it("made writable by choice: each row writes back what it reads, the language stays", () => {
     const prev = parseEntityDraft(T2)!;
     const next = reshapeDraft(prev, withStorages(prev, [{ ...prev.storages[0], readOnly: false }, prev.storages[1]]));
-    expect(next.rows[1]).toEqual(["q0", "a", "a", "R", "_", "Y", "R", "q1"]);
+    expect(next.rows[1]).toEqual(["q_0", "a", "a", "R", "_", "Y", "R", "q_1"]);
     const yaml = serializeEntityDraft(next);
     expect(yaml).toContain("      writable: true");
-    expect(yaml).toContain("- (q0, a, _) -> (q1, a, Y, R, R)");
+    expect(yaml).toContain("- (q_0, a, _) -> (q_1, a, Y, R, R)");
     sameLanguage(machine(T2), machine(yaml), 8);
     // and read-only again: the notes' machine as it was
     const again = reshapeDraft(next, withStorages(next, [{ ...next.storages[0], readOnly: true }, next.storages[1]]));
@@ -186,5 +186,39 @@ describe("a k-tape machine's input tape in the form (lecture notes 9.9)", () => 
     expect(yaml).toContain("    t2:\n      type: tape\n      writable: true");
     // t1 writes back what it reads, t2 what it wrote
     expect(yaml).toContain("- (s, a, _) -> (ok, a, a, R, R)");
+  });
+});
+
+describe("a machine's state names in the form", () => {
+  const src = [
+    "Machine:",
+    "  charset: a, b",
+    '  states: "q0, q_{1}, q10, {A,B}, 00"',
+    "  init: q0",
+    '  accept: "q_{1}, q10"',
+    "  transitions:",
+    "    - (q0, a) -> q_{1}",
+    "    - (q_{1}, b) -> q10",
+    "    - (q10, a) -> {A,B}",
+    "    - ({A,B}, b) -> 00"
+  ].join("\n");
+
+  it("are written canonically, as the graph shows them: q0 is q_0 (q₀), q10 is q_{10}", () => {
+    const d = parseEntityDraft(src)!;
+    expect(d.states).toBe("q_0, q_1, q_{10}, {A,B}, 00");
+    expect(d.init).toBe("q_0");
+    expect(d.accept).toBe("q_1, q_{10}");
+    expect(d.rows.map((r) => [r[0], r[r.length - 1]])).toEqual([
+      ["q_0", "q_1"],
+      ["q_1", "q_{10}"],
+      ["q_{10}", "{A,B}"],
+      ["{A,B}", "00"]
+    ]);
+  });
+
+  it("the form's YAML is the same machine", () => {
+    const yaml = serializeEntityDraft(parseEntityDraft(src)!);
+    expect(yaml).toContain('  states: "q_0, q_1, q_{10}, {A,B}, 00"\n');
+    expect(parseMachine(yaml).value).toEqual(parseMachine(src).value);
   });
 });

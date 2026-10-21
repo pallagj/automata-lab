@@ -13,12 +13,12 @@ import {
   TapeExtent
 } from "../../core/machine/machine";
 import { deltaToRow, fieldCount, readDelta, rowToDelta, transitionScalar, writeDelta } from "../../core/parse/delta";
-import { symbolsText } from "../../core/symbols";
+import { canonicalLabel, symbolsText } from "../../core/symbols";
 import { SymbolField } from "./SymbolField";
 import { arrowKeysAcrossFields } from "./formNav";
 import { emptyFields, TransitionHead, TransitionRow, transitionFields } from "./TransitionRow";
 import { RuleHead, RuleRow } from "./RuleRow";
-import { parseMachine, parseStorageEntry } from "../../core/parse/definitionParser";
+import { parseMachine, parseStorageEntry, splitTopLevel } from "../../core/parse/definitionParser";
 import { useAppStore } from "../../state/store";
 import { machineKindLabel } from "../machineLabels";
 import { EPS } from "../../core/types";
@@ -94,6 +94,18 @@ function fieldText(v: unknown): string {
 
 const list = (s: string) => s.split(",").map((x) => x.trim()).filter(Boolean);
 
+/**
+ * A machine's state labels written canonically, as the graph shows them — q0 and q_{0} are
+ * q_0, shown q₀ (see canonicalLabel); set names ({A,B}) keep their commas.
+ */
+const canonicalLabels = (text: string) =>
+  splitTopLevel(text)
+    .map((x) => x.trim())
+    .filter((x) => x !== "")
+    .map(canonicalLabel)
+    .join(", ");
+const canonicalState = (text: string) => (text.trim() === "" ? text : canonicalLabel(text));
+
 /** A rule: its left-hand side, then the alternatives of its right-hand side. */
 function splitRule(raw: string): string[] {
   const i = raw.indexOf("->");
@@ -149,9 +161,10 @@ export function parseEntityDraft(source: string): EntityDraft | null {
     kind,
     name: fieldText(b["name"]),
     charset: fieldText(b["charset"]),
-    states: fieldText(kind === "grammar" ? b["variables"] : b["states"]),
-    init: fieldText(b["init"]),
-    accept: fieldText(b["accept"]),
+    // a machine's states as the graph names them; a grammar's variables as written
+    states: kind === "grammar" ? fieldText(b["variables"]) : canonicalLabels(fieldText(b["states"])),
+    init: kind === "grammar" ? fieldText(b["init"]) : canonicalState(fieldText(b["init"])),
+    accept: kind === "grammar" ? fieldText(b["accept"]) : canonicalLabels(fieldText(b["accept"])),
     acceptMode: fieldText(b["acceptMode"]) === "emptyStorages" ? "emptyStorages" : "finalState",
     input,
     storages,
@@ -160,7 +173,9 @@ export function parseEntityDraft(source: string): EntityDraft | null {
   const rowsRaw = b[kind === "grammar" ? "rules" : "transitions"];
   draft.rows = (Array.isArray(rowsRaw) ? rowsRaw : []).map((r) => {
     const raw = r === null ? "" : String(r);
-    return kind === "grammar" ? splitRule(raw) : deltaToRow(readDelta(raw), draft.input === "head", storages);
+    if (kind === "grammar") return splitRule(raw);
+    const row = deltaToRow(readDelta(raw), draft.input === "head", storages);
+    return [canonicalState(row[0]), ...row.slice(1, -1), canonicalState(row[row.length - 1])];
   });
   return draft;
 }

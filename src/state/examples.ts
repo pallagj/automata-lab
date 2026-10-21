@@ -124,18 +124,18 @@ export const EXAMPLE_WORKSHEETS: ExampleWorksheet[] = [
       `Machine:
   name: P
   charset: a, b
-  states: q0, q1, q2
-  init: q0
-  accept: q2
+  states: q_0, q_1, q_2
+  init: q_0
+  accept: q_2
   storages:
     stack: stack
   transitions:
-    - (q0, a, Z) -> (q0, AZ)
-    - (q0, a, A) -> (q0, AA)
-    - (q0, b, A) -> (q1, ε)
-    - (q1, b, A) -> (q1, ε)
-    - (q1, ε, Z) -> (q2, Z)
-    - (q0, ε, Z) -> (q2, Z)`,
+    - (q_0, a, Z) -> (q_0, AZ)
+    - (q_0, a, A) -> (q_0, AA)
+    - (q_0, b, A) -> (q_1, ε)
+    - (q_1, b, A) -> (q_1, ε)
+    - (q_1, ε, Z) -> (q_2, Z)
+    - (q_0, ε, Z) -> (q_2, Z)`,
       `Machine:
   name: P_{pal}
   charset: a, b
@@ -206,39 +206,39 @@ export const EXAMPLE_WORKSHEETS: ExampleWorksheet[] = [
       `Machine:
   name: T_{pal}
   charset: a, b
-  states: q0, q1, q2, q3, q4, q5, q6, q7
-  init: q0
-  accept: q6, q7
+  states: q_0, q_1, q_2, q_3, q_4, q_5, q_6, q_7
+  init: q_0
+  accept: q_6, q_7
   input: tape
   storages:
     tape:
       type: tape
       charset: a, b, x, y, _
   transitions:
-    - (q0, a) -> (q1, x, R)
-    - (q0, b) -> (q2, x, R)
-    - (q0, y) -> (q7, y, S)
-    - (q1, a) -> (q1, a, R)
-    - (q1, b) -> (q1, b, R)
-    - (q1, _) -> (q3, _, L)
-    - (q1, y) -> (q3, y, L)
-    - (q2, a) -> (q2, a, R)
-    - (q2, b) -> (q2, b, R)
-    - (q2, _) -> (q4, _, L)
-    - (q2, y) -> (q4, y, L)
-    - (q3, a) -> (q5, y, L)
-    - (q3, x) -> (q6, x, S)
-    - (q4, b) -> (q5, y, L)
-    - (q4, x) -> (q6, x, S)
-    - (q5, a) -> (q5, a, L)
-    - (q5, b) -> (q5, b, L)
-    - (q5, x) -> (q0, x, R)`,
+    - (q_0, a) -> (q_1, x, R)
+    - (q_0, b) -> (q_2, x, R)
+    - (q_0, y) -> (q_7, y, S)
+    - (q_1, a) -> (q_1, a, R)
+    - (q_1, b) -> (q_1, b, R)
+    - (q_1, _) -> (q_3, _, L)
+    - (q_1, y) -> (q_3, y, L)
+    - (q_2, a) -> (q_2, a, R)
+    - (q_2, b) -> (q_2, b, R)
+    - (q_2, _) -> (q_4, _, L)
+    - (q_2, y) -> (q_4, y, L)
+    - (q_3, a) -> (q_5, y, L)
+    - (q_3, x) -> (q_6, x, S)
+    - (q_4, b) -> (q_5, y, L)
+    - (q_4, x) -> (q_6, x, S)
+    - (q_5, a) -> (q_5, a, L)
+    - (q_5, b) -> (q_5, b, L)
+    - (q_5, x) -> (q_0, x, R)`,
       "# A 2-tape Turing machine (lecture notes 9.9) for aⁿbⁿ: the input tape t1 is only read, so δ writes on t2 alone — δ(q, a₁a₂) = (q′, b₂, d₁d₂). The second tape counts the a's, then every b takes one back. Its tapes have a first cell too, so the first a is marked Y — that is where the head of tape 2 must stop.",
       `Machine:
   name: T_2
   charset: a, b
-  states: q0, q1, q2, q3, ok
-  init: q0
+  states: q_0, q_1, q_2, q_3, ok
+  init: q_0
   accept: ok
   input: t1
   storages:
@@ -247,13 +247,13 @@ export const EXAMPLE_WORKSHEETS: ExampleWorksheet[] = [
       type: tape
       charset: X, Y, _
   transitions:
-    - (q0, _, _) -> (ok, _, S, S)
-    - (q0, a, _) -> (q1, Y, R, R)
-    - (q1, a, _) -> (q1, X, R, R)
-    - (q1, b, _) -> (q2, _, S, L)
-    - (q2, b, X) -> (q2, X, R, L)
-    - (q2, b, Y) -> (q3, Y, R, S)
-    - (q3, _, Y) -> (ok, Y, S, S)`
+    - (q_0, _, _) -> (ok, _, S, S)
+    - (q_0, a, _) -> (q_1, Y, R, R)
+    - (q_1, a, _) -> (q_1, X, R, R)
+    - (q_1, b, _) -> (q_2, _, S, L)
+    - (q_2, b, X) -> (q_2, X, R, L)
+    - (q_2, b, Y) -> (q_3, Y, R, S)
+    - (q_3, _, Y) -> (ok, Y, S, S)`
     ]
   },
   {
@@ -391,14 +391,14 @@ export const CELL_TEMPLATES: Record<string, string> = {
   pda: `Machine:
   name: P
   charset: a, b
-  states: q0, q1
-  init: q0
-  accept: q1
+  states: q_0, q_1
+  init: q_0
+  accept: q_1
   storages:
     stack: stack
   transitions:
-    - (q0, a, Z) -> (q0, AZ)
-    - (q0, ε, Z) -> (q1, Z)`,
+    - (q_0, a, Z) -> (q_0, AZ)
+    - (q_0, ε, Z) -> (q_1, Z)`,
   tm: `Machine:
   name: T
   charset: a, b
@@ -421,15 +421,15 @@ export const CELL_TEMPLATES: Record<string, string> = {
   machine: `Machine:
   name: C
   charset: a, b
-  states: q0, q1
-  init: q0
-  accept: q1
+  states: q_0, q_1
+  init: q_0
+  accept: q_1
   storages:
     v1: stack
     v2: stack
   transitions:
-    - (q0, a, Z, ε) -> (q0, AZ, ε)
-    - (q0, ε, Z, ε) -> (q1, Z, ε)`
+    - (q_0, a, Z, ε) -> (q_0, AZ, ε)
+    - (q_0, ε, Z, ε) -> (q_1, Z, ε)`
 };
 
 export const STARTER_CELLS: string[] = EXAMPLE_WORKSHEETS[0].cells;
