@@ -170,7 +170,8 @@
         "langOps": "nyelvműveletek",
         "regex": "reguláris kifejezés mint érték — automatává a toFsm() alakítja",
         "equal": "ekvivalencia-vizsgálat, ellenpéldával",
-        "conversions": "konverziók automata ↔ nyelvtan, automata → reguláris kifejezés, nyelvtan → veremautomata",
+        "conversions": "konverziók automata ↔ nyelvtan, automata → reguláris kifejezés, nyelvtan ↔ veremautomata",
+        "pdaAcceptance": "ugyanazt a nyelvet üres veremmel / állapottal elfogadó veremautomata (jegyzet 7.9)",
         "namedOps": "műveletek nevesített automaták között: összefűzés, unió, lezárás — betű-literálok csak a regex(…) belsejében"
       },
       "optionalName": "A név elhagyható: nélküle is megjelenik az eredmény, csak más cellából nem lehet rá hivatkozni."
@@ -382,6 +383,7 @@
       "tapeStartPlaceholder": "a szalag kezdete — kattints és gépelj",
       "oneStepAllBranches": "Egy lépés (minden ág)",
       "hitLimit": "korlátba ütközött",
+      "decidedByGrammar": "Pontos döntés: CYK (jegyzet 8.1) a veremautomata nyelvtanán (7.16)",
       "step": "Lépés: {{n}}",
       "nondeterministicStepInfo": "A gép nemdeterminisztikus: egyszerre minden lehetséges ágat követünk. Lépés: {{n}} · aktív konfigurációk: {{count}}",
       "noMoreBranches": "Nincs több folytatható ág — a szó elutasítva.",
@@ -427,9 +429,11 @@
       "concat": "összefűzés (két automata)",
       "star": "tranzitív lezárt (csillag)",
       "reverse": "megfordítás",
-      "toGrammar": "automata → reguláris nyelvtan",
+      "toGrammar": "automata → reguláris nyelvtan, veremautomata → környezetfüggetlen nyelvtan",
       "toFsm": "nyelvtan / regex → véges automata",
       "toPda": "nyelvtan → veremautomata",
+      "toEmptyStack": "veremautomata → üres veremmel elfogadó",
+      "toFinalState": "veremautomata → állapottal elfogadó",
       "toRegex": "automata → reguláris kifejezés (r(p, q, t) módszer)",
       "equal": "ekvivalencia-vizsgálat ellenpéldával",
       "kind": {
@@ -450,6 +454,7 @@
         "expectsFsmNotRightLinear": "véges automatát vár — ez a nyelvtan nem jobb-lineáris",
         "hasStorage": "a gépnek tárolója van ({{types}}) — az általa felismert nyelv általában nem reguláris, ezért automata-művelet nem alkalmazható rá",
         "expectsFsm": "véges automatát vár — ez a cella: {{kind}}",
+        "expectsPda": "veremautomatát vár — ez a cella: {{kind}}",
         "unknown": "a művelet előfeltétele nem teljesül"
       }
     },

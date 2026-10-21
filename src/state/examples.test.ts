@@ -3,6 +3,7 @@ import { CELL_TEMPLATES, EXAMPLE_WORKSHEETS } from "./examples";
 import { parseDefinition, parseMachine, splitTopLevel } from "../core/parse/definitionParser";
 import { readDelta } from "../core/parse/delta";
 import { canonicalLabel } from "../core/symbols";
+import { evaluateCells } from "../core/workspace";
 import enUi from "../i18n/locales/en/ui.json";
 import deUi from "../i18n/locales/de/ui.json";
 import huUi from "../i18n/locales/hu/ui.json";
@@ -37,6 +38,16 @@ describe("example worksheets and templates", () => {
   const definitions = [...EXAMPLE_WORKSHEETS.flatMap((w) => w.cells), ...Object.values(CELL_TEMPLATES)].filter(
     (c) => parseDefinition(c) !== null
   );
+
+  it("every cell of a worksheet evaluates without an error", () => {
+    for (const w of EXAMPLE_WORKSHEETS) {
+      const results = evaluateCells(w.cells);
+      results.forEach((r, i) => {
+        expect(r.diagnostics.filter((d) => d.level === "error"), `${w.key}: ${w.cells[i]}`).toEqual([]);
+        if (!r.empty && !r.comment) expect(r.value, `${w.key}: ${w.cells[i]}`).not.toBeNull();
+      });
+    }
+  });
 
   it("every definition in them parses without an error", () => {
     expect(definitions.length).toBeGreaterThan(10);

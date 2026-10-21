@@ -170,7 +170,8 @@
         "langOps": "Sprachoperationen",
         "regex": "ein regulärer Ausdruck als Wert — toFsm() wandelt ihn in einen Automaten um",
         "equal": "Äquivalenzprüfung mit Gegenbeispiel",
-        "conversions": "Umwandlungen Automat ↔ Grammatik, Automat → regulärer Ausdruck, Grammatik → Kellerautomat",
+        "conversions": "Umwandlungen Automat ↔ Grammatik, Automat → regulärer Ausdruck, Grammatik ↔ Kellerautomat",
+        "pdaAcceptance": "ein Kellerautomat, der dieselbe Sprache durch leeren Keller / durch Endzustand akzeptiert (Skript 7.9)",
         "namedOps": "Operationen zwischen benannten Automaten: Verkettung, Vereinigung, Abschluss — Buchstaben-Literale nur innerhalb von regex(…)"
       },
       "optionalName": "Der Name ist optional: Ohne ihn wird das Ergebnis trotzdem angezeigt, es kann nur nicht aus anderen Zellen referenziert werden."
@@ -382,6 +383,7 @@
       "tapeStartPlaceholder": "Anfang des Bandes — klicken und tippen",
       "oneStepAllBranches": "Ein Schritt (alle Zweige)",
       "hitLimit": "Grenze erreicht",
+      "decidedByGrammar": "Exakt entschieden: CYK (Skript 8.1) auf der Grammatik des Kellerautomaten (7.16)",
       "step": "Schritt: {{n}}",
       "nondeterministicStepInfo": "Die Maschine ist nichtdeterministisch: alle möglichen Zweige werden gleichzeitig verfolgt. Schritt: {{n}} · aktive Konfigurationen: {{count}}",
       "noMoreBranches": "Kein fortsetzbarer Zweig mehr — das Wort wird abgelehnt.",
@@ -427,9 +429,11 @@
       "concat": "Verkettung (zwei Automaten)",
       "star": "Abschluss (Kleene-Stern)",
       "reverse": "Umkehrung",
-      "toGrammar": "Automat → reguläre Grammatik",
+      "toGrammar": "Automat → reguläre Grammatik, Kellerautomat → kontextfreie Grammatik",
       "toFsm": "Grammatik / Regex → endlicher Automat",
       "toPda": "Grammatik → Kellerautomat",
+      "toEmptyStack": "Kellerautomat → Akzeptanz durch leeren Keller",
+      "toFinalState": "Kellerautomat → Akzeptanz durch Endzustand",
       "toRegex": "Automat → regulärer Ausdruck (r(p, q, t)-Verfahren)",
       "equal": "Äquivalenzprüfung mit Gegenbeispiel",
       "kind": {
@@ -450,6 +454,7 @@
         "expectsFsmNotRightLinear": "erwartet einen endlichen Automaten — diese Grammatik ist nicht rechtslinear",
         "hasStorage": "diese Maschine hat Speicher ({{types}}) — die erkannte Sprache ist meist nicht regulär, daher gelten Automaten-Operationen nicht",
         "expectsFsm": "erwartet einen endlichen Automaten — diese Zelle ist: {{kind}}",
+        "expectsPda": "erwartet einen Kellerautomaten — diese Zelle ist: {{kind}}",
         "unknown": "die Voraussetzung der Operation ist nicht erfüllt"
       }
     },

@@ -23,6 +23,7 @@ import {
   TapeState,
   tapeWindow
 } from "../../core/machine/machine";
+import { pdaDecider } from "../../core/machine/pda";
 import { GraphEdge, GraphSpec, GraphView } from "../graph/GraphView";
 import { useGraphEditing } from "../graph/editing";
 import { Stage, StagePanel } from "./Stage";
@@ -127,7 +128,12 @@ export const MachineView: React.FC<{ machine: Machine; stepGroups?: StepGroup[];
   );
   const anyMove = movesPerConfig.some((ms) => ms.length > 0);
   const anyAccepting = configs.some((c) => isAcceptingMachineConfig(m, c, input));
-  const overall = useMemo(() => runMachine(m, input), [m, input]);
+  // a pushdown automaton is decided exactly, by CYK on its grammar (7.16); other machines by a bounded search
+  const decide = useMemo(() => (caps.isPDALike ? pdaDecider(m) : null), [m, caps]);
+  const overall = useMemo(
+    () => (decide ? { verdict: decide(input) ? ("accepted" as const) : ("rejected" as const) } : runMachine(m, input)),
+    [m, input, decide]
+  );
 
   const status: "accepted" | "rejected" | "working" = anyAccepting
     ? "accepted"
@@ -361,6 +367,7 @@ export const MachineView: React.FC<{ machine: Machine; stepGroups?: StepGroup[];
         </button>
         <span
           className={`verdict-pill ${overall.verdict === "accepted" ? "accepted" : overall.verdict === "rejected" ? "rejected" : "limit"}`}
+          title={decide ? t("detail.machine.decidedByGrammar") : undefined}
         >
           {overall.verdict === "accepted" && (
             <>

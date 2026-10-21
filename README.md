@@ -17,7 +17,10 @@ an app; everything runs locally, no account needed.
   clickable edges to explore NFA branches, and enumeration of accepted words.
 - **Smart operations with explanations:** `det`, `min`, `epsfree`, `complete`, `reachable`,
   `complement`, `union`, `intersect`, `difference`, `concat`, `star`, `reverse`, `regex`, `equal`,
-  `toGrammar`, `toRegex`, `toFsm`, `toPda`, and for grammars `epsfree`, `unitfree`, `trim`, `cnf`.
+  `toGrammar`, `toRegex`, `toFsm`, `toPda`, for grammars `epsfree`, `unitfree`, `trim`, `cnf`, and
+  for pushdown automata `toEmptyStack`, `toFinalState` (lecture notes 7.9) and `toGrammar`: the
+  grammar of the [qAp] variables (7.16). A pushdown automaton's word test is exact — CYK on that
+  grammar — where a search over its configurations could only give up.
   When a precondition is missing (e.g. minimisation needs a complete
   deterministic automaton), the app **explains why** and inserts the fix chain with one click
   (e.g. `min(det(M))`). Determinisation follows the lecture notes: the subset construction

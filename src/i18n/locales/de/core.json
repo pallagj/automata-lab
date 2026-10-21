@@ -27,7 +27,9 @@
     "unitfree": "Elimination von Kettenregeln",
     "trim": "Entfernen nutzloser Symbole",
     "cnf": "Umwandlung in Chomsky-Normalform",
-    "cyk": "Wortproblem (CYK)"
+    "cyk": "Wortproblem (CYK)",
+    "toEmptyStack": "Umwandlung in Akzeptanz durch leeren Keller",
+    "toFinalState": "Umwandlung in Akzeptanz durch Endzustand"
   },
   "regex": {
     "error": {
@@ -669,6 +671,76 @@
       }
     }
   },
+  "pda": {
+    "needsPda": {
+      "title": "{{op}} braucht einen Kellerautomaten",
+      "detail": "Die Konstruktionen von Skript 7.9 und 7.16 arbeiten auf einer Maschine mit Lesekopf und einem einzigen Keller. Eine Maschine ohne Speicher ist ein endlicher Automat: toGrammar liefert seine reguläre Grammatik (4.20)."
+    },
+    "toEmptyStack": {
+      "step": {
+        "title": "Akzeptanz durch Endzustand → durch leeren Keller (Skript 7.9)",
+        "detail": "Ein neuer Startzustand {{start}} legt ein neues Symbol {{z}} unten in den Keller, unter seinen Anfangsinhalt: {{first}}. M nimmt {{z}} nie heraus, also kann sich der Keller nicht leeren, solange M läuft — auch dort nicht, wo sich Ms eigener Keller leeren würde. Aus jedem akzeptierenden Zustand ({{accept}}) kann die Maschine mit einem beliebigen Symbol nach {{qe}} gehen, und {{qe}} leert den Keller: Ein Wort wird genau dann mit leerem Keller akzeptiert, wenn M mit dem gelesenen Wort einen akzeptierenden Zustand erreicht."
+      },
+      "already": {
+        "title": "Der Kellerautomat akzeptiert bereits durch leeren Keller",
+        "detail": "Nichts umzuwandeln: Das Ergebnis ist die Maschine selbst."
+      }
+    },
+    "toFinalState": {
+      "step": {
+        "title": "Akzeptanz durch leeren Keller → durch Endzustand (Skript 7.9)",
+        "detail": "Ein neuer Startzustand {{start}} legt ein neues Symbol {{z}} unten in den Keller, unter seinen Anfangsinhalt: {{first}}. M′ nimmt {{z}} nie heraus; ist nur noch {{z}} übrig, hat M′ seinen Keller geleert — dann geht die Maschine aus jedem seiner Zustände nach {{qf}}, dem einzigen akzeptierenden Zustand, und hält dort: (q, ε, {{z}}) → ({{qf}}, {{z}})."
+      },
+      "already": {
+        "title": "Der Kellerautomat akzeptiert bereits durch Endzustand",
+        "detail": "Nichts umzuwandeln: Das Ergebnis ist die Maschine selbst."
+      }
+    },
+    "toGrammar": {
+      "bottom": {
+        "title": "Zuerst ein Bodensymbol für den Keller",
+        "detailInit": "Der Keller beginnt mit {{init}}, nicht mit einem einzigen Symbol Z₀, wie 7.16 es braucht. Ein neuer Startzustand {{start}} schreibt ihn über ein neues Bodensymbol {{z}}: {{first}}. Nur (q, ε, {{z}}) → ({{qe}}, ε) nimmt {{z}} heraus, nach {{qe}}, wo sich nichts mehr bewegt — der Keller ist also erst am Ende leer, und die Maschine akzeptiert mit leerem Keller dieselben Wörter.",
+        "detailEmptied": "Der erste Schritt von 7.16 lässt einen Übergang, der nichts vom Keller nimmt, jedes Symbol nehmen und zurücklegen. Das erhält die Sprache nur, wenn die Maschine mit leerem Keller nicht mehr ziehen kann — hier aber kann sich der Keller in {{state}} leeren, und {{transition}} zieht von dort noch weiter. Deshalb kommt zuerst ein neues Bodensymbol {{z}} unter den Kellerinhalt: {{first}}. Nur (q, ε, {{z}}) → ({{qe}}, ε) nimmt {{z}} heraus, nach {{qe}}, wo sich nichts mehr bewegt — der Keller ist also erst am Ende leer, und die Maschine akzeptiert mit leerem Keller dieselben Wörter."
+      },
+      "replace": {
+        "title": "1. Jeder Schritt nimmt ein Symbol vom Keller (Skript 7.16)",
+        "detail": "(q′, α) ∈ δ(q, a, ε) wird durch (q′, αA) ∈ δ(q, a, A) für jedes A ∈ Γ ersetzt: Das oberste Symbol wird genommen und zurückgelegt. Die Variablen [qAp] brauchen das — jeder Schritt nimmt genau ein Symbol vom Keller.",
+        "detailNone": "Jeder Übergang nimmt bereits ein Symbol vom Keller: nichts zu ersetzen."
+      },
+      "variables": {
+        "title": "2. Die Variablen [qAp] (Skript 7.16)",
+        "detail": "V = {[qAp] : q, p ∈ Q, A ∈ Γ} ∪ {S}: {{states}}² · {{symbols}} + 1 = {{count}} Variablen. [qAp] steht dafür, dass A im Zustand q in den Keller kommt und — mit allem, was an seine Stelle trat — im Zustand p herauskommt: Sie leitet genau die Wörter x ab, für die (q, x, A) ⇒* (p, ε, ε) gilt (7.5); zum Beispiel {{example}}. S ist die Startvariable: {{startRules}}, denn ein Wort wird akzeptiert, wenn die Maschine, in {{q0}} mit {{z0}} gestartet, ihren Keller in irgendeinem Zustand leert."
+      },
+      "rules": {
+        "title": "3. Regeln aus den Übergängen (Skript 7.16)",
+        "detail": "(q′, ε) ∈ δ(q, a, A) ergibt [qAq′] → a; (q′, B₁…B_k) ∈ δ(q, a, A) ergibt [qAq″] → a[q′B₁q₂][q₂B₂q₃]…[q_kB_kq″] für jede Wahl der Zustände q₂, …, q_k, q″ — |Q|^k Regeln. Mit a = ε kann eine Regel [qAq′] → ε sein: Jede Regel ist A → α, und nach der ε-Elimination ist die Grammatik der Klasse 2 (6.14). Insgesamt {{count}} Regeln."
+      },
+      "tooLarge": {
+        "title": "Die Grammatik hätte {{count}} Regeln",
+        "detail": "Ein Übergang, der k Symbole schreibt, ergibt |Q|^k Regeln. Über {{max}} Regeln wird die Grammatik nicht gebaut — eine Maschine mit weniger Zuständen oder kürzeren in den Keller geschriebenen Wörtern ergibt eine kleinere."
+      },
+      "badLabel": {
+        "title": "Manche Namen können nicht in einer Variablen [qAp] stehen",
+        "detail": "{{labels}}: Die Zustände und Kellersymbole stehen innerhalb der Variablen, sie dürfen also kein Leerzeichen, keine Klammer, kein Komma, keinen Backslash und kein | enthalten. Benenne sie um."
+      },
+      "ambiguousNames": {
+        "title": "Zwei Variablen hießen beide {{name}}",
+        "detail": "Die Tripel aus Zustand, Symbol und Zustand {{a}} und {{b}} ergeben nebeneinander geschrieben denselben Text. Benenne einen Zustand um, damit jede [qAp] verschieden ist."
+      },
+      "useless": {
+        "title": "{{useless}} der {{count}} Variablen sind nutzlos",
+        "detail": "Die Konstruktion bildet [qAp] für je zwei Zustände und jedes Symbol, auch dort, wo die Maschine A nach dem Ablegen in q nie in p herausnehmen kann. Die Grammatik ist richtig, so wie das Skript sie baut; das Entfernen der nutzlosen Symbole (6.3.3) lässt dieselbe Sprache mit viel weniger Regeln übrig.",
+        "fix": "nutzlose Symbole entfernen"
+      }
+    },
+    "table": {
+      "newTransition": "neuer Übergang",
+      "transition": "Übergang",
+      "instead": "stattdessen",
+      "rules": "Regeln",
+      "count": "Anzahl"
+    }
+  },
   "expression": {
     "kind": {
       "fsm": "ein endlicher Automat",
@@ -696,6 +768,7 @@
       "toFsmExpects": "toFsm() erwartet eine Grammatik, einen regulären Ausdruck oder eine speicherlose Maschine",
       "toPdaExpects": "toPda() erwartet eine Grammatik",
       "needsGrammar": "{{op}}: erwartet eine Grammatik, aber {{kind}} wurde übergeben",
+      "needsPda": "{{op}}: erwartet einen Kellerautomaten, aber {{kind}} wurde übergeben",
       "invalidExpression": "Ungültiger Ausdruck",
       "parseGeneric": "{{message}}. Beispiele: D = det(M) · U = union(M_1, M_2) · R = regex((ab)*+ba) · E = equal(M_1, M_2)",
       "evaluationError": "Auswertungsfehler",

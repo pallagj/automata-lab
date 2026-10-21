@@ -170,7 +170,8 @@
         "langOps": "language operations",
         "regex": "a regular expression as a value — toFsm() turns it into an automaton",
         "equal": "equivalence check, with a counterexample",
-        "conversions": "conversions between automaton ↔ grammar, automaton → regular expression, grammar → pushdown automaton",
+        "conversions": "conversions between automaton ↔ grammar, automaton → regular expression, grammar ↔ pushdown automaton",
+        "pdaAcceptance": "a pushdown automaton accepting the same language by empty stack / by final state (lecture notes 7.9)",
         "namedOps": "operations between named automata: concatenation, union, closure — letter literals only inside regex(…)"
       },
       "optionalName": "The name is optional: without one the result is still shown, it just can't be referenced from other cells."
@@ -382,6 +383,7 @@
       "tapeStartPlaceholder": "start of the tape — click and type",
       "oneStepAllBranches": "One step (all branches)",
       "hitLimit": "hit the step limit",
+      "decidedByGrammar": "Decided exactly: CYK (lecture notes 8.1) on the grammar of the pushdown automaton (7.16)",
       "step": "Step: {{n}}",
       "nondeterministicStepInfo": "The machine is nondeterministic: every possible branch is followed at once. Step: {{n}} · active configurations: {{count}}",
       "noMoreBranches": "No branch left to continue — the word is rejected.",
@@ -427,9 +429,11 @@
       "concat": "concatenation (two automata)",
       "star": "closure (Kleene star)",
       "reverse": "reversal",
-      "toGrammar": "automaton → regular grammar",
+      "toGrammar": "automaton → regular grammar, pushdown automaton → context-free grammar",
       "toFsm": "grammar / regex → finite automaton",
       "toPda": "grammar → pushdown automaton",
+      "toEmptyStack": "pushdown automaton → accepting by empty stack",
+      "toFinalState": "pushdown automaton → accepting by final state",
       "toRegex": "automaton → regular expression (r(p, q, t) method)",
       "equal": "equivalence check with a counterexample",
       "kind": {
@@ -450,6 +454,7 @@
         "expectsFsmNotRightLinear": "expects a finite automaton — this grammar is not right-linear",
         "hasStorage": "this machine has storage ({{types}}) — the language it recognizes usually isn't regular, so automaton operations don't apply",
         "expectsFsm": "expects a finite automaton — this cell is: {{kind}}",
+        "expectsPda": "expects a pushdown automaton — this cell is: {{kind}}",
         "unknown": "the operation's precondition is not met"
       }
     },

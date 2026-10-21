@@ -136,6 +136,10 @@ export const EXAMPLE_WORKSHEETS: ExampleWorksheet[] = [
     - (q_1, b, A) -> (q_1, ε)
     - (q_1, ε, Z) -> (q_2, Z)
     - (q_0, ε, Z) -> (q_2, Z)`,
+      "# P accepts by final state. The same language by empty stack (lecture notes 7.9), and the context-free grammar of P (7.16): its variable [qAp] derives the words read while A, put on the stack in q, comes off in p. The construction makes every [qAp], useful or not — trim keeps the ones that derive a word.",
+      "E = toEmptyStack(P)",
+      "G = toGrammar(P)",
+      "G_T = trim(G)",
       `Machine:
   name: P_{pal}
   charset: a, b

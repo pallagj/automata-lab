@@ -19,6 +19,7 @@ import { arrowKeysAcrossFields } from "./formNav";
 import { emptyFields, TransitionHead, TransitionRow, transitionFields } from "./TransitionRow";
 import { RuleHead, RuleRow } from "./RuleRow";
 import { parseMachine, parseStorageEntry, splitTopLevel } from "../../core/parse/definitionParser";
+import { yamlItem } from "../../core/parse/serialize";
 import { useAppStore } from "../../state/store";
 import { machineKindLabel } from "../machineLabels";
 import { EPS } from "../../core/types";
@@ -203,7 +204,7 @@ export function serializeEntityDraft(d: EntityDraft): string {
     // an alternative left empty in the form is not written: the empty word is ε
     for (const r of d.rows) {
       const right = r.slice(1).map((alt) => alt.trim()).filter((alt) => alt !== "");
-      lines.push(`    - ${r[0].trim()} -> ${right.join(" | ")}`);
+      lines.push(`    - ${yamlItem(`${r[0].trim()} -> ${right.join(" | ")}`)}`);
     }
     return lines.join("\n");
   }

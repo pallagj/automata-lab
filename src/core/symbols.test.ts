@@ -1,5 +1,18 @@
 import { describe, expect, it } from "vitest";
-import { canonicalName, formatIdent, parseIdent, subscriptText, suggestName, symbolsText, symbolTokens, withSubscript } from "./symbols";
+import {
+  canonicalName,
+  canonicalVariable,
+  formatIdent,
+  isBracketName,
+  parseIdent,
+  subscriptText,
+  suggestName,
+  symbolsText,
+  symbolTokens,
+  withSubscript
+} from "./symbols";
+import { parseGrammar, parseMachine } from "./parse/definitionParser";
+import { serializeDefinition } from "./parse/serialize";
 import { rng } from "./testing";
 
 describe("names: one letter, primes, a subscript", () => {
@@ -102,5 +115,79 @@ describe("symbol strings", () => {
     expect(symbolsText(["e", "p", "s"])).toBe("\\eps");
     expect(symbolsText(["e", "p", "s_1"])).toBe("\\eps_1");
     expect(symbolsText(["e", "p"])).toBe("ep");
+  });
+});
+
+describe("bracketed names: the variables [qAp] of lecture notes 7.16", () => {
+  it("what is one", () => {
+    for (const ok of ["[qAq]", "[q_0Z_0q_1]", "[q′_0Zq_ε]", "[q_{10}Aq_1]", "[x]"]) expect(isBracketName(ok), ok).toBe(true);
+    for (const bad of ["[]", "[q A]", "[q,A]", "[q|A]", "[q[A]q]", "[q→A]", "[q->A]", "[q\\A]", "qAq", "[qAq"])
+      expect(isBracketName(bad), bad).toBe(false);
+    expect(canonicalVariable(" [q_0Zq_1] ")).toBe("[q_0Zq_1]");
+    expect(canonicalVariable("S1")).toBe("S_1");
+    expect(canonicalVariable("[q A]")).toBeNull();
+  });
+
+  it("is one symbol in a rule or a push", () => {
+    expect(symbolTokens("a[q_0Zq_1][q_1Aq_0]")).toEqual(["a", "[q_0Zq_1]", "[q_1Aq_0]"]);
+    expect(symbolTokens("[q_0Zq_1] b")).toEqual(["[q_0Zq_1]", "b"]);
+    // nothing inside, or a space: the brackets are symbols of their own
+    expect(symbolTokens("[]")).toEqual(["[", "]"]);
+    expect(symbolTokens("[ S ]")).toEqual(["[", "S", "]"]);
+    expect(symbolTokens("\\[S]")).toEqual(["[", "S", "]"]);
+  });
+
+  it("a [ that would take the symbols after it is written escaped", () => {
+    for (const tokens of [["[", "S", "]"], ["a", "[", "b", "]", "[q_0Zq_0]"], ["[", "]"], ["[q_0Zq_1]"], ["["]]) {
+      expect(symbolTokens(symbolsText(tokens)), tokens.join(" ")).toEqual(tokens);
+    }
+    expect(symbolsText(["[", "S", "]"])).toBe("\\[S]");
+    expect(symbolsText(["[", "]"])).toBe("[]");
+  });
+
+  it("a grammar with [ and ] as terminals reads S → [S] as before", () => {
+    const g = parseGrammar(`Grammar:
+  charset: "[, ]"
+  variables: S
+  init: S
+  rules:
+    - S -> [S] | SS | ε`).value!;
+    expect(g.rules.map((r) => r.right)).toEqual([["[", "S", "]"], ["S", "S"], []]);
+    const back = parseGrammar(serializeDefinition(g)).value!;
+    expect(back.rules).toEqual(g.rules);
+  });
+
+  it("a grammar with bracketed variables", () => {
+    const g = parseGrammar(`Grammar:
+  charset: a
+  variables: S, [qZq], [qAq]
+  init: S
+  rules:
+    - S -> [qZq]
+    - '[qZq] -> a[qAq][qZq] | ε'
+    - '[qAq] -> a'`).value!;
+    expect(g.nonterminals).toEqual(["S", "[qZq]", "[qAq]"]);
+    expect(g.rules[1].right).toEqual(["a", "[qAq]", "[qZq]"]);
+    const back = parseGrammar(serializeDefinition(g)).value!;
+    expect(back).toEqual(g);
+  });
+
+  it("a stack symbol [ still reads as itself in a machine", () => {
+    const m = parseMachine(`Machine:
+  charset: "[, ]"
+  states: q
+  init: q
+  acceptMode: emptyStorages
+  storages:
+    stack: stack
+  transitions:
+    - (q, [, ε) -> (q, [)
+    - (q, ], [) -> (q, ε)
+    - (q, ε, Z) -> (q, ε)`).value!;
+    expect(m.transitions.map((t) => t.ops[0])).toEqual([
+      { type: "stack", pop: "ε", push: ["["] },
+      { type: "stack", pop: "[", push: [] },
+      { type: "stack", pop: "Z", push: [] }
+    ]);
   });
 });

@@ -34,6 +34,13 @@ const NEEDS_QUOTE = /[{}[\]:#'"&*?|>%@`]|^[\s-]|^$/;
 const scalar = (s: string) => (NEEDS_QUOTE.test(s) ? `"${s.replaceAll('"', '\\"')}"` : s);
 const listLine = (items: string[]) => scalar(items.join(", "));
 
+/**
+ * A list item, single-quoted when it starts with a YAML indicator — a rule of bracketed
+ * variables, [qAp] → a[pBr], would read as a flow list. Single quotes escape nothing, so a
+ * backslash of the symbols stays as it is.
+ */
+export const yamlItem = (s: string) => (/^[[\]{}&*!|>'"%@`#?]/.test(s) ? `'${s.replaceAll("'", "''")}'` : s);
+
 /** one symbol, read back as itself; a lone blank needs no escape */
 const one = (x: string) => (x === TAPE_BLANK ? x : symbolsText([x]));
 
@@ -120,7 +127,7 @@ function serializeGrammar(g: Grammar): string {
     byLeft.get(left)!.push(syms(r.right));
   }
   for (const [left, rights] of byLeft) {
-    lines.push(`    - ${left} -> ${rights.join(" | ")}`);
+    lines.push(`    - ${yamlItem(`${left} -> ${rights.join(" | ")}`)}`);
   }
   return lines.join("\n");
 }

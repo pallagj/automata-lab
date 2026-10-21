@@ -25,6 +25,7 @@ import { fsmToRegex } from "../../core/fsm/toRegex";
 import { fsmToGrammar, Grammar, grammarToFSM, grammarToPDA, removeEpsilonRules } from "../../core/grammar/grammar";
 import { removeUnitRules, removeUselessSymbols, toCNF } from "../../core/grammar/normalForm";
 import { machineCaps, machineToFSM } from "../../core/machine/machine";
+import { pdaToGrammar, toEmptyStack, toFinalState } from "../../core/machine/pda";
 import { I18nText, OpResult } from "../../core/types";
 import { ExprValue } from "../../core/expr/expression";
 
@@ -38,7 +39,7 @@ export interface OpInfo {
   descKey: string;
   args: 1 | 2;
   /** which kind of value it applies to */
-  input: "fsm" | "grammar";
+  input: "fsm" | "grammar" | "pda";
   groupKey: string;
 }
 
@@ -66,6 +67,8 @@ export const OPS: OpInfo[] = [
   { groupKey: "editor.ops.groups.conversion", name: "toGrammar", descKey: "editor.ops.toGrammar", args: 1, input: "fsm" },
   { groupKey: "editor.ops.groups.conversion", name: "toFsm", descKey: "editor.ops.toFsm", args: 1, input: "grammar" },
   { groupKey: "editor.ops.groups.conversion", name: "toPda", descKey: "editor.ops.toPda", args: 1, input: "grammar" },
+  { groupKey: "editor.ops.groups.conversion", name: "toEmptyStack", descKey: "editor.ops.toEmptyStack", args: 1, input: "pda" },
+  { groupKey: "editor.ops.groups.conversion", name: "toFinalState", descKey: "editor.ops.toFinalState", args: 1, input: "pda" },
 
   { groupKey: "editor.ops.groups.inspection", name: "equal", descKey: "editor.ops.equal", args: 2, input: "fsm" }
 ];
@@ -187,6 +190,15 @@ export function opApplicability(op: OpInfo, value: ExprValue | Definition | null
 
   // epsfree on a grammar: ε-rule elimination, the grammar stays a grammar
   if (kind === "grammar" && op.name === "epsfree") return fromDryRun(removeEpsilonRules(value));
+
+  // a pushdown automaton: its grammar (7.16), the other way of accepting (7.9)
+  if (kind === "machine" && machineCaps(value).isPDALike) {
+    if (op.name === "toGrammar") return fromDryRun(pdaToGrammar(value));
+    if (op.name === "toEmptyStack") return fromDryRun(toEmptyStack(value));
+    if (op.name === "toFinalState") return fromDryRun(toFinalState(value));
+  }
+  if (op.input === "pda")
+    return { ok: false, reason: ux("editor.ops.reason.expectsPda", { kindKey: describeValue(value).key }) };
 
   if (op.input === "grammar") {
     if (kind !== "grammar")

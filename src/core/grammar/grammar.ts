@@ -341,7 +341,7 @@ export function grammarToFSM(g: Grammar): OpResult<FSM> {
 }
 
 /** A state label not used yet, with one more prime: q₀ → q′₀, {A,B} → {A,B}′. */
-function primedLabel(label: string, used: Set<string>): string {
+export function primedLabel(label: string, used: Set<string>): string {
   const id = parseIdent(label, false);
   for (let primes = 1; ; primes++) {
     const name = id ? formatIdent({ ...id, primes: id.primes + primes }) : label + "′".repeat(primes);

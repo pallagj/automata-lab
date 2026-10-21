@@ -27,7 +27,9 @@
     "unitfree": "unit-rule elimination",
     "trim": "removal of useless symbols",
     "cnf": "conversion to Chomsky normal form",
-    "cyk": "membership test (CYK)"
+    "cyk": "membership test (CYK)",
+    "toEmptyStack": "conversion to acceptance by empty stack",
+    "toFinalState": "conversion to acceptance by final state"
   },
   "regex": {
     "error": {
@@ -669,6 +671,76 @@
       }
     }
   },
+  "pda": {
+    "needsPda": {
+      "title": "{{op}} needs a pushdown automaton",
+      "detail": "The constructions of lecture notes 7.9 and 7.16 work on a machine with an input head and a single stack. A machine without storage is a finite automaton: toGrammar gives its regular grammar (4.20)."
+    },
+    "toEmptyStack": {
+      "step": {
+        "title": "Acceptance by final state → by empty stack (lecture notes 7.9)",
+        "detail": "A new start state {{start}} puts a new symbol {{z}} at the bottom of the stack, under its start content: {{first}}. M never takes {{z}} out, so the stack cannot empty while M runs — not even where M's own stack would. From every accepting state ({{accept}}) the machine may go to {{qe}}, taking any symbol, and {{qe}} empties the stack: a word is accepted by empty stack exactly when M reaches an accepting state with the word read."
+      },
+      "already": {
+        "title": "The pushdown automaton already accepts by empty stack",
+        "detail": "Nothing to convert: the result is the machine itself."
+      }
+    },
+    "toFinalState": {
+      "step": {
+        "title": "Acceptance by empty stack → by final state (lecture notes 7.9)",
+        "detail": "A new start state {{start}} puts a new symbol {{z}} at the bottom of the stack, under its start content: {{first}}. M′ never takes {{z}} out, so when only {{z}} is left, M′ has emptied its stack — then from any of its states the machine goes to {{qf}}, the only accepting state, where it stops: (q, ε, {{z}}) → ({{qf}}, {{z}})."
+      },
+      "already": {
+        "title": "The pushdown automaton already accepts by final state",
+        "detail": "Nothing to convert: the result is the machine itself."
+      }
+    },
+    "toGrammar": {
+      "bottom": {
+        "title": "A bottom symbol for the stack first",
+        "detailInit": "The stack starts with {{init}}, not with a single symbol Z₀ as 7.16 needs. A new start state {{start}} writes it above a new bottom symbol {{z}}: {{first}}. Only (q, ε, {{z}}) → ({{qe}}, ε) takes {{z}} out, into {{qe}}, where nothing moves — so the stack is empty only at the end, and the machine accepts by empty stack the same words.",
+        "detailEmptied": "The first step of 7.16 lets a transition that takes nothing from the stack take every symbol and put it back. That keeps the language only when the machine cannot move once its stack is empty — but here the stack can empty in {{state}}, and {{transition}} still moves from there. So first a new bottom symbol {{z}} goes under the stack's content: {{first}}. Only (q, ε, {{z}}) → ({{qe}}, ε) takes {{z}} out, into {{qe}}, where nothing moves — so the stack is empty only at the end, and the machine accepts by empty stack the same words."
+      },
+      "replace": {
+        "title": "1. Every step takes a symbol from the stack (lecture notes 7.16)",
+        "detail": "(q′, α) ∈ δ(q, a, ε) is replaced by (q′, αA) ∈ δ(q, a, A) for every A ∈ Γ: the symbol on top is taken and put back. The variables [qAp] need this — every step takes exactly one symbol from the stack.",
+        "detailNone": "Every transition takes a symbol from the stack already: nothing to replace."
+      },
+      "variables": {
+        "title": "2. The variables [qAp] (lecture notes 7.16)",
+        "detail": "V = {[qAp] : q, p ∈ Q, A ∈ Γ} ∪ {S}: {{states}}² · {{symbols}} + 1 = {{count}} variables. [qAp] stands for A put on the stack in state q and taken out — with everything that came in its place — in state p: it derives exactly the words x with (q, x, A) ⇒* (p, ε, ε) (7.5); {{example}} for instance. S is the start variable: {{startRules}}, as a word is accepted when the machine, started in {{q0}} with {{z0}}, empties its stack in some state."
+      },
+      "rules": {
+        "title": "3. Rules from the transitions (lecture notes 7.16)",
+        "detail": "(q′, ε) ∈ δ(q, a, A) gives [qAq′] → a; (q′, B₁…B_k) ∈ δ(q, a, A) gives [qAq″] → a[q′B₁q₂][q₂B₂q₃]…[q_kB_kq″] for every choice of the states q₂, …, q_k, q″ — |Q|^k rules. With a = ε a rule can be [qAq′] → ε: every rule is A → α, and after ε-removal the grammar is of class 2 (6.14). {{count}} rules in all."
+      },
+      "tooLarge": {
+        "title": "The grammar would have {{count}} rules",
+        "detail": "A transition writing k symbols gives |Q|^k rules. Beyond {{max}} rules the grammar is not built — a machine with fewer states or shorter words written on the stack gives a smaller one."
+      },
+      "badLabel": {
+        "title": "Some names cannot stand in a variable [qAp]",
+        "detail": "{{labels}}: the states and stack symbols are written inside the variables, so they may hold no space, bracket, comma, backslash or |. Rename them."
+      },
+      "ambiguousNames": {
+        "title": "Two variables would both be {{name}}",
+        "detail": "The state, symbol, state triples {{a}} and {{b}} written side by side give the same text. Rename a state, so that every [qAp] is different."
+      },
+      "useless": {
+        "title": "{{useless}} of the {{count}} variables are useless",
+        "detail": "The construction makes [qAp] for every two states and every symbol, also where the machine can never take A out in p after putting it on in q. The grammar is right as the notes build it; removing the useless symbols (6.3.3) leaves the same language with far fewer rules.",
+        "fix": "remove the useless symbols"
+      }
+    },
+    "table": {
+      "newTransition": "new transition",
+      "transition": "transition",
+      "instead": "instead",
+      "rules": "rules",
+      "count": "number"
+    }
+  },
   "expression": {
     "kind": {
       "fsm": "a finite automaton",
@@ -696,6 +768,7 @@
       "toFsmExpects": "toFsm() expects a grammar, a regular expression, or a storage-free machine",
       "toPdaExpects": "toPda() expects a grammar",
       "needsGrammar": "{{op}}: expects a grammar, but got {{kind}}",
+      "needsPda": "{{op}}: expects a pushdown automaton, but got {{kind}}",
       "invalidExpression": "Invalid expression",
       "parseGeneric": "{{message}}. Examples: D = det(M) · U = union(M_1, M_2) · R = regex((ab)*+ba) · E = equal(M_1, M_2)",
       "evaluationError": "Evaluation error",

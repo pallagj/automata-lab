@@ -14,7 +14,16 @@ import {
 import { Grammar, GrammarRule } from "../grammar/grammar";
 import { symbolString } from "../epsilon";
 import { deltaShape, readDelta, valueCount } from "./delta";
-import { canonicalLabel, canonicalName, formatIdent, parseIdent, suggestName, symbolTokens } from "../symbols";
+import {
+  canonicalLabel,
+  canonicalName,
+  canonicalVariable,
+  formatIdent,
+  isBracketName,
+  parseIdent,
+  suggestName,
+  symbolTokens
+} from "../symbols";
 
 /**
  * Parses YAML-based definitions with friendly, precise error messages.
@@ -589,7 +598,8 @@ export function parseGrammar(source: string): OpResult<Grammar> {
     if (d) return failResult([d]);
   }
 
-  // terminals are the characters of the words; variables are names (S, A, X_a, C_1, S′)
+  // terminals are the characters of the words; variables are names (S, A, X_a, C_1, S′) or
+  // bracketed names ([q_0Zq_1], as the grammar of a pushdown automaton has them, 7.16)
   const terminals = parseList(body["charset"], "charset", diags);
   const long = terminals.find((t) => [...t].length !== 1);
   if (long !== undefined)
@@ -598,12 +608,12 @@ export function parseGrammar(source: string): OpResult<Grammar> {
     ]);
   const nonterminals: string[] = [];
   for (const raw of parseList(body["variables"], "variables", diags, false)) {
-    const v = canonicalName(raw);
+    const v = canonicalVariable(raw);
     if (v === null) return failResult([badName(raw)]);
     nonterminals.push(v);
   }
   const startRaw = String(body["init"]).trim();
-  const start = canonicalName(startRaw) ?? startRaw;
+  const start = canonicalVariable(startRaw) ?? startRaw;
 
   if (!nonterminals.includes(start))
     return failResult([err(tx("definitionParser.grammar.startNotInNonterminals", { start }))]);
@@ -636,7 +646,11 @@ export function parseGrammar(source: string): OpResult<Grammar> {
     }
     return okResult(out);
   };
-  const readChunk = (tokens: string[], line: string): OpResult<string[]> => {
+  const readChunk = (read: string[], line: string): OpResult<string[]> => {
+    // a bracketed text that is no variable is its symbols, with [ and ] terminals: S → [S]
+    const tokens = read.flatMap((t) =>
+      isBracketName(t) && !nt.has(t) ? ["[", ...symbolTokens(t.slice(1, -1)), "]"] : [t]
+    );
     const out: string[] = [];
     for (let i = 0; i < tokens.length; i++) {
       const id = parseIdent(tokens[i], false);

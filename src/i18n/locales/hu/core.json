@@ -27,7 +27,9 @@
     "unitfree": "egyszeres szabályok elhagyása",
     "trim": "felesleges szimbólumok elhagyása",
     "cnf": "Chomsky-normálformára hozás",
-    "cyk": "beletartozás-vizsgálat (CYK)"
+    "cyk": "beletartozás-vizsgálat (CYK)",
+    "toEmptyStack": "üres veremmel elfogadóvá alakítás",
+    "toFinalState": "állapottal elfogadóvá alakítás"
   },
   "regex": {
     "error": {
@@ -669,6 +671,76 @@
       }
     }
   },
+  "pda": {
+    "needsPda": {
+      "title": "A(z) {{op}} veremautomatát vár",
+      "detail": "A jegyzet 7.9. és 7.16. konstrukciója olvasófejes, egyetlen veremmel dolgozó gépre vonatkozik. A tároló nélküli gép véges automata: a toGrammar annak a reguláris nyelvtanát adja (4.20)."
+    },
+    "toEmptyStack": {
+      "step": {
+        "title": "Állapottal elfogadó → üres veremmel elfogadó (jegyzet 7.9)",
+        "detail": "Egy új {{start}} kezdőállapot a verem aljára, a kezdőtartalma alá betesz egy új {{z}} szimbólumot: {{first}}. M sosem veszi ki {{z}}-t, így a verem nem ürülhet ki, amíg M fut — ott sem, ahol M saját verme kiürülne. Minden elfogadó állapotból ({{accept}}) a gép bármely szimbólumot kivéve átmehet {{qe}}-be, {{qe}} pedig kiüríti a vermet: egy szó pontosan akkor elfogadott üres veremmel, ha M a szót végigolvasva elfogadó állapotba jut."
+      },
+      "already": {
+        "title": "A veremautomata már üres veremmel fogad el",
+        "detail": "Nincs mit átalakítani: az eredmény maga a gép."
+      }
+    },
+    "toFinalState": {
+      "step": {
+        "title": "Üres veremmel elfogadó → állapottal elfogadó (jegyzet 7.9)",
+        "detail": "Egy új {{start}} kezdőállapot a verem aljára, a kezdőtartalma alá betesz egy új {{z}} szimbólumot: {{first}}. M′ sosem veszi ki {{z}}-t, így amikor már csak {{z}} van a veremben, M′ kiürítette a vermét — ekkor a gép M′ bármely állapotából átmegy {{qf}}-be, az egyetlen elfogadó állapotba, ahol megáll: (q, ε, {{z}}) → ({{qf}}, {{z}})."
+      },
+      "already": {
+        "title": "A veremautomata már állapottal fogad el",
+        "detail": "Nincs mit átalakítani: az eredmény maga a gép."
+      }
+    },
+    "toGrammar": {
+      "bottom": {
+        "title": "Előbb egy veremalj-szimbólum",
+        "detailInit": "A verem kezdőtartalma {{init}}, nem egyetlen Z₀ szimbólum, ahogy a 7.16 kívánja. Egy új {{start}} kezdőállapot egy új {{z}} veremalj-szimbólum fölé írja: {{first}}. {{z}}-t csak a (q, ε, {{z}}) → ({{qe}}, ε) veszi ki, {{qe}}-be, ahol semmi nem lép tovább — így a verem csak a végén üres, és a gép üres veremmel ugyanazokat a szavakat fogadja el.",
+        "detailEmptied": "A 7.16 első lépése a veremből semmit ki nem vevő átmenetet minden szimbólumra cseréli, amit kivesz és visszatesz. Ez csak akkor nem változtat a nyelven, ha üres veremmel a gép már nem tud lépni — itt viszont a verem kiürülhet {{state}}-ben, és onnan {{transition}} még lép. Ezért előbb egy új {{z}} veremalj-szimbólum kerül a verem tartalma alá: {{first}}. {{z}}-t csak a (q, ε, {{z}}) → ({{qe}}, ε) veszi ki, {{qe}}-be, ahol semmi nem lép tovább — így a verem csak a végén üres, és a gép üres veremmel ugyanazokat a szavakat fogadja el."
+      },
+      "replace": {
+        "title": "1. Minden lépés kivesz egy szimbólumot a veremből (jegyzet 7.16)",
+        "detail": "A (q′, α) ∈ δ(q, a, ε) átmenet helyett minden A ∈ Γ-ra (q′, αA) ∈ δ(q, a, A): a verem tetején lévő szimbólumot levesszük és visszatesszük. Az [qAp] változókhoz ez kell — minden lépés pontosan egy szimbólumot vesz ki a veremből.",
+        "detailNone": "Minden átmenet kivesz már egy szimbólumot a veremből: nincs mit cserélni."
+      },
+      "variables": {
+        "title": "2. Az [qAp] változók (jegyzet 7.16)",
+        "detail": "V = {[qAp] : q, p ∈ Q, A ∈ Γ} ∪ {S}: {{states}}² · {{symbols}} + 1 = {{count}} változó. [qAp] annak felel meg, hogy az A szimbólum a q állapotban került a verembe, és p lesz az az állapot, amelyikben ez az A — minden, a helyére került szimbólummal együtt — kikerül a veremből: pontosan azokat az x szavakat vezeti le, amelyekre (q, x, A) ⇒* (p, ε, ε) (7.5); például {{example}}. A kezdőváltozó S: {{startRules}}, mert a szó akkor elfogadott, ha a gép {{q0}}-ból és {{z0}}-ból indulva valamelyik állapotban kiüríti a vermet."
+      },
+      "rules": {
+        "title": "3. Szabályok az átmenetekből (jegyzet 7.16)",
+        "detail": "A (q′, ε) ∈ δ(q, a, A) átmenetből [qAq′] → a; a (q′, B₁…B_k) ∈ δ(q, a, A) átmenetből [qAq″] → a[q′B₁q₂][q₂B₂q₃]…[q_kB_kq″], ahol q₂, …, q_k, q″ végigfut az összes állapoton — |Q|^k szabály. Ha a = ε, a szabály lehet [qAq′] → ε is: minden szabály A → α alakú, és ε-mentesítés után a nyelvtan 2. osztálybeli (6.14). Összesen {{count}} szabály."
+      },
+      "tooLarge": {
+        "title": "A nyelvtannak {{count}} szabálya lenne",
+        "detail": "Egy k szimbólumot a verembe író átmenet |Q|^k szabályt ad. {{max}} szabály fölött a nyelvtan nem készül el — kevesebb állapotú vagy rövidebb szavakat a verembe író gépből kisebb lesz."
+      },
+      "badLabel": {
+        "title": "Néhány név nem állhat [qAp] változóban",
+        "detail": "{{labels}}: az állapotok és a veremszimbólumok a változók belsejébe kerülnek, ezért nem lehet bennük szóköz, zárójel, vessző, visszaperjel vagy |. Nevezd át őket."
+      },
+      "ambiguousNames": {
+        "title": "Két változó neve is {{name}} lenne",
+        "detail": "Az állapot–szimbólum–állapot hármasok, {{a}} és {{b}}, egymás mellé írva ugyanazt a szöveget adják. Nevezz át egy állapotot, hogy minden [qAp] különböző legyen."
+      },
+      "useless": {
+        "title": "A {{count}} változóból {{useless}} felesleges",
+        "detail": "A konstrukció minden állapotpárhoz és szimbólumhoz elkészíti az [qAp] változót, ott is, ahol a gép a q-ban betett A-t sosem tudja p-ben kivenni. A nyelvtan így helyes, ahogy a jegyzet felépíti; a felesleges szimbólumok elhagyása (6.3.3) ugyanazt a nyelvet sokkal kevesebb szabállyal adja.",
+        "fix": "felesleges szimbólumok elhagyása"
+      }
+    },
+    "table": {
+      "newTransition": "új átmenet",
+      "transition": "átmenet",
+      "instead": "helyette",
+      "rules": "szabályok",
+      "count": "darab"
+    }
+  },
   "expression": {
     "kind": {
       "fsm": "véges automata",
@@ -696,6 +768,7 @@
       "toFsmExpects": "A toFsm() nyelvtant, reguláris kifejezést vagy tárolómentes gépet vár",
       "toPdaExpects": "A toPda() nyelvtant vár",
       "needsGrammar": "{{op}}: nyelvtant vár, de {{kind}} érkezett",
+      "needsPda": "{{op}}: veremautomatát vár, de {{kind}} érkezett",
       "invalidExpression": "Hibás kifejezés",
       "parseGeneric": "{{message}}. Példák: D = det(M) · U = union(M_1, M_2) · R = regex((ab)*+ba) · E = equal(M_1, M_2)",
       "evaluationError": "Kiértékelési hiba",

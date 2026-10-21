@@ -80,6 +80,10 @@ export const HelpModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
               <td>{t("help.expressions.ops.conversions")}</td>
             </tr>
             <tr>
+              <td><code>toEmptyStack(P)</code>, <code>toFinalState(P)</code></td>
+              <td>{t("help.expressions.ops.pdaAcceptance")}</td>
+            </tr>
+            <tr>
               <td><code>A B</code>, <code>A+B</code>, <code>A*</code></td>
               <td>{t("help.expressions.ops.namedOps")}</td>
             </tr>

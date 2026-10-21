@@ -26,6 +26,29 @@ const isPrime = (c: string | undefined) => c === PRIME || c === "'";
 /** characters that cannot be inside a subscript: they separate the parts of rules, stack operations and lists */
 const NOT_IN_SUB = /[\s{}_|/\\>→]/;
 
+/**
+ * A bracketed name: one symbol written as the lecture notes name the variables of a pushdown
+ * automaton's grammar (7.16), [qAp] — [q_0Z_0q_1] is shown as [q₀Z₀q₁]. Inside it is
+ * nothing that separates the parts of rules, lists and alternatives, and no escape.
+ */
+export function isBracketName(text: string): boolean {
+  return /^\[[^\s[\],|→\\]+\]$/u.test(text) && !text.includes("->");
+}
+
+/** The canonical form of a grammar variable: a name, or a bracketed name as it is; null otherwise. */
+export function canonicalVariable(text: string): string | null {
+  const t = text.trim();
+  return canonicalName(t) ?? (isBracketName(t) ? t : null);
+}
+
+/** The bracketed name starting at chars[i] (which is "["), or null. */
+function bracketNameAt(chars: string[], i: number): string | null {
+  const close = chars.indexOf("]", i + 1);
+  if (close === -1) return null;
+  const text = chars.slice(i, close + 1).join("");
+  return isBracketName(text) ? text : null;
+}
+
 /** The canonical text of an identifier: X, X′, X_a, X_{ab}. */
 export function formatIdent(i: Ident): string {
   const sub = [...i.sub].length === 0 ? "" : [...i.sub].length === 1 ? `_${i.sub}` : `_{${i.sub}}`;
@@ -116,8 +139,9 @@ export function withSubscript(name: string, suffix: string): string {
 /**
  * Splits a string of symbols (a grammar right-hand side, a stack push) into symbols:
  * a letter with its primes and subscript is one symbol, any other character is one
- * symbol. Spaces only separate; ε and the words eps / epsilon stand for nothing; a
- * backslash makes the next character a literal symbol (\eps is e, p, s; \_ is _).
+ * symbol, and so is a bracketed name ([q_0Zq_1], see isBracketName). Spaces only separate;
+ * ε and the words eps / epsilon stand for nothing; a backslash makes the next character a
+ * literal symbol (\eps is e, p, s; \_ is _; \[ is [).
  * Digits are never a subscript here: in S → 0S1 the 1 is a symbol of its own.
  */
 export function symbolTokens(text: string): string[] {
@@ -132,6 +156,12 @@ export function symbolTokens(text: string): string[] {
     if (c === "\\") {
       if (i + 1 < chars.length) out.push(chars[i + 1]);
       i += 2;
+      continue;
+    }
+    const bracketed = c === "[" ? bracketNameAt(chars, i) : null;
+    if (bracketed) {
+      out.push(bracketed);
+      i += [...bracketed].length;
       continue;
     }
     const rest = chars.slice(i).join("");
@@ -168,7 +198,10 @@ export function symbolsText(tokens: string[]): string {
   tokens.forEach((t, i) => {
     // a plain letter followed by _ or a prime would take it; e, p, s in a row would read as ε
     const eps = t === "e" && tokens[i + 1] === "p" && tokens[i + 2]?.startsWith("s");
-    out += needsEscape(t) || eps ? `\\${t}` : t;
+    // a [ with the symbols after it up to a ] would read as one bracketed name
+    const close = t === "[" ? tokens.indexOf("]", i + 1) : -1;
+    const bracket = close !== -1 && isBracketName(tokens.slice(i, close + 1).join(""));
+    out += needsEscape(t) || eps || bracket ? `\\${t}` : t;
   });
   return out;
 }

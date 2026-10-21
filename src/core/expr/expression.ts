@@ -21,6 +21,7 @@ import { fsmToRegex } from "../fsm/toRegex";
 import { Grammar, grammarToFSM, grammarToPDA, fsmToGrammar, removeEpsilonRules } from "../grammar/grammar";
 import { removeUnitRules, removeUselessSymbols, toCNF } from "../grammar/normalForm";
 import { fsmToMachine, machineCaps, machineToFSM } from "../machine/machine";
+import { pdaToGrammar, toEmptyStack, toFinalState } from "../machine/pda";
 import { Definition } from "../parse/definitionParser";
 import { canonicalLabel, canonicalName, formatIdent, readIdent, suggestName } from "../symbols";
 
@@ -32,7 +33,7 @@ import { canonicalLabel, canonicalName, formatIdent, readIdent, suggestName } fr
  *   - there are NO letter literals — letter sequences only inside regex(...)
  *   - functions: det, min, epsfree, complete, reachable, complement, union,
  *     intersect, difference, concat, star, reverse, clean, toGrammar, toFsm,
- *     toPda, toRegex, regex, equal, unitfree, trim, cnf
+ *     toPda, toRegex, regex, equal, unitfree, trim, cnf, toEmptyStack, toFinalState
  */
 
 /** Parse/evaluation errors of the expression language always carry an I18nText. */
@@ -82,7 +83,9 @@ export const FUNCTION_NAMES = [
   "equal",
   "unitfree",
   "trim",
-  "cnf"
+  "cnf",
+  "toEmptyStack",
+  "toFinalState"
 ] as const;
 
 type FuncName = (typeof FUNCTION_NAMES)[number];
@@ -470,7 +473,18 @@ class Evaluator {
         return this.take(label("clean"), cleanFSM(fsmArg(0)));
       case "toGrammar": {
         expectArgs(1);
-        return this.take(label("toGrammar"), fsmToGrammar(fsmArg(0)));
+        // a machine with a stack: the grammar of the pushdown automaton (7.16)
+        const v = this.evaluate(e.args[0]);
+        if (v.kind === "machine" && !machineCaps(v).isFSMLike) return this.take(label("toGrammar"), pdaToGrammar(v));
+        return this.take(label("toGrammar"), fsmToGrammar(this.asFSM(v, "toGrammar")));
+      }
+      case "toEmptyStack":
+      case "toFinalState": {
+        expectArgs(1);
+        const v = this.evaluate(e.args[0]);
+        if (v.kind !== "machine")
+          throw new ExprError(tx("expression.error.needsPda", { opKey: `opNames.${e.fn}`, kindKey: describeKind(v) }));
+        return this.take(label(e.fn), e.fn === "toEmptyStack" ? toEmptyStack(v) : toFinalState(v));
       }
       case "toFsm": {
         expectArgs(1);
