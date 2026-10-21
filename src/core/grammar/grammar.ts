@@ -600,7 +600,7 @@ export function removeEpsilonRules(g: Grammar): OpResult<Grammar> {
     table: { headers: [tx("grammar.table.rule"), tx("grammar.table.newRules")], rows }
   });
 
-  // 3. if ε was in the language: a new start symbol S′ → S | ε
+  // 3. if ε was in the language: a new start variable S′ → S | ε
   let start = g.start;
   let nonterminals = [...g.nonterminals];
   if (nullable.has(g.start)) {

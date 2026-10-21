@@ -312,7 +312,7 @@
       "moreWordsPossible": "…die Sprache kann größer sein (die Aufzählung reicht bis Länge 8).",
       "cnfBadge": "Chomsky-Normalform",
       "cykTitle": "CYK-Tabelle (Skript 8.1)",
-      "cykIntro": "Zeile j, Spalte i enthält die Variablen, aus denen das beim i-ten Buchstaben beginnende Teilwort der Länge j ableitbar ist; das Wort ist ableitbar, wenn das Startsymbol in der obersten Zelle steht.",
+      "cykIntro": "Zeile j, Spalte i enthält die Variablen, aus denen das beim i-ten Buchstaben beginnende Teilwort der Länge j ableitbar ist; das Wort ist ableitbar, wenn die Startvariable in der obersten Zelle steht.",
       "cykConverted": "Die Grammatik ist nicht in Chomsky-Normalform, daher wird die Tabelle mit {{expr}} berechnet:",
       "cykUnambiguous": "Das Wort hat genau einen Ableitungsbaum.",
       "cykAmbiguous": "Das Wort hat {{count}} verschiedene Ableitungsbäume — die Grammatik ist mehrdeutig.",

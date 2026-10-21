@@ -149,15 +149,15 @@
     },
     "grammar": {
       "fieldHints": {
-        "variables": "The nonterminals, e.g. variables: S, A, B",
-        "init": "The start symbol, e.g. init: S",
+        "variables": "The variables, e.g. variables: S, A, B",
+        "init": "The start variable, e.g. init: S",
         "charset": "The terminals, e.g. charset: a, b",
         "rules": "The rules, e.g. rules: [S -> aA | b]"
       },
-      "startNotInNonterminals": "The start symbol ({{start}}) is not among the nonterminals",
+      "startNotInNonterminals": "The start variable ({{start}}) is not among the variables",
       "overlappingSymbols": {
         "title": "Conflicting symbols: {{symbols}}",
-        "detail": "A symbol cannot be both a terminal and a nonterminal."
+        "detail": "A symbol cannot be both a terminal and a variable."
       },
       "emptyAlternative": {
         "title": "Empty alternative in the rule: \"{{line}}\"",
@@ -170,8 +170,8 @@
       "unknownSymbolLeft": "Unknown symbol on the left side of the rule: \"{{symbol}}\"",
       "ruleDetail": "Rule: \"{{line}}\". Every symbol must be listed in charset or variables.",
       "leftMissingNonterminal": {
-        "title": "The left side of the rule contains no nonterminal: \"{{line}}\"",
-        "detail": "In a generative grammar, the left side must contain at least one nonterminal."
+        "title": "The left side of the rule contains no variable: \"{{line}}\"",
+        "detail": "In a generative grammar, the left side must contain at least one variable."
       },
       "unknownSymbolRight": "Unknown symbol on the right side of the rule: \"{{symbol}}\"",
       "terminalNotOneChar": {
@@ -573,7 +573,7 @@
       },
       "emptyStackInfo": {
         "title": "Built a PDA that accepts by empty stack",
-        "detail": "The stack holds the derivation's current sentential form. If a nonterminal is on top of the stack, a rule is applied (an ε-step); if a terminal, it's matched against the next input letter. A word is accepted exactly when the input is exhausted and the stack is empty."
+        "detail": "The stack holds the derivation's current sentential form. If a variable is on top of the stack, a rule is applied (an ε-step); if a terminal, it's matched against the next input letter. A word is accepted exactly when the input is exhausted and the stack is empty."
       },
       "step": {
         "title": "CF grammar → pushdown automaton (lecture notes 7.12)",
@@ -586,17 +586,17 @@
         "detail": "The procedure of lecture notes 6.3.1 leaves variables out of right-hand sides, so every left-hand side must be a single variable. The Chomsky classification panel shows which rule breaks this."
       },
       "step1": {
-        "title": "1. Nullable nonterminals (lecture notes 6.3.1)",
-        "detailNone": "No nullable nonterminal — the grammar is already ε-free.",
-        "detailSome": "N₁ holds the nonterminals with an ε-rule; N(i+1) adds every A that has a rule A → α where every symbol of α is already in N(i). It stops when a round adds nothing. Nullable (derivable to ε): {{nullable}}."
+        "title": "1. Nullable variables (lecture notes 6.3.1)",
+        "detailNone": "No nullable variable — the grammar is already ε-free.",
+        "detailSome": "N₁ holds the variables with an ε-rule; N(i+1) adds every A that has a rule A → α where every symbol of α is already in N(i). It stops when a round adds nothing. Nullable (derivable to ε): {{nullable}}."
       },
       "step2": {
         "title": "2. Extending the rules",
-        "detail": "Every rule is replaced by all of its variants in which some of the nullable nonterminals are dropped — except the empty right-hand side and the useless A → A. The ε-rules themselves are discarded."
+        "detail": "Every rule is replaced by all of its variants in which some of the nullable variables are dropped — except the empty right-hand side and the useless A → A. The ε-rules themselves are discarded."
       },
       "step3": {
-        "title": "3. New start symbol because of ε",
-        "detail": "The original language contains ε (the start symbol is nullable), so we introduce a new start symbol {{s2}}: {{s2}} → {{start}} | ε. This way the ε-rule remains only on the start symbol."
+        "title": "3. New start variable because of ε",
+        "detail": "The original language contains ε (the start variable is nullable), so we introduce a new start variable {{s2}}: {{s2}} → {{start}} | ε. This way the ε-rule remains only on the start variable."
       }
     },
     "unitfree": {
@@ -622,7 +622,7 @@
         "detailNone": "B₀ = Σ, and Bᵢ₊₁ adds every A with a rule A → α whose symbols are all in Bᵢ. Every variable derives a terminal word."
       },
       "step2": {
-        "title": "2. Symbols reachable from the start symbol",
+        "title": "2. Symbols reachable from the start variable",
         "detail": "T₀ = {S}, and Tᵢ₊₁ adds every symbol on the right-hand side of a rule of a variable in Tᵢ. Unreachable, dropped: {{removed}}.",
         "detailNone": "T₀ = {S}, and Tᵢ₊₁ adds every symbol on the right-hand side of a rule of a variable in Tᵢ. Every remaining symbol is reachable."
       },
@@ -632,7 +632,7 @@
       },
       "emptyLanguage": {
         "title": "The language is empty",
-        "detail": "The start symbol {{start}} derives no terminal word, so L(G) = ∅ — every rule is useless."
+        "detail": "The start variable {{start}} derives no terminal word, so L(G) = ∅ — every rule is useless."
       }
     },
     "cnf": {

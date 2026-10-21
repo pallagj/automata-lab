@@ -18,7 +18,7 @@ export interface CykTable {
    */
   why: Map<string, string[]>[][];
   accepted: boolean;
-  /** number of derivation trees of the whole word from the start symbol */
+  /** number of derivation trees of the whole word from the start variable */
   trees: bigint;
 }
 
@@ -80,7 +80,7 @@ export function cyk(g: Grammar, input: string): OpResult<CykTable> {
 
 export interface Membership {
   accepted: boolean;
-  /** null for the empty word: ε ∈ L(G) exactly when the start symbol is nullable */
+  /** null for the empty word: ε ∈ L(G) exactly when the start variable is nullable */
   table: CykTable | null;
   /** the grammar the table was computed on */
   cnf: Grammar | null;

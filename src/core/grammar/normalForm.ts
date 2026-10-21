@@ -94,7 +94,7 @@ export function removeUnitRules(g: Grammar): OpResult<Grammar> {
 /**
  * Removes the useless symbols in the order of the lecture notes: first the variables
  * that derive no terminal word, then the symbols that cannot be reached from the
- * start symbol (the other order may leave useless symbols behind, see 6.22).
+ * start variable (the other order may leave useless symbols behind, see 6.22).
  */
 export function removeUselessSymbols(g: Grammar): OpResult<Grammar> {
   const notCF = needsContextFree(g, "trim");

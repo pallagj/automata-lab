@@ -149,15 +149,15 @@
     },
     "grammar": {
       "fieldHints": {
-        "variables": "Die Nichtterminale, z. B. variables: S, A, B",
-        "init": "Das Startsymbol, z. B. init: S",
+        "variables": "Die Variablen, z. B. variables: S, A, B",
+        "init": "Die Startvariable, z. B. init: S",
         "charset": "Die Terminale, z. B. charset: a, b",
         "rules": "Die Regeln, z. B. rules: [S -> aA | b]"
       },
-      "startNotInNonterminals": "Das Startsymbol ({{start}}) ist nicht unter den Nichtterminalen",
+      "startNotInNonterminals": "Die Startvariable ({{start}}) ist nicht unter den Variablen",
       "overlappingSymbols": {
         "title": "Widersprüchliche Symbole: {{symbols}}",
-        "detail": "Ein Symbol kann nicht gleichzeitig Terminal und Nichtterminal sein."
+        "detail": "Ein Symbol kann nicht gleichzeitig Terminal und Variable sein."
       },
       "emptyAlternative": {
         "title": "Leere Alternative in der Regel: „{{line}}“",
@@ -170,8 +170,8 @@
       "unknownSymbolLeft": "Unbekanntes Symbol auf der linken Regelseite: „{{symbol}}“",
       "ruleDetail": "Regel: „{{line}}“. Jedes Symbol muss in charset oder variables aufgenommen werden.",
       "leftMissingNonterminal": {
-        "title": "Die linke Regelseite enthält kein Nichtterminal: „{{line}}“",
-        "detail": "In einer generativen Grammatik muss die linke Seite mindestens ein Nichtterminal enthalten."
+        "title": "Die linke Regelseite enthält keine Variable: „{{line}}“",
+        "detail": "In einer generativen Grammatik muss die linke Seite mindestens eine Variable enthalten."
       },
       "unknownSymbolRight": "Unbekanntes Symbol auf der rechten Regelseite: „{{symbol}}“",
       "terminalNotOneChar": {
@@ -573,7 +573,7 @@
       },
       "emptyStackInfo": {
         "title": "PDA mit Akzeptanz durch leeren Keller erstellt",
-        "detail": "Der Keller speichert die aktuelle Satzform der Ableitung. Steht ein Nichtterminal oben auf dem Keller, wird eine Regel angewendet (ε-Schritt); steht ein Terminal oben, wird es mit dem nächsten Eingabebuchstaben abgeglichen. Ein Wort wird genau dann akzeptiert, wenn die Eingabe aufgebraucht und der Keller leer ist."
+        "detail": "Der Keller speichert die aktuelle Satzform der Ableitung. Steht eine Variable oben auf dem Keller, wird eine Regel angewendet (ε-Schritt); steht ein Terminal oben, wird es mit dem nächsten Eingabebuchstaben abgeglichen. Ein Wort wird genau dann akzeptiert, wenn die Eingabe aufgebraucht und der Keller leer ist."
       },
       "step": {
         "title": "KF-Grammatik → Kellerautomat (Skript 7.12)",
@@ -586,17 +586,17 @@
         "detail": "Das Verfahren aus Skript 6.3.1 lässt Variablen aus rechten Seiten weg, daher muss jede linke Seite eine einzelne Variable sein. Das Chomsky-Klassifikationspanel zeigt, welche Regel das verletzt."
       },
       "step1": {
-        "title": "1. Löschbare Nichtterminale (Skript 6.3.1)",
-        "detailNone": "Kein löschbares Nichtterminal — die Grammatik ist bereits ε-frei.",
-        "detailSome": "N₁ enthält die Nichtterminale mit einer ε-Regel; N(i+1) fügt jedes A hinzu, das eine Regel A → α hat, bei der jedes Symbol von α schon in N(i) liegt. Das Verfahren endet, wenn eine Runde nichts hinzufügt. Löschbar (auf ε ableitbar): {{nullable}}."
+        "title": "1. Löschbare Variablen (Skript 6.3.1)",
+        "detailNone": "Keine löschbare Variable — die Grammatik ist bereits ε-frei.",
+        "detailSome": "N₁ enthält die Variablen mit einer ε-Regel; N(i+1) fügt jedes A hinzu, das eine Regel A → α hat, bei der jedes Symbol von α schon in N(i) liegt. Das Verfahren endet, wenn eine Runde nichts hinzufügt. Löschbar (auf ε ableitbar): {{nullable}}."
       },
       "step2": {
         "title": "2. Erweiterung der Regeln",
-        "detail": "Jede Regel wird durch alle ihre Varianten ersetzt, in denen ein Teil der löschbaren Nichtterminale weggelassen wird — außer der leeren rechten Seite und der nutzlosen Regel A → A. Die ε-Regeln selbst entfallen."
+        "detail": "Jede Regel wird durch alle ihre Varianten ersetzt, in denen ein Teil der löschbaren Variablen weggelassen wird — außer der leeren rechten Seite und der nutzlosen Regel A → A. Die ε-Regeln selbst entfallen."
       },
       "step3": {
-        "title": "3. Neues Startsymbol wegen ε",
-        "detail": "Die ursprüngliche Sprache enthält ε (das Startsymbol ist löschbar), daher führen wir ein neues Startsymbol {{s2}} ein: {{s2}} → {{start}} | ε. So bleibt die ε-Regel nur beim Startsymbol."
+        "title": "3. Neue Startvariable wegen ε",
+        "detail": "Die ursprüngliche Sprache enthält ε (die Startvariable ist löschbar), daher führen wir eine neue Startvariable {{s2}} ein: {{s2}} → {{start}} | ε. So bleibt die ε-Regel nur bei der Startvariable."
       }
     },
     "unitfree": {
@@ -622,7 +622,7 @@
         "detailNone": "B₀ = Σ, und Bᵢ₊₁ nimmt jedes A hinzu, das eine Regel A → α hat, deren Symbole alle in Bᵢ liegen. Jede Variable leitet ein Terminalwort ab."
       },
       "step2": {
-        "title": "2. Vom Startsymbol erreichbare Symbole",
+        "title": "2. Von der Startvariable erreichbare Symbole",
         "detail": "T₀ = {S}, und Tᵢ₊₁ nimmt jedes Symbol auf der rechten Seite einer Regel einer Variablen aus Tᵢ hinzu. Nicht erreichbar, entfernt: {{removed}}.",
         "detailNone": "T₀ = {S}, und Tᵢ₊₁ nimmt jedes Symbol auf der rechten Seite einer Regel einer Variablen aus Tᵢ hinzu. Jedes verbleibende Symbol ist erreichbar."
       },
@@ -632,7 +632,7 @@
       },
       "emptyLanguage": {
         "title": "Die Sprache ist leer",
-        "detail": "Aus dem Startsymbol {{start}} ist kein Terminalwort ableitbar, also L(G) = ∅ — jede Regel ist nutzlos."
+        "detail": "Aus der Startvariable {{start}} ist kein Terminalwort ableitbar, also L(G) = ∅ — jede Regel ist nutzlos."
       }
     },
     "cnf": {
