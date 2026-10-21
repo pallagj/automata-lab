@@ -324,23 +324,23 @@
     "min": {
       "unreachableStates": {
         "title": "Elérhetetlen állapotok",
-        "detail": "A(z) {{states}} állapot(ok) nem érhető(k) el a kezdőállapotból — a minimalizálás első lépéseként elhagyjuk őket, különben hamis ekvivalenciaosztályok keletkezhetnének."
+        "detail": "A kezdőállapotból semmilyen szó nem vezet a(z) {{states}} állapot(ok)ba. A jegyzet (2.29) a kész automatából hagyja el az ilyen állapotokat; itt előre elhagyjuk őket, az eredmény ugyanaz."
       },
       "step0": {
-        "title": "0. Elérhetetlen állapotok elhagyása",
+        "title": "Az elérhetetlen állapotok elhagyása",
         "detail": "Elhagyva: {{removed}}."
       },
       "step1": {
-        "title": "1. Kezdő partíció",
-        "detail": "Elfogadó és nem elfogadó állapotok szétválasztása: {{partition}}"
+        "title": "Kezdő partíció: 0-ekvivalencia (jegyzet 2.4.1)",
+        "detail": "A₁ = Q − F és A₂ = F: az üres szó már megkülönbözteti a nem elfogadó és az elfogadó állapotokat. {{partition}}"
       },
       "refine": {
-        "title": "{{round}}. Finomítás",
-        "detail": "Egy csoport szétválik, ha két állapota valamely szimbólumra különböző csoportba vezet. Új partíció: {{partition}}"
+        "title": "{{round}}. kör: {{round}}-ekvivalencia",
+        "detail": "Két állapot akkor marad együtt, ha minden betű ugyanabba a csoportba viszi őket. Szétválik: {{splits}}. Új partíció: {{partition}}. Most a legfeljebb {{round}} hosszú szavakkal megkülönböztethetetlen állapotok vannak együtt ({{round}}-ekvivalencia, 2.27)."
       },
       "fixpoint": {
-        "title": "{{round}}. Fixpont",
-        "detail": "Nincs több szétválás — a partíció stabil: {{partition}}. A csoportok az ekvivalenciaosztályok."
+        "title": "{{round}}. kör: nincs szétválás",
+        "detail": "Minden csoportban minden betű ugyanabba a csoportba viszi az állapotokat: a(z) {{round}}-ekvivalencia ugyanaz, mint a(z) {{prev}}-ekvivalencia, és ekkor hosszabb szó sem különbözteti meg őket (2.27). A csoportok az ekvivalenciaosztályok: {{partition}}."
       },
       "alreadyMinimal": {
         "title": "Az automata már minimális volt",
@@ -349,6 +349,15 @@
       "minimized": {
         "title": "Minimalizálva: {{before}} → {{after}} állapot",
         "detail": "Az egy osztályba került állapotok nyelvileg megkülönböztethetetlenek: minden szóra ugyanúgy fogadnak el / utasítanak el."
+      },
+      "build": {
+        "title": "Az osztályokból az új automata (jegyzet 2.29)",
+        "detail": "Minden osztály egy állapot. Egy betű egy osztály minden állapotát ugyanabba az osztályba viszi — ez lesz az átmenet. A kezdőállapot a régi kezdőállapot osztálya, {{start}}; elfogadók az elfogadó állapotok osztályai: {{accept}}."
+      },
+      "table": {
+        "group": "csoport",
+        "newState": "új állapot",
+        "class": "osztály"
       }
     },
     "complement": {

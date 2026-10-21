@@ -354,62 +354,85 @@ export function minimize(f: FSM): OpResult<FSM> {
   const tm = transMap(work);
   const delta = (s: string, c: string) => [...(tm.get(s)?.get(c) ?? [])][0];
 
-  // Initial partition: {accepting, non-accepting}
+  // the groups are named A₁, A₂, … as in the notes (2.30); a set is written in state order
+  const groupName = (i: number) => `A_${i + 1}`;
+  const members = (g: string[]) => `{${g.join(", ")}}`;
+  const partText = (p: string[][]) => p.map((g, i) => `${groupName(i)} = ${members(g)}`).join(", ");
+
+  // 0-equivalence (2.4.1): A₁ = Q − F, A₂ = F
   const acceptSet = new Set(work.accept);
   let partition: string[][] = [
-    work.states.filter((s) => acceptSet.has(s)),
-    work.states.filter((s) => !acceptSet.has(s))
+    work.states.filter((s) => !acceptSet.has(s)),
+    work.states.filter((s) => acceptSet.has(s))
   ].filter((g) => g.length > 0);
-
-  const partName = (p: string[][]) => p.map((g) => setName(g)).join("  ");
   steps.push({
     title: tx("ops.min.step1.title"),
-    detail: tx("ops.min.step1.detail", { partition: partName(partition) })
+    detail: tx("ops.min.step1.detail", { partition: partText(partition) })
   });
 
-  let round = 2;
-  let changed = true;
-  while (changed) {
-    changed = false;
+  // refinement: p and q stay together when every letter takes them into the same group
+  for (let round = 1; ; round++) {
     const groupOf = new Map<string, number>();
     partition.forEach((g, i) => g.forEach((s) => groupOf.set(s, i)));
+    const signature = (s: string) => work.alphabet.map((c) => groupOf.get(delta(s, c))!);
 
-    const next: string[][] = [];
+    const next: string[][] = partition.map(() => []);
+    const added: string[][] = [];
+    const splits: string[] = [];
     const rows: string[][] = [];
-    for (const group of partition) {
-      // signature: which group each symbol leads to
+    partition.forEach((group, i) => {
       const buckets = new Map<string, string[]>();
-      for (const s of group) {
-        const sig = work.alphabet.map((c) => groupOf.get(delta(s, c))!).join(",");
-        if (!buckets.has(sig)) buckets.set(sig, []);
-        buckets.get(sig)!.push(s);
-        rows.push([s, ...work.alphabet.map((c) => `${delta(s, c)} ∈ ${setName(partition[groupOf.get(delta(s, c))!])}`)]);
+      for (const st of group) {
+        const key = signature(st).join(",");
+        if (!buckets.has(key)) buckets.set(key, []);
+        buckets.get(key)!.push(st);
+        rows.push([
+          groupName(i),
+          st,
+          ...work.alphabet.map((c) => `${delta(st, c)} ∈ ${groupName(groupOf.get(delta(st, c))!)}`)
+        ]);
       }
-      if (buckets.size > 1) changed = true;
-      for (const b of buckets.values()) next.push(b);
-    }
+      const parts = [...buckets.values()];
+      // the part with the group's first state keeps its name; the others are new groups at the end
+      next[i] = parts[0];
+      added.push(...parts.slice(1));
+      if (parts.length > 1) {
+        const why = parts
+          .map(
+            (b) =>
+              `${members(b)}: ${work.alphabet.map((c, k) => `${c} → ${groupName(signature(b[0])[k])}`).join(", ")}`
+          )
+          .join("; ");
+        splits.push(`${groupName(i)} ⇒ ${why}`);
+      }
+    });
+    const refined = [...next, ...added];
+    const table = {
+      headers: [tx("ops.min.table.group"), tx("ops.table.state"), ...work.alphabet.map((c) => `δ(·, ${c})`)],
+      rows
+    };
 
-    if (changed) {
-      steps.push({
-        title: tx("ops.min.refine.title", { round }),
-        detail: tx("ops.min.refine.detail", { partition: partName(next) }),
-        table: { headers: [tx("ops.table.state"), ...work.alphabet.map((c) => `δ(·, ${c})`)], rows }
-      });
-      round++;
-    } else {
+    if (splits.length === 0) {
       steps.push({
         title: tx("ops.min.fixpoint.title", { round }),
-        detail: tx("ops.min.fixpoint.detail", { partition: partName(partition) })
+        detail: tx("ops.min.fixpoint.detail", { partition: partText(partition), round, prev: round - 1 }),
+        table
       });
+      break;
     }
-    partition = next;
+    partition = refined;
+    steps.push({
+      title: tx("ops.min.refine.title", { round }),
+      detail: tx("ops.min.refine.detail", { splits: splits.join(" · "), partition: partText(partition), round }),
+      table
+    });
   }
 
-  // New automaton from the classes
+  // the classes are the new states (2.29): a one-element class keeps its state's name
   const className = new Map<string, string>();
   for (const g of partition) {
     const nm = g.length === 1 ? g[0] : setName(g);
-    for (const s of g) className.set(s, nm);
+    for (const st of g) className.set(st, nm);
   }
 
   const out = makeFSM({
@@ -417,7 +440,7 @@ export function minimize(f: FSM): OpResult<FSM> {
     alphabet: [...work.alphabet],
     states: [...new Set(partition.map((g) => className.get(g[0])!))],
     start: className.get(work.start)!,
-    accept: [...new Set(work.accept.map((s) => className.get(s)!))],
+    accept: [...new Set(work.accept.map((st) => className.get(st)!))],
     transitions: []
   });
   for (const g of partition) {
@@ -426,6 +449,21 @@ export function minimize(f: FSM): OpResult<FSM> {
       addTransition(out, className.get(rep)!, c, className.get(delta(rep, c))!);
     }
   }
+  steps.push({
+    title: tx("ops.min.build.title"),
+    detail: tx("ops.min.build.detail", {
+      start: className.get(work.start)!,
+      accept: out.accept.length ? out.accept.join(", ") : "∅"
+    }),
+    table: {
+      headers: [tx("ops.min.table.newState"), tx("ops.min.table.class"), ...work.alphabet.map((c) => `δ(·, ${c})`)],
+      rows: partition.map((g) => [
+        className.get(g[0])!,
+        members(g),
+        ...work.alphabet.map((c) => className.get(delta(g[0], c))!)
+      ])
+    }
+  });
 
   if (out.states.length === work.states.length) {
     diags.push(info(tx("ops.min.alreadyMinimal.title"), tx("ops.min.alreadyMinimal.detail")));

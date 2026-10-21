@@ -324,23 +324,23 @@
     "min": {
       "unreachableStates": {
         "title": "Unerreichbare Zustände",
-        "detail": "Der/die Zustand(e) {{states}} sind vom Startzustand aus nicht erreichbar — als ersten Schritt der Minimierung entfernen wir sie, sonst könnten falsche Äquivalenzklassen entstehen."
+        "detail": "Kein Wort führt vom Startzustand nach {{states}}. Das Skript (2.29) lässt solche Zustände aus dem fertigen Automaten weg; hier fallen sie zuerst weg, mit demselben Ergebnis."
       },
       "step0": {
-        "title": "0. Entfernen unerreichbarer Zustände",
+        "title": "Unerreichbare Zustände weglassen",
         "detail": "Entfernt: {{removed}}."
       },
       "step1": {
-        "title": "1. Anfangspartition",
-        "detail": "Trennung von akzeptierenden und nicht akzeptierenden Zuständen: {{partition}}"
+        "title": "Anfangspartition: 0-Äquivalenz (Skript 2.4.1)",
+        "detail": "A₁ = Q − F und A₂ = F: schon das leere Wort unterscheidet die nicht akzeptierenden von den akzeptierenden Zuständen. {{partition}}"
       },
       "refine": {
-        "title": "{{round}}. Verfeinerung",
-        "detail": "Eine Gruppe teilt sich, wenn zwei ihrer Zustände bei einem Symbol in unterschiedliche Gruppen führen. Neue Partition: {{partition}}"
+        "title": "Runde {{round}}: {{round}}-Äquivalenz",
+        "detail": "Zwei Zustände bleiben zusammen, wenn jeder Buchstabe sie in dieselbe Gruppe führt. Aufgeteilt: {{splits}}. Neue Partition: {{partition}}. Jetzt sind die Zustände zusammen, die kein Wort der Länge höchstens {{round}} unterscheidet ({{round}}-Äquivalenz, 2.27)."
       },
       "fixpoint": {
-        "title": "{{round}}. Fixpunkt",
-        "detail": "Keine weitere Teilung mehr — die Partition ist stabil: {{partition}}. Die Gruppen sind die Äquivalenzklassen."
+        "title": "Runde {{round}}: nichts teilt sich",
+        "detail": "In jeder Gruppe führt jeder Buchstabe alle Zustände in dieselbe Gruppe: die {{round}}-Äquivalenz ist dieselbe wie die {{prev}}-Äquivalenz, und dann unterscheidet auch kein längeres Wort die Zustände (2.27). Die Gruppen sind die Äquivalenzklassen: {{partition}}."
       },
       "alreadyMinimal": {
         "title": "Der Automat war bereits minimal",
@@ -349,6 +349,15 @@
       "minimized": {
         "title": "Minimiert: {{before}} → {{after}} Zustände",
         "detail": "Zustände in derselben Klasse sind sprachlich nicht unterscheidbar: Sie akzeptieren/verwerfen jedes Wort gleich."
+      },
+      "build": {
+        "title": "Der neue Automat aus den Klassen (Skript 2.29)",
+        "detail": "Jede Klasse ist ein Zustand. Ein Buchstabe führt alle Zustände einer Klasse in dieselbe Klasse — das ist der Übergang. Der Startzustand ist die Klasse des alten, {{start}}; akzeptierend sind die Klassen akzeptierender Zustände: {{accept}}."
+      },
+      "table": {
+        "group": "Gruppe",
+        "newState": "neuer Zustand",
+        "class": "Klasse"
       }
     },
     "complement": {

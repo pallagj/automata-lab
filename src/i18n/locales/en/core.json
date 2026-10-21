@@ -324,23 +324,23 @@
     "min": {
       "unreachableStates": {
         "title": "Unreachable states",
-        "detail": "The state(s) {{states}} are not reachable from the start state — as the first step of minimization we drop them, otherwise spurious equivalence classes could arise."
+        "detail": "No word leads from the start state into {{states}}. The notes (2.29) leave such states out of the finished automaton; here they go first, which gives the same result."
       },
       "step0": {
-        "title": "0. Removing unreachable states",
+        "title": "Leaving out the unreachable states",
         "detail": "Removed: {{removed}}."
       },
       "step1": {
-        "title": "1. Initial partition",
-        "detail": "Splitting accepting and non-accepting states: {{partition}}"
+        "title": "Initial partition: 0-equivalence (lecture notes 2.4.1)",
+        "detail": "A₁ = Q − F and A₂ = F: the empty word already tells the non-accepting and the accepting states apart. {{partition}}"
       },
       "refine": {
-        "title": "{{round}}. Refinement",
-        "detail": "A group splits if two of its states lead to different groups on some symbol. New partition: {{partition}}"
+        "title": "Round {{round}}: {{round}}-equivalence",
+        "detail": "Two states stay together when every letter takes them into the same group. Splitting: {{splits}}. New partition: {{partition}}. Now the states no word of length at most {{round}} tells apart are together ({{round}}-equivalence, 2.27)."
       },
       "fixpoint": {
-        "title": "{{round}}. Fixed point",
-        "detail": "No more splits — the partition is stable: {{partition}}. The groups are the equivalence classes."
+        "title": "Round {{round}}: nothing splits",
+        "detail": "In every group, every letter takes all states into the same group: {{round}}-equivalence is the same as {{prev}}-equivalence, and then no longer word tells the states apart either (2.27). The groups are the equivalence classes: {{partition}}."
       },
       "alreadyMinimal": {
         "title": "The automaton was already minimal",
@@ -349,6 +349,15 @@
       "minimized": {
         "title": "Minimized: {{before}} → {{after}} states",
         "detail": "States grouped into the same class are linguistically indistinguishable: they accept/reject every word the same way."
+      },
+      "build": {
+        "title": "The new automaton from the classes (lecture notes 2.29)",
+        "detail": "Every class is a state. A letter takes all states of a class into the same class — that is the transition. The start state is the class of the old one, {{start}}; the accepting states are the classes of accepting states: {{accept}}."
+      },
+      "table": {
+        "group": "group",
+        "newState": "new state",
+        "class": "class"
       }
     },
     "complement": {
