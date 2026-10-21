@@ -81,12 +81,15 @@ export const EXAMPLE_WORKSHEETS: ExampleWorksheet[] = [
   },
   {
     key: "epsilonFree",
-    name: "ε-removal step by step",
+    name: "ε-transitions — determinization and ε-removal",
     cells: [
       ENFA_A_OR_B,
+      "# The subset construction handles ε-transitions itself (lecture notes 2.16): the start state is E({S}), and a letter leads to the ε-closure of where it goes.",
+      "D = det(N)",
+      "M = min(D)",
+      "# ε-removal is another way: it keeps the states and makes every ε-step a direct transition.",
       "F = epsfree(N)",
-      "D = det(F)",
-      "M = min(complete(D))"
+      "E = equal(F, M)"
     ]
   },
   {
@@ -95,7 +98,7 @@ export const EXAMPLE_WORKSHEETS: ExampleWorksheet[] = [
     cells: [
       "R = regex((a|b)*abb)",
       "A = toFsm(R)",
-      "D = min(det(epsfree(A)))",
+      "D = min(det(A))",
       NFA_M1,
       "E = equal(A, M_1)",
       DFA_HAS_B,

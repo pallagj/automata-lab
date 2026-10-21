@@ -28,34 +28,18 @@ import {
 /* Precondition explanations                                           */
 /* ------------------------------------------------------------------ */
 
-function explainEpsilon(f: FSM, opId: string, fixCode: string): Diagnostic {
-  const a = analyzeFSM(f);
-  const list = a.epsilonTransitions
-    .slice(0, 4)
-    .map((t) => `${t.from} →ε ${t.to}`)
-    .join(", ");
-  return err(
-    tx("ops.needsEpsilonFree.title", { opKey: `opNames.${opId}` }),
-    tx("ops.needsEpsilonFree.detail", {
-      count: a.epsilonTransitions.length,
-      list,
-      ellipsis: a.epsilonTransitions.length > 4 ? ", …" : ""
-    }),
-    { label: tx("ops.fix.insertEpsfree"), code: fixCode }
-  );
-}
-
+/** Not deterministic: several targets somewhere, or ε-transitions — the subset construction fixes both. */
 function explainNondeterministic(f: FSM, opId: string, fixCode: string): Diagnostic {
   const a = analyzeFSM(f);
-  const spots = a.nondeterministicAt
-    .slice(0, 3)
-    .map((n) => `δ(${n.state}, ${n.symbol}) = {${n.targets.join(", ")}}`)
-    .join("; ");
+  const spots = [
+    ...a.nondeterministicAt.map((n) => `δ(${n.state}, ${n.symbol}) = {${n.targets.join(", ")}}`),
+    ...a.epsilonTransitions.map((t) => `${t.from} →ε ${t.to}`)
+  ];
   return err(
     tx("ops.needsDeterministic.title", { opKey: `opNames.${opId}` }),
     tx("ops.needsDeterministic.detail", {
-      spots,
-      ellipsis: a.nondeterministicAt.length > 3 ? "; …" : ""
+      spots: spots.slice(0, 3).join("; "),
+      ellipsis: spots.length > 3 ? "; …" : ""
     }),
     { label: tx("ops.fix.insertDet"), code: fixCode }
   );
@@ -167,29 +151,35 @@ export function removeEpsilon(f: FSM): OpResult<FSM> {
 /* Determinisation (powerset construction)                            */
 /* ------------------------------------------------------------------ */
 
+/**
+ * The subset construction of the lecture notes (2.16): the states are sets of states, the
+ * start state is E({q₀}), and δ'(R, a) = ⋃ E(δ(r, a)) over r ∈ R — with E the ε-closure,
+ * so ε-transitions need no removal first. Only the sets reachable from the start are made.
+ */
 export function determinize(f: FSM): OpResult<FSM> {
   const a = analyzeFSM(f);
   const diags: Diagnostic[] = [];
   const steps: AlgoStep[] = [];
 
-  if (a.hasEpsilon) {
-    return failResult([explainEpsilon(f, "det", `det(epsfree(${f.name}))`)]);
-  }
-
   if (a.isDeterministic) {
     diags.push(info(tx("ops.det.alreadyDeterministic.title"), tx("ops.det.alreadyDeterministic.detail")));
-  }
-  if (!a.isComplete) {
-    diags.push(info(tx("ops.det.notComplete.title"), tx("ops.det.notComplete.detail")));
   }
 
   const tm = transMap(f);
   const acceptSet = new Set(f.accept);
+  const closure = (states: Iterable<string>) => epsilonClosure(f, states, tm);
 
-  const startSet = new Set([f.start]);
+  if (a.hasEpsilon) {
+    steps.push({
+      title: tx("ops.det.closures.title"),
+      detail: tx("ops.det.closures.detail"),
+      table: { headers: [tx("ops.table.state"), "E(q)"], rows: f.states.map((q) => [q, setName(closure([q]))]) }
+    });
+  }
+
+  const startSet = closure([f.start]);
   const queue: Set<string>[] = [startSet];
-  const seen = new Map<string, Set<string>>();
-  seen.set(setName(startSet), startSet);
+  const seen = new Set<string>([setName(startSet)]);
 
   const out = makeFSM({
     name: f.name,
@@ -201,42 +191,44 @@ export function determinize(f: FSM): OpResult<FSM> {
   });
 
   const tableRows: string[][] = [];
-  const needEmpty = { value: false };
+  let needEmpty = false;
 
   while (queue.length) {
     const cur = queue.shift()!;
     const curName = setName(cur);
-    if (!out.states.includes(curName)) out.states.push(curName);
-    if ([...cur].some((s) => acceptSet.has(s)) && !out.accept.includes(curName)) out.accept.push(curName);
+    out.states.push(curName);
+    if ([...cur].some((s) => acceptSet.has(s))) out.accept.push(curName);
 
     const row = [curName];
     for (const sym of f.alphabet) {
-      let next = new Set<string>();
-      for (const s of cur) {
-        const targets = tm.get(s)?.get(sym);
-        if (targets) for (const t of targets) next.add(t);
-      }
+      // one part per element of the set: E(δ(r, a)) — the union of the parts is the next set
+      const parts = [...cur].sort().map((r) => closure(tm.get(r)?.get(sym) ?? []));
+      const next = new Set(parts.flatMap((p) => [...p]));
       const nextName = setName(next);
-      row.push(nextName);
-      if (next.size === 0) needEmpty.value = true;
+      // as the notes write it (2.17): {A} ∪ {C} = {A,C}; one part, or many, is just the set
+      row.push(parts.length > 1 && parts.length <= 4 ? `${parts.map(setName).join(" ∪ ")} = ${nextName}` : nextName);
+      if (next.size === 0) needEmpty = true;
       addTransition(out, curName, sym, nextName);
       if (!seen.has(nextName) && next.size > 0) {
-        seen.set(nextName, next);
+        seen.add(nextName);
         queue.push(next);
       }
     }
     tableRows.push(row);
   }
 
-  if (needEmpty.value) {
+  if (needEmpty) {
     out.states.push("∅");
     for (const sym of f.alphabet) addTransition(out, "∅", sym, "∅");
     tableRows.push(["∅", ...f.alphabet.map(() => "∅")]);
+    diags.push(info(tx("ops.det.emptySet.title"), tx("ops.det.emptySet.detail")));
   }
 
   steps.push({
     title: tx("ops.det.step.title"),
-    detail: tx("ops.det.step.detail"),
+    detail: a.hasEpsilon
+      ? tx("ops.det.step.detailEpsilon", { start: setName(startSet), startExpr: `E({${f.start}})` })
+      : tx("ops.det.step.detail", { start: setName(startSet) }),
     table: { headers: [tx("ops.table.stateSet"), ...f.alphabet], rows: tableRows }
   });
   steps.push({
@@ -336,9 +328,6 @@ export function minimize(f: FSM): OpResult<FSM> {
   const diags: Diagnostic[] = [];
 
   // Preconditions with a precise explanation and a fix chain
-  if (a.hasEpsilon) {
-    return failResult([explainEpsilon(f, "min", `min(det(epsfree(${f.name})))`)]);
-  }
   if (!a.isDeterministic) {
     return failResult([explainNondeterministic(f, "min", `min(det(${f.name}))`)]);
   }
@@ -458,7 +447,6 @@ export function minimize(f: FSM): OpResult<FSM> {
 
 export function complement(f: FSM): OpResult<FSM> {
   const a = analyzeFSM(f);
-  if (a.hasEpsilon) return failResult([explainEpsilon(f, "complement", `complement(det(epsfree(${f.name})))`)]);
   if (!a.isDeterministic)
     return failResult([
       explainNondeterministic(f, "complement", `complement(det(${f.name}))`),
@@ -506,7 +494,7 @@ export function product(m1: FSM, m2: FSM, mode: ProductMode): OpResult<FSM> {
         err(
           tx("ops.product.hasEpsilon.title", { partKey: labelKey }),
           tx("ops.product.hasEpsilon.detail"),
-          { label: tx("ops.fix.insertChain"), code: chain(`complete(det(epsfree(${m.name})))`) }
+          { label: tx("ops.fix.insertDet"), code: chain(`det(${m.name})`) }
         )
       );
     else if (!a.isDeterministic)
@@ -514,7 +502,7 @@ export function product(m1: FSM, m2: FSM, mode: ProductMode): OpResult<FSM> {
         err(
           tx("ops.product.nondeterministic.title", { partKey: labelKey }),
           tx("ops.product.nondeterministic.detail"),
-          { label: tx("ops.fix.insertDet"), code: chain(`complete(det(${m.name}))`) }
+          { label: tx("ops.fix.insertDet"), code: chain(`det(${m.name})`) }
         )
       );
     else if (!a.isComplete)
@@ -773,13 +761,9 @@ export interface EquivalenceVerdict {
   counterexample?: { word: string; acceptedBy: string; rejectedBy: string };
 }
 
-/** Normalises an arbitrary (ε-)NFA into a complete DFA. */
+/** Normalises an arbitrary (ε-)NFA into a complete DFA: the subset construction gives one (with a ∅ state). */
 function normalizeToCompleteDFA(f: FSM): FSM {
-  let m = f;
-  const a = analyzeFSM(m);
-  if (a.hasEpsilon) m = removeEpsilon(m).value!;
-  m = determinize(m).value!; // our determinisation yields a complete DFA (with a ∅ state)
-  return m;
+  return determinize(f).value!;
 }
 
 export function checkEquivalence(a: FSM, b: FSM): OpResult<EquivalenceVerdict> {

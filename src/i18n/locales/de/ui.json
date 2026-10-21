@@ -112,7 +112,7 @@
       "name": "Einführung — Determinisierung und Minimierung"
     },
     "epsilonFree": {
-      "name": "ε-Elimination Schritt für Schritt"
+      "name": "ε-Übergänge — Determinisierung und ε-Elimination"
     },
     "regex": {
       "name": "Reguläre Ausdrücke und Automaten"

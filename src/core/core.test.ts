@@ -88,7 +88,7 @@ describe("determinisation", () => {
       expect(acceptsFSM(d, w)).toBe(acceptsFSM(endsAB, w));
     }
   });
-  it("rejects an automaton with ε-transitions, suggesting a fix", () => {
+  it("takes an automaton with ε-transitions as it is: the start state is E({q₀}) (2.16)", () => {
     const m = makeFSM({
       name: "m",
       alphabet: ["a"],
@@ -98,8 +98,10 @@ describe("determinisation", () => {
       transitions: [{ from: "S", symbol: EPS, to: "A" }]
     });
     const r = determinize(m);
-    expect(r.ok).toBe(false);
-    expect(r.diagnostics[0].fix?.code).toBe("det(epsfree(m))");
+    expect(r.ok).toBe(true);
+    expect(r.value!.start).toBe("{A,S}");
+    expect(acceptsFSM(r.value!, "")).toBe(true);
+    expect(acceptsFSM(r.value!, "a")).toBe(false);
   });
 });
 

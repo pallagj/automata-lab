@@ -51,7 +51,7 @@
     "step": {
       "thompson": {
         "title": "Thompson-Konstruktion",
-        "detail": "Der Struktur des Ausdrucks folgend wird für jeden Teilausdruck ein kleines ε-NFA-Fragment gebaut (Literal, Vereinigung, Verkettung, Stern), die anschließend mit ε-Übergängen verbunden werden. Ergebnis: {{count}} Zustände. Mit der Kette det(epsfree(·)) lässt sich daraus ein DFA machen."
+        "detail": "Der Struktur des Ausdrucks folgend wird für jeden Teilausdruck ein kleines ε-NFA-Fragment gebaut (Literal, Vereinigung, Verkettung, Stern), die anschließend mit ε-Übergängen verbunden werden. Ergebnis: {{count}} Zustände. det(·) macht daraus einen DFA."
       }
     }
   },
@@ -229,13 +229,9 @@
     }
   },
   "ops": {
-    "needsEpsilonFree": {
-      "title": "Die Operation {{op}} benötigt einen ε-freien Automaten",
-      "detail": "Der Automat enthält {{count}} ε-Übergänge ({{list}}{{ellipsis}}). Ein ε-Übergang wechselt beim Lesen des leeren Wortes den Zustand, daher muss zuerst die ε-Elimination erfolgen: Für jeden Zustand wird sein ε-Abschluss berechnet, und die von dort ausgehenden Übergänge werden in den ursprünglichen Zustand „hineingezogen“."
-    },
     "needsDeterministic": {
       "title": "Die Operation {{op}} benötigt einen deterministischen Automaten",
-      "detail": "Nichtdeterminismus gefunden: {{spots}}{{ellipsis}}. In einem deterministischen Automaten darf jedes (Zustand, Symbol)-Paar höchstens einen Folgezustand haben. Mit der Potenzmengenkonstruktion (Determinisierung) lässt sich ein äquivalenter DFA konstruieren."
+      "detail": "Nichtdeterminismus gefunden: {{spots}}{{ellipsis}}. In einem deterministischen Automaten hat jedes (Zustand, Symbol)-Paar genau einen Folgezustand, und es gibt keinen ε-Übergang. Die Teilmengenkonstruktion (Determinisierung, Skript 2.16) baut einen äquivalenten DFA, ε-Übergänge eingeschlossen."
     },
     "needsComplete": {
       "title": "Die Operation {{op}} benötigt einen vollständigen Automaten",
@@ -280,19 +276,24 @@
     "det": {
       "alreadyDeterministic": {
         "title": "Der Automat ist bereits deterministisch",
-        "detail": "Jedes (Zustand, Symbol)-Paar hat höchstens einen Übergang und es gibt keinen ε-Übergang — die Potenzmengenkonstruktion erzeugt nur die erreichbaren einelementigen Mengen."
-      },
-      "notComplete": {
-        "title": "Der Automat ist nicht vollständig — der Zustand ∅ kann auftreten",
-        "detail": "Wo kein Übergang existiert, gelangt man in der Potenzmengenkonstruktion in die leere Menge (∅), die sich wie ein Fangzustand verhält. Dadurch wird das Ergebnis ein vollständiger DFA."
+        "detail": "Jedes (Zustand, Symbol)-Paar hat höchstens einen Übergang und es gibt keinen ε-Übergang — die Teilmengenkonstruktion erzeugt nur die erreichbaren einelementigen Mengen (und ∅, wo ein Übergang fehlt)."
       },
       "step": {
-        "title": "Potenzmengenkonstruktion",
-        "detail": "Ausgehend vom Startzustand wird für jede erreichte Zustandsmenge und jedes Symbol die Menge der erreichbaren Zustände berechnet. Nur erreichbare Mengen werden aufgenommen. Eine Menge ist akzeptierend, wenn sie einen ursprünglich akzeptierenden Zustand enthält."
+        "title": "Teilmengenkonstruktion (Skript 2.16)",
+        "detail": "Die neuen Zustände sind Mengen der alten; der Startzustand ist {{start}}. Für jede erreichte Menge R und jeden Buchstaben a: δ'(R, a) = ⋃ δ(r, a) über r ∈ R — hat R mehrere Elemente, werden die Teile einzeln gezeigt. Nur die vom Start aus erreichbaren Mengen werden gebaut, und eine Menge akzeptiert, wenn sie einen akzeptierenden Zustand enthält.",
+        "detailEpsilon": "Die neuen Zustände sind Mengen der alten; der Startzustand ist {{startExpr}} = {{start}}. Für jede erreichte Menge R und jeden Buchstaben a: δ'(R, a) = ⋃ E(δ(r, a)) über r ∈ R — ein Buchstabe wird gelesen, danach dürfen ε-Übergänge folgen. Hat R mehrere Elemente, werden die Teile E(δ(r, a)) einzeln gezeigt. Nur die vom Start aus erreichbaren Mengen werden gebaut, und eine Menge akzeptiert, wenn sie einen akzeptierenden Zustand enthält."
       },
       "result": {
         "title": "Ergebnis",
         "detail": "{{count}} Zustände entstanden aus den möglichen 2^{{exponent}} = {{possible}} Teilmengen. Akzeptierend: {{accept}}."
+      },
+      "closures": {
+        "title": "ε-Hüllen (Skript 2.16)",
+        "detail": "E(q) ist die Menge der Zustände, die von q aus über ε-Übergänge — beliebig viele — erreichbar sind, q eingeschlossen. Der neue Automat rechnet mit diesen Hüllen: sein Startzustand ist die Hülle des Startzustands, und nach einem Buchstaben nimmt er die Hülle dessen, wohin der Buchstabe führt."
+      },
+      "emptySet": {
+        "title": "Die leere Menge ∅ tritt auf — ein Fangzustand",
+        "detail": "Wo ein Buchstabe nirgendwohin führt, ist δ'(R, a) = ∅: auch die leere Menge ist ein Zustand — sie akzeptiert nie, und jeder Buchstabe hält sie dort. So ist das Ergebnis ein vollständiger DFA."
       }
     },
     "complete": {
@@ -397,7 +398,7 @@
     "unionEpsilon": {
       "info": {
         "title": "Vereinigung über ε-Konstruktion",
-        "detail": "Von einem neuen Startzustand führt je ein ε-Übergang zu den Startzuständen beider Automaten. Das Ergebnis ist ein ε-NFA — mit der Kette det(epsfree(·)) determinisierbar. (Die Vereinigung vollständiger DFAs lässt sich auch mit der Produktkonstruktion bilden.)"
+        "detail": "Von einem neuen Startzustand führt je ein ε-Übergang zu den Startzuständen beider Automaten. Das Ergebnis ist ein ε-NFA — det(·) macht daraus einen DFA. (Die Vereinigung vollständiger DFAs lässt sich auch mit der Produktkonstruktion bilden.)"
       },
       "step": {
         "title": "Vereinigung mit ε-Übergängen",

@@ -112,7 +112,7 @@
       "name": "Intro — determinization and minimization"
     },
     "epsilonFree": {
-      "name": "ε-removal step by step"
+      "name": "ε-transitions — determinization and ε-removal"
     },
     "regex": {
       "name": "Regular expressions and automata"

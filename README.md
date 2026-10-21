@@ -18,9 +18,10 @@ an app; everything runs locally, no account needed.
 - **Smart operations with explanations:** `det`, `min`, `epsfree`, `complete`, `reachable`,
   `complement`, `union`, `intersect`, `difference`, `concat`, `star`, `reverse`, `regex`, `equal`,
   `toGrammar`, `toRegex`, `toFsm`, `toPda`, and for grammars `epsfree`, `unitfree`, `trim`, `cnf`.
-  When a precondition is missing (e.g. determinisation needs an
-  ε-free automaton), the app **explains why** and inserts the fix chain with one click
-  (e.g. `min(complete(det(epsfree(M))))`).
+  When a precondition is missing (e.g. minimisation needs a complete
+  deterministic automaton), the app **explains why** and inserts the fix chain with one click
+  (e.g. `min(det(M))`). Determinisation follows the lecture notes: the subset construction
+  handles ε-transitions itself, through ε-closures.
 - **"How was it built?" panel:** the recorded steps of each algorithm — powerset table, partition
   refinement rounds, ε-closures, product construction table, the r(p, q, t) tables of the
   automaton → regular expression conversion, the rounds of the grammar transformations.

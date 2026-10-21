@@ -51,7 +51,7 @@
     "step": {
       "thompson": {
         "title": "Thompson's construction",
-        "detail": "Following the expression's structure, a small ε-NFA fragment is built for every subexpression (literal, union, concatenation, star), then these are wired together with ε-transitions. Result: {{count}} states. It can be turned into a DFA with the det(epsfree(·)) chain."
+        "detail": "Following the expression's structure, a small ε-NFA fragment is built for every subexpression (literal, union, concatenation, star), then these are wired together with ε-transitions. Result: {{count}} states. det(·) turns it into a DFA."
       }
     }
   },
@@ -229,13 +229,9 @@
     }
   },
   "ops": {
-    "needsEpsilonFree": {
-      "title": "The {{op}} operation requires an ε-free automaton",
-      "detail": "The automaton contains {{count}} ε-transitions ({{list}}{{ellipsis}}). An ε-transition changes state on reading the empty word, so ε-removal must be done first: for every state we compute its ε-closure, and fold the transitions leaving it back into the original state."
-    },
     "needsDeterministic": {
       "title": "The {{op}} operation requires a deterministic automaton",
-      "detail": "Nondeterminism found: {{spots}}{{ellipsis}}. In a deterministic automaton, every (state, symbol) pair may have at most one successor state. An equivalent DFA can be built with the powerset construction (determinization)."
+      "detail": "Nondeterminism found: {{spots}}{{ellipsis}}. In a deterministic automaton every (state, symbol) pair has exactly one successor state and there is no ε-transition. The subset construction (determinization, lecture notes 2.16) builds an equivalent DFA, ε-transitions included."
     },
     "needsComplete": {
       "title": "The {{op}} operation requires a complete automaton",
@@ -280,19 +276,24 @@
     "det": {
       "alreadyDeterministic": {
         "title": "The automaton is already deterministic",
-        "detail": "Every (state, symbol) pair has at most one transition and there is no ε-transition — the powerset construction only creates the reachable singleton sets."
-      },
-      "notComplete": {
-        "title": "The automaton is not complete — the ∅ state may appear",
-        "detail": "Wherever there is no transition, the powerset construction lands in the empty set (∅), which behaves as a trap state. This makes the result a complete DFA."
+        "detail": "Every (state, symbol) pair has at most one transition and there is no ε-transition — the subset construction only creates the reachable one-element sets (and ∅ where a transition is missing)."
       },
       "step": {
-        "title": "Powerset construction",
-        "detail": "Starting from the start state, for every reached state set and every symbol we compute the set of reachable states. Only reachable sets are included. A set is accepting if it contains an original accepting state."
+        "title": "Subset construction (lecture notes 2.16)",
+        "detail": "The new states are sets of the old ones; the start state is {{start}}. For every set R reached and every letter a: δ'(R, a) = ⋃ δ(r, a) over r ∈ R — where R has several elements, the parts are shown one by one. Only the sets reachable from the start are built, and a set accepts if it contains an accepting state.",
+        "detailEpsilon": "The new states are sets of the old ones; the start state is {{startExpr}} = {{start}}. For every set R reached and every letter a: δ'(R, a) = ⋃ E(δ(r, a)) over r ∈ R — a letter is read, then any ε-transitions may follow. Where R has several elements, the parts E(δ(r, a)) are shown one by one. Only the sets reachable from the start are built, and a set accepts if it contains an accepting state."
       },
       "result": {
         "title": "Result",
         "detail": "{{count}} states were produced out of the possible 2^{{exponent}} = {{possible}} subsets. Accepting: {{accept}}."
+      },
+      "closures": {
+        "title": "ε-closures (lecture notes 2.16)",
+        "detail": "E(q) is the set of states reachable from q along ε-transitions — any number of them —, q included. The new automaton works with these closures: its start state is the closure of the start state, and after a letter it takes the closure of where the letter leads."
+      },
+      "emptySet": {
+        "title": "The empty set ∅ appears — a trap state",
+        "detail": "Where a letter leads nowhere, δ'(R, a) = ∅: the empty set is a state too — it never accepts, and every letter keeps it there. So the result is a complete DFA."
       }
     },
     "complete": {
@@ -397,7 +398,7 @@
     "unionEpsilon": {
       "info": {
         "title": "Union built via ε-construction",
-        "detail": "An ε-transition leads from a new start state into both automata's start states. The result is an ε-NFA — it can be determinized with the det(epsfree(·)) chain. (A union of complete DFAs can also be done with the product construction.)"
+        "detail": "An ε-transition leads from a new start state into both automata's start states. The result is an ε-NFA — det(·) turns it into a DFA. (A union of complete DFAs can also be done with the product construction.)"
       },
       "step": {
         "title": "Union with ε-transitions",

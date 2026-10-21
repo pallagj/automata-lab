@@ -51,7 +51,7 @@
     "step": {
       "thompson": {
         "title": "Thompson-konstrukció",
-        "detail": "A reguláris kifejezés szerkezeti felépítését követve minden részkifejezéshez kis ε-NFA-darabot építünk (literál, unió, összefűzés, csillag), majd ezeket ε-átmenetekkel kapcsoljuk össze. Eredmény: {{count}} állapot. A det(epsfree(·)) lánccal DFA-vá alakítható."
+        "detail": "A reguláris kifejezés szerkezeti felépítését követve minden részkifejezéshez kis ε-NFA-darabot építünk (literál, unió, összefűzés, csillag), majd ezeket ε-átmenetekkel kapcsoljuk össze. Eredmény: {{count}} állapot. A det(·) DFA-vá alakítja."
       }
     }
   },
@@ -229,13 +229,9 @@
     }
   },
   "ops": {
-    "needsEpsilonFree": {
-      "title": "A(z) {{op}} művelethez ε-mentes automata kell",
-      "detail": "Az automata {{count}} ε-átmenetet tartalmaz ({{list}}{{ellipsis}}). Az ε-átmenet üres szó beolvasásával vált állapotot, ezért előbb az ε-mentesítést kell elvégezni: minden állapothoz kiszámoljuk az ε-lezárását, és az onnan induló átmeneteket „behúzzuk” az eredeti állapotba."
-    },
     "needsDeterministic": {
       "title": "A(z) {{op}} művelethez determinisztikus automata kell",
-      "detail": "Nemdeterminizmus található: {{spots}}{{ellipsis}}. Determinisztikus automatában minden (állapot, szimbólum) párhoz pontosan egy következő állapot tartozhat. A hatványhalmaz-konstrukcióval (determinizálás) ekvivalens DFA készíthető."
+      "detail": "Nemdeterminizmus található: {{spots}}{{ellipsis}}. Determinisztikus automatában minden (állapot, szimbólum) párhoz pontosan egy következő állapot tartozik, és nincs ε-átmenet. A részhalmaz-konstrukció (determinizálás, jegyzet 2.16) — az ε-átmeneteket is kezelve — ekvivalens DFA-t ad."
     },
     "needsComplete": {
       "title": "A(z) {{op}} művelethez teljes automata kell",
@@ -280,19 +276,24 @@
     "det": {
       "alreadyDeterministic": {
         "title": "Az automata már determinisztikus",
-        "detail": "Minden (állapot, szimbólum) párhoz legfeljebb egy átmenet tartozik és nincs ε-átmenet — a hatványhalmaz-konstrukció csak az elérhető egyelemű halmazokat hozza létre."
-      },
-      "notComplete": {
-        "title": "Az automata nem teljes — a ∅ állapot megjelenhet",
-        "detail": "Ahol nincs átmenet, ott a hatványhalmaz-konstrukcióban az üres halmazba (∅) jutunk, amely csapdaállapotként viselkedik. Ettől az eredmény teljes DFA lesz."
+        "detail": "Minden (állapot, szimbólum) párhoz legfeljebb egy átmenet tartozik és nincs ε-átmenet — a részhalmaz-konstrukció csak az elérhető egyelemű halmazokat hozza létre (és ∅-t, ahol hiányzik átmenet)."
       },
       "step": {
-        "title": "Hatványhalmaz-konstrukció",
-        "detail": "A kezdőállapotból indulva minden elért állapothalmazra és minden szimbólumra kiszámoljuk az elérhető állapotok halmazát. Csak az elérhető halmazokat vesszük fel. Egy halmaz akkor elfogadó, ha tartalmaz eredeti elfogadó állapotot."
+        "title": "Részhalmaz-konstrukció (jegyzet 2.16)",
+        "detail": "Az új állapotok a régiek halmazai, a kezdőállapot {{start}}. Minden elért R halmazra és a betűre: δ'(R, a) = ⋃ δ(r, a), r ∈ R — ahol R több elemű, a tagokat egyenként is mutatjuk. Csak a kezdőállapotból elérhető halmazokat építjük fel; egy halmaz elfogadó, ha van benne elfogadó állapot.",
+        "detailEpsilon": "Az új állapotok a régiek halmazai, a kezdőállapot {{startExpr}} = {{start}}. Minden elért R halmazra és a betűre: δ'(R, a) = ⋃ E(δ(r, a)), r ∈ R — beolvasunk egy betűt, utána tetszőleges ε-átmenetek jöhetnek. Ahol R több elemű, az E(δ(r, a)) tagokat egyenként is mutatjuk. Csak a kezdőállapotból elérhető halmazokat építjük fel; egy halmaz elfogadó, ha van benne elfogadó állapot."
       },
       "result": {
         "title": "Eredmény",
         "detail": "{{count}} állapot keletkezett a lehetséges 2^{{exponent}} = {{possible}} részhalmazból. Elfogadó: {{accept}}."
+      },
+      "closures": {
+        "title": "ε-lezárások (jegyzet 2.16)",
+        "detail": "E(q) a q-ból ε-átmenetekkel — akár többel egymás után — elérhető állapotok halmaza, q-val együtt. Az új automata ezekkel a lezárásokkal számol: a kezdőállapota a kezdőállapot lezártja, egy betű után pedig annak a lezártja, ahová a betű visz."
+      },
+      "emptySet": {
+        "title": "Megjelenik az üres halmaz (∅) — csapdaállapot",
+        "detail": "Ahol egy betűre nincs hová lépni, δ'(R, a) = ∅: az üres halmaz is állapot — sosem elfogadó, és minden betű helyben hagyja. Így az eredmény teljes DFA."
       }
     },
     "complete": {
@@ -397,7 +398,7 @@
     "unionEpsilon": {
       "info": {
         "title": "ε-konstrukcióval készült unió",
-        "detail": "Új kezdőállapotból ε-átmenet vezet mindkét automata kezdőállapotába. Az eredmény ε-NFA — determinizálható a det(epsfree(·)) lánccal. (Teljes DFA-k uniója a szorzat-konstrukcióval is elvégezhető.)"
+        "detail": "Új kezdőállapotból ε-átmenet vezet mindkét automata kezdőállapotába. Az eredmény ε-NFA — a det(·) DFA-vá alakítja. (Teljes DFA-k uniója a szorzat-konstrukcióval is elvégezhető.)"
       },
       "step": {
         "title": "Unió ε-átmenetekkel",

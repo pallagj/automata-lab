@@ -112,7 +112,7 @@
       "name": "Bemutató — determinizálás és minimalizálás"
     },
     "epsilonFree": {
-      "name": "ε-mentesítés lépésről lépésre"
+      "name": "ε-átmenetek — determinizálás és ε-mentesítés"
     },
     "regex": {
       "name": "Reguláris kifejezések és automaták"
