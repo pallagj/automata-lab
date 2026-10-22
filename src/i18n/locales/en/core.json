@@ -124,7 +124,7 @@
       },
       "nondeterministicMachine": {
         "title": "Nondeterministic machine: more than one transition can match in state {{state}}",
-        "detail": "The simulation follows every branch; click a highlighted edge on the graph to pick a specific branch."
+        "detail": "The simulation follows every branch at once: the word is accepted when some branch accepts."
       },
       "storageCharsetNotOneSymbol": {
         "title": "“{{symbol}}” in the alphabet of {{storageId}} is not one symbol",
@@ -496,6 +496,12 @@
       },
       "table": {
         "number": "number"
+      },
+      "anim": {
+        "round": "Round {{t}}: paths may now pass through state {{state}} too — the coloured states may be intermediate. The new values come from row {{t}} and column {{t}} of r(·, ·, {{prev}}) (shaded): r(p, q, {{t}}) = r(p, q, {{prev}}) + r(p, {{t}}, {{prev}}) r({{t}}, {{t}}, {{prev}})* r({{t}}, q, {{prev}}).",
+        "cell": "r({{p}}, {{q}}, {{t}}) = r({{p}}, {{q}}, {{prev}}) + r({{p}}, {{t}}, {{prev}}) r({{t}}, {{t}}, {{prev}})* r({{t}}, {{q}}, {{prev}}) = {{formula}}, simplified: {{value}}",
+        "roundDone": "The table r(p, q, {{t}}) is ready: the highlighted values changed ({{count}} in all). The others stay, since their new term is ∅ or already contained in the old value.",
+        "roundSame": "Round {{t}} changes nothing: every new term is ∅ or already contained in the old value."
       }
     },
     "clean": {
@@ -687,6 +693,15 @@
       "needsCNF": {
         "title": "CYK needs a grammar in Chomsky normal form",
         "detail": "Every rule must be A → a or A → BC."
+      },
+      "anim": {
+        "start": "T[j, i] gets the variables that derive the j long subword starting at letter i. The table fills bottom up, row by row, from left to right.",
+        "letter": "T[1, {{start}}] — the letter {{word}}: {{reasons}}, so T[1, {{start}}] = {{cell}}.",
+        "letterEmpty": "T[1, {{start}}] — the letter {{word}}: there is no rule A → {{word}}, so T[1, {{start}}] = ∅.",
+        "cell": "T[{{length}}, {{start}}] — the subword {{word}}: {{reasons}}, so T[{{length}}, {{start}}] = {{cell}}.",
+        "cellEmpty": "T[{{length}}, {{start}}] — the subword {{word}}: none of its splits ({{splits}}) has a matching rule A → BC, so T[{{length}}, {{start}}] = ∅.",
+        "accepted": "The start variable {{start}} is in the top-left cell T[{{n}}, 1]: the word is derivable.",
+        "rejected": "The start variable {{start}} is not in the top-left cell T[{{n}}, 1]: the word is not derivable."
       }
     }
   },

@@ -23,7 +23,6 @@ export interface GraphEdge {
   to: string;
   label: string;
   active?: boolean;
-  clickable?: boolean;
 }
 
 export interface GraphSpec {
@@ -57,7 +56,6 @@ interface Props {
   spec: GraphSpec;
   /** an animation's current picture over the graph */
   frame?: GraphFrame | null;
-  onEdgeClick?: (edge: GraphEdge) => void;
   className?: string;
   /** key for pinned positions (cell) — when set, states are draggable */
   cellId?: string | null;
@@ -410,7 +408,7 @@ function useGlidingLabelTs(edges: LaidOutEdge[]): Map<string, number> {
   return shown.current;
 }
 
-export const GraphView: React.FC<Props> = ({ spec, frame, onEdgeClick, className, cellId, editing, exportName }) => {
+export const GraphView: React.FC<Props> = ({ spec, frame, className, cellId, editing, exportName }) => {
   const { t } = useTranslation();
   const savedPos = useAppStore((s) => (cellId ? s.layouts[cellId] : undefined));
   const setNodePos = useAppStore((s) => s.setNodePos);
@@ -533,7 +531,7 @@ export const GraphView: React.FC<Props> = ({ spec, frame, onEdgeClick, className
   };
 
   const onPointerDown = (e: React.PointerEvent) => {
-    // clicking an edge does not start a pan, so the click lands reliably
+    // clicking an edge (its label opens the editor) does not start a pan, so the click lands reliably
     if ((e.target as Element).closest(".graph-edge")) return;
     dragRef.current = { x: e.clientX, y: e.clientY, view: vb };
     (e.currentTarget as Element).setPointerCapture(e.pointerId);
@@ -713,11 +711,7 @@ export const GraphView: React.FC<Props> = ({ spec, frame, onEdgeClick, className
           const partial = frame?.edgeLabels?.get(e.id);
           const box = partial !== undefined ? labelBox(partial) : { lines: e.lines, w: e.labelW, h: e.labelH };
           return (
-            <g
-              key={e.id}
-              className={`graph-edge ${active ? "active" : ""} ${e.clickable ? "clickable" : ""} ${editing ? "editable" : ""}`}
-              onClick={() => e.clickable && onEdgeClick?.(e)}
-            >
+            <g key={e.id} className={`graph-edge ${active ? "active" : ""} ${editing ? "editable" : ""}`}>
               <path d={e.path} className="graph-edge-hit" fill="none" />
               <path d={e.path} className="graph-edge-line" fill="none" markerEnd={active ? "url(#arrow-active)" : "url(#arrow)"} />
               {box.lines.length > 0 && (

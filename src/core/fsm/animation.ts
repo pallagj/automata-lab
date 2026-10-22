@@ -26,6 +26,18 @@ export interface AnimFrame {
   classes?: Record<string, number>;
   /** state → a short tag drawn under it (the name of its class) */
   tags?: Record<string, string>;
+  /** a table beside the graph (the r(p, q, t) values) */
+  table?: AnimTable;
+}
+
+/** A table of an animation frame; cells are [row, column] of `rows`. */
+export interface AnimTable {
+  headers: string[];
+  rows: string[][];
+  /** the cells the frame is about: highlighted */
+  focus?: [number, number][];
+  /** the cells they are computed from: shaded */
+  marked?: [number, number][];
 }
 
 export function transKey(from: string, symbol: string, to: string): string {

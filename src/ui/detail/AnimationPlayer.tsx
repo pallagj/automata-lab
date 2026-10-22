@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Pause, Play, SkipBack, SkipForward, StepBack, StepForward, X } from "lucide-react";
-import { AnimFrame, transKey } from "../../core/fsm/animation";
+import { AnimFrame, AnimTable, transKey } from "../../core/fsm/animation";
 import { StepGroup } from "../../core/expr/expression";
 import { tr } from "../../i18n/translate";
 import { rich } from "../Rich";
@@ -55,8 +55,8 @@ export function toGraphFrame(f: AnimFrame, spec: GraphSpec): GraphFrame {
   };
 }
 
-export interface Player {
-  frames: PlayedFrame[];
+export interface Player<F> {
+  frames: F[];
   index: number;
   playing: boolean;
   speed: number;
@@ -66,7 +66,7 @@ export interface Player {
 }
 
 /** Plays the frames one after the other; ← → step and space plays or pauses, outside text fields. */
-export function usePlayer(frames: PlayedFrame[], open: boolean): Player {
+export function usePlayer<F>(frames: F[], open: boolean): Player<F> {
   const [index, setIndex] = useState(0);
   const [playing, setPlaying] = useState(false);
   const [speed, setSpeed] = useState(1);
@@ -124,16 +124,18 @@ export function usePlayer(frames: PlayedFrame[], open: boolean): Player {
   };
 }
 
-/** The controls and the caption of the frame shown, at the bottom of the canvas. */
-export const PlayerBar: React.FC<{ player: Player; onClose: () => void }> = ({ player, onClose }) => {
+/** The controls and, below them, the caption: over the canvas's bottom edge, or `inline` in a card. */
+export const PlayerBar: React.FC<{
+  player: Player<unknown>;
+  caption: React.ReactNode;
+  inline?: boolean;
+  onClose: () => void;
+}> = ({ player, caption, inline, onClose }) => {
   const { t } = useTranslation();
   const { frames, index, playing, speed, go, toggle, cycleSpeed } = player;
-  const current = frames[index];
-  // the operation is named when a chain plays several
-  const several = useMemo(() => new Set(frames.map((f) => f.operation)).size > 1, [frames]);
-  if (!current) return null;
+  if (frames.length === 0) return null;
   return (
-    <div className="anim-player" role="group" aria-label={t("detail.anim.title")}>
+    <div className={`anim-player ${inline ? "inline" : ""}`} role="group" aria-label={t("detail.anim.title")}>
       <div className="anim-controls">
         <button onClick={() => go(0)} disabled={index === 0} title={t("detail.anim.first")}>
           <SkipBack size={15} />
@@ -169,10 +171,58 @@ export const PlayerBar: React.FC<{ player: Player; onClose: () => void }> = ({ p
           <X size={15} />
         </button>
       </div>
-      <div className="anim-caption">
-        {several && <code className="anim-op">{rich(current.operation)}</code>}
-        {rich(tr(t, current.frame.caption))}
-      </div>
+      <div className="anim-caption">{caption}</div>
+    </div>
+  );
+};
+
+/** What an operation's frame says: its caption — naming the operation when a chain plays several — and its table. */
+export const FrameCaption: React.FC<{ frames: PlayedFrame[]; index: number }> = ({ frames, index }) => {
+  const { t } = useTranslation();
+  const several = useMemo(() => new Set(frames.map((f) => f.operation)).size > 1, [frames]);
+  const current = frames[index];
+  if (!current) return null;
+  return (
+    <>
+      {several && <code className="anim-op">{rich(current.operation)}</code>}
+      {rich(tr(t, current.frame.caption))}
+      {current.frame.table && <FrameTable table={current.frame.table} />}
+    </>
+  );
+};
+
+const FrameTable: React.FC<{ table: AnimTable }> = ({ table }) => {
+  const among = (cells: [number, number][] | undefined, r: number, c: number) =>
+    !!cells?.some(([a, b]) => a === r && b === c);
+  return (
+    <div className="t-wrap anim-table">
+      <table className="t">
+        <thead>
+          <tr>
+            {table.headers.map((h, i) => (
+              <th key={i}>{rich(h)}</th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {table.rows.map((row, r) => (
+            <tr key={r}>
+              {row.map((v, c) =>
+                c === 0 ? (
+                  <th key={c}>{rich(v)}</th>
+                ) : (
+                  <td
+                    key={c}
+                    className={among(table.focus, r, c) ? "focus" : among(table.marked, r, c) ? "marked" : undefined}
+                  >
+                    {rich(v)}
+                  </td>
+                )
+              )}
+            </tr>
+          ))}
+        </tbody>
+      </table>
     </div>
   );
 };

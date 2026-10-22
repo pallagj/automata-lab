@@ -13,14 +13,14 @@ import {
 import { languageSummary } from "../../core/fsm/decide";
 import { showWord } from "../../core/verdict";
 import { LanguageNote } from "./LanguageNote";
-import { GraphEdge, GraphSpec, GraphView } from "../graph/GraphView";
+import { GraphSpec, GraphView } from "../graph/GraphView";
 import { useGraphEditing } from "../graph/editing";
 import { Stage, StagePanel } from "./Stage";
 import { StepsContent } from "./StepsPanel";
 import { notesPanel } from "./DiagnosticsList";
 import { TapeInput } from "./TapeInput";
 import { StepGroup } from "../../core/expr/expression";
-import { PlayerBar, playedFrames, toGraphFrame, usePlayer } from "./AnimationPlayer";
+import { FrameCaption, PlayerBar, playedFrames, toGraphFrame, usePlayer } from "./AnimationPlayer";
 import {
   Check,
   Clapperboard,
@@ -92,18 +92,6 @@ export const FSMView: React.FC<{ fsm: FSM; stepGroups?: StepGroup[]; diagnostics
   const reset = () => {
     setRunning(false);
     setHistory([initialStates(fsm)]);
-  };
-
-  const stepEdge = (edge: GraphEdge) => {
-    // a specific edge was chosen: step only into its target state
-    const [from, , to] = edge.id.split("⇒");
-    if (nextChar === null) return;
-    const symbols = tm.get(from);
-    if (!symbols) return;
-    const viaSymbol = symbols.get(nextChar)?.has(to);
-    if (viaSymbol && currentClosure.has(from)) {
-      setHistory((h) => [...h, epsilonClosure(fsm, [to], tm)]);
-    }
   };
 
   const spec: GraphSpec = useMemo(
@@ -334,9 +322,6 @@ export const FSMView: React.FC<{ fsm: FSM; stepGroups?: StepGroup[]; diagnostics
             {i === 0 ? "▶" : input[i - 1]} {setName(epsilonClosure(fsm, set, tm))}
           </button>
         ))}
-        {nextChar !== null && status === "working" && (
-          <span className="sim-tip">{t("detail.fsm.branchTip")}</span>
-        )}
       </div>
     </>
   );
@@ -352,13 +337,21 @@ export const FSMView: React.FC<{ fsm: FSM; stepGroups?: StepGroup[]; diagnostics
             exportName={fsm.name}
           />
         ) : (
-          <GraphView spec={spec} onEdgeClick={stepEdge} cellId={cellId} editing={editing} exportName={fsm.name} />
+          <GraphView spec={spec} cellId={cellId} editing={editing} exportName={fsm.name} />
         )
       }
       chips={chips}
       panels={panels}
       bottom={bottom}
-      overlay={animating && <PlayerBar player={player} onClose={() => setAnimating(false)} />}
+      overlay={
+        animating && (
+          <PlayerBar
+            player={player}
+            caption={<FrameCaption frames={frames} index={player.index} />}
+            onClose={() => setAnimating(false)}
+          />
+        )
+      }
     />
   );
 };
@@ -375,7 +368,7 @@ function sameGraph(a: FSM, b: FSM): boolean {
 const SIM_STEP_MS = 700;
 
 /** The automaton's graph: one edge per pair of states, carrying all its letters; `sim` marks the run's active part. */
-function fsmGraphSpec(fsm: FSM, sim?: { states: Set<string>; nextChar: string | null }): GraphSpec {
+export function fsmGraphSpec(fsm: FSM, sim?: { states: Set<string>; nextChar: string | null }): GraphSpec {
   const edgeGroups = new Map<string, { from: string; to: string; labels: string[]; active: boolean }>();
   for (const t of fsm.transitions) {
     const key = `${t.from}⇒${t.to}`;
@@ -397,8 +390,7 @@ function fsmGraphSpec(fsm: FSM, sim?: { states: Set<string>; nextChar: string | 
       from: g.from,
       to: g.to,
       label: g.labels.join(", "),
-      active: g.active,
-      clickable: g.active
+      active: g.active
     }))
   };
 }

@@ -116,7 +116,7 @@ export const HelpModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
         <h3>{t("help.tips.heading")}</h3>
         <ul>
           <li>{t("help.tips.drag")}</li>
-          <li>{t("help.tips.nfaBranch")}</li>
+          <li>{t("help.tips.allBranches")}</li>
           <li>{t("help.tips.yaml")}</li>
           <li>{t("help.tips.acceptedWords")}</li>
         </ul>

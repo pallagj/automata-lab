@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
   classify,
@@ -7,7 +7,7 @@ import {
   grammarAccepts,
   ruleToString
 } from "../../core/grammar/grammar";
-import { cykMembership, Membership } from "../../core/grammar/cyk";
+import { cykAnimation, cykMembership, cykOrder, Membership } from "../../core/grammar/cyk";
 import { decideEmptyGrammar, decideFiniteGrammar } from "../../core/grammar/decide";
 import { LanguageSummary } from "../../core/fsm/decide";
 import { LanguageNote } from "./LanguageNote";
@@ -17,7 +17,8 @@ import { isCNF } from "../../core/grammar/normalForm";
 import { activeWorkspace, useAppStore } from "../../state/store";
 import { uniqueName, usedNames } from "../../state/names";
 import { tr } from "../../i18n/translate";
-import { Check, ChevronRight, Grid3x3, HelpCircle, ListOrdered, Wand2, X } from "lucide-react";
+import { PlayerBar, usePlayer } from "./AnimationPlayer";
+import { Check, ChevronRight, Clapperboard, Grid3x3, HelpCircle, ListOrdered, Wand2, X } from "lucide-react";
 
 const TYPE_KEYS: Record<number, string> = {
   3: "detail.grammar.type3",
@@ -297,8 +298,16 @@ const CykCard: React.FC<{ membership: Membership; grammarName: string; epsilonFr
   const { table, cnf, converted } = membership;
   // the clicked cell, [length − 1, start]: its variables and how each got there
   const [picked, setPicked] = useState<[number, number] | null>(null);
+  // the table filling in, cell by cell
+  const frames = useMemo(() => (table && cnf ? cykAnimation(cnf, table) : []), [table, cnf]);
+  const [animating, setAnimating] = useState(false);
+  useEffect(() => setAnimating(false), [frames]);
+  const player = usePlayer(frames, animating);
+  const played = animating ? frames[player.index] : undefined;
   if (!table || !cnf) return null;
   const n = table.word.length;
+  const at = (cells: [number, number][] | undefined, j: number, i: number) =>
+    !!cells?.some(([a, b]) => a === j && b === i);
   const expr = epsilonFree ? `cnf(${grammarName})` : `cnf(epsfree(${grammarName}))`;
   const rules = new Map<string, string[]>();
   for (const r of cnf.rules) rules.set(r.left[0], [...(rules.get(r.left[0]) ?? []), showSymbols(r.right)]);
@@ -320,6 +329,11 @@ const CykCard: React.FC<{ membership: Membership; grammarName: string; epsilonFr
             </div>
           </div>
         )}
+        {!animating && (
+          <button className="anim-start" onClick={() => setAnimating(true)} title={t("detail.grammar.cykPlayHint")}>
+            <Clapperboard size={14} /> {t("detail.anim.start")}
+          </button>
+        )}
         <div className="t-wrap">
           <table className="t cyk">
             <tbody>
@@ -330,11 +344,20 @@ const CykCard: React.FC<{ membership: Membership; grammarName: string; epsilonFr
                     const cell = table.cells[j][i];
                     if (!cell) return <td key={i} className="void" />;
                     const hit = j === n - 1 && cell.has(cnf.start);
-                    const isPicked = picked?.[0] === j && picked?.[1] === i;
+                    const isPicked = !played && picked?.[0] === j && picked?.[1] === i;
+                    const state = !played
+                      ? ""
+                      : cykOrder(j, i, n) >= played.filled
+                        ? "unfilled"
+                        : at(played.cell && [played.cell], j, i)
+                          ? "focus"
+                          : at(played.uses, j, i)
+                            ? "used"
+                            : "";
                     return (
                       <td
                         key={i}
-                        className={`${hit ? "hit" : ""} ${isPicked ? "picked" : ""}`}
+                        className={`${hit && state !== "unfilled" ? "hit" : ""} ${isPicked ? "picked" : ""} ${state}`}
                         style={{ cursor: "pointer" }}
                         title={t("detail.grammar.cykCellHint")}
                         onClick={() => setPicked(isPicked ? null : [j, i])}
@@ -347,14 +370,28 @@ const CykCard: React.FC<{ membership: Membership; grammarName: string; epsilonFr
               ))}
               <tr className="cyk-word">
                 <th />
-                {table.word.map((c, i) => (
-                  <td key={i}>{c}</td>
-                ))}
+                {table.word.map((c, i) => {
+                  // the letters of the subword whose cell is being filled
+                  const sub = played?.cell && i >= played.cell[1] && i <= played.cell[1] + played.cell[0];
+                  return (
+                    <td key={i} className={sub ? "sub" : undefined}>
+                      {c}
+                    </td>
+                  );
+                })}
               </tr>
             </tbody>
           </table>
         </div>
-        {picked && table.why[picked[0]]?.[picked[1]] && (
+        {animating && (
+          <PlayerBar
+            player={player}
+            caption={played && rich(tr(t, played.caption))}
+            inline
+            onClose={() => setAnimating(false)}
+          />
+        )}
+        {!played && picked && table.why[picked[0]]?.[picked[1]] && (
           <div className="cyk-note" style={{ marginTop: 8 }}>
             <b>{`T[${picked[0] + 1},${picked[1] + 1}]`}</b>
             {" — "}

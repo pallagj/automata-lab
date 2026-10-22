@@ -1,4 +1,4 @@
-import { err, failResult, OpResult, okResult, tx } from "../types";
+import { err, failResult, I18nText, OpResult, okResult, tx } from "../types";
 import { classify, Grammar, removeEpsilonRules } from "./grammar";
 import { isCNF, toCNF } from "./normalForm";
 
@@ -104,4 +104,67 @@ export function cykMembership(g: Grammar, input: string): OpResult<Membership> {
   const cnf = converted ? toCNF(epsFree).value! : g;
   const table = cyk(cnf, input).value!;
   return okResult({ accepted: table.accepted, table, cnf, converted });
+}
+
+/**
+ * The CYK table filling in, frame by frame (lecture notes, 8.1): the bottom row letter by
+ * letter, then each row above it from left to right — every cell with the variables that got
+ * into it and the cells they come from. `filled` counts the cells drawn so far, in that order.
+ */
+export interface CykFrame {
+  caption: I18nText;
+  filled: number;
+  /** the cell being filled, [length − 1, start] */
+  cell?: [number, number];
+  /** the cells its variables come from: the two parts of a split with a matching A → BC */
+  uses: [number, number][];
+}
+
+/** The position of cell [length − 1, start] in the filling order: row by row, bottom up. */
+export function cykOrder(j: number, i: number, n: number): number {
+  return j * n - (j * (j - 1)) / 2 + i;
+}
+
+export function cykAnimation(g: Grammar, table: CykTable): CykFrame[] {
+  const { word, cells, why } = table;
+  const n = word.length;
+  const binary = g.rules.filter((r) => r.right.length === 2);
+  const setText = (m: Map<string, unknown>) => (m.size === 0 ? "∅" : `{${[...m.keys()].join(", ")}}`);
+  const reasons = (j: number, i: number) => [...why[j][i].values()].flat().join("; ");
+  const frames: CykFrame[] = [{ caption: tx("grammar.cyk.anim.start", { n }), filled: 0, uses: [] }];
+  for (let j = 0; j < n; j++) {
+    for (let i = 0; i + j < n; i++) {
+      const cell = cells[j][i];
+      const params = { length: j + 1, start: i + 1, word: word.slice(i, i + j + 1).join(""), cell: setText(cell) };
+      const uses: [number, number][] = [];
+      let key: string;
+      if (j === 0) key = cell.size > 0 ? "letter" : "letterEmpty";
+      else {
+        for (let l = 1; l <= j; l++) {
+          const left = cells[l - 1][i];
+          const right = cells[j - l][i + l];
+          if (binary.some((r) => left.has(r.right[0]) && right.has(r.right[1]))) uses.push([l - 1, i], [j - l, i + l]);
+        }
+        key = cell.size > 0 ? "cell" : "cellEmpty";
+      }
+      // an empty cell lists the splits tried: none of them had a matching rule
+      const splits = Array.from(
+        { length: j },
+        (_, l) => `${word.slice(i, i + l + 1).join("")}·${word.slice(i + l + 1, i + j + 1).join("")}`
+      );
+      frames.push({
+        caption: tx(`grammar.cyk.anim.${key}`, { ...params, reasons: reasons(j, i), splits: splits.join(", ") }),
+        filled: cykOrder(j, i, n) + 1,
+        cell: [j, i],
+        uses
+      });
+    }
+  }
+  frames.push({
+    caption: tx(table.accepted ? "grammar.cyk.anim.accepted" : "grammar.cyk.anim.rejected", { start: g.start, n }),
+    filled: (n * (n + 1)) / 2,
+    cell: n > 0 ? [n - 1, 0] : undefined,
+    uses: []
+  });
+  return frames;
 }

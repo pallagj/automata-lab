@@ -107,7 +107,7 @@ export const DetailPane: React.FC<{ result: CellResult | null }> = ({ result }) 
   return (
     <>
       {v.kind === "grammar" && <GrammarView grammar={v} />}
-      {v.kind === "regex" && <RegexView regex={v} />}
+      {v.kind === "regex" && <RegexView regex={v} stepGroups={result.stepGroups} />}
       {v.kind === "verdict" && <VerdictView verdict={v} />}
       {result.diagnostics.length > 0 && (
         <div className="card">

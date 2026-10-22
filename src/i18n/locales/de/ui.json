@@ -208,7 +208,7 @@
     "tips": {
       "heading": "Tipps",
       "drag": "Der Graph lässt sich per Ziehen verschieben, mit dem Mausrad zoomen, ein Doppelklick setzt die Ansicht zurück.",
-      "nfaBranch": "Klicke während der Simulation auf eine hervorgehobene Kante, um einen NFA-Zweig zu wählen.",
+      "allBranches": "Bei einer nichtdeterministischen Maschine verfolgt die Simulation alle Zweige gleichzeitig: das Wort wird akzeptiert, wenn ein Zweig akzeptiert. Die ▶-Taste spielt den Lauf Schritt für Schritt ab.",
       "yaml": "Das Ergebnis einer Ausdruckszelle lässt sich über das Kopfzeilen-Symbol zu editierbarem YAML aufklappen.",
       "acceptedWords": "Klicke auf einen Chip unter „Akzeptierte Wörter“, um es sofort zu simulieren."
     },
@@ -304,7 +304,8 @@
       "wordTestPlaceholder": "passt das Wort? z. B. abb",
       "matches": "passt",
       "noMatch": "passt nicht",
-      "sampleWords": "Passende Wörter"
+      "sampleWords": "Passende Wörter",
+      "playHint": "Die Runden r(p, q, t) nacheinander, auf dem Graphen des Automaten"
     },
     "fsm": {
       "title": "Automat",
@@ -339,8 +340,7 @@
       "rejects": "lehnt ab",
       "running": "läuft…",
       "initialStatesHint": "Startzustände (mit ε-Abschluss)",
-      "afterReadingHint": "nach dem Lesen von „{{symbol}}“",
-      "branchTip": "klicke auf eine hervorgehobene Kante im Graphen, um einen Zweig zu wählen"
+      "afterReadingHint": "nach dem Lesen von „{{symbol}}“"
     },
     "grammar": {
       "title": "Grammatik",
@@ -388,7 +388,8 @@
       },
       "cykCellHint": "Klicken: warum diese Variablen?",
       "cykCellIntro": "das Teilwort „{{word}}“ ist aus diesen Variablen ableitbar:",
-      "cykCellEmpty": "Keine Variable leitet es ab (–)."
+      "cykCellEmpty": "Keine Variable leitet es ab (–).",
+      "cykPlayHint": "Die Tabelle füllt sich Zelle für Zelle, von unten nach oben"
     },
     "machine": {
       "kind": {

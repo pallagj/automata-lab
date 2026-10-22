@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Diagnostic, EPS } from "../../core/types";
 import {
@@ -11,7 +11,6 @@ import {
   Machine,
   machineCaps,
   MachineConfig,
-  machineConfigKey,
   machineMoves,
   machineTransitionLabel,
   readOnlyByDefault,
@@ -24,19 +23,22 @@ import {
   tapeWindow
 } from "../../core/machine/machine";
 import { pdaDecider } from "../../core/machine/pda";
-import { GraphEdge, GraphSpec, GraphView } from "../graph/GraphView";
+import { GraphSpec, GraphView } from "../graph/GraphView";
 import { useGraphEditing } from "../graph/editing";
 import { Stage, StagePanel } from "./Stage";
 import { StepsContent } from "./StepsPanel";
 import { notesPanel } from "./DiagnosticsList";
 import { TapeInput } from "./TapeInput";
 import { StepGroup } from "../../core/expr/expression";
-import { Check, Layers, ListTree, Play, RotateCcw, StepForward, Table2, Undo2, X } from "lucide-react";
+import { Check, Layers, ListTree, Pause, Play, RotateCcw, StepForward, Table2, Undo2, X } from "lucide-react";
 import { machineKindLabel, moveLetters } from "../machineLabels";
 import { rich } from "../Rich";
 import { showSymbols } from "../../core/symbols";
 
+/** a played run stops after this many steps (a machine may run forever) */
 const MAX_RUN_LEVELS = 300;
+/** how long one step of a played run takes (ms) */
+const SIM_STEP_MS = 600;
 
 /** Compact text of a storage's content for the configuration list; [✗] is a head that fell off. */
 function storageText(spec: StorageSpec, st: StorageState): string {
@@ -104,6 +106,7 @@ export const MachineView: React.FC<{ machine: Machine; stepGroups?: StepGroup[];
   const [inputState, setInput] = useState("");
   const [historyState, setHistory] = useState<MachineConfig[][]>([[initialMachineConfig(m, "")]]);
   const [selected, setSelected] = useState(0);
+  const [running, setRunning] = useState(false);
 
   // reset during render when the machine changes: the old configurations' storages
   // do not fit the new machine, and even a single such frame would crash
@@ -114,6 +117,7 @@ export const MachineView: React.FC<{ machine: Machine; stepGroups?: StepGroup[];
     setInput("");
     setHistory([[initialMachineConfig(m, "")]]);
     setSelected(0);
+    setRunning(false);
   }
   // even the in-progress (to-be-discarded) render works with data that fits the new machine
   const input = machineChanged ? "" : inputState;
@@ -142,44 +146,27 @@ export const MachineView: React.FC<{ machine: Machine; stepGroups?: StepGroup[];
       : "working";
 
   const resetWith = (word: string) => {
+    setRunning(false);
     setHistory([[initialMachineConfig(m, word)]]);
     setSelected(0);
   };
   const step = () => setHistory((h) => [...h, stepMachineConfigs(m, h[h.length - 1], input)]);
-  const stepBack = () => setHistory((h) => (h.length > 1 ? h.slice(0, -1) : h));
-  const runToEnd = () => {
-    setHistory((h) => {
-      const out = [...h];
-      for (let i = 0; i < MAX_RUN_LEVELS; i++) {
-        const cur = out[out.length - 1];
-        if (cur.length === 0 || cur.some((c) => isAcceptingMachineConfig(m, c, input))) break;
-        const next = stepMachineConfigs(m, cur, input);
-        if (next.length === 0 && cur.every((c) => machineMoves(m, c, input).length === 0)) break;
-        out.push(next);
-        if (next.length === 0) break;
-      }
-      return out;
-    });
+  const stepBack = () => {
+    setRunning(false);
+    setHistory((h) => (h.length > 1 ? h.slice(0, -1) : h));
   };
 
-  /** edge click: step only with the clicked edge's transitions (branch choice) */
-  const stepEdge = (edge: GraphEdge) => {
-    if (status !== "working") return;
-    const [from, , to] = edge.id.split("⇒");
-    const chosen: MachineConfig[] = [];
-    const seen = new Set<string>();
-    for (const ms of movesPerConfig) {
-      for (const { config, transition } of ms) {
-        if (transition.from !== from || transition.to !== to) continue;
-        const key = machineConfigKey(config);
-        if (!seen.has(key)) {
-          seen.add(key);
-          chosen.push(config);
-        }
-      }
+  // the run plays step by step (every branch at once), so the configurations can be followed
+  const stepLimit = history.length > MAX_RUN_LEVELS;
+  useEffect(() => {
+    if (!running) return;
+    if (status !== "working" || stepLimit) {
+      setRunning(false);
+      return;
     }
-    if (chosen.length > 0) setHistory((h) => [...h, chosen]);
-  };
+    const id = setTimeout(step, SIM_STEP_MS);
+    return () => clearTimeout(id);
+  }, [running, history, status, stepLimit]);
 
   const spec: GraphSpec = useMemo(() => {
     const groups = new Map<string, { from: string; to: string; labels: string[]; active: boolean }>();
@@ -209,8 +196,7 @@ export const MachineView: React.FC<{ machine: Machine; stepGroups?: StepGroup[];
         to: g.to,
         // one transition per line, as in the textbooks
         label: g.labels.join("\n"),
-        active: g.active,
-        clickable: g.active
+        active: g.active
       }))
     };
   }, [m, configs, movesPerConfig, status, moves]);
@@ -362,8 +348,13 @@ export const MachineView: React.FC<{ machine: Machine; stepGroups?: StepGroup[];
         <button className="sim-btn" onClick={step} disabled={status !== "working"} title={t("detail.machine.oneStepAllBranches")}>
           <StepForward size={16} />
         </button>
-        <button className="sim-btn" onClick={runToEnd} disabled={status !== "working"} title={t("detail.fsm.runAll")}>
-          <Play size={16} />
+        <button
+          className="sim-btn"
+          onClick={() => setRunning((r) => !r)}
+          disabled={status !== "working" || stepLimit}
+          title={running ? t("detail.fsm.pauseRun") : t("detail.fsm.runAll")}
+        >
+          {running ? <Pause size={16} /> : <Play size={16} />}
         </button>
         <span
           className={`verdict-pill ${overall.verdict === "accepted" ? "accepted" : overall.verdict === "rejected" ? "rejected" : "limit"}`}
@@ -410,7 +401,6 @@ export const MachineView: React.FC<{ machine: Machine; stepGroups?: StepGroup[];
         {analysis.isDeterministic
           ? t("detail.machine.step", { n: history.length - 1 })
           : t("detail.machine.nondeterministicStepInfo", { n: history.length - 1, count: configs.length })}
-        {status === "working" && spec.edges.some((e) => e.clickable) && ` · ${t("detail.fsm.branchTip")}`}
       </div>
 
       <div className="config-list">
@@ -460,7 +450,7 @@ export const MachineView: React.FC<{ machine: Machine; stepGroups?: StepGroup[];
   return (
     <Stage
       graph={
-        <GraphView spec={spec} onEdgeClick={stepEdge} cellId={cellId} editing={editing} exportName={m.name} />
+        <GraphView spec={spec} cellId={cellId} editing={editing} exportName={m.name} />
       }
       chips={chips}
       panels={panels}

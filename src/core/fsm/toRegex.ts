@@ -1,4 +1,5 @@
 import { AlgoStep, EPS, err, failResult, OpResult, tx } from "../types";
+import { AnimFrame, AnimTable } from "./animation";
 import { FSM } from "./fsm";
 import { RegexDef, regexValue } from "./regex";
 
@@ -35,6 +36,9 @@ const SPECIAL = new Set(["(", ")", "|", "+", "*", "?", "ε", "∅", "\\"]);
 
 /** Longest intermediate expression we are willing to build. */
 const MAX_LENGTH = 3000;
+
+/** Beyond this many states the r(p, q, t) table is too big to follow on screen: no animation. */
+const ANIMATION_LIMIT = 6;
 
 function lit(c: string): RNode {
   return { t: "lit", c, key: SPECIAL.has(c) ? `\\${c}` : c, nullable: false };
@@ -183,6 +187,11 @@ class RegexAlgebra {
  */
 const show = (n: RNode): string => n.key.replace(/eps/g, "\\eps");
 
+/** a part of r(p, q, t−1) + r(p, t, t−1) r(t, t, t−1)* r(t, q, t−1) as the formula writes it, before simplifying */
+const factor = (n: RNode): string => (n.t === "alt" ? `(${show(n)})` : show(n));
+const starred = (n: RNode): string =>
+  n.t === "lit" || n.t === "eps" || n.t === "empty" ? `${show(n)}*` : `(${show(n)})*`;
+
 export function fsmToRegex(f: FSM): OpResult<RegexDef> {
   const long = f.alphabet.find((c) => [...c].length !== 1);
   if (long !== undefined) {
@@ -236,12 +245,73 @@ export function fsmToRegex(f: FSM): OpResult<RegexDef> {
     table: tableOf(r)
   });
 
+  // the rounds played on the automaton: its states tagged with their numbers, the ones that may be
+  // passed through coloured, the table of r(p, q, t) beside it (cell (p, q) is rows[p][q + 1])
+  const animate = n <= ANIMATION_LIMIT;
+  const frames: AnimFrame[] = [];
+  const tags = Object.fromEntries(order.map((s, i) => [s, String(i + 1)]));
+  const numbered = (m: RNode[][], t: number, extra: Partial<AnimTable> = {}): AnimTable => ({
+    headers: [`r(p, q, ${t})`, ...order.map((_, j) => String(j + 1))],
+    rows: m.map((row, i) => [String(i + 1), ...row.map(show)]),
+    ...extra
+  });
+  /** states 1…t may be passed through; state `next` is the one just allowed */
+  const passed = (t: number, next?: number) =>
+    Object.fromEntries(order.flatMap((s, i) => (i < t ? [[s, 0]] : i === next ? [[s, 1]] : [])));
+  if (animate) {
+    frames.push({ graph: f, caption: tx("ops.toRegex.numbering.detail", { n, start: f.start }), tags });
+    frames.push({ graph: f, caption: tx("ops.toRegex.base.detail"), tags, table: numbered(r, 0) });
+  }
+
   for (let t = 0; t < n; t++) {
     const prev = r;
     const loop = alg.star(prev[t][t]);
     r = prev.map((row, p) =>
       row.map((direct, q) => alg.alt([direct, alg.cat([prev[p][t], loop, prev[t][q]])]))
     );
+    if (animate) {
+      const all = order.map((_, i) => i);
+      const changed = all.flatMap((p) => all.filter((q) => r[p][q].key !== prev[p][q].key).map((q) => [p, q]));
+      const classes = passed(t, t);
+      frames.push({
+        graph: f,
+        caption: tx("ops.toRegex.anim.round", { t: t + 1, prev: t, state: label(t) }),
+        tags,
+        classes,
+        focus: [order[t]],
+        table: numbered(prev, t, {
+          marked: all.flatMap((i) => [[t, i + 1] as [number, number], [i, t + 1] as [number, number]])
+        })
+      });
+      for (const [p, q] of changed) {
+        const formula = `${factor(prev[p][q])} + ${factor(prev[p][t])}${starred(prev[t][t])}${factor(prev[t][q])}`;
+        frames.push({
+          graph: f,
+          caption: tx("ops.toRegex.anim.cell", { p: p + 1, q: q + 1, t: t + 1, prev: t, formula, value: show(r[p][q]) }),
+          tags,
+          classes,
+          focus: [order[p], order[q]],
+          table: numbered(prev, t, {
+            focus: [[p, q + 1]],
+            marked: [
+              [p, t + 1],
+              [t, t + 1],
+              [t, q + 1]
+            ]
+          })
+        });
+      }
+      frames.push({
+        graph: f,
+        caption: tx(changed.length > 0 ? "ops.toRegex.anim.roundDone" : "ops.toRegex.anim.roundSame", {
+          t: t + 1,
+          count: changed.length
+        }),
+        tags,
+        classes: passed(t + 1),
+        table: numbered(r, t + 1, { focus: changed.map(([p, q]) => [p, q + 1] as [number, number]) })
+      });
+    }
     const longest = Math.max(...r.flat().map((x) => x.key.length));
     if (longest > MAX_LENGTH) {
       return failResult(
@@ -276,6 +346,16 @@ export function fsmToRegex(f: FSM): OpResult<RegexDef> {
           })
   });
 
+  if (animate)
+    frames.push({
+      graph: f,
+      caption: steps[steps.length - 1].detail!,
+      tags,
+      classes: passed(n),
+      focus: accepting.map((q) => order[q]),
+      table: numbered(r, n, { focus: accepting.map((q) => [0, q + 1] as [number, number]) })
+    });
+
   const v = regexValue(pattern, f.name);
-  return { ...v, steps };
+  return { ...v, steps, animation: animate ? { frames } : undefined };
 }

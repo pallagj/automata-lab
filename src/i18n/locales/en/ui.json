@@ -208,7 +208,7 @@
     "tips": {
       "heading": "Tips",
       "drag": "The graph can be dragged to move, scrolled to zoom, and double-click resets the view.",
-      "nfaBranch": "During simulation, click a highlighted edge to choose an NFA branch.",
+      "allBranches": "With a nondeterministic machine the simulation follows every branch at once: the word is accepted when some branch accepts. The ▶ button plays the run step by step.",
       "yaml": "The result of an expression cell can be expanded into editable YAML using the header icon.",
       "acceptedWords": "Click a chip under \"Accepted words\" to simulate it immediately."
     },
@@ -304,7 +304,8 @@
       "wordTestPlaceholder": "does the word match? e.g. abb",
       "matches": "matches",
       "noMatch": "no match",
-      "sampleWords": "Matching words"
+      "sampleWords": "Matching words",
+      "playHint": "The r(p, q, t) rounds one after the other, on the automaton's graph"
     },
     "fsm": {
       "title": "Automaton",
@@ -339,8 +340,7 @@
       "rejects": "rejects",
       "running": "running…",
       "initialStatesHint": "initial states (with ε-closure)",
-      "afterReadingHint": "after reading \"{{symbol}}\"",
-      "branchTip": "click a highlighted edge in the graph to choose a branch"
+      "afterReadingHint": "after reading \"{{symbol}}\""
     },
     "grammar": {
       "title": "Grammar",
@@ -388,7 +388,8 @@
       },
       "cykCellHint": "Click: why these variables?",
       "cykCellIntro": "the subword \"{{word}}\" derives from these variables:",
-      "cykCellEmpty": "No variable derives it (–)."
+      "cykCellEmpty": "No variable derives it (–).",
+      "cykPlayHint": "The table filling in cell by cell, bottom up"
     },
     "machine": {
       "kind": {

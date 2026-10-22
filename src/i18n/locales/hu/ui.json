@@ -208,7 +208,7 @@
     "tips": {
       "heading": "Tippek",
       "drag": "A gráf húzással mozgatható, görgetéssel nagyítható, dupla kattintásra visszaáll.",
-      "nfaBranch": "Szimuláció közben a kiemelt élekre kattintva NFA-ágat választhatsz.",
+      "allBranches": "Nemdeterminisztikus gépnél a szimuláció egyszerre minden ágat követ: a szó akkor elfogadott, ha valamelyik ág elfogad. A ▶ gomb lépésenként lejátssza a futást.",
       "yaml": "A kifejezés-cellák eredménye a fejléc ikonjával szerkeszthető YAML-lá bontható.",
       "acceptedWords": "Az „Elfogadott szavak” chipjeire kattintva azonnal szimulálhatod őket."
     },
@@ -304,7 +304,8 @@
       "wordTestPlaceholder": "illeszkedik-e a szó? pl. abb",
       "matches": "illeszkedik",
       "noMatch": "nem illeszkedik",
-      "sampleWords": "Illeszkedő szavak"
+      "sampleWords": "Illeszkedő szavak",
+      "playHint": "Az r(p, q, t) körök egymás után, az automata gráfján"
     },
     "fsm": {
       "title": "Automata",
@@ -339,8 +340,7 @@
       "rejects": "elutasítja",
       "running": "fut…",
       "initialStatesHint": "kezdőállapotok (ε-lezárással)",
-      "afterReadingHint": "a(z) „{{symbol}}” beolvasása után",
-      "branchTip": "a gráf kiemelt éleire kattintva ágat választhatsz"
+      "afterReadingHint": "a(z) „{{symbol}}” beolvasása után"
     },
     "grammar": {
       "title": "Nyelvtan",
@@ -388,7 +388,8 @@
       },
       "cykCellHint": "Kattints: miért ezek a változók?",
       "cykCellIntro": "a(z) „{{word}}” részszó ezekből a változókból vezethető le:",
-      "cykCellEmpty": "Egyik változóból sem vezethető le (–)."
+      "cykCellEmpty": "Egyik változóból sem vezethető le (–).",
+      "cykPlayHint": "A táblázat kitöltése cellánként, lentről felfelé"
     },
     "machine": {
       "kind": {

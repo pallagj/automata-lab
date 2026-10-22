@@ -2,8 +2,11 @@ import { describe, expect, it } from "vitest";
 import { ANIMATION_STATE_LIMIT, AnimFrame, transKey } from "./fsm/animation";
 import { FSM, makeFSM } from "./fsm/fsm";
 import { determinize, minimize } from "./fsm/ops";
+import { fsmToRegex } from "./fsm/toRegex";
 import { evaluateExpression } from "./expr/expression";
-import { randomNFA, rng } from "./testing";
+import { cyk, cykAnimation, cykMembership, cykOrder } from "./grammar/cyk";
+import { parseGrammar } from "./parse/definitionParser";
+import { randomCFG, randomNFA, rng } from "./testing";
 
 const fsm = (states: string[], start: string, accept: string[], t: [string, string, string][], alphabet = ["0", "1"]) =>
   makeFSM({ name: "M", alphabet, states, start, accept, transitions: t.map(([from, symbol, to]) => ({ from, symbol, to })) });
@@ -194,5 +197,282 @@ describe("a chain plays every animated operation", () => {
     const frames: AnimFrame[] = out.stepGroups.flatMap((g) => g.animation?.frames ?? []);
     expect(frames[0].caption.key).toBe("ops.det.anim.start");
     expect(frames.at(-1)!.caption.key).toBe("ops.min.anim.build");
+  });
+});
+
+describe("the CYK table filling in", () => {
+  const grammar = (rules: string, terminals = "a, b") => {
+    const r = parseGrammar(`Grammar:
+  name: G
+  charset: ${terminals}
+  variables: S, A, B, C
+  init: S
+  rules:
+${rules
+  .trim()
+  .split("\n")
+  .map((l) => `    - ${l.trim()}`)
+  .join("\n")}`);
+    if (!r.ok) throw new Error(JSON.stringify(r.diagnostics));
+    return r.value!;
+  };
+  // 8.1
+  const notes81 = grammar(`S -> AB | BC
+     A -> BA | a
+     B -> CC | b
+     C -> AB | a`);
+  const play = (word: string, g = notes81) => cykAnimation(g, cyk(g, word).value!);
+  const kinds = (frames: ReturnType<typeof play>) => frames.map((f) => f.caption.key.replace("grammar.cyk.anim.", ""));
+
+  it("8.1 with baaba: the bottom row letter by letter, then the rows above, then the top-left cell decides", () => {
+    const frames = play("baaba");
+    expect(kinds(frames)).toEqual([
+      "start",
+      ...Array(5).fill("letter"),
+      ...Array(4).fill("cell"),
+      "cellEmpty", // T[3,1]: the notes' crossed-out cell
+      "cell",
+      "cell",
+      "cellEmpty",
+      "cell",
+      "cell",
+      "accepted"
+    ]);
+    // every cell once, row by row from the bottom, each row from the left
+    expect(frames.slice(1, -1).map((f) => f.cell)).toEqual(
+      [0, 1, 2, 3, 4].flatMap((j) => Array.from({ length: 5 - j }, (_, i) => [j, i]))
+    );
+    expect(frames.map((f) => f.filled)).toEqual([...Array.from({ length: 16 }, (_, k) => k), 15]);
+    expect(frames.at(-1)!.caption.params).toEqual({ start: "S", n: 5 });
+  });
+
+  it("8.1: T[2,1] and T[3,1] as the notes explain them", () => {
+    const frames = play("baaba");
+    const at = (length: number, start: number) => frames.find((f) => f.cell?.[0] === length - 1 && f.cell[1] === start - 1)!;
+    expect(at(1, 2).caption.params).toMatchObject({ length: 1, start: 2, word: "a", cell: "{A, C}", reasons: "A → a; C → a" });
+    // T[2,1]: one pair of cells, T[1,1] = {B} and T[1,2] = {A, C}, gives BA and BC
+    const t21 = at(2, 1);
+    expect(t21.caption.params).toMatchObject({ length: 2, start: 1, word: "ba", cell: "{S, A}" });
+    expect(String(t21.caption.params!.reasons).split("; ").sort()).toEqual([
+      "A → BA: B ∈ T[1,1], A ∈ T[1,2]",
+      "S → BC: B ∈ T[1,1], C ∈ T[1,2]"
+    ]);
+    expect(t21.uses).toEqual([
+      [0, 0],
+      [0, 1]
+    ]);
+    // T[3,1]: the pairs T[1,1]–T[2,2] and T[2,1]–T[1,3] give BB, AA, AC, SA, SC — no rule
+    const t31 = at(3, 1);
+    expect(t31.caption).toEqual({
+      key: "grammar.cyk.anim.cellEmpty",
+      params: { length: 3, start: 1, word: "baa", cell: "∅", reasons: "", splits: "b·aa, ba·a" }
+    });
+    expect(t31.uses).toEqual([]);
+    // T[5,1]: only the splits whose two cells have a matching rule are used
+    const t51 = at(5, 1);
+    for (const [j, i] of t51.uses) expect(cyk(notes81, "baaba").value!.cells[j][i].size).toBeGreaterThan(0);
+    expect(t51.uses.length % 2).toBe(0);
+  });
+
+  it("a word that is not derivable, and a letter that no rule produces", () => {
+    expect(kinds(play("bb"))).toEqual(["start", "letter", "letter", "cellEmpty", "rejected"]);
+    const g = grammar(
+      `S -> AB | BC
+       A -> BA | a
+       B -> CC | b
+       C -> AB | a`,
+      "a, b, c"
+    );
+    const frames = play("bc", g);
+    expect(kinds(frames)).toEqual(["start", "letter", "letterEmpty", "cellEmpty", "rejected"]);
+    expect(frames[2].caption.params).toMatchObject({ length: 1, start: 2, word: "c", cell: "∅" });
+  });
+
+  it("the filling order numbers the cells 0, 1, … row by row", () => {
+    for (const n of [1, 2, 5, 9]) {
+      const order = Array.from({ length: n }, (_, j) => Array.from({ length: n - j }, (_, i) => cykOrder(j, i, n))).flat();
+      expect(order).toEqual(Array.from({ length: (n * (n + 1)) / 2 }, (_, k) => k));
+    }
+  });
+
+  it("random grammars: a cell uses two adjacent parts of its subword, filled before it, exactly when it is not empty", () => {
+    const rand = rng(29);
+    let checked = 0;
+    for (let i = 0; i < 200; i++) {
+      const g = randomCFG(rand);
+      for (const word of ["ab", "aba", "abba", "baab", "aabab"]) {
+        const m = cykMembership(g, word).value!;
+        if (!m.table) continue;
+        const { table } = m;
+        const frames = cykAnimation(m.cnf!, table);
+        const n = word.length;
+        expect(frames.length).toBe((n * (n + 1)) / 2 + 2);
+        expect(frames.at(-1)!.caption.key).toBe(table.accepted ? "grammar.cyk.anim.accepted" : "grammar.cyk.anim.rejected");
+        for (const f of frames.slice(1, -1)) {
+          const [j, i] = f.cell!;
+          expect(f.filled).toBe(cykOrder(j, i, n) + 1);
+          const empty = table.cells[j][i].size === 0;
+          expect(f.caption.key.endsWith("Empty")).toBe(empty);
+          if (j === 0 || empty) {
+            expect(f.uses).toEqual([]);
+            continue;
+          }
+          expect(f.uses.length).toBeGreaterThan(0);
+          for (let k = 0; k < f.uses.length; k += 2) {
+            const [[lj, li], [rj, ri]] = [f.uses[k], f.uses[k + 1]];
+            expect(li).toBe(i);
+            expect(ri).toBe(i + lj + 1);
+            expect(lj + 1 + rj + 1).toBe(j + 1);
+            expect(cykOrder(lj, li, n)).toBeLessThan(f.filled - 1);
+            expect(cykOrder(rj, ri, n)).toBeLessThan(f.filled - 1);
+          }
+          checked++;
+        }
+      }
+    }
+    expect(checked).toBeGreaterThan(100);
+  });
+});
+
+describe("the r(p, q, t) rounds played on the automaton", () => {
+  // 3.23
+  const notes323 = fsm(["1", "2"], "1", ["2"], [
+    ["1", "a", "1"],
+    ["1", "b", "2"],
+    ["2", "a", "2"],
+    ["2", "b", "2"]
+  ], ["a", "b"]);
+
+  it("3.23 frame by frame: numbering, r(p, q, 0), each round with the entries it changes, the result", () => {
+    const r = fsmToRegex(notes323);
+    const frames = r.animation!.frames;
+    expect(frames.every((f) => f.graph === notes323)).toBe(true);
+    expect(frames.map((f) => f.caption.key)).toEqual([
+      "ops.toRegex.numbering.detail",
+      "ops.toRegex.base.detail",
+      "ops.toRegex.anim.round",
+      "ops.toRegex.anim.cell", // r(1, 1, 1)
+      "ops.toRegex.anim.cell", // r(1, 2, 1)
+      "ops.toRegex.anim.roundDone",
+      "ops.toRegex.anim.round",
+      "ops.toRegex.anim.cell", // r(1, 2, 2)
+      "ops.toRegex.anim.cell", // r(2, 2, 2)
+      "ops.toRegex.anim.roundDone",
+      "ops.toRegex.result.detail"
+    ]);
+    expect(frames.every((f) => f.tags!["1"] === "1" && f.tags!["2"] === "2")).toBe(true);
+    expect(frames[1].table).toEqual({
+      headers: ["r(p, q, 0)", "1", "2"],
+      rows: [
+        ["1", "a+ε", "b"],
+        ["2", "∅", "a+b+ε"]
+      ]
+    });
+
+    // round 1: state 1 may be passed through; row 1 and column 1 of r(p, q, 0) are used
+    const round1 = frames[2];
+    expect(round1.caption.params).toEqual({ t: 1, prev: 0, state: "1" });
+    expect(round1.focus).toEqual(["1"]);
+    expect(round1.classes).toEqual({ "1": 1 });
+    expect(new Set(round1.table!.marked!.map(String))).toEqual(new Set(["0,1", "0,2", "1,1"]));
+
+    // the notes' two computations
+    expect(frames[3].caption.params).toEqual({
+      p: 1,
+      q: 1,
+      t: 1,
+      prev: 0,
+      formula: "(a+ε) + (a+ε)(a+ε)*(a+ε)",
+      value: "a*"
+    });
+    expect(frames[4].caption.params).toEqual({ p: 1, q: 2, t: 1, prev: 0, formula: "b + (a+ε)(a+ε)*b", value: "a*b" });
+    expect(frames[4].focus).toEqual(["1", "2"]);
+    expect(frames[4].table!.focus).toEqual([[0, 2]]);
+    expect(frames[4].table!.marked).toEqual([
+      [0, 1],
+      [0, 1],
+      [0, 2]
+    ]);
+    // a computation shows the table it reads from: r(p, q, 0)
+    expect(frames[4].table!.rows).toEqual(frames[1].table!.rows);
+
+    expect(frames[5].caption.params).toEqual({ t: 1, count: 2 });
+    expect(frames[5].classes).toEqual({ "1": 0 });
+    expect(frames[5].table).toEqual({
+      headers: ["r(p, q, 1)", "1", "2"],
+      rows: [
+        ["1", "a*", "a*b"],
+        ["2", "∅", "a+b+ε"]
+      ],
+      focus: [
+        [0, 1],
+        [0, 2]
+      ]
+    });
+
+    expect(frames[7].caption.params).toMatchObject({ p: 1, q: 2, formula: "a*b + a*b(a+b+ε)*(a+b+ε)", value: "a*b(a+b)*" });
+    expect(frames[8].caption.params).toMatchObject({ p: 2, q: 2, value: "(a+b)*" });
+    expect(frames[6].classes).toEqual({ "1": 0, "2": 1 });
+
+    const result = frames.at(-1)!;
+    expect(result.caption).toEqual(r.steps.at(-1)!.detail);
+    expect(result.focus).toEqual(["2"]);
+    expect(result.classes).toEqual({ "1": 0, "2": 0 });
+    expect(result.table!.rows).toEqual([
+      ["1", "a*", "a*b(a+b)*"],
+      ["2", "∅", "(a+b)*"]
+    ]);
+    expect(result.table!.focus).toEqual([[0, 2]]);
+  });
+
+  it("a round names its state by number, and by name when that differs", () => {
+    const rounds = fsmToRegex(ends01).animation!.frames.filter((f) => f.caption.key === "ops.toRegex.anim.round");
+    expect(rounds.map((f) => f.caption.params!.state)).toEqual(["1 (A)", "2 (B)", "3 (C)"]);
+    expect(rounds.map((f) => f.focus)).toEqual([["A"], ["B"], ["C"]]);
+    expect(rounds[1].classes).toEqual({ A: 0, B: 1 });
+  });
+
+  it("a round that changes nothing says so", () => {
+    // state 2 is a dead end: nothing leads out of it, so passing through it adds nothing
+    const m = fsm(["1", "2"], "1", ["1"], [["1", "a", "2"]], ["a"]);
+    const keys = fsmToRegex(m).animation!.frames.map((f) => f.caption.key.replace("ops.toRegex.", ""));
+    expect(keys).toContain("anim.roundSame");
+  });
+
+  it("random NFAs: each computed entry is the one the next table shows, and the tables are the steps' tables", () => {
+    const rand = rng(17);
+    for (let i = 0; i < 60; i++) {
+      const f = randomNFA(rand, { states: 1 + (i % 4), alphabet: ["a", "b"], density: 0.35, epsDensity: i % 3 === 0 ? 0.15 : 0 });
+      const r = fsmToRegex(f);
+      if (!r.ok) continue;
+      const frames = r.animation!.frames;
+      const stepTables = r.steps.filter((s) => s.table).slice(1).map((s) => s.table!.rows.map((row) => row.slice(1)));
+      const frameTables = frames
+        .filter((fr) => ["ops.toRegex.base.detail", "ops.toRegex.anim.roundDone", "ops.toRegex.anim.roundSame"].includes(fr.caption.key))
+        .map((fr) => fr.table!.rows.map((row) => row.slice(1)));
+      expect(frameTables).toEqual(stepTables);
+      let pending: { p: number; q: number; value: string }[] = [];
+      for (const fr of frames) {
+        if (fr.caption.key === "ops.toRegex.anim.cell") {
+          const { p, q, value } = fr.caption.params as { p: number; q: number; value: string };
+          pending.push({ p, q, value });
+        }
+        if (fr.caption.key === "ops.toRegex.anim.roundDone" || fr.caption.key === "ops.toRegex.anim.roundSame") {
+          for (const c of pending) expect(fr.table!.rows[c.p - 1][c.q]).toBe(c.value);
+          expect(fr.table!.focus!.length).toBe(pending.length);
+          pending = [];
+        }
+      }
+    }
+  });
+
+  it("an automaton with too many states records no animation", () => {
+    expect(fsmToRegex(lastTwo()).animation).toBeUndefined();
+  });
+
+  it("toRegex(min(M)) plays the minimization, then the rounds", () => {
+    const env = new Map([["M", lastTwo()]]);
+    const out = evaluateExpression("toRegex(min(M))", env).value!;
+    expect(out.stepGroups.filter((g) => g.animation).map((g) => g.operation)).toEqual(["min(M)", "toRegex(min(M))"]);
   });
 });

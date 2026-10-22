@@ -124,7 +124,7 @@
       },
       "nondeterministicMachine": {
         "title": "Nichtdeterministische Maschine: im Zustand {{state}} können mehrere Übergänge zutreffen",
-        "detail": "Die Simulation verfolgt jeden Zweig; klicke im Graphen auf eine hervorgehobene Kante, um einen bestimmten Zweig zu wählen."
+        "detail": "Die Simulation verfolgt alle Zweige gleichzeitig: das Wort wird akzeptiert, wenn ein Zweig akzeptiert."
       },
       "storageCharsetNotOneSymbol": {
         "title": "„{{symbol}}“ im Alphabet von {{storageId}} ist nicht ein Symbol",
@@ -496,6 +496,12 @@
       },
       "table": {
         "number": "Nummer"
+      },
+      "anim": {
+        "round": "Runde {{t}}: Jetzt darf auch Zustand {{state}} durchlaufen werden — die farbigen Zustände dürfen Zwischenzustände sein. Die neuen Werte kommen aus Zeile {{t}} und Spalte {{t}} von r(·, ·, {{prev}}) (schattiert): r(p, q, {{t}}) = r(p, q, {{prev}}) + r(p, {{t}}, {{prev}}) r({{t}}, {{t}}, {{prev}})* r({{t}}, q, {{prev}}).",
+        "cell": "r({{p}}, {{q}}, {{t}}) = r({{p}}, {{q}}, {{prev}}) + r({{p}}, {{t}}, {{prev}}) r({{t}}, {{t}}, {{prev}})* r({{t}}, {{q}}, {{prev}}) = {{formula}}, vereinfacht: {{value}}",
+        "roundDone": "Die Tabelle r(p, q, {{t}}) ist fertig: die hervorgehobenen Werte haben sich geändert (insgesamt {{count}}). Die übrigen bleiben, denn ihr neuer Term ist ∅ oder schon im alten Wert enthalten.",
+        "roundSame": "Runde {{t}} ändert nichts: jeder neue Term ist ∅ oder schon im alten Wert enthalten."
       }
     },
     "clean": {
@@ -687,6 +693,15 @@
       "needsCNF": {
         "title": "CYK braucht eine Grammatik in Chomsky-Normalform",
         "detail": "Jede Regel muss die Form A → a oder A → BC haben."
+      },
+      "anim": {
+        "start": "In T[j, i] kommen die Variablen, aus denen das j lange Teilwort ab dem i-ten Buchstaben ableitbar ist. Die Tabelle füllt sich von unten nach oben, Zeile für Zeile, von links nach rechts.",
+        "letter": "T[1, {{start}}] — der Buchstabe {{word}}: {{reasons}}, also T[1, {{start}}] = {{cell}}.",
+        "letterEmpty": "T[1, {{start}}] — der Buchstabe {{word}}: es gibt keine Regel A → {{word}}, also T[1, {{start}}] = ∅.",
+        "cell": "T[{{length}}, {{start}}] — das Teilwort {{word}}: {{reasons}}, also T[{{length}}, {{start}}] = {{cell}}.",
+        "cellEmpty": "T[{{length}}, {{start}}] — das Teilwort {{word}}: zu keiner seiner Zerlegungen ({{splits}}) passt eine Regel A → BC, also T[{{length}}, {{start}}] = ∅.",
+        "accepted": "Die Startvariable {{start}} steht in der Zelle oben links, T[{{n}}, 1]: das Wort ist ableitbar.",
+        "rejected": "Die Startvariable {{start}} steht nicht in der Zelle oben links, T[{{n}}, 1]: das Wort ist nicht ableitbar."
       }
     }
   },

@@ -124,7 +124,7 @@
       },
       "nondeterministicMachine": {
         "title": "Nemdeterminisztikus gép: a(z) {{state}} állapotban több átmenet is illeszkedhet",
-        "detail": "A szimuláció minden ágat követ; a gráfon kattintással konkrét ág is választható."
+        "detail": "A szimuláció egyszerre minden ágat követ: a szó akkor elfogadott, ha valamelyik ág elfogad."
       },
       "storageCharsetNotOneSymbol": {
         "title": "„{{symbol}}” nem egyetlen szimbólum a(z) {{storageId}} ábécéjében",
@@ -496,6 +496,12 @@
       },
       "table": {
         "number": "sorszám"
+      },
+      "anim": {
+        "round": "{{t}}. kör: ezentúl a(z) {{state}} állapoton is áthaladhatunk — a színes állapotok lehetnek közbensők. Az új értékek az r(·, ·, {{prev}}) táblázat {{t}}. sorából és {{t}}. oszlopából (árnyékolva) adódnak: r(p, q, {{t}}) = r(p, q, {{prev}}) + r(p, {{t}}, {{prev}}) r({{t}}, {{t}}, {{prev}})* r({{t}}, q, {{prev}}).",
+        "cell": "r({{p}}, {{q}}, {{t}}) = r({{p}}, {{q}}, {{prev}}) + r({{p}}, {{t}}, {{prev}}) r({{t}}, {{t}}, {{prev}})* r({{t}}, {{q}}, {{prev}}) = {{formula}}, egyszerűsítve: {{value}}",
+        "roundDone": "Kész az r(p, q, {{t}}) táblázat: a kiemelt értékek változtak ({{count}} db). A többi marad, mert ott az új tag ∅, vagy már benne van a régi értékben.",
+        "roundSame": "A(z) {{t}}. kör semmit sem változtat: minden új tag ∅, vagy már benne van a régi értékben."
       }
     },
     "clean": {
@@ -687,6 +693,15 @@
       "needsCNF": {
         "title": "A CYK-hoz Chomsky-normálformájú nyelvtan kell",
         "detail": "Minden szabálynak A → a vagy A → BC alakúnak kell lennie."
+      },
+      "anim": {
+        "start": "T[j, i]-be azok a változók kerülnek, amelyekből az i-edik betűnél kezdődő, j hosszú részszó levezethető. A táblázat lentről felfelé, soronként, balról jobbra telik meg.",
+        "letter": "T[1, {{start}}] — a(z) {{word}} betű: {{reasons}}, így T[1, {{start}}] = {{cell}}.",
+        "letterEmpty": "T[1, {{start}}] — a(z) {{word}} betű: nincs A → {{word}} szabály, így T[1, {{start}}] = ∅.",
+        "cell": "T[{{length}}, {{start}}] — a(z) {{word}} részszó: {{reasons}}, így T[{{length}}, {{start}}] = {{cell}}.",
+        "cellEmpty": "T[{{length}}, {{start}}] — a(z) {{word}} részszó: egyik felbontásához ({{splits}}) sincs illeszkedő A → BC szabály, így T[{{length}}, {{start}}] = ∅.",
+        "accepted": "A kezdőváltozó, {{start}}, benne van a bal felső T[{{n}}, 1] cellában: a szó levezethető.",
+        "rejected": "A kezdőváltozó, {{start}}, nincs benne a bal felső T[{{n}}, 1] cellában: a szó nem vezethető le."
       }
     }
   },

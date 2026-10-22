@@ -333,6 +333,61 @@ button {
   font-size: 12px;
 }
 
+/* the player in a card (CYK table, regex view): in the flow, under what it plays */
+.anim-player.inline {
+  position: static;
+  transform: none;
+  width: auto;
+  margin-top: 10px;
+  box-shadow: none;
+  backdrop-filter: none;
+  background: var(--panel-2);
+}
+
+/* a frame's table (r(p, q, t)): the cell computed highlighted, the ones it comes from shaded */
+.anim-table {
+  margin-top: 8px;
+  max-height: 34vh;
+  overflow: auto;
+}
+
+.anim-table table.t {
+  width: auto;
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+}
+
+.anim-table td.focus,
+table.t.cyk td.focus {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+  background: var(--accent-soft);
+  font-weight: 700;
+}
+
+.anim-table td.marked,
+table.t.cyk td.used {
+  background: color-mix(in srgb, var(--class-1) 18%, transparent);
+}
+
+/* the start button in a card, above the table or next to the conversion button */
+.card-body > .anim-start {
+  margin-bottom: 10px;
+}
+
+.card-body > .anim-start.rx-play {
+  margin: 10px 0 0 8px;
+}
+
+/* the graph an animation plays on, inside a card */
+.anim-graph {
+  height: 300px;
+}
+
+.anim-graph .graph-wrap {
+  min-height: 0;
+}
+
 /* floating, collapsible panels at the top right */
 .stage-panels {
   position: absolute;
@@ -465,12 +520,6 @@ button {
   background: var(--panel);
   border-top: 1px solid var(--border);
   padding: 10px 12px;
-}
-
-.sim-tip {
-  font-size: 12px;
-  color: var(--muted);
-  align-self: center;
 }
 
 .sim-dock-icon {
@@ -2867,6 +2916,16 @@ table.t.cyk tr.cyk-word th {
 .sym-field .cm-scroller {
   overflow: hidden;
   font-family: var(--font-sans);
+}
+
+/* a cell not filled yet while the table fills in, and the letters of the subword being looked at */
+table.t.cyk td.unfilled {
+  color: transparent;
+}
+
+table.t.cyk tr.cyk-word td.sub {
+  color: var(--accent);
+  background: var(--accent-soft);
 }
 
 /* the CYK cell whose reasons are shown */

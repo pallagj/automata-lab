@@ -13,8 +13,8 @@ an app; everything runs locally, no account needed.
 
 ## Features
 
-- **Finite automata** (DFA / NFA / ε-NFA): step-by-step simulation over state sets, a timeline,
-  clickable edges to explore NFA branches, and the accepted words in shortlex order — with whether
+- **Finite automata** (DFA / NFA / ε-NFA): step-by-step simulation over state sets (played
+  letter by letter), a timeline, and the accepted words in shortlex order — with whether
   the language is empty, finite (and how many words it has) or infinite, decided exactly.
 - **Smart operations with explanations:** `det`, `min`, `epsfree`, `complete`, `reachable`,
   `complement`, `union`, `intersect`, `difference`, `concat`, `star`, `reverse`, `regex`, `equal`,
@@ -30,6 +30,10 @@ an app; everything runs locally, no account needed.
   refinement rounds, ε-closures, product construction table, the r(p, q, t) tables of the
   automaton → regular expression conversion, the rounds of the grammar transformations. The
   panels over the graph can be enlarged to the whole canvas for a long table.
+- **Algorithms played frame by frame:** the subset construction filling in, the minimization's
+  classes splitting round by round, the r(p, q, t) rounds (each changed entry computed beside the
+  automaton) and the CYK table filling in cell by cell — with a caption per frame, step and
+  scrub controls and speed.
 - **Equivalence check with a counterexample:** `equal(A, B)` returns the shortest distinguishing word.
 - **Decision questions, decided exactly and explained:** `empty(L)` gives a shortest word or shows
   that no accepting state is reachable; `finite(L)` works on the minimal automaton (infinite exactly
@@ -41,10 +45,11 @@ an app; everything runs locally, no account needed.
   automata for a letter, ε and ∅, then the union, concatenation and closure constructions. The
   way back, `toRegex(M)`, uses the r(p, q, t) dynamic programming,
   simplifying with identities that always hold.
-- **Pushdown automata:** true nondeterministic simulation over configuration sets, stack display,
+- **Pushdown automata:** true nondeterministic simulation over configuration sets (played step by
+  step: every branch at once), stack display,
   acceptance by empty stack or by final state.
-- **Turing machines:** tape visualisation, step-by-step execution, nondeterminism detection and
-  branch selection. Transitions read `a → b, D` (and `a; Z → AZ` for a
+- **Turing machines:** tape visualisation, step-by-step execution (or played), nondeterminism
+  detection, every branch followed at once. Transitions read `a → b, D` (and `a; Z → AZ` for a
   pushdown automaton); the head moves are `R`, `L`, `S` in the YAML and shown in the interface's
   language (J, B, H in Hungarian).
 - **General machine model:** every machine is a restriction of one model — a finite control plus any
