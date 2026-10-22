@@ -1,6 +1,15 @@
 /* ====== Design tokens ====== */
 
 :root {
+  /* classes of states in an animation: distinct in both themes */
+  --class-0: #8b5cf6;
+  --class-1: #06b6d4;
+  --class-2: #f59e0b;
+  --class-3: #10b981;
+  --class-4: #ec4899;
+  --class-5: #3b82f6;
+  --class-6: #ef4444;
+  --class-7: #84cc16;
   --font-sans: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, "SF Mono", "Cascadia Code", Menlo, Consolas, monospace;
   --radius: 14px;
@@ -220,6 +229,108 @@ button {
 
 .stage-chips .badge {
   backdrop-filter: blur(8px);
+}
+
+/* an algorithm played on the graph: the start button among the chips, the controls at the bottom */
+.anim-start {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 3.5px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--accent);
+  background: var(--accent-soft);
+  color: var(--text);
+  cursor: pointer;
+  backdrop-filter: blur(8px);
+}
+
+.anim-start:hover {
+  background: var(--accent);
+  color: #fff;
+}
+
+.anim-player {
+  position: absolute;
+  left: 50%;
+  bottom: 12px;
+  transform: translateX(-50%);
+  width: min(760px, calc(100% - 24px));
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px 12px;
+  background: color-mix(in srgb, var(--panel) 92%, transparent);
+  backdrop-filter: blur(10px);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  z-index: 5;
+}
+
+.anim-controls {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.anim-controls button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 30px;
+  height: 30px;
+  padding: 0 6px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--panel-2);
+  color: var(--text);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 650;
+  cursor: pointer;
+}
+
+.anim-controls button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.anim-controls .anim-play {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
+.anim-scrub {
+  flex: 1;
+  min-width: 60px;
+  accent-color: var(--accent);
+}
+
+.anim-count {
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-soft);
+  white-space: nowrap;
+  padding: 0 4px;
+}
+
+.anim-caption {
+  font-size: 14px;
+  line-height: 1.5;
+  min-height: 2.6em;
+}
+
+.anim-op {
+  margin-right: 8px;
+  padding: 1px 6px;
+  border-radius: 6px;
+  background: var(--accent-soft);
+  font-size: 12px;
 }
 
 /* floating, collapsible panels at the top right */

@@ -24,6 +24,7 @@ import {
   transMap
 } from "./fsm";
 import { EquivalenceVerdict } from "../verdict";
+import { AnimFrame, ANIMATION_STATE_LIMIT, FSMAnimation, transKey } from "./animation";
 
 /* ------------------------------------------------------------------ */
 /* Precondition explanations                                           */
@@ -193,6 +194,8 @@ export function determinize(f: FSM): OpResult<FSM> {
 
   const tableRows: string[][] = [];
   let needEmpty = false;
+  /** each δ'(R, a) as it was computed, for the animation */
+  const moves: { from: string; symbol: string; to: string; expr: string; found: boolean }[] = [];
 
   while (queue.length) {
     const cur = queue.shift()!;
@@ -207,7 +210,10 @@ export function determinize(f: FSM): OpResult<FSM> {
       const next = new Set(parts.flatMap((p) => [...p]));
       const nextName = setName(next);
       // as the notes write it (2.17): {A} ∪ {C} = {A,C}; one part, or many, is just the set
-      row.push(parts.length > 1 && parts.length <= 4 ? `${parts.map(setName).join(" ∪ ")} = ${nextName}` : nextName);
+      const expr = parts.length > 1 && parts.length <= 4 ? `${parts.map(setName).join(" ∪ ")} = ${nextName}` : nextName;
+      row.push(expr);
+      const found = next.size === 0 ? !needEmpty : !seen.has(nextName);
+      moves.push({ from: curName, symbol: sym, to: nextName, expr, found });
       if (next.size === 0) needEmpty = true;
       addTransition(out, curName, sym, nextName);
       if (!seen.has(nextName) && next.size > 0) {
@@ -242,7 +248,82 @@ export function determinize(f: FSM): OpResult<FSM> {
     })
   });
 
-  return okResult(out, diags, steps);
+  const animation =
+    out.states.length <= ANIMATION_STATE_LIMIT
+      ? subsetAnimation(out, moves, a.hasEpsilon ? `E({${f.start}})` : null, 2 ** f.states.length)
+      : undefined;
+  return { ...okResult(out, diags, steps), animation };
+}
+
+/**
+ * The subset construction played on the automaton it builds: the start set first, then
+ * every δ'(R, a) in the order it was computed — a set seen for the first time appears,
+ * faded until its own row is processed.
+ */
+function subsetAnimation(
+  out: FSM,
+  moves: { from: string; symbol: string; to: string; expr: string; found: boolean }[],
+  startExpr: string | null,
+  possible: number
+): FSMAnimation {
+  const accept = new Set(out.accept);
+  const frames: AnimFrame[] = [];
+  const shown = [out.start];
+  const edges: string[] = [];
+  const done = new Set<string>();
+  const pending = () => shown.filter((s) => !done.has(s));
+  frames.push({
+    graph: out,
+    caption: startExpr
+      ? tx("ops.det.anim.startEpsilon", { start: out.start, startExpr })
+      : tx("ops.det.anim.start", { start: out.start }),
+    shown: [...shown],
+    edges: [],
+    pending: pending(),
+    focus: [out.start]
+  });
+  for (const m of moves) {
+    // a row is being processed: its set is no longer waiting
+    done.add(m.from);
+    if (m.found) shown.push(m.to);
+    const key = transKey(m.from, m.symbol, m.to);
+    edges.push(key);
+    const params = { set: m.from, symbol: m.symbol, expr: m.expr };
+    frames.push({
+      graph: out,
+      caption: tx(
+        m.to === "∅" && m.found
+          ? "ops.det.anim.empty"
+          : m.found
+            ? accept.has(m.to)
+              ? "ops.det.anim.newAccept"
+              : "ops.det.anim.new"
+            : "ops.det.anim.known",
+        params
+      ),
+      shown: [...shown],
+      edges: [...edges],
+      pending: pending(),
+      focus: [m.from],
+      focusEdges: [key]
+    });
+  }
+  if (shown.includes("∅")) {
+    const loops = out.alphabet.map((c) => transKey("∅", c, "∅"));
+    edges.push(...loops);
+    done.add("∅");
+    frames.push({
+      graph: out,
+      caption: tx("ops.det.anim.trap"),
+      shown: [...shown],
+      edges: [...edges],
+      pending: [],
+      focus: ["∅"],
+      focusEdges: loops
+    });
+  }
+  frames.push({ graph: out, caption: tx("ops.det.anim.done", { count: out.states.length, possible }) });
+  return { frames };
 }
 
 /* ------------------------------------------------------------------ */
@@ -371,6 +452,16 @@ export function minimize(f: FSM): OpResult<FSM> {
     detail: tx("ops.min.step1.detail", { partition: partText(partition) })
   });
 
+  // the animation colours the states by group, round by round, on the automaton being minimized
+  const animate = work.states.length <= ANIMATION_STATE_LIMIT;
+  const frames: AnimFrame[] = [];
+  const colours = (p: string[][]) => ({
+    classes: Object.fromEntries(p.flatMap((g, i) => g.map((st) => [st, i]))),
+    tags: Object.fromEntries(p.flatMap((g, i) => g.map((st) => [st, groupName(i)])))
+  });
+  if (animate)
+    frames.push({ graph: work, caption: tx("ops.min.anim.start", { partition: partText(partition) }), ...colours(partition) });
+
   // refinement: p and q stay together when every letter takes them into the same group
   for (let round = 1; ; round++) {
     const groupOf = new Map<string, number>();
@@ -380,6 +471,7 @@ export function minimize(f: FSM): OpResult<FSM> {
     const next: string[][] = partition.map(() => []);
     const added: string[][] = [];
     const splits: string[] = [];
+    const splitParts: string[] = [];
     const rows: string[][] = [];
     partition.forEach((group, i) => {
       const buckets = new Map<string, string[]>();
@@ -387,17 +479,28 @@ export function minimize(f: FSM): OpResult<FSM> {
         const key = signature(st).join(",");
         if (!buckets.has(key)) buckets.set(key, []);
         buckets.get(key)!.push(st);
-        rows.push([
-          groupName(i),
-          st,
-          ...work.alphabet.map((c) => `${delta(st, c)} ∈ ${groupName(groupOf.get(delta(st, c))!)}`)
-        ]);
+        const moves = work.alphabet.map((c) => `${delta(st, c)} ∈ ${groupName(groupOf.get(delta(st, c))!)}`);
+        rows.push([groupName(i), st, ...moves]);
+        if (animate)
+          frames.push({
+            graph: work,
+            caption: tx("ops.min.anim.state", {
+              round,
+              state: st,
+              group: groupName(i),
+              moves: work.alphabet.map((c, k) => `${c} → ${moves[k]}`).join(", ")
+            }),
+            ...colours(partition),
+            focus: [st],
+            focusEdges: work.alphabet.map((c) => transKey(st, c, delta(st, c)))
+          });
       }
       const parts = [...buckets.values()];
       // the part with the group's first state keeps its name; the others are new groups at the end
       next[i] = parts[0];
       added.push(...parts.slice(1));
       if (parts.length > 1) {
+        splitParts.push(`${groupName(i)} = ${parts.map(members).join(" ∪ ")}`);
         const why = parts
           .map(
             (b) =>
@@ -419,9 +522,21 @@ export function minimize(f: FSM): OpResult<FSM> {
         detail: tx("ops.min.fixpoint.detail", { partition: partText(partition), round, prev: round - 1 }),
         table
       });
+      if (animate)
+        frames.push({
+          graph: work,
+          caption: tx("ops.min.anim.fixpoint", { round, partition: partText(partition) }),
+          ...colours(partition)
+        });
       break;
     }
     partition = refined;
+    if (animate)
+      frames.push({
+        graph: work,
+        caption: tx("ops.min.anim.split", { round, splits: splitParts.join("; "), partition: partText(partition) }),
+        ...colours(partition)
+      });
     steps.push({
       title: tx("ops.min.refine.title", { round }),
       detail: tx("ops.min.refine.detail", { splits: splits.join(" · "), partition: partText(partition), round }),
@@ -466,6 +581,15 @@ export function minimize(f: FSM): OpResult<FSM> {
     }
   });
 
+  // the result, its states coloured as the classes they were made of
+  if (animate)
+    frames.push({
+      graph: out,
+      caption: tx("ops.min.anim.build"),
+      classes: Object.fromEntries(partition.map((g, i) => [className.get(g[0])!, i])),
+      tags: Object.fromEntries(partition.map((g, i) => [className.get(g[0])!, groupName(i)]))
+    });
+
   if (out.states.length === work.states.length) {
     diags.push(info(tx("ops.min.alreadyMinimal.title"), tx("ops.min.alreadyMinimal.detail")));
   } else {
@@ -477,7 +601,7 @@ export function minimize(f: FSM): OpResult<FSM> {
     );
   }
 
-  return okResult(out, diags, steps);
+  return { ...okResult(out, diags, steps), animation: animate ? { frames } : undefined };
 }
 
 /* ------------------------------------------------------------------ */

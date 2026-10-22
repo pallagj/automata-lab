@@ -42,6 +42,54 @@
   stroke-width: 2.2;
 }
 
+/* animation frames: a state found but not processed yet, a class's colour, its tag */
+.graph-node.pending .graph-node-circle,
+.graph-node.pending .graph-node-accept {
+  stroke-dasharray: 5 4;
+  opacity: 0.75;
+}
+
+.graph-node.classed .graph-node-circle {
+  fill: color-mix(in srgb, var(--cls) 30%, var(--node-fill));
+  stroke: var(--cls);
+}
+
+.graph-node.classed.active .graph-node-circle {
+  stroke-width: 3;
+}
+
+.graph-node-tag-bg {
+  fill: var(--graph-bg);
+  stroke: var(--cls, var(--border));
+  stroke-width: 1.2;
+}
+
+.graph-node-tag {
+  fill: var(--cls, var(--text-soft));
+  font-size: 12px;
+  font-weight: 700;
+  font-family: var(--font-mono);
+  pointer-events: none;
+}
+
+.graph-svg.animating .graph-node,
+.graph-svg.animating .graph-edge {
+  animation: graph-appear 0.45s ease-out;
+}
+
+@keyframes graph-appear {
+  from {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .graph-svg.animating .graph-node,
+  .graph-svg.animating .graph-edge {
+    animation: none;
+  }
+}
+
 .graph-node-halo {
   fill: var(--accent);
   opacity: 0.14;

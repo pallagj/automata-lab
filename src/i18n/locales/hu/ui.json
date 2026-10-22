@@ -334,6 +334,7 @@
       "stepBack": "Visszalépés",
       "oneStep": "Egy lépés",
       "runAll": "Futtatás végig",
+      "pauseRun": "Szünet",
       "accepts": "elfogadja",
       "rejects": "elutasítja",
       "running": "fut…",
@@ -460,6 +461,20 @@
       "tapeReadOnlyHint": "Erre a szalagra a gép nem ír, csak olvassa (writable: false).",
       "inputTapeWritable": "{{id}}: írható bemeneti szalag",
       "inputTapeWritableHint": "Alapból a több tárolós gép bemeneti szalagja csak olvasható; ez a gép írhat is rá (writable: true)."
+    },
+    "anim": {
+      "title": "Az algoritmus lejátszása",
+      "start": "Lejátszás",
+      "startHint": "Az algoritmus lépései egymás után a gráfon",
+      "first": "Az elejére",
+      "previous": "Előző lépés (←)",
+      "play": "Lejátszás (szóköz)",
+      "pause": "Szünet (szóköz)",
+      "next": "Következő lépés (→)",
+      "last": "A végére",
+      "frame": "Lépés",
+      "speed": "Sebesség",
+      "close": "Vissza az eredményhez"
     }
   },
   "editor": {

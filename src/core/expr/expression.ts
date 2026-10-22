@@ -1,5 +1,6 @@
 import { EPS, err, failResult, okResult, OpResult, AlgoStep, Diagnostic, I18nText, info, tx, warn } from "../types";
 import { FSM, makeFSM } from "../fsm/fsm";
+import { FSMAnimation } from "../fsm/animation";
 import {
   checkEquivalence,
   cleanFSM,
@@ -67,6 +68,7 @@ export interface StepGroup {
   operation: string;
   definition?: OpDefinition;
   steps: AlgoStep[];
+  animation?: FSMAnimation;
 }
 
 export interface EvalOutput {
@@ -405,7 +407,8 @@ class Evaluator {
   take<T>(operation: string, r: OpResult<T>, definition?: OpDefinition): T {
     this.diagnostics.push(...r.diagnostics);
     // an operation that had nothing to do still says what it means
-    if (r.steps.length > 0 || (r.ok && definition)) this.stepGroups.push({ operation, definition, steps: r.steps });
+    if (r.steps.length > 0 || (r.ok && definition))
+      this.stepGroups.push({ operation, definition, steps: r.steps, animation: r.animation });
     if (!r.ok) throw new EvalDiagError(r.diagnostics);
     return r.value!;
   }

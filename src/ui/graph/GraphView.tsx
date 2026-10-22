@@ -31,8 +31,32 @@ export interface GraphSpec {
   edges: GraphEdge[];
 }
 
+/**
+ * One picture of an animation over the graph. The layout stays the whole graph's, so
+ * nothing moves while states and transitions appear, fade or change colour.
+ */
+export interface GraphFrame {
+  /** the states drawn; absent: all of them */
+  shown?: Set<string>;
+  /** states drawn faded (found, not processed yet) */
+  pending?: Set<string>;
+  focus?: Set<string>;
+  /** state → colour index */
+  classes?: Map<string, number>;
+  /** state → a short tag drawn under it */
+  tags?: Map<string, string>;
+  /** edge id → the part of its label drawn; an edge not in the map is not drawn; absent: every edge */
+  edgeLabels?: Map<string, string>;
+  focusEdges?: Set<string>;
+}
+
+/** distinct colours for classes of states (graph.css: --class-0 … --class-7) */
+const CLASS_COLOURS = 8;
+
 interface Props {
   spec: GraphSpec;
+  /** an animation's current picture over the graph */
+  frame?: GraphFrame | null;
   onEdgeClick?: (edge: GraphEdge) => void;
   className?: string;
   /** key for pinned positions (cell) — when set, states are draggable */
@@ -386,7 +410,7 @@ function useGlidingLabelTs(edges: LaidOutEdge[]): Map<string, number> {
   return shown.current;
 }
 
-export const GraphView: React.FC<Props> = ({ spec, onEdgeClick, className, cellId, editing, exportName }) => {
+export const GraphView: React.FC<Props> = ({ spec, frame, onEdgeClick, className, cellId, editing, exportName }) => {
   const { t } = useTranslation();
   const savedPos = useAppStore((s) => (cellId ? s.layouts[cellId] : undefined));
   const setNodePos = useAppStore((s) => s.setNodePos);
@@ -412,6 +436,11 @@ export const GraphView: React.FC<Props> = ({ spec, onEdgeClick, className, cellI
     const t = labelTs.get(e.id);
     return e.arc && t !== undefined ? arcAt(e.arc, t) : { x: e.labelX, y: e.labelY };
   };
+  /** in an animation: an edge is drawn when the frame lists it, or lists no edges and shows both its ends */
+  const edgeDrawn = (e: LaidOutEdge) =>
+    frame?.edgeLabels
+      ? frame.edgeLabels.has(e.id)
+      : !frame?.shown || (frame.shown.has(e.from) && frame.shown.has(e.to));
   const [view, setView] = useState<[number, number, number, number] | null>(null);
   const svgRef = useRef<SVGSVGElement>(null);
   const dragRef = useRef<{ x: number; y: number; view: [number, number, number, number] } | null>(null);
@@ -631,7 +660,7 @@ export const GraphView: React.FC<Props> = ({ spec, onEdgeClick, className, cellI
     <div className={`graph-wrap ${className ?? ""}`}>
       <svg
         ref={svgRef}
-        className="graph-svg"
+        className={`graph-svg ${frame ? "animating" : ""}`}
         viewBox={vb.join(" ")}
         preserveAspectRatio="xMidYMid meet"
         onWheel={onWheel}
@@ -649,23 +678,55 @@ export const GraphView: React.FC<Props> = ({ spec, onEdgeClick, className, cellI
           </marker>
         </defs>
 
+        {/* class tags under their states, beneath the edges: a transition's label is never hidden by one */}
+        {frame?.tags &&
+          nodes.map((n) => {
+            const tag = frame.tags!.get(n.id);
+            if (!tag || (frame.shown && !frame.shown.has(n.id))) return null;
+            const cls = frame.classes?.get(n.id);
+            return (
+              <g
+                key={n.id}
+                transform={`translate(${n.x} ${n.y})`}
+                style={cls !== undefined ? ({ "--cls": `var(--class-${cls % CLASS_COLOURS})` } as React.CSSProperties) : undefined}
+              >
+                <rect
+                  className="graph-node-tag-bg"
+                  x={-(displayLength(tag) * 4 + 6)}
+                  y={n.r + 6}
+                  width={displayLength(tag) * 8 + 12}
+                  height={18}
+                  rx={9}
+                />
+                <text className="graph-node-tag" y={n.r + 15} textAnchor="middle" dominantBaseline="central">
+                  {svgRich(tag)}
+                </text>
+              </g>
+            );
+          })}
+
         {edges.map((e) => {
+          if (frame && !edgeDrawn(e)) return null;
           const lp = labelPos(e);
+          const active = e.active || !!frame?.focusEdges?.has(e.id);
+          // an animation may draw only some of the edge's letters so far
+          const partial = frame?.edgeLabels?.get(e.id);
+          const box = partial !== undefined ? labelBox(partial) : { lines: e.lines, w: e.labelW, h: e.labelH };
           return (
             <g
               key={e.id}
-              className={`graph-edge ${e.active ? "active" : ""} ${e.clickable ? "clickable" : ""} ${editing ? "editable" : ""}`}
+              className={`graph-edge ${active ? "active" : ""} ${e.clickable ? "clickable" : ""} ${editing ? "editable" : ""}`}
               onClick={() => e.clickable && onEdgeClick?.(e)}
             >
               <path d={e.path} className="graph-edge-hit" fill="none" />
-              <path d={e.path} className="graph-edge-line" fill="none" markerEnd={e.active ? "url(#arrow-active)" : "url(#arrow)"} />
-              {e.lines.length > 0 && (
+              <path d={e.path} className="graph-edge-line" fill="none" markerEnd={active ? "url(#arrow-active)" : "url(#arrow)"} />
+              {box.lines.length > 0 && (
                 <>
                   <rect
-                    x={lp.x - e.labelW / 2}
-                    y={lp.y - e.labelH / 2}
-                    width={e.labelW}
-                    height={e.labelH}
+                    x={lp.x - box.w / 2}
+                    y={lp.y - box.h / 2}
+                    width={box.w}
+                    height={box.h}
                     rx={4}
                     className={`graph-label-bg ${editing ? "editable" : ""}`}
                     onClick={(ev) => {
@@ -685,11 +746,11 @@ export const GraphView: React.FC<Props> = ({ spec, onEdgeClick, className, cellI
                       }
                     }}
                   >
-                    {e.lines.map((line, i) => (
+                    {box.lines.map((line, i) => (
                       <tspan
                         key={i}
                         x={lp.x}
-                        y={lp.y - e.labelH / 2 + LABEL_PAD_Y + i * LABEL_LINE_H + LABEL_BASELINE}
+                        y={lp.y - box.h / 2 + LABEL_PAD_Y + i * LABEL_LINE_H + LABEL_BASELINE}
                       >
                         {svgRich(line)}
                       </tspan>
@@ -712,12 +773,17 @@ export const GraphView: React.FC<Props> = ({ spec, onEdgeClick, className, cellI
           />
         )}
 
-        {nodes.map((n) => (
+        {nodes.map((n) => {
+          if (frame?.shown && !frame.shown.has(n.id)) return null;
+          const active = n.active || !!frame?.focus?.has(n.id);
+          const cls = frame?.classes?.get(n.id);
+          return (
           <g
             key={n.id}
-            className={`graph-node ${n.active ? "active" : ""} ${cellId ? "movable" : ""} ${
+            className={`graph-node ${active ? "active" : ""} ${cellId ? "movable" : ""} ${
               connectTarget === n.id ? "connect-target" : ""
-            }`}
+            } ${frame?.pending?.has(n.id) ? "pending" : ""} ${cls !== undefined ? "classed" : ""}`}
+            style={cls !== undefined ? ({ "--cls": `var(--class-${cls % CLASS_COLOURS})` } as React.CSSProperties) : undefined}
             transform={`translate(${n.x} ${n.y})`}
             onPointerDown={(e) => onNodePointerDown(e, n)}
           >
@@ -726,13 +792,14 @@ export const GraphView: React.FC<Props> = ({ spec, onEdgeClick, className, cellI
                 <line x1={-n.r - 26} y1={0} x2={-n.r - 7} y2={0} className="graph-start-line" markerEnd="url(#arrow)" />
               </>
             )}
-            {n.active && <circle r={n.r + 7} className="graph-node-halo" />}
+            {active && <circle r={n.r + 7} className="graph-node-halo" />}
             {editing && <circle r={n.r + 5} className="graph-ring-vis" />}
             <circle r={n.r} className="graph-node-circle" />
             {n.accept && <circle r={n.r - 4.5} className="graph-node-accept" />}
             <text className="graph-node-label" textAnchor="middle" dominantBaseline="central">
               {svgRich(n.label)}
             </text>
+
             {editing && (
               <>
                 {/* edge dragging starts from the border band (ring) */}
@@ -755,7 +822,8 @@ export const GraphView: React.FC<Props> = ({ spec, onEdgeClick, className, cellI
               </>
             )}
           </g>
-        ))}
+          );
+        })}
       </svg>
 
       <div className="graph-tools">

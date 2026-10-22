@@ -334,6 +334,7 @@
       "stepBack": "Zurück",
       "oneStep": "Ein Schritt",
       "runAll": "Bis zum Ende ausführen",
+      "pauseRun": "Pause",
       "accepts": "akzeptiert",
       "rejects": "lehnt ab",
       "running": "läuft…",
@@ -460,6 +461,20 @@
       "tapeReadOnlyHint": "Die Maschine liest dieses Band nur und schreibt nichts darauf (writable: false).",
       "inputTapeWritable": "{{id}}: beschreibbares Eingabeband",
       "inputTapeWritableHint": "Standardmäßig ist das Eingabeband einer Maschine mit mehreren Speichern nur lesbar; diese Maschine darf auch darauf schreiben (writable: true)."
+    },
+    "anim": {
+      "title": "Der Algorithmus abgespielt",
+      "start": "Abspielen",
+      "startHint": "Die Schritte des Algorithmus nacheinander am Graphen",
+      "first": "Zum Anfang",
+      "previous": "Vorheriger Schritt (←)",
+      "play": "Abspielen (Leertaste)",
+      "pause": "Pause (Leertaste)",
+      "next": "Nächster Schritt (→)",
+      "last": "Zum Ende",
+      "frame": "Schritt",
+      "speed": "Geschwindigkeit",
+      "close": "Zurück zum Ergebnis"
     }
   },
   "editor": {

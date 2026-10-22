@@ -20,10 +20,13 @@ import { StepsContent } from "./StepsPanel";
 import { notesPanel } from "./DiagnosticsList";
 import { TapeInput } from "./TapeInput";
 import { StepGroup } from "../../core/expr/expression";
+import { PlayerBar, playedFrames, toGraphFrame, usePlayer } from "./AnimationPlayer";
 import {
   Check,
+  Clapperboard,
   ListOrdered,
   ListTree,
+  Pause,
   Play,
   RotateCcw,
   StepForward,
@@ -70,21 +73,26 @@ export const FSMView: React.FC<{ fsm: FSM; stepGroups?: StepGroup[]; diagnostics
     setHistory((h) => [...h, stepStates(fsm, h[h.length - 1], nextChar, tm)]);
   };
 
-  const runAll = () => {
-    setHistory((h) => {
-      const out = [...h];
-      let cur = out[out.length - 1];
-      for (let i = out.length - 1; i < input.length; i++) {
-        if (cur.size === 0) break;
-        cur = stepStates(fsm, cur, input[i], tm);
-        out.push(cur);
-      }
-      return out;
-    });
-  };
+  // the run plays letter by letter, so the active states can be followed on the graph
+  const [running, setRunning] = useState(false);
+  useEffect(() => {
+    if (!running) return;
+    if (status !== "working") {
+      setRunning(false);
+      return;
+    }
+    const id = setTimeout(step, SIM_STEP_MS);
+    return () => clearTimeout(id);
+  }, [running, history, status]);
 
-  const stepBack = () => setHistory((h) => (h.length > 1 ? h.slice(0, -1) : h));
-  const reset = () => setHistory([initialStates(fsm)]);
+  const stepBack = () => {
+    setRunning(false);
+    setHistory((h) => (h.length > 1 ? h.slice(0, -1) : h));
+  };
+  const reset = () => {
+    setRunning(false);
+    setHistory([initialStates(fsm)]);
+  };
 
   const stepEdge = (edge: GraphEdge) => {
     // a specific edge was chosen: step only into its target state
@@ -98,38 +106,26 @@ export const FSMView: React.FC<{ fsm: FSM; stepGroups?: StepGroup[]; diagnostics
     }
   };
 
-  const spec: GraphSpec = useMemo(() => {
-    const edgeGroups = new Map<string, { from: string; to: string; labels: string[]; active: boolean; clickable: boolean }>();
-    for (const t of fsm.transitions) {
-      const key = `${t.from}⇒${t.to}`;
-      if (!edgeGroups.has(key))
-        edgeGroups.set(key, { from: t.from, to: t.to, labels: [], active: false, clickable: false });
-      const g = edgeGroups.get(key)!;
-      g.labels.push(t.symbol);
-      const usable = t.symbol === nextChar && currentClosure.has(t.from) && current.size > 0;
-      if (usable) {
-        g.active = true;
-        g.clickable = true;
-      }
-    }
-    return {
-      nodes: fsm.states.map((s) => ({
-        id: s,
-        label: s,
-        accept: fsm.accept.includes(s),
-        start: s === fsm.start,
-        active: currentClosure.has(s) && current.size > 0
-      })),
-      edges: [...edgeGroups.entries()].map(([key, g]) => ({
-        id: `${g.from}⇒${g.labels.join("")}⇒${g.to}`,
-        from: g.from,
-        to: g.to,
-        label: g.labels.join(", "),
-        active: g.active,
-        clickable: g.clickable
-      }))
-    };
-  }, [fsm, currentClosure, nextChar, current]);
+  const spec: GraphSpec = useMemo(
+    () => fsmGraphSpec(fsm, current.size > 0 ? { states: currentClosure, nextChar } : undefined),
+    [fsm, currentClosure, nextChar, current]
+  );
+
+  // the algorithm's steps played on the graph
+  const frames = useMemo(() => playedFrames(stepGroups), [stepGroups]);
+  const [animating, setAnimating] = useState(false);
+  useEffect(() => setAnimating(false), [frames]);
+  const player = usePlayer(frames, animating);
+  const played = animating ? frames[player.index]?.frame : undefined;
+  // the result's own graph keeps its layout (and dragged states); another one is laid out on its own
+  const plainSpec = useMemo(() => fsmGraphSpec(fsm), [fsm]);
+  // the result's own graph (a copy of it reaches this view) keeps its layout and dragged states
+  const playsResult = useMemo(() => !played || sameGraph(played.graph, fsm), [played?.graph, fsm]);
+  const playedSpec = useMemo(
+    () => (played && !playsResult ? fsmGraphSpec(played.graph) : plainSpec),
+    [played?.graph, playsResult, plainSpec]
+  );
+  const graphFrame = useMemo(() => (played ? toGraphFrame(played, playedSpec) : null), [played, playedSpec]);
 
   const words = useMemo(() => languageSummary(fsm, 24), [fsm]);
 
@@ -190,6 +186,11 @@ export const FSMView: React.FC<{ fsm: FSM; stepGroups?: StepGroup[]; diagnostics
         <span className="badge warn" title={t("detail.fsm.unreachableHint")}>
           {t("detail.fsm.unreachableLabel")}: {analysis.unreachableStates.join(", ")}
         </span>
+      )}
+      {frames.length > 0 && !animating && (
+        <button className="anim-start" onClick={() => setAnimating(true)} title={t("detail.anim.startHint")}>
+          <Clapperboard size={14} /> {t("detail.anim.start")}
+        </button>
       )}
     </>
   );
@@ -283,6 +284,7 @@ export const FSMView: React.FC<{ fsm: FSM; stepGroups?: StepGroup[]; diagnostics
         <TapeInput
           value={input}
           onChange={(v) => {
+            setRunning(false);
             setInput(v);
             setHistory([initialStates(fsm)]);
           }}
@@ -298,8 +300,13 @@ export const FSMView: React.FC<{ fsm: FSM; stepGroups?: StepGroup[]; diagnostics
         <button className="sim-btn" onClick={step} disabled={status !== "working"} title={t("detail.fsm.oneStep")}>
           <StepForward size={16} />
         </button>
-        <button className="sim-btn" onClick={runAll} disabled={status !== "working"} title={t("detail.fsm.runAll")}>
-          <Play size={16} />
+        <button
+          className="sim-btn"
+          onClick={() => setRunning((r) => !r)}
+          disabled={status !== "working"}
+          title={running ? t("detail.fsm.pauseRun") : t("detail.fsm.runAll")}
+        >
+          {running ? <Pause size={16} /> : <Play size={16} />}
         </button>
         <span className={`verdict-pill ${status}`}>
           {status === "accepted" && (
@@ -336,10 +343,62 @@ export const FSMView: React.FC<{ fsm: FSM; stepGroups?: StepGroup[]; diagnostics
 
   return (
     <Stage
-      graph={<GraphView spec={spec} onEdgeClick={stepEdge} cellId={cellId} editing={editing} exportName={fsm.name} />}
+      graph={
+        played ? (
+          <GraphView
+            spec={playedSpec}
+            frame={graphFrame}
+            cellId={playsResult ? cellId : null}
+            exportName={fsm.name}
+          />
+        ) : (
+          <GraphView spec={spec} onEdgeClick={stepEdge} cellId={cellId} editing={editing} exportName={fsm.name} />
+        )
+      }
       chips={chips}
       panels={panels}
       bottom={bottom}
+      overlay={animating && <PlayerBar player={player} onClose={() => setAnimating(false)} />}
     />
   );
 };
+
+/** the same states and transitions, in the same order: drawn the same */
+function sameGraph(a: FSM, b: FSM): boolean {
+  if (a === b) return true;
+  const key = (f: FSM) =>
+    JSON.stringify([f.states, f.start, f.accept, f.transitions.map((t) => [t.from, t.symbol, t.to])]);
+  return key(a) === key(b);
+}
+
+/** how long one letter of a played run takes (ms) */
+const SIM_STEP_MS = 700;
+
+/** The automaton's graph: one edge per pair of states, carrying all its letters; `sim` marks the run's active part. */
+function fsmGraphSpec(fsm: FSM, sim?: { states: Set<string>; nextChar: string | null }): GraphSpec {
+  const edgeGroups = new Map<string, { from: string; to: string; labels: string[]; active: boolean }>();
+  for (const t of fsm.transitions) {
+    const key = `${t.from}⇒${t.to}`;
+    if (!edgeGroups.has(key)) edgeGroups.set(key, { from: t.from, to: t.to, labels: [], active: false });
+    const g = edgeGroups.get(key)!;
+    g.labels.push(t.symbol);
+    if (sim && t.symbol === sim.nextChar && sim.states.has(t.from)) g.active = true;
+  }
+  return {
+    nodes: fsm.states.map((s) => ({
+      id: s,
+      label: s,
+      accept: fsm.accept.includes(s),
+      start: s === fsm.start,
+      active: !!sim?.states.has(s)
+    })),
+    edges: [...edgeGroups.values()].map((g) => ({
+      id: `${g.from}⇒${g.labels.join("")}⇒${g.to}`,
+      from: g.from,
+      to: g.to,
+      label: g.labels.join(", "),
+      active: g.active,
+      clickable: g.active
+    }))
+  };
+}

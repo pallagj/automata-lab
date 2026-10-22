@@ -334,6 +334,7 @@
       "stepBack": "Step back",
       "oneStep": "One step",
       "runAll": "Run to completion",
+      "pauseRun": "Pause",
       "accepts": "accepts",
       "rejects": "rejects",
       "running": "running…",
@@ -460,6 +461,20 @@
       "tapeReadOnlyHint": "The machine only reads this tape, it writes nothing on it (writable: false).",
       "inputTapeWritable": "{{id}}: writable input tape",
       "inputTapeWritableHint": "By default the input tape of a machine with several storages is read-only; this machine may write on it too (writable: true)."
+    },
+    "anim": {
+      "title": "Playing the algorithm",
+      "start": "Play",
+      "startHint": "The algorithm's steps one after the other on the graph",
+      "first": "To the start",
+      "previous": "Previous step (←)",
+      "play": "Play (space)",
+      "pause": "Pause (space)",
+      "next": "Next step (→)",
+      "last": "To the end",
+      "frame": "Step",
+      "speed": "Speed",
+      "close": "Back to the result"
     }
   },
   "editor": {

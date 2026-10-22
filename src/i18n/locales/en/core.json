@@ -313,6 +313,16 @@
       "emptySet": {
         "title": "The empty set ∅ appears — a trap state",
         "detail": "Where a letter leads nowhere, δ'(R, a) = ∅: the empty set is a state too — it never accepts, and every letter keeps it there. So the result is a complete DFA."
+      },
+      "anim": {
+        "start": "The start state is {{start}}. Each set stays dashed until its row is processed.",
+        "startEpsilon": "The start state is {{startExpr}} = {{start}}. Each set stays dashed until its row is processed.",
+        "new": "δ'({{set}}, {{symbol}}) = {{expr}} — a new set: it becomes a state, processed later.",
+        "newAccept": "δ'({{set}}, {{symbol}}) = {{expr}} — a new set: it becomes a state, accepting because it contains an accepting state.",
+        "known": "δ'({{set}}, {{symbol}}) = {{expr}} — this set is already a state: only the transition is new.",
+        "empty": "δ'({{set}}, {{symbol}}) = ∅ — no element has a {{symbol}}-transition: the empty set appears, the trap state.",
+        "trap": "∅ goes to itself on every letter, and it is never accepting.",
+        "done": "Done: {{count}} states out of {{possible}} possible subsets — only those reachable from the start state were built."
       }
     },
     "complete": {
@@ -377,6 +387,13 @@
         "group": "group",
         "newState": "new state",
         "class": "class"
+      },
+      "anim": {
+        "start": "Initial partition (0-equivalence): {{partition}}. One colour is one group.",
+        "state": "Round {{round}} — {{state}} ∈ {{group}}: {{moves}}.",
+        "split": "End of round {{round}} — splits: {{splits}}. The new partition: {{partition}}.",
+        "fixpoint": "Round {{round}}: no group splits, the partition is final: {{partition}}.",
+        "build": "Each class becomes one state, in the colour of its class; the transitions run between the classes."
       }
     },
     "complement": {

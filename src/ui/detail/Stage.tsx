@@ -21,9 +21,11 @@ interface Props {
   chips: React.ReactNode;
   bottom?: React.ReactNode;
   panels?: StagePanel[];
+  /** drawn over the canvas's bottom edge (an animation's controls) */
+  overlay?: React.ReactNode;
 }
 
-export const Stage: React.FC<Props> = ({ graph, chips, bottom, panels }) => {
+export const Stage: React.FC<Props> = ({ graph, chips, bottom, panels, overlay }) => {
   const { t } = useTranslation();
   const [enlargedKey, setEnlargedKey] = useState<string | null>(null);
   const enlarged = panels?.find((p) => p.key === enlargedKey) ?? null;
@@ -43,6 +45,7 @@ export const Stage: React.FC<Props> = ({ graph, chips, bottom, panels }) => {
       <div className="stage-canvas">
         {graph}
         <div className="stage-chips">{chips}</div>
+        {overlay}
         {panels && panels.length > 0 && (
           // hidden, not unmounted, while one is enlarged: the panels stay open or closed as they were
           <div className="stage-panels" hidden={enlarged !== null}>

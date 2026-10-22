@@ -313,6 +313,16 @@
       "emptySet": {
         "title": "Megjelenik az üres halmaz (∅) — csapdaállapot",
         "detail": "Ahol egy betűre nincs hová lépni, δ'(R, a) = ∅: az üres halmaz is állapot — sosem elfogadó, és minden betű helyben hagyja. Így az eredmény teljes DFA."
+      },
+      "anim": {
+        "start": "A kezdőállapot {{start}}. Minden halmaz szaggatott, amíg a sorára nem kerül a feldolgozás.",
+        "startEpsilon": "A kezdőállapot {{startExpr}} = {{start}}. Minden halmaz szaggatott, amíg a sorára nem kerül a feldolgozás.",
+        "new": "δ'({{set}}, {{symbol}}) = {{expr}} — új halmaz: új állapot lesz, később feldolgozzuk.",
+        "newAccept": "δ'({{set}}, {{symbol}}) = {{expr}} — új halmaz: új állapot lesz, és elfogadó, mert van benne elfogadó állapot.",
+        "known": "δ'({{set}}, {{symbol}}) = {{expr}} — ez a halmaz már állapot: csak az átmenet új.",
+        "empty": "δ'({{set}}, {{symbol}}) = ∅ — egyik elemből sincs {{symbol}}-átmenet: megjelenik az üres halmaz, a csapdaállapot.",
+        "trap": "A ∅ minden betűre önmagába lép, és sosem elfogadó.",
+        "done": "Kész: {{count}} állapot a {{possible}} lehetséges részhalmazból — csak a kezdőállapotból elérhetők készültek el."
       }
     },
     "complete": {
@@ -377,6 +387,13 @@
         "group": "csoport",
         "newState": "új állapot",
         "class": "osztály"
+      },
+      "anim": {
+        "start": "Kezdő felosztás (0-ekvivalencia): {{partition}}. Egy szín egy csoport.",
+        "state": "{{round}}. kör — {{state}} ∈ {{group}}: {{moves}}.",
+        "split": "{{round}}. kör vége — szétválik: {{splits}}. Az új felosztás: {{partition}}.",
+        "fixpoint": "{{round}}. kör: egyik csoport sem válik szét, a felosztás végleges: {{partition}}.",
+        "build": "Minden osztályból egy állapot lesz, a színe az osztályé; az átmenetek az osztályok között futnak."
       }
     },
     "complement": {

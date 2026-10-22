@@ -3,6 +3,8 @@
  * suggestions) and recorded steps alongside its result.
  */
 
+import type { FSMAnimation } from "./fsm/animation";
+
 export type DiagLevel = "error" | "warning" | "info";
 
 /**
@@ -51,6 +53,8 @@ export interface OpResult<T> {
   value?: T;
   diagnostics: Diagnostic[];
   steps: AlgoStep[];
+  /** the steps played on the graph, where that explains them */
+  animation?: FSMAnimation;
 }
 
 export const EPS = "ε";

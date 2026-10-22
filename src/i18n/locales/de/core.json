@@ -313,6 +313,16 @@
       "emptySet": {
         "title": "Die leere Menge ∅ tritt auf — ein Fangzustand",
         "detail": "Wo ein Buchstabe nirgendwohin führt, ist δ'(R, a) = ∅: auch die leere Menge ist ein Zustand — sie akzeptiert nie, und jeder Buchstabe hält sie dort. So ist das Ergebnis ein vollständiger DFA."
+      },
+      "anim": {
+        "start": "Der Startzustand ist {{start}}. Jede Menge bleibt gestrichelt, bis ihre Zeile verarbeitet wird.",
+        "startEpsilon": "Der Startzustand ist {{startExpr}} = {{start}}. Jede Menge bleibt gestrichelt, bis ihre Zeile verarbeitet wird.",
+        "new": "δ'({{set}}, {{symbol}}) = {{expr}} — eine neue Menge: sie wird ein Zustand und später verarbeitet.",
+        "newAccept": "δ'({{set}}, {{symbol}}) = {{expr}} — eine neue Menge: sie wird ein Zustand, akzeptierend, weil sie einen akzeptierenden Zustand enthält.",
+        "known": "δ'({{set}}, {{symbol}}) = {{expr}} — diese Menge ist schon ein Zustand: nur der Übergang ist neu.",
+        "empty": "δ'({{set}}, {{symbol}}) = ∅ — kein Element hat einen {{symbol}}-Übergang: die leere Menge erscheint, der Fallenzustand.",
+        "trap": "∅ geht bei jedem Buchstaben in sich selbst über und ist nie akzeptierend.",
+        "done": "Fertig: {{count}} Zustände von {{possible}} möglichen Teilmengen — nur die vom Startzustand erreichbaren wurden gebaut."
       }
     },
     "complete": {
@@ -377,6 +387,13 @@
         "group": "Gruppe",
         "newState": "neuer Zustand",
         "class": "Klasse"
+      },
+      "anim": {
+        "start": "Anfangszerlegung (0-Äquivalenz): {{partition}}. Eine Farbe ist eine Gruppe.",
+        "state": "Runde {{round}} — {{state}} ∈ {{group}}: {{moves}}.",
+        "split": "Ende von Runde {{round}} — es zerfällt: {{splits}}. Die neue Zerlegung: {{partition}}.",
+        "fixpoint": "Runde {{round}}: keine Gruppe zerfällt, die Zerlegung ist endgültig: {{partition}}.",
+        "build": "Jede Klasse wird ein Zustand, in der Farbe ihrer Klasse; die Übergänge verlaufen zwischen den Klassen."
       }
     },
     "complement": {
