@@ -9,7 +9,9 @@
     "title": "AutomataLab — Nyelvek és automaták",
     "resizePane": "Húzd a panel átméretezéséhez",
     "code": "Kód",
-    "visualization": "Vizualizáció"
+    "visualization": "Vizualizáció",
+    "newerVersion": "Az AutomataLab egy újabb verziója már elmentette a munkalapjaidat egy másik lapon. Töltsd újra az oldalt: addig az itteni változtatások nem mentődnek.",
+    "reload": "Újratöltés"
   },
   "topbar": {
     "newWorksheet": "Új munkalap",
@@ -21,6 +23,7 @@
     "help": "Súgó",
     "language": "Nyelv",
     "importFailed": "Nem sikerült beolvasni a fájlt — érvényes .automata.json kell.",
+    "importNewer": "Ezt a fájlt az AutomataLab egy újabb verziója mentette. Töltsd újra az oldalt, és próbáld újra.",
     "openWorksheets": "Munkalapjaid megnyitása",
     "openFolder": "Mappa megnyitása",
     "renameHint": "Kattints az átnevezéshez",

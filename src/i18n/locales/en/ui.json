@@ -9,7 +9,9 @@
     "title": "AutomataLab — Languages and Automata",
     "resizePane": "Drag to resize the panel",
     "code": "Code",
-    "visualization": "Visualization"
+    "visualization": "Visualization",
+    "newerVersion": "A newer version of AutomataLab has already saved your worksheets in another tab. Reload the page: until then, changes made here are not saved.",
+    "reload": "Reload"
   },
   "topbar": {
     "newWorksheet": "New worksheet",
@@ -21,6 +23,7 @@
     "help": "Help",
     "language": "Language",
     "importFailed": "Couldn't read the file — a valid .automata.json is required.",
+    "importNewer": "This file was saved by a newer version of AutomataLab. Reload the page and try again.",
     "openWorksheets": "Open your worksheets",
     "openFolder": "Open this folder",
     "renameHint": "Click to rename",

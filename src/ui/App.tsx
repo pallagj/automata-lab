@@ -1,11 +1,27 @@
-import React, { useEffect, useMemo } from "react";
+import React, { useEffect, useMemo, useSyncExternalStore } from "react";
 import { useTranslation } from "react-i18next";
 import { activeWorkspace, useAppStore } from "../state/store";
+import { newerVersionSaved, onNewerVersionSaved } from "../state/migrations";
 import { evaluateCells } from "../core/workspace";
 import { TopBar } from "./TopBar";
 import { EditorColumn } from "./editor/EditorColumn";
 import { DetailPane } from "./detail/DetailPane";
-import { Code2, Eye } from "lucide-react";
+import { Code2, Eye, RotateCw } from "lucide-react";
+
+/** An outdated page whose saves are refused (a newer version saved meanwhile) says so. */
+const OutdatedBanner: React.FC = () => {
+  const { t } = useTranslation();
+  const outdated = useSyncExternalStore(onNewerVersionSaved, newerVersionSaved);
+  if (!outdated) return null;
+  return (
+    <div className="outdated-banner" role="alert">
+      {t("app.newerVersion")}
+      <button onClick={() => window.location.reload()}>
+        <RotateCw size={14} /> {t("app.reload")}
+      </button>
+    </div>
+  );
+};
 
 export const App: React.FC = () => {
   const { t, i18n } = useTranslation();
@@ -53,6 +69,7 @@ export const App: React.FC = () => {
 
   return (
     <div className="app">
+      <OutdatedBanner />
       <TopBar />
       <div
         className={`app-body tab-${mobileTab}`}

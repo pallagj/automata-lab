@@ -1,6 +1,6 @@
 import React, { useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { activeWorkspace, allFolders, exportWorkspaceJSON, useAppStore, Workspace } from "../state/store";
+import { activeWorkspace, allFolders, exportWorkspaceJSON, readWorksheetFile, useAppStore, Workspace } from "../state/store";
 import {
   ChevronDown,
   Copy,
@@ -59,12 +59,9 @@ export const TopBar: React.FC = () => {
   };
 
   const onImportFile = async (file: File) => {
-    try {
-      const data = JSON.parse(await file.text()) as Workspace;
-      importWorkspace(data);
-    } catch {
-      alert(t("topbar.importFailed"));
-    }
+    const read = readWorksheetFile(await file.text());
+    if (read.ok) importWorkspace(read.worksheet);
+    else alert(t(read.reason === "newer" ? "topbar.importNewer" : "topbar.importFailed"));
   };
 
   /** runs a worksheet-menu action and closes the menu */

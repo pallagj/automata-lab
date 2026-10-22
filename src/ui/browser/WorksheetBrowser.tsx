@@ -212,7 +212,7 @@ export const WorksheetBrowser: React.FC<Props> = ({ initialTab = "saved", initia
   };
 
   const loadExample = (name: string, cells: string[]) => {
-    importWorkspace({ name, cells: cells.map((source) => ({ id: "", source })) } as Workspace);
+    importWorkspace({ name, cells: cells.map((source) => ({ id: "", source })) });
     onClose();
   };
 

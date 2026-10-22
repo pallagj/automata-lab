@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { persist } from "zustand/middleware";
+import { createJSONStorage, persist } from "zustand/middleware";
 import i18n from "../i18n";
 import { STARTER_CELLS } from "./examples";
 import { cellName, uniqueName, usedNames, withName } from "./names";
@@ -13,6 +13,7 @@ import {
   restoredLayouts,
   undoStep
 } from "./history";
+import { guardedStorage, markNewerVersionSaved, migrateSource, migrateState, SAVE_VERSION } from "./migrations";
 
 /**
  * Offline-first state: every worksheet lives in localStorage,
@@ -97,7 +98,7 @@ export interface AppState {
   /** copies a worksheet next to the original; `open` switches to the copy */
   duplicateWorkspace: (id: string, open?: boolean) => void;
   deleteWorkspaces: (ids: string[]) => void;
-  importWorkspace: (ws: Workspace, folder?: string) => void;
+  importWorkspace: (ws: Pick<Workspace, "name" | "cells">, folder?: string) => void;
   /** moves worksheets into a folder (created if new); undefined = out of any folder */
   moveWorkspaces: (ids: string[], folder: string | undefined) => void;
   createFolder: (name: string) => void;
@@ -168,6 +169,10 @@ export function canRedo(s: AppState): boolean {
 }
 
 const starter = newWorkspace(i18n.t("workspace.starterName", { ns: "ui" }), STARTER_CELLS);
+
+const STORE_KEY = "automata-lab";
+/** set once the saved state is first loaded: a later load is another tab's save */
+let hydrated = false;
 
 export const useAppStore = create<AppState>()(
   persist(
@@ -382,8 +387,43 @@ export const useAppStore = create<AppState>()(
       redo: () => set((s) => travel(s, redoStep))
     }),
     {
-      name: "automata-lab",
-      version: 1,
+      name: STORE_KEY,
+      version: SAVE_VERSION,
+      storage: createJSONStorage(() => guardedStorage(window.localStorage)),
+      migrate: (saved, version) => {
+        if (version > SAVE_VERSION) markNewerVersionSaved();
+        return migrateState(saved, version) as AppState;
+      },
+      merge: (saved, current) => {
+        const s = saved as Partial<AppState>;
+        if (!hydrated) return { ...current, ...s };
+        // another tab saved: its worksheets are taken over, but this tab stays where it is,
+        // and an undo history that no longer matches its worksheet is dropped
+        const workspaces = s.workspaces ?? current.workspaces;
+        const stays = workspaces.find((w) => w.id === current.activeWorkspaceId);
+        const before = new Map(current.workspaces.map((w) => [w.id, w.updatedAt]));
+        const history = Object.fromEntries(
+          Object.entries(current.history).filter(([id]) =>
+            workspaces.some((w) => w.id === id && w.updatedAt === before.get(id))
+          )
+        );
+        return {
+          ...current,
+          ...s,
+          history,
+          mobileTab: current.mobileTab,
+          activeWorkspaceId: stays ? current.activeWorkspaceId : (s.activeWorkspaceId ?? current.activeWorkspaceId),
+          activeCellId:
+            stays && stays.cells.some((c) => c.id === current.activeCellId)
+              ? current.activeCellId
+              : stays
+                ? (stays.cells[0]?.id ?? null)
+                : (s.activeCellId ?? current.activeCellId)
+        };
+      },
+      onRehydrateStorage: () => () => {
+        hydrated = true;
+      },
       // the undo history is for this session only
       partialize: ({ history: _history, ...saved }) => saved
     }
@@ -414,10 +454,45 @@ export function activeWorkspace(s: AppState): Workspace {
   return s.workspaces.find((w) => w.id === s.activeWorkspaceId) ?? s.workspaces[0];
 }
 
+/** When another tab of the app saves, this one takes its worksheets over, so neither overwrites the other's work. */
+export function syncAcrossTabs(): void {
+  window.addEventListener("storage", (e) => {
+    if (e.key === STORE_KEY && e.newValue) void useAppStore.persist.rehydrate();
+  });
+}
+
 export function exportWorkspaceJSON(ws: Workspace): string {
   return JSON.stringify(
-    { app: "automata-lab", version: 1, name: ws.name, cells: ws.cells.map((c) => ({ source: c.source })) },
+    { app: "automata-lab", version: SAVE_VERSION, name: ws.name, cells: ws.cells.map((c) => ({ source: c.source })) },
     null,
     2
   );
+}
+
+/**
+ * An exported worksheet file, its cells rewritten for this version. A file without a
+ * version is taken as version 1; one written by a newer app is refused (reloading the
+ * page brings the newer app).
+ */
+export function readWorksheetFile(
+  text: string
+): { ok: true; worksheet: Pick<Workspace, "name" | "cells"> } | { ok: false; reason: "invalid" | "newer" } {
+  let data: unknown;
+  try {
+    data = JSON.parse(text);
+  } catch {
+    return { ok: false, reason: "invalid" };
+  }
+  if (data === null || typeof data !== "object" || !Array.isArray((data as { cells?: unknown }).cells))
+    return { ok: false, reason: "invalid" };
+  const { version, name, cells } = data as { version?: unknown; name?: unknown; cells: { source?: unknown }[] };
+  const from = typeof version === "number" ? version : 1;
+  if (from > SAVE_VERSION) return { ok: false, reason: "newer" };
+  return {
+    ok: true,
+    worksheet: {
+      name: typeof name === "string" ? name : "",
+      cells: cells.map((c) => ({ id: "", source: migrateSource(String(c?.source ?? ""), from) }))
+    }
+  };
 }

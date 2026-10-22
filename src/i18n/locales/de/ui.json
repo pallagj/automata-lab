@@ -9,7 +9,9 @@
     "title": "AutomataLab — Sprachen und Automaten",
     "resizePane": "Zum Anpassen der Breite ziehen",
     "code": "Code",
-    "visualization": "Visualisierung"
+    "visualization": "Visualisierung",
+    "newerVersion": "Eine neuere Version von AutomataLab hat deine Arbeitsblätter bereits in einem anderen Tab gespeichert. Lade die Seite neu: bis dahin werden Änderungen hier nicht gespeichert.",
+    "reload": "Neu laden"
   },
   "topbar": {
     "newWorksheet": "Neues Arbeitsblatt",
@@ -21,6 +23,7 @@
     "help": "Hilfe",
     "language": "Sprache",
     "importFailed": "Die Datei konnte nicht gelesen werden — eine gültige .automata.json wird benötigt.",
+    "importNewer": "Diese Datei wurde von einer neueren Version von AutomataLab gespeichert. Lade die Seite neu und versuche es erneut.",
     "openWorksheets": "Deine Arbeitsblätter öffnen",
     "openFolder": "Diesen Ordner öffnen",
     "renameHint": "Zum Umbenennen klicken",
