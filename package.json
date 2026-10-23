@@ -5,35 +5,26 @@
   "description": "AutomataLab — an interactive workshop for formal languages and automata theory",
   "license": "MIT",
   "type": "module",
+  "workspaces": [
+    "packages/core",
+    "packages/contract",
+    "apps/server",
+    "apps/web"
+  ],
   "scripts": {
-    "dev": "vite",
-    "build": "tsc -b && vite build",
-    "preview": "vite preview",
-    "test": "vitest run",
-    "test:watch": "vitest"
-  },
-  "dependencies": {
-    "@codemirror/lang-yaml": "^6.1.2",
-    "@dagrejs/dagre": "^1.1.4",
-    "@uiw/react-codemirror": "^4.23.7",
-    "i18next": "^26.4.2",
-    "i18next-browser-languagedetector": "^8.2.1",
-    "js-yaml": "^4.1.0",
-    "lucide-react": "^0.469.0",
-    "react": "^18.3.1",
-    "react-dom": "^18.3.1",
-    "react-i18next": "^17.0.15",
-    "zustand": "^5.0.2"
+    "dev": "npm run dev -w @automatalab/web",
+    "dev:server": "npm run dev -w @automatalab/server",
+    "gen": "npm run gen -w @automatalab/contract && npm run gen -w @automatalab/server",
+    "test": "vitest run && npm run check",
+    "test:watch": "vitest",
+    "check": "npm run typecheck --workspaces --if-present && npm run arch",
+    "arch": "depcruise packages apps --config .dependency-cruiser.cjs",
+    "build": "npm run build -w @automatalab/web && npm run build -w @automatalab/server",
+    "preview": "npm run preview -w @automatalab/web"
   },
   "devDependencies": {
-    "@types/js-yaml": "^4.0.9",
-    "@types/react": "^18.3.18",
-    "@types/react-dom": "^18.3.5",
-    "@vitejs/plugin-react": "^4.3.4",
-    "puppeteer-core": "^25.1.0",
+    "dependency-cruiser": "18.5.0",
     "typescript": "^5.7.2",
-    "vite": "^6.0.7",
-    "vite-plugin-pwa": "^0.21.1",
     "vitest": "^2.1.8"
   }
 }

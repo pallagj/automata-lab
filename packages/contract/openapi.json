@@ -1,0 +1,334 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "AutomataLab API",
+    "version": "1.0.0",
+    "description": "Shares AutomataLab worksheets by short links. The same operations are offered to AI assistants over MCP at /mcp."
+  },
+  "servers": [
+    {
+      "url": "https://automatalab.app"
+    }
+  ],
+  "components": {
+    "schemas": {
+      "SharedLink": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[a-z0-9]{10}$",
+            "description": "Ten letters and digits: the end of a share link.",
+            "example": "k3x9pq2mzt"
+          },
+          "url": {
+            "type": "string",
+            "format": "uri",
+            "example": "https://automatalab.app/w/k3x9pq2mzt"
+          }
+        },
+        "required": [
+          "id",
+          "url"
+        ]
+      },
+      "Error": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "object",
+            "properties": {
+              "code": {
+                "type": "string",
+                "enum": [
+                  "invalid",
+                  "too_large",
+                  "newer_version",
+                  "not_found",
+                  "rate_limited",
+                  "internal"
+                ]
+              },
+              "message": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "code",
+              "message"
+            ]
+          }
+        },
+        "required": [
+          "error"
+        ]
+      },
+      "Worksheet": {
+        "type": "object",
+        "properties": {
+          "version": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "The save version the worksheet was written at; an older one is brought up to date when it is read.",
+            "example": 1
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 200
+          },
+          "cells": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/WorksheetCell"
+            },
+            "minItems": 1,
+            "maxItems": 100
+          }
+        },
+        "required": [
+          "version",
+          "name",
+          "cells"
+        ]
+      },
+      "WorksheetCell": {
+        "type": "object",
+        "properties": {
+          "source": {
+            "type": "string",
+            "maxLength": 20000,
+            "description": "The cell as it is written in the editor."
+          },
+          "layout": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "object",
+              "properties": {
+                "x": {
+                  "type": "number"
+                },
+                "y": {
+                  "type": "number"
+                }
+              },
+              "required": [
+                "x",
+                "y"
+              ]
+            },
+            "description": "The graph positions pinned by hand: state name → coordinate."
+          }
+        },
+        "required": [
+          "source"
+        ]
+      },
+      "Snapshot": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[a-z0-9]{10}$",
+            "description": "Ten letters and digits: the end of a share link.",
+            "example": "k3x9pq2mzt"
+          },
+          "url": {
+            "type": "string",
+            "format": "uri"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "worksheet": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Worksheet"
+              },
+              {
+                "description": "Brought up to the current save version."
+              }
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "url",
+          "createdAt",
+          "worksheet"
+        ]
+      },
+      "Health": {
+        "type": "object",
+        "properties": {
+          "ok": {
+            "type": "boolean",
+            "enum": [
+              true
+            ]
+          },
+          "saveVersion": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "ok",
+          "saveVersion"
+        ]
+      }
+    },
+    "parameters": {}
+  },
+  "paths": {
+    "/api/snapshots": {
+      "post": {
+        "operationId": "shareWorksheet",
+        "tags": [
+          "Sharing"
+        ],
+        "summary": "Share a worksheet",
+        "description": "Stores an unchangeable copy of the worksheet and returns its short link. Later edits of the original do not reach the link.",
+        "requestBody": {
+          "required": true,
+          "description": "The worksheet as it is now",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Worksheet"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "The worksheet is stored; anyone with the link can open it",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SharedLink"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Not a worksheet, or one over the limits",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "The request is too large",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The worksheet was written by a newer version of the app",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many worksheets shared from this address; try again later",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/snapshots/{id}": {
+      "get": {
+        "operationId": "openSnapshot",
+        "tags": [
+          "Sharing"
+        ],
+        "summary": "Open a shared worksheet",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "pattern": "^[a-z0-9]{10}$",
+              "description": "Ten letters and digits: the end of a share link.",
+              "example": "k3x9pq2mzt"
+            },
+            "required": true,
+            "description": "Ten letters and digits: the end of a share link.",
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The shared worksheet",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Snapshot"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Not a share link's id",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No worksheet was shared with this id",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/health": {
+      "get": {
+        "operationId": "health",
+        "tags": [
+          "Service"
+        ],
+        "summary": "Is the service up",
+        "responses": {
+          "200": {
+            "description": "The service answers",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Health"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "webhooks": {}
+}

@@ -4,3 +4,6 @@ dev-dist
 *.local
 .DS_Store
 tsconfig.tsbuildinfo
+*.db
+*.db-wal
+*.db-shm

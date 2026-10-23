@@ -1,0 +1,25 @@
+{
+  "name": "@automatalab/contract",
+  "private": true,
+  "version": "1.0.0",
+  "description": "The API contract: Zod schemas and routes → the generated OpenAPI document → the generated typed client",
+  "type": "module",
+  "exports": {
+    "./openapi.json": "./openapi.json",
+    "./*": "./src/*.ts"
+  },
+  "scripts": {
+    "gen": "tsx scripts/generate.ts",
+    "typecheck": "tsc -p ."
+  },
+  "dependencies": {
+    "@automatalab/core": "*",
+    "@hono/zod-openapi": "^1.6.3",
+    "openapi-fetch": "^0.17.0",
+    "zod": "4.6.5"
+  },
+  "devDependencies": {
+    "openapi-typescript": "^7.13.0",
+    "tsx": "^4.23.15"
+  }
+}

@@ -1,0 +1,29 @@
+# The AutomataLab API (share links, OpenAPI, MCP) on the production server.
+# Install: cp deploy/automatalab-api.service /etc/systemd/system/ && systemctl enable --now automatalab-api
+[Unit]
+Description=AutomataLab API (share links, OpenAPI, MCP)
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=/srv/automatalab/apps/server
+ExecStart=/usr/bin/env node dist/main.js
+Environment=NODE_ENV=production
+Environment=HOST=127.0.0.1
+Environment=PORT=8787
+Environment=DATABASE_FILE=/var/lib/automatalab/automatalab.db
+Environment=PUBLIC_URL=https://automatalab.app
+Environment=BEHIND_PROXY=1
+Restart=on-failure
+RestartSec=2
+
+# its own unprivileged user; /var/lib/automatalab is the only place it may write
+DynamicUser=yes
+StateDirectory=automatalab
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+
+[Install]
+WantedBy=multi-user.target

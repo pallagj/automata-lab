@@ -1,0 +1,740 @@
+{
+  "workspace": {
+    "starterName": "Demo-Arbeitsblatt",
+    "defaultName": "Arbeitsblatt {{index}}",
+    "importedName": "Importiertes Arbeitsblatt",
+    "copyName": "{{name}} (Kopie)",
+    "sharedName": "Geteiltes Arbeitsblatt"
+  },
+  "app": {
+    "title": "AutomataLab — Sprachen und Automaten",
+    "resizePane": "Zum Anpassen der Breite ziehen",
+    "code": "Code",
+    "visualization": "Visualisierung",
+    "newerVersion": "Eine neuere Version von AutomataLab hat deine Arbeitsblätter bereits in einem anderen Tab gespeichert. Lade die Seite neu: bis dahin werden Änderungen hier nicht gespeichert.",
+    "reload": "Neu laden"
+  },
+  "topbar": {
+    "newWorksheet": "Neues Arbeitsblatt",
+    "examples": "Beispiele",
+    "exportWorksheet": "Arbeitsblatt als Datei speichern",
+    "importWorksheet": "Arbeitsblatt aus Datei laden",
+    "lightTheme": "Helles Design",
+    "darkTheme": "Dunkles Design",
+    "help": "Hilfe",
+    "language": "Sprache",
+    "importFailed": "Die Datei konnte nicht gelesen werden — eine gültige .automata.json wird benötigt.",
+    "importNewer": "Diese Datei wurde von einer neueren Version von AutomataLab gespeichert. Lade die Seite neu und versuche es erneut.",
+    "openWorksheets": "Deine Arbeitsblätter öffnen",
+    "openFolder": "Diesen Ordner öffnen",
+    "renameHint": "Zum Umbenennen klicken",
+    "worksheetMenu": "Arbeitsblatt-Menü",
+    "settings": "Einstellungen",
+    "github": "GitHub",
+    "reportIssue": "Fehler melden oder Idee vorschlagen",
+    "sourceCode": "Quellcode auf GitHub",
+    "share": "Teilen",
+    "shareHint": "Per Link teilen"
+  },
+  "browser": {
+    "title": "Arbeitsblätter",
+    "tabs": {
+      "saved": "Gespeicherte Arbeiten",
+      "examples": "Beispiele"
+    },
+    "newWorksheet": "Neues Arbeitsblatt",
+    "moreNew": "Weitere Optionen",
+    "newFolder": "Neuer Ordner",
+    "importFile": "Aus Datei importieren…",
+    "folderName": "Ordnername",
+    "search": "Nach Titel suchen",
+    "clearSearch": "Suche löschen",
+    "close": "Schließen",
+    "more": "Weitere Aktionen",
+    "filter": "Sortieren und filtern",
+    "gridView": "Rasteransicht",
+    "listView": "Listenansicht",
+    "sortBy": "Sortieren nach",
+    "sort": {
+      "updated": "Zuletzt bearbeitet",
+      "created": "Erstellt",
+      "name": "Name"
+    },
+    "showOnly": "Nur Arbeitsblätter mit",
+    "clearFilters": "Filter zurücksetzen",
+    "kind": {
+      "fsm": "Endlicher Automat",
+      "pda": "Kellerautomat",
+      "tm": "Turingmaschine",
+      "general": "Allgemeine Maschine",
+      "grammar": "Grammatik",
+      "regex": "Regulärer Ausdruck"
+    },
+    "columns": {
+      "name": "Name",
+      "contains": "Inhalt"
+    },
+    "items_one": "{{count}} Arbeitsblatt",
+    "items_other": "{{count}} Arbeitsblätter",
+    "exampleCells_one": "{{count}} Zelle",
+    "exampleCells_other": "{{count}} Zellen",
+    "current": "Geöffnet",
+    "select": "„{{name}}“ auswählen",
+    "clearSelection": "Auswahl aufheben ({{count}})",
+    "dragCount_one": "{{count}} Arbeitsblatt",
+    "dragCount_other": "{{count}} Arbeitsblätter",
+    "dropToRoot": "Hier ablegen, um es aus dem Ordner zu verschieben",
+    "menu": {
+      "rename": "Umbenennen",
+      "move": "In Ordner verschieben…",
+      "duplicate": "Duplizieren",
+      "delete": "Löschen"
+    },
+    "folderMenu": {
+      "rename": "Ordner umbenennen",
+      "delete": "Ordner löschen"
+    },
+    "move": {
+      "title": "In Ordner verschieben",
+      "placeholder": "Suchen oder neuen Ordner benennen",
+      "noFolder": "Gespeicherte Arbeiten (ohne Ordner)",
+      "create": "Ordner „{{name}}“ erstellen",
+      "hint": "Gib einen Namen ein, um einen neuen Ordner zu erstellen"
+    },
+    "empty": {
+      "saved": "Noch keine Arbeitsblätter — erstelle eines mit „Neues Arbeitsblatt“.",
+      "folder": "Dieser Ordner ist leer. Ziehe Arbeitsblätter hierher oder nutze „In Ordner verschieben…“.",
+      "noMatch": "Nichts passt zu deiner Suche oder deinen Filtern."
+    },
+    "toast": {
+      "moved_one": "{{count}} Arbeitsblatt nach „{{folder}}“ verschoben",
+      "moved_other": "{{count}} Arbeitsblätter nach „{{folder}}“ verschoben",
+      "deleted_one": "{{count}} Arbeitsblatt gelöscht",
+      "deleted_other": "{{count}} Arbeitsblätter gelöscht",
+      "folderDeleted": "Ordner „{{name}}“ gelöscht — die Arbeitsblätter bleiben erhalten",
+      "duplicated": "Arbeitsblatt dupliziert"
+    },
+    "undo": "Rückgängig"
+  },
+  "examples": {
+    "intro": {
+      "name": "Einführung — Determinisierung und Minimierung"
+    },
+    "epsilonFree": {
+      "name": "ε-Übergänge — Determinisierung und ε-Elimination"
+    },
+    "regex": {
+      "name": "Reguläre Ausdrücke und Automaten"
+    },
+    "setOps": {
+      "name": "Mengenoperationen auf Sprachen"
+    },
+    "decisions": {
+      "name": "Entscheidungsfragen — leer, endlich, disjunkt"
+    },
+    "pda": {
+      "name": "Kellerautomaten"
+    },
+    "turing": {
+      "name": "Turingmaschinen"
+    },
+    "customMachines": {
+      "name": "Eigene Maschinen — zwei Keller, eine Warteschlange"
+    },
+    "grammars": {
+      "name": "Grammatiken und Umwandlungen"
+    },
+    "cfgNormalForms": {
+      "name": "Kontextfreie Grammatiken — Normalformen und CYK"
+    },
+    "ambiguity": {
+      "name": "Ableitungsbäume und Mehrdeutigkeit"
+    }
+  },
+  "help": {
+    "title": "Hilfe",
+    "whatIsThis": {
+      "heading": "Was ist das?",
+      "body1": "AutomataLab ist eine interaktive Werkstatt für",
+      "subject": "Formale Sprachen und Automatentheorie",
+      "body2": ": endliche Automaten, Kellerautomaten, Turingmaschinen und generative Grammatiken können definiert, simuliert und transformiert werden. Alles funktioniert offline, Arbeitsblätter werden automatisch im Browser gespeichert."
+    },
+    "machines": {
+      "heading": "Maschinen — ein einziges Modell",
+      "body1": "Jede Maschine wird mit demselben",
+      "body2": "Schlüssel gebaut: eine endliche Steuerung plus beliebig viele Speicher.",
+      "emphasis": "Ihre Art wird durch die Konfiguration bestimmt",
+      "body3": "— kein Speicher bedeutet endlicher Automat, ein Keller bedeutet Kellerautomat, nur Bänder (auf einem davon die Eingabe) bedeuten Turingmaschine — mit mehreren eine k-Band-Turingmaschine —, eine andere Kombination bedeutet eine allgemeine Maschine. Die Oberfläche erkennt das und benennt die Maschine entsprechend.",
+      "example": "Machine:               # endlicher Automat: kein Speicher\n  name: M_1\n  charset: a, b\n  states: S, A, F\n  init: S\n  accept: F\n  transitions:         # δ(q, a) = p wird (q, a) -> p geschrieben\n    - (S, a) -> S\n    - (S, b) -> S\n    - (S, a) -> A\n    - (A, b) -> F      # ein ε-Übergang: (S, ε) -> A (tippe eps)"
+    },
+    "names": {
+      "heading": "Namen",
+      "body": "Ein Name ist ein einzelner Buchstabe mit optionalem Index: M, M₁, X_a, M_{even}. Mit _ beginnt ein Index, mit → verlässt man ihn; Ziffern direkt nach dem Buchstaben kommen von selbst in den Index (M1 wird M₁). AB in einem Ausdruck ist also A gefolgt von B. Funktionsnamen (det, min, toRegex, …) sind Wörter, wie sin in der Mathematik. Zustandsnamen sind freie Bezeichnungen (AB, 00, {A,B})."
+    },
+    "expressions": {
+      "heading": "Ausdrücke",
+      "body1": "In einer neuen Zelle kannst du Maschinen referenzieren und Operationen in der Form",
+      "body2": "ausführen. Fehlt einer Operation eine Voraussetzung (z. B. ε-Freiheit für die Determinisierung), erklärt die App warum und fügt die Korrekturkette mit einem Klick ein.",
+      "ops": {
+        "det": "Determinisierung (Potenzmengenkonstruktion, mit Schritten)",
+        "min": "Minimierung (Partitionsverfeinerung, mit Schritten)",
+        "epsfree": "ε-Elimination: die ε-Übergänge eines Automaten, die ε-Regeln einer kontextfreien Grammatik",
+        "grammarOps": "Grammatik-Umformungen: Kettenregeln, nutzlose Symbole, Chomsky-Normalform",
+        "completeReachable": "Vervollständigung mit Fangzustand / Entfernen unerreichbarer Zustände",
+        "setOps": "Mengenoperationen (Produktkonstruktion)",
+        "langOps": "Sprachoperationen",
+        "regex": "ein regulärer Ausdruck als Wert — toFsm() wandelt ihn in einen Automaten um",
+        "equal": "Äquivalenzprüfung mit Gegenbeispiel",
+        "decisions": "Entscheidungsfragen: ist die Sprache leer, ist sie endlich, sind zwei Sprachen disjunkt — mit Begründung",
+        "conversions": "Umwandlungen Automat ↔ Grammatik, Automat → regulärer Ausdruck, Grammatik ↔ Kellerautomat",
+        "pdaAcceptance": "ein Kellerautomat, der dieselbe Sprache durch leeren Keller / durch Endzustand akzeptiert",
+        "namedOps": "Operationen zwischen benannten Automaten: Verkettung, Vereinigung, Abschluss — Buchstaben-Literale nur innerhalb von regex(…)"
+      },
+      "optionalName": "Der Name ist optional: Ohne ihn wird das Ergebnis trotzdem angezeigt, es kann nur nicht aus anderen Zellen referenziert werden."
+    },
+    "storages": {
+      "heading": "Speicher: Keller, Warteschlange, Band",
+      "example": "Machine:               # Kellerautomat: ein Keller\n  name: P\n  charset: a, b\n  states: q_0, q_1, q_2\n  init: q_0\n  accept: q_2           # oder acceptMode: emptyStorages\n  storages:\n    keller: stack      # startet mit Z; sein Alphabet sind die benutzten Symbole\n  transitions:         #   oder: keller: { type: stack, charset: [Z, A], init: Z }\n    - (q_0, a, Z) -> (q_0, AZ)   # liest a, Z oben: statt Z wird AZ abgelegt\n    - (q_0, b, A) -> (q_1, ε)    # ε = schreibt nichts\n    - (q_1, ε, Z) -> (q_2, Z)    # ε-Schritt (tippe eps)\n\nMachine:               # Turingmaschine: ein Band, darauf die Eingabe\n  name: T\n  charset: a, b\n  states: s, ok\n  init: s\n  accept: ok\n  input: band          # die Eingabe kommt auf diesen Speicher\n  storages:\n    band:\n      type: tape\n      charset: a, b, x, _   # Γ: Σ, das Leerzeichen _ und mehr (standardmäßig Σ und _)\n  transitions:\n    - (s, a) -> (s, x, R)    # liest a, schreibt x, nach rechts (im YAML R, L, S; die Oberfläche zeigt R, L, N)\n    - (s, _) -> (ok, _, S)   # _ = das Leerzeichen\n\nMachine:               # 2-Band-Turingmaschine: kopiert die Eingabe auf t2\n  charset: a, b\n  states: q_0, ok\n  init: q_0\n  accept: ok\n  input: t1            # das Eingabeband ist nur lesbar\n  storages:\n    t1: tape           # t1: { type: tape, writable: true } — auch beschreibbar\n    t2: tape\n  transitions:\n    - (q_0, a, _) -> (q_0, a, R, R)   # liest a und _, schreibt a auf t2, beide Köpfe nach rechts\n    - (q_0, b, _) -> (q_0, b, R, R)\n    - (q_0, _, _) -> (ok, _, S, S)",
+      "body1": "Ein Übergang wird wie die Übergangsfunktion δ geschrieben:",
+      "transitionSyntax": "(q, a, Z) -> (p, γ)",
+      "body2": " — links der Zustand, das gelesene Zeichen und was jeder Speicher liest (die Kellerspitze, die Zelle unter dem Kopf eines Bandes); rechts der nächste Zustand, was jeder Speicher bekommt (das in den Keller geschriebene Wort, das aufs Band geschriebene Zeichen), danach die Bewegung jedes Bandkopfs (R, L oder N).",
+      "points": {
+        "inputTape": "Bei mehreren Speichern ist das Eingabeband nur lesbar: Die Maschine liest ihre Eingabe nur und arbeitet auf ihren anderen Speichern, im Wert von δ hat es also keinen Platz. Mit writable: true ist es beschreibbar.",
+        "edge": "Im Graphen zeigt eine Kante für jedes Band a → b (bei einem nur lesbaren Band nur das gelesene Zeichen), danach die Bewegungen: a, _ → b, R, R.",
+        "tape": "Ein Band ist ab seiner ersten Zelle nach rechts unendlich; läuft der Kopf links darüber hinaus, hält die Maschine mit einem Fehler. Mit infinite: both ist es beidseitig unendlich.",
+        "combine": "Beliebig viele Speicher lassen sich kombinieren, jeder mit einem Argument, in ihrer Reihenfolge: Zwei Keller ergeben bereits eine Maschine, die so stark ist wie eine Turingmaschine (z. B. für aⁿbⁿcⁿ, das kein Kellerautomat akzeptiert), eine Warteschlange (queue) einen Warteschlangenautomaten.",
+        "ops": "Die Automaten-Operationen (det, min…) gelten nur für Maschinen ohne Speicher — wo eine nicht passt, erklärt die App, warum."
+      }
+    },
+    "grammar": {
+      "heading": "Grammatik",
+      "example": "Grammar:\n  name: G\n  charset: a, b\n  variables: S\n  init: S\n  rules:\n    - S -> aSb | ε   # für ε tippe eps; \\eps = die Buchstaben",
+      "body": "Die Grammatikansicht bestimmt automatisch die Klasse nach der Chomsky-Hierarchie und zeigt für jede Stufe, welche Regel warum dagegen verstößt."
+    },
+    "tips": {
+      "heading": "Tipps",
+      "drag": "Der Graph lässt sich per Ziehen verschieben, mit dem Mausrad zoomen, ein Doppelklick setzt die Ansicht zurück.",
+      "allBranches": "Bei einer nichtdeterministischen Maschine verfolgt die Simulation alle Zweige gleichzeitig: das Wort wird akzeptiert, wenn ein Zweig akzeptiert. Die ▶-Taste spielt den Lauf Schritt für Schritt ab.",
+      "yaml": "Das Ergebnis einer Ausdruckszelle lässt sich über das Kopfzeilen-Symbol zu editierbarem YAML aufklappen.",
+      "acceptedWords": "Klicke auf einen Chip unter „Akzeptierte Wörter“, um es sofort zu simulieren."
+    },
+    "feedback": {
+      "body": "Einen Fehler gefunden oder eine Idee?",
+      "link": "Schreib es uns auf GitHub"
+    }
+  },
+  "detail": {
+    "stepsPanel": {
+      "title": "Wie entstand das? — die Schritte des Algorithmus"
+    },
+    "definition": {
+      "label": "Definition",
+      "input": "Eingabe",
+      "output": "Ausgabe",
+      "guarantee": "Garantie"
+    },
+    "note": "Notiz",
+    "notes": "Hinweise",
+    "panelEnlarge": "Vergrößern",
+    "panelRestore": "Zurück an seinen Platz (Esc)",
+    "whyNotEvaluable": "Warum kann die Zelle nicht ausgewertet werden?",
+    "emptyCanvas": {
+      "doubleClick": "Doppelklick",
+      "hereText": "hier für den ersten Zustand eines endlichen Automaten —",
+      "orChoose1": "oder wähle im linken",
+      "insertMenu": "+ Einfügen",
+      "orChoose2": "-Menü (Regex, Kellerautomat, Turingmaschine, Grammatik…).",
+      "autosave": "Deine gesamte Arbeit wird automatisch, offline gespeichert."
+    },
+    "tapeInput": {
+      "hint": "Klicke auf das Band und tippe",
+      "input": "Eingabe"
+    },
+    "verdict": {
+      "equal": {
+        "title": "Äquivalenzprüfung",
+        "equalBody1": "Die beiden Automaten erkennen",
+        "equalEmphasis": "dieselbe Sprache",
+        "equalBody2": ": bei keinem erreichbaren Zustandspaar des Produktautomaten unterscheidet sich die Akzeptanz.",
+        "notEqualBody1": "Die beiden Automaten sind",
+        "notEqualEmphasis": "nicht äquivalent",
+        "notEqualBody2": ". Das kürzeste unterscheidende Wort:",
+        "counterexample1": "Dieses Wort wird von",
+        "counterexample2": "akzeptiert, von",
+        "counterexample3": "jedoch abgelehnt."
+      },
+      "empty": {
+        "title": "Leerheitsprüfung",
+        "emptyBody": "Die Sprache ist leer: sie enthält kein Wort.",
+        "notEmptyBody": "Die Sprache ist nicht leer. Eines ihrer kürzesten Wörter:"
+      },
+      "finite": {
+        "title": "Endlichkeitsprüfung",
+        "isFinite": "ist endlich",
+        "isInfinite": "ist unendlich",
+        "emptyBody": "Die Sprache ist leer, also endlich.",
+        "finiteBody": "Die Sprache ist endlich, mit {{count}} Wörtern:",
+        "finiteBodyAtLeast": "Die Sprache ist endlich, mit mindestens {{count}} Wörtern:",
+        "moreWords": "…und {{count}} weitere.",
+        "infiniteBody": "Die Sprache ist unendlich. Dieses ihrer Wörter lässt sich aufpumpen:",
+        "pumpedRegular": "v wiederholt, uvᵏw (k = 0, 1, 2, 3):",
+        "pumpedContextFree": "v und x zusammen wiederholt, uvᵏwxᵏy (k = 0, 1, 2, 3):"
+      },
+      "disjoint": {
+        "title": "Disjunktheitsprüfung",
+        "disjointBody": "Die beiden Sprachen sind disjunkt: kein Wort liegt in beiden.",
+        "notDisjointBody": "Die beiden Sprachen sind nicht disjunkt. Ein kürzestes Wort in beiden:"
+      }
+    },
+    "language": {
+      "emptyFsm": "Die Sprache ist leer: vom Startzustand aus ist kein akzeptierender Zustand erreichbar.",
+      "emptyGrammar": "Die Sprache ist leer: die Startvariable leitet kein Terminalwort ab.",
+      "emptyRegex": "Kein Wort passt: die Sprache ist leer.",
+      "infinite": "…die Sprache ist unendlich.",
+      "allWords": "Das sind alle Wörter der Sprache: sie ist endlich.",
+      "moreFinite": "…die Sprache ist endlich, mit insgesamt {{count}} Wörtern.",
+      "moreFiniteAtLeast": "…die Sprache ist endlich, mit mehr als {{count}} Wörtern."
+    },
+    "regex": {
+      "title": "Regulärer Ausdruck",
+      "or": "oder",
+      "union": "Vereinigung",
+      "closure": "Abschluss",
+      "optional": "optional",
+      "emptyWord": "leeres Wort",
+      "parens": "Klammerung",
+      "toFsmHint": "Neue Zelle: der Automat des Ausdrucks",
+      "toFsmLabel": "in ε-NFA umwandeln",
+      "structure": "Struktur des Ausdrucks",
+      "wordTest": "Worttest",
+      "wordTestPlaceholder": "passt das Wort? z. B. abb oder ε (eps)",
+      "matches": "passt",
+      "noMatch": "passt nicht",
+      "sampleWords": "Passende Wörter",
+      "playHint": "Die Runden r(p, q, t) nacheinander, auf dem Graphen des Automaten"
+    },
+    "fsm": {
+      "title": "Automat",
+      "stateCount": "{{count}} Zustände",
+      "deterministicHint": "Jedes (Zustand, Symbol)-Paar hat höchstens einen Übergang, und es gibt keine ε-Übergänge.",
+      "nondeterministicHint": "Nichtdeterministische Stellen: {{spots}}{{epsilonNote}}",
+      "andHasEpsilon": " — und es gibt auch ε-Übergänge",
+      "deterministic": "deterministisch",
+      "nondeterministic": "nichtdeterministisch",
+      "completeHint": "Jedes (Zustand, Symbol)-Paar hat einen Übergang.",
+      "incompleteHint": "Fehlende Übergänge: {{missing}}{{ellipsis}}",
+      "complete": "vollständig",
+      "incomplete": "unvollständig",
+      "epsilonListHint": "ε-Übergänge: {{list}}",
+      "noEpsilonHint": "Keine ε-Übergänge.",
+      "hasEpsilon": "mit ε-Übergängen",
+      "epsilonFree": "ε-frei",
+      "unreachableHint": "Vom Startzustand aus nicht erreichbare Zustände — können mit reachable() entfernt werden.",
+      "unreachableLabel": "unerreichbar",
+      "transitionTable": "Übergangstabelle",
+      "state": "Zustand",
+      "acceptedWords": "Akzeptierte Wörter",
+      "loadIntoSimulation": "Klicken: in die Simulation laden",
+      "howWasThisBuilt": "Wie entstand das?",
+      "inputPlaceholder": "Eingabewort — klicken und tippen",
+      "restart": "Neu starten",
+      "stepBack": "Zurück",
+      "oneStep": "Ein Schritt",
+      "runAll": "Bis zum Ende ausführen",
+      "pauseRun": "Pause",
+      "accepts": "akzeptiert",
+      "rejects": "lehnt ab",
+      "running": "läuft…",
+      "initialStatesHint": "Startzustände (mit ε-Abschluss)",
+      "afterReadingHint": "nach dem Lesen von „{{symbol}}“"
+    },
+    "grammar": {
+      "title": "Grammatik",
+      "type3": "Typ 3 — regulär",
+      "type2": "Typ 2 — kontextfrei",
+      "type1": "Typ 1 — kontextsensitiv",
+      "type0": "Typ 0 — allgemein",
+      "epsilonFreeHint": "ε kommt höchstens als S → ε vor, und S steht nie auf einer rechten Seite.",
+      "epsilonFreeForm": "ε-freie Form",
+      "epsilonRuled": "hat ε-Regeln",
+      "type3Short": "Typ 3",
+      "type3Holds": "Jede Regel hat die Form A → aB oder A → a (S → ε nur, wenn S auf keiner rechten Seite vorkommt).",
+      "type2Short": "Typ 2",
+      "type2Holds": "Jede Regel hat die Form A → α mit α ≠ ε (S → ε nur, wenn S auf keiner rechten Seite vorkommt).",
+      "type1Short": "Typ 1",
+      "type1Holds": "Jede Regel hat die Form βAγ → βαγ mit α ≠ ε (S → ε nur, wenn S auf keiner rechten Seite vorkommt).",
+      "toFsm": "Zu endlichem Automaten",
+      "toPda": "Zu Kellerautomat",
+      "rules": "Regeln",
+      "startSymbol": "Startvariable",
+      "terminals": "Terminale",
+      "nonterminals": "Variablen",
+      "isDerivable": "Ist ein Wort ableitbar?",
+      "testPlaceholder": "gib ein Wort ein, z. B. aabb oder ε (eps)",
+      "derivable": "ableitbar",
+      "notDerivable": "nicht ableitbar",
+      "undecidedWithinLimit": "innerhalb der Grenze nicht entscheidbar",
+      "generatedWords": "Generierte Wörter ({{count}}{{plus}})",
+      "clickForDerivation": "Klicken für die Ableitung",
+      "noDerivableWords": "Kein ableitbares Wort bis Länge 8 gefunden.",
+      "moreWordsPossible": "…die Sprache kann größer sein (die Aufzählung reicht bis Länge 8).",
+      "cnfBadge": "Chomsky-Normalform",
+      "cykTitle": "CYK-Tabelle",
+      "cykIntro": "Zeile j, Spalte i enthält die Variablen, aus denen das beim i-ten Buchstaben beginnende Teilwort der Länge j ableitbar ist; das Wort ist ableitbar, wenn die Startvariable in der obersten Zelle steht.",
+      "cykConverted": "Die Grammatik ist nicht in Chomsky-Normalform, daher wird die Tabelle mit {{expr}} berechnet:",
+      "exact": "exakte Entscheidung mit dem CYK-Algorithmus",
+      "toEpsilonFree": "ε-Elimination",
+      "notes": {
+        "contextFreeForm": "Jede Regel ist A → α — nur ihre ε-Regeln halten sie aus Typ 2 heraus: die ε-Elimination macht sie zu Typ 2, ihre Sprache ist also kontextfrei.",
+        "rightLinear": "Ihre Regeln sind A → uB, A → u, A → B oder A → ε (u ein Terminalwort): nach der Definition nicht Typ 3, aber sie lässt sich in einen endlichen Automaten umwandeln, ihre Sprache ist also regulär.",
+        "leftLinear": "Ihre Regeln sind A → Bu, A → u oder A → ε — eine linksreguläre Grammatik: nicht Typ 3, aber ihre Sprache ist regulär.",
+        "nonContracting": "Keine Regel verkürzt — eine nichtverkürzende Grammatik: nicht von der Form βAγ → βαγ, ihre Sprache ist dennoch kontextsensitiv."
+      },
+      "cykCellHint": "Klicken: warum diese Variablen?",
+      "cykCellIntro": "das Teilwort „{{word}}“ ist aus diesen Variablen ableitbar:",
+      "cykCellEmpty": "Keine Variable leitet es ab (–).",
+      "cykPlayHint": "Die Tabelle füllt sich Zelle für Zelle, von unten nach oben",
+      "trees": {
+        "title": "Ableitungsbaum",
+        "one": "Das Wort hat genau einen Ableitungsbaum.",
+        "many": "Das Wort hat {{count}} verschiedene Ableitungsbäume — die Grammatik ist mehrdeutig.",
+        "infinite": "Das Wort hat unendlich viele Ableitungsbäume — die Grammatik ist mehrdeutig: die Variable {{variable}} leitet sich über dem Teilwort {{subword}} selbst ab, und diese Schleife lässt sich beliebig oft wiederholen. Hier stehen die Bäume ohne eine solche Wiederholung; jeder andere Baum entsteht aus einem von ihnen durch eingefügte Schleifen.",
+        "infinitePartial": "Das Wort hat unendlich viele Ableitungsbäume — die Grammatik ist mehrdeutig: die Variable {{variable}} leitet sich über dem Teilwort {{subword}} selbst ab, und diese Schleife lässt sich beliebig oft wiederholen. Selbst die Bäume ohne Wiederholung sind zu viele zum Durchnummerieren; hier ist einer davon.",
+        "previous": "Vorheriger Baum",
+        "next": "Nächster Baum",
+        "playHint": "Der Baum wächst entlang seiner Linksableitung",
+        "leftmost": "Seine Linksableitung — jeder Schritt ersetzt die am weitesten links stehende Variable:",
+        "tooLong": "Ableitungsbäume werden für Wörter mit höchstens {{max}} Buchstaben gezeichnet"
+      }
+    },
+    "machine": {
+      "kind": {
+        "fsm": "Automat",
+        "pda": "Kellerautomat",
+        "tm": "Turingmaschine",
+        "general": "Allgemeine Maschine",
+        "generalWith": "Allgemeine Maschine ({{parts}})",
+        "tmMulti": "{{count}}-Band-Turingmaschine"
+      },
+      "kindLower": {
+        "fsm": "endlicher Automat",
+        "pda": "Kellerautomat",
+        "tm": "Turingmaschine",
+        "general": "allgemeine Maschine",
+        "generalWith": "allgemeine Maschine ({{parts}})",
+        "tmMulti": "{{count}}-Band-Turingmaschine"
+      },
+      "storageCount": {
+        "stack": "{{count}} Keller",
+        "queue": "{{count}} Warteschlange(n)",
+        "tape": "{{count}} Band/Bänder"
+      },
+      "top": "Spitze",
+      "front": "Anfang",
+      "initialContentHint": "Anfangsinhalt des Speichers {{id}}",
+      "initial": "Start",
+      "deterministicHint": "In keiner Situation sind mehrere Übergänge gleichzeitig anwendbar.",
+      "conflictingTransitions": "Widersprüchliche Übergänge: {{spots}}",
+      "acceptEmptyStorageHint": "Das Wort wird akzeptiert, wenn die Eingabe aufgebraucht ist und alle Speicher leer sind.",
+      "acceptAcceptStateHint": "Das Wort wird akzeptiert, wenn die Eingabe aufgebraucht ist und sich die Maschine in einem akzeptierenden Zustand befindet.",
+      "acceptEmptyStorage": "akzeptiert mit leerem Speicher",
+      "acceptAcceptState": "akzeptiert mit akzeptierendem Zustand",
+      "decidesOnHaltHint": "Die Maschine entscheidet beim Halt: hält sie in einem akzeptierenden Zustand, wird akzeptiert.",
+      "decidesOnHalt": "entscheidet beim Halt",
+      "transitions": "Übergänge",
+      "from": "von",
+      "input": "Eingabe",
+      "to": "nach",
+      "storageType": {
+        "stack": "Keller",
+        "queue": "Warteschlange",
+        "tape": "Band",
+        "readOnlyTape": "Band, nur lesbar"
+      },
+      "move": {
+        "R": "R",
+        "L": "L",
+        "S": "N"
+      },
+      "tapeStartPlaceholder": "Anfang des Bandes — klicken und tippen",
+      "oneStepAllBranches": "Ein Schritt (alle Zweige)",
+      "hitLimit": "Grenze erreicht",
+      "decidedByGrammar": "Exakt entschieden: CYK auf der Grammatik des Kellerautomaten",
+      "step": "Schritt: {{n}}",
+      "nondeterministicStepInfo": "Die Maschine ist nichtdeterministisch: alle möglichen Zweige werden gleichzeitig verfolgt. Schritt: {{n}} · aktive Konfigurationen: {{count}}",
+      "noMoreBranches": "Kein fortsetzbarer Zweig mehr — das Wort wird abgelehnt.",
+      "showConfigStorages": "Klicken: zeigt die Speicher dieser Konfiguration",
+      "remainingInput": "verbleibende Eingabe",
+      "topLeft": "Spitze links",
+      "frontLeft": "Anfang links",
+      "moreConfigs": "… und {{count}} weitere Konfigurationen",
+      "fellOff": "Der Kopf von Band {{id}} ist nach links über die erste Zelle hinausgelaufen — die Maschine hält mit einem Fehler, dieser Zweig verwirft.",
+      "fellOffShort": "von Band {{id}} gefallen",
+      "fellOffCell": "hier hat der Kopf das Band verlassen",
+      "firstCell": "die erste Zelle des Bandes — das Band ist nur nach rechts unendlich",
+      "tapeBothWays": "{{id}}: beidseitig unendlich",
+      "tapeBothWaysHint": "Dieses Band hat keine erste Zelle: der Kopf kann beliebig weit nach links gehen. Standardmäßig ist ein Band nur nach rechts unendlich (infinite: right).",
+      "tapeReadOnly": "{{id}}: nur lesbar",
+      "tapeReadOnlyHint": "Die Maschine liest dieses Band nur und schreibt nichts darauf (writable: false).",
+      "inputTapeWritable": "{{id}}: beschreibbares Eingabeband",
+      "inputTapeWritableHint": "Standardmäßig ist das Eingabeband einer Maschine mit mehreren Speichern nur lesbar; diese Maschine darf auch darauf schreiben (writable: true)."
+    },
+    "anim": {
+      "title": "Der Algorithmus abgespielt",
+      "start": "Abspielen",
+      "startHint": "Die Schritte des Algorithmus nacheinander am Graphen",
+      "first": "Zum Anfang",
+      "previous": "Vorheriger Schritt (←)",
+      "play": "Abspielen (Leertaste)",
+      "pause": "Pause (Leertaste)",
+      "next": "Nächster Schritt (→)",
+      "last": "Zum Ende",
+      "frame": "Schritt",
+      "speed": "Geschwindigkeit",
+      "close": "Zurück zum Ergebnis"
+    }
+  },
+  "editor": {
+    "ops": {
+      "groups": {
+        "normalize": "Normalisierung",
+        "grammar": "Grammatik-Umformungen",
+        "language": "Sprachoperationen",
+        "conversion": "Umwandlung",
+        "inspection": "Prüfung"
+      },
+      "epsfree": "ε-Elimination (Automat oder kontextfreie Grammatik)",
+      "det": "Determinisierung (Potenzmengenkonstruktion)",
+      "complete": "Vervollständigung mit Fangzustand",
+      "reachable": "Entfernen unerreichbarer Zustände",
+      "min": "Minimierung (Partitionsverfeinerung)",
+      "clean": "Zustände umbenennen (A, B, C…)",
+      "unitfree": "Kettenregeln entfernen (A → B)",
+      "trim": "nutzlose Symbole entfernen",
+      "cnf": "Chomsky-Normalform",
+      "complement": "Komplementsprache",
+      "union": "Vereinigung (zwei Automaten)",
+      "intersect": "Durchschnitt (zwei Automaten)",
+      "difference": "Differenz (zwei Automaten)",
+      "concat": "Verkettung (zwei Automaten)",
+      "star": "Abschluss (Kleene-Stern)",
+      "reverse": "Umkehrung",
+      "toGrammar": "Automat → reguläre Grammatik, Kellerautomat → kontextfreie Grammatik",
+      "toFsm": "Grammatik / Regex → endlicher Automat",
+      "toPda": "Grammatik → Kellerautomat",
+      "toEmptyStack": "Kellerautomat → Akzeptanz durch leeren Keller",
+      "toFinalState": "Kellerautomat → Akzeptanz durch Endzustand",
+      "toRegex": "Automat → regulärer Ausdruck (r(p, q, t)-Verfahren)",
+      "equal": "Äquivalenzprüfung mit Gegenbeispiel",
+      "empty": "ist die Sprache leer — mit einem kürzesten Wort",
+      "finite": "ist die Sprache endlich — mit ihren Wörtern oder einem aufpumpbaren Wort",
+      "disjoint": "sind zwei reguläre Sprachen disjunkt — mit einem gemeinsamen Wort",
+      "kind": {
+        "fsm": "endlicher Automat",
+        "pda": "Kellerautomat",
+        "tm": "Turingmaschine",
+        "generalMachine": "allgemeine Maschine",
+        "grammar": "Grammatik",
+        "regex": "regulärer Ausdruck",
+        "verdict": "eine Entscheidung",
+        "unknown": "unbekannt"
+      },
+      "reason": {
+        "notApplicableToVerdict": "nicht auf eine Entscheidung anwendbar",
+        "expectsGrammarIsRegex": "erwartet eine Grammatik — diese Zelle ist: ein regulärer Ausdruck",
+        "invalidRegex": "ungültiger regulärer Ausdruck",
+        "expectsGrammar": "erwartet eine Grammatik — diese Zelle ist: {{kind}}",
+        "expectsFsmNotRightLinear": "erwartet einen endlichen Automaten — diese Grammatik ist nicht rechtslinear",
+        "hasStorage": "diese Maschine hat Speicher ({{types}}) — die erkannte Sprache ist meist nicht regulär, daher gelten Automaten-Operationen nicht",
+        "expectsFsm": "erwartet einen endlichen Automaten — diese Zelle ist: {{kind}}",
+        "expectsPda": "erwartet einen Kellerautomaten — diese Zelle ist: {{kind}}",
+        "unknown": "die Voraussetzung der Operation ist nicht erfüllt",
+        "undecidableMachine": "für die Sprache dieser Maschine ({{kind}}) ist die Frage im Allgemeinen nicht algorithmisch entscheidbar",
+        "undecidableGrammar": "nicht jede Regel der Grammatik hat die Form A → α — für eine Grammatik vom Typ 0 oder 1 ist die Frage im Allgemeinen nicht algorithmisch entscheidbar"
+      }
+    },
+    "cell": {
+      "kind": {
+        "grammar": "Grammatik",
+        "regex": "regulärer Ausdruck",
+        "verdict": "Entscheidung",
+        "fsm": "endlicher Automat",
+        "pda": "Kellerautomat",
+        "tm": "Turingmaschine",
+        "note": "Notiz"
+      },
+      "notApplicable": "Auf diese Zelle nicht anwendbar: {{reason}}",
+      "workingChain": "funktionierende Kette",
+      "dragToReorder": "Zum Umordnen der Zelle greifen und ziehen",
+      "operationsHint": "Operationen — umschließt die Zelle mit der gewählten Operation",
+      "editYaml": "YAML-Code bearbeiten",
+      "backToForm": "Zurück zur Formularbearbeitung",
+      "expandToDefinition": "Zu einer bearbeitbaren Definition aufklappen",
+      "deleteCell": "Zelle löschen",
+      "notePlaceholder": "Notiz — schreibe hier deine Erklärung"
+    },
+    "form": {
+      "col": {
+        "leftSide": "linke Seite",
+        "rightSide": "rechte Seite",
+        "from": "von",
+        "symbol": "Zeichen",
+        "pop": "{{id}} runter",
+        "push": "{{id}} rauf",
+        "dequeue": "{{id}} raus",
+        "enqueue": "{{id}} rein",
+        "read": "{{id}} lesen",
+        "write": "{{id}} schreiben",
+        "move": "{{id}} Bewegung",
+        "to": "nach"
+      },
+      "moveHint": "Bewegung: R rechts · L links · N neutral (bleiben)",
+      "kindChangeTitle": "Die Art der Maschine ändert sich",
+      "kindChangeBody1": "Diese Änderung wandelt die Maschine von einem/einer",
+      "kindChangeBody2": "in einen/eine",
+      "kindChangeBody3": " um — die Speicher bestimmen, welche Sprachen sie erkennen kann. Bestehende Übergänge werden angepasst: ein neuer Speicher erhält eine Nichts-tun-Operation, die Operationen eines entfernten Speichers gehen verloren.",
+      "dontAskAgain": "Nicht mehr warnen",
+      "cancel": "Abbrechen",
+      "confirmChange": "Ändern",
+      "storageType": {
+        "stack": "Keller (LIFO)",
+        "queue": "Warteschlange (FIFO)",
+        "tape": "Band",
+        "tapeBothWays": "Band, beidseitig unendlich"
+      },
+      "name": "Name",
+      "alphabet": "Alphabet",
+      "storageAlphabet": {
+        "stack": "Kelleralphabet",
+        "queue": "Warteschlangenalphabet",
+        "tape": "Bandalphabet"
+      },
+      "storageAlphabetColumn": "Alphabet",
+      "variables": "Variablen",
+      "states": "Zustände",
+      "startVariable": "Startvariable",
+      "startState": "Startzustand",
+      "accepting": "Akzeptierend",
+      "input": "Eingabe",
+      "readHead": "Lesekopf",
+      "writtenToStorage": "wird auf Speicher {{id}} geschrieben",
+      "inputTape": "Eingabeband",
+      "inputTapeHint": "Standardmäßig liest die Maschine ihr Eingabeband nur; die anderen Bänder sind Arbeitsbänder. Mit einem beschreibbaren Eingabeband darf die Maschine auch ihre Eingabe überschreiben (writable: true).",
+      "inputTapeReadOnly": "nur lesbar",
+      "inputTapeWritable": "auch beschreibbar",
+      "acceptance": "Akzeptanz",
+      "acceptFinalState": "mit akzeptierendem Zustand",
+      "acceptEmptyStorages": "mit leeren Speichern",
+      "storage": "Speicher",
+      "type": "Typ",
+      "initialContent": "Anfangsinhalt",
+      "namePlaceholder": "Name",
+      "initialContentPlaceholder": "Anfangsinhalt",
+      "deleteStorage": "Speicher löschen",
+      "configHint": "Einrichtung der Maschine: Speicher, Eingabe, Akzeptanz",
+      "addStorageHint": "Ein Keller ergibt einen Kellerautomaten, ein Band eine Turingmaschine, mehr eine eigene Maschine",
+      "addStorage": "Speicher hinzufügen (Keller / Warteschlange / Band)",
+      "newStorage": "neuer Speicher",
+      "deleteRow": "Zeile löschen",
+      "newRule": "neue Regel",
+      "newAlternative": "neue Alternative (oder tippe |)",
+      "newTransition": "neuer Übergang",
+      "transitions": "Übergänge",
+      "rules": "Regeln"
+    },
+    "insertMenu": {
+      "buttonTitle": "Neue Zelle einfügen — wähle, was du möchtest",
+      "insert": "Einfügen",
+      "fsm": "Endlicher Automat",
+      "pda": "Kellerautomat",
+      "tm": "Turingmaschine",
+      "machine": "Eigene Maschine (mit Speichern)",
+      "grammar": "Grammatik",
+      "regex": "Regulärer Ausdruck",
+      "expression": "Ausdruck / Operation",
+      "note": "Notiz"
+    },
+    "column": {
+      "cellCount": "{{count}} Zellen",
+      "ghostCellTitle": "Klicken für eine neue Zelle (oder Enter in einem Ausdruck)",
+      "undo": "Rückgängig (Strg+Z)",
+      "redo": "Wiederholen (Strg+Umschalt+Z)"
+    }
+  },
+  "graph": {
+    "validation": {
+      "emptyName": "Der Zustandsname darf nicht leer sein.",
+      "noSpaceComma": "Der Name darf kein Leerzeichen oder Komma enthalten.",
+      "duplicateName": "Ein Zustand namens „{{name}}“ existiert bereits."
+    },
+    "stateDialog": {
+      "newTitle": "Neuer Zustand",
+      "editTitle": "Zustand — {{name}}",
+      "startState": "Startzustand",
+      "startStateNote": " — der Startzustand lässt sich verschieben, indem er dort markiert wird",
+      "acceptState": "Akzeptierender Zustand",
+      "deleteConfirm": "Zustand „{{name}}“ mitsamt seinen Übergängen löschen?",
+      "delete": "Löschen"
+    },
+    "cancel": "Abbrechen",
+    "save": "Speichern",
+    "edgeDialog": {
+      "title": "Übergang",
+      "addRow": "neuer Übergang auf dieser Kante",
+      "emptyNote": "Keine Zeilen — beim Speichern werden alle Übergänge dieser Kante gelöscht."
+    },
+    "removeRow": "Zeile löschen",
+    "export": {
+      "buttonTitle": "Export — SVG / PNG / LaTeX (TikZ)",
+      "svg": "SVG herunterladen",
+      "png": "PNG herunterladen",
+      "tikz": "LaTeX (TikZ) herunterladen",
+      "copyTikz": "LaTeX (TikZ) kopieren",
+      "copied": "Kopiert ✓",
+      "pngFailed": "PNG-Konvertierung fehlgeschlagen",
+      "svgLoadFailed": "Laden des SVG fehlgeschlagen",
+      "tikzComment": "AutomataLab-Export — benötigte Pakete:"
+    },
+    "resetView": "Ansicht zurücksetzen",
+    "editingHint": "Doppelklick: neuer Zustand · Klick: Zustand bearbeiten · Ziehen: verschieben · vom Rand ziehen (Ring / ▸ Punkt): Übergang · Klick auf Kantenbeschriftung: Übergänge bearbeiten",
+    "dragToConnect": "Auf einen anderen Zustand ziehen für einen neuen Übergang"
+  },
+  "settings": {
+    "definitionView": "Definitionen öffnen als",
+    "view": {
+      "form": "Formular",
+      "code": "YAML-Code"
+    },
+    "formLabels": "Beschriftung im Formular",
+    "labels": {
+      "symbols": "Notation: Σ, Q, q₀, F, δ",
+      "words": "Wörter: Alphabet, Zustände, …"
+    }
+  },
+  "share": {
+    "title": "Arbeitsblatt teilen",
+    "creating": "Link wird erstellt …",
+    "link": "Der Link des Arbeitsblatts",
+    "copy": "Kopieren",
+    "copied": "Kopiert",
+    "close": "Schließen",
+    "retry": "Erneut versuchen",
+    "note": "Der Link bewahrt das Arbeitsblatt, wie es jetzt ist: spätere Änderungen erreichen ihn nicht. Wer den Link hat, kann es öffnen und bekommt eine eigene Kopie.",
+    "error": {
+      "offline": "Der Server ist nicht erreichbar. Zum Teilen braucht es eine Internetverbindung.",
+      "rate_limited": "Von hier wurden in kurzer Zeit zu viele Arbeitsblätter geteilt. Versuche es in ein paar Minuten erneut.",
+      "too_large": "Das Arbeitsblatt ist zu groß zum Teilen: höchstens {{cells}} Zellen mit je höchstens {{chars}} Zeichen.",
+      "newer": "Auf dem Server läuft eine ältere Version von AutomataLab als auf dieser Seite. Versuche es etwas später erneut.",
+      "failed": "Das Teilen ist fehlgeschlagen. Versuche es erneut."
+    }
+  },
+  "shared": {
+    "opening": "Das geteilte Arbeitsblatt wird geöffnet …",
+    "error": {
+      "not_found": "Dieser Link führt zu keinem Arbeitsblatt. Prüfe, ob er vollständig kopiert wurde.",
+      "offline": "Zum Öffnen eines geteilten Arbeitsblatts braucht es eine Internetverbindung.",
+      "newer": "Eine neuere Version von AutomataLab hat dieses Arbeitsblatt gespeichert. Lade die Seite neu, um es zu öffnen.",
+      "failed": "Das geteilte Arbeitsblatt konnte nicht geöffnet werden."
+    }
+  }
+}

@@ -1,0 +1,21 @@
+{
+  "name": "@automatalab/core",
+  "private": true,
+  "version": "1.0.0",
+  "description": "The algorithms, the cell language and the worksheet format — shared by the web app and the server",
+  "type": "module",
+  "exports": {
+    "./*.json": "./src/*.json",
+    "./*": "./src/*.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc -p ."
+  },
+  "dependencies": {
+    "js-yaml": "^4.1.0"
+  },
+  "devDependencies": {
+    "@types/js-yaml": "^4.0.9",
+    "i18next": "^26.4.2"
+  }
+}

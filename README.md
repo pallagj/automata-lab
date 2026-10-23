@@ -9,7 +9,7 @@ Built as a study companion for the
 Budapest University of Technology and Economics (BME).
 
 **Try it:** https://automatalab.app/ — works in the browser and can be installed as
-an app; everything runs locally, no account needed.
+an app; everything runs locally, no account needed. A worksheet can be shared by a short link.
 
 ## Features
 
@@ -93,6 +93,11 @@ an app; everything runs locally, no account needed.
 - **Directly editable tape:** type the input word right on the visualised tape.
 - **Offline-first PWA:** every worksheet is saved in the browser automatically; the app is
   installable and fully functional without a network. Export/import worksheets as JSON.
+- **Share by link:** the Share button stores the worksheet as it is now and gives a short link
+  (`https://automatalab.app/w/k3x9pq2mzt`); whoever opens it gets a copy of their own, with the
+  graph positions as they were pinned. Later edits do not reach the link.
+- **API and MCP:** the same sharing is open to programs through a REST API described by OpenAPI
+  and to AI assistants through an MCP server (see below).
 - **Modern UI:** custom SVG graph renderer (dagre layout, pan/zoom, animated active states),
   dark/light theme, full mobile layout.
 - **Multilingual:** English, German and Hungarian, detected from the browser language
@@ -129,29 +134,60 @@ Adding `storages:` turns the same `Machine` into a pushdown automaton, a Turing 
 machine — see the built-in example worksheets (the worksheet menu ▾ next to the title → Examples)
 for each kind.
 
+## API and MCP
+
+- **REST:** `POST /api/snapshots` shares a worksheet, `GET /api/snapshots/{id}` opens one. The
+  OpenAPI 3.1 document is at https://automatalab.app/api/openapi.json, a browsable reference at
+  https://automatalab.app/api/docs.
+- **MCP** (Streamable HTTP) at `https://automatalab.app/mcp`: the tools `share_worksheet` and
+  `open_shared_worksheet`, and every example worksheet as a resource to learn the notation from.
+  In Claude Code: `claude mcp add --transport http automatalab https://automatalab.app/mcp`.
+
 ## Development
 
 ```bash
 npm install
-npm run dev       # development server
-npm test          # tests for the core algorithms (vitest)
-npm run build     # production build + PWA
-npm run preview   # try the production build locally
+npm run dev          # the web app (Vite); /api and /mcp are proxied to the server below
+npm run dev:server   # the API server on :8787, with a local SQLite file
+npm test             # every test, the type checks and the architecture rules
+npm run gen          # regenerate: OpenAPI document + typed client, database migrations
+npm run build        # production build: the PWA (apps/web/dist) and the server (apps/server/dist)
+npm run preview      # try the production build locally
 ```
 
 ## Project structure
 
+An npm workspace of four packages:
+
 ```
-src/core/      — framework-independent logic (FSM/PDA/TM/grammar + parsers + expression language)
-src/state/     — zustand store, localStorage persistence, examples
-src/ui/        — React UI (editor, graph, simulations, panels)
-src/i18n/      — i18next setup + translations (en/de/hu, "ui" and "core" namespaces)
+packages/core/       — the algorithms (FSM/PDA/TM/grammar), parsers, the cell language, the worksheet
+                       format and its migrations, the "core" translations — pure TypeScript, runs anywhere
+packages/contract/   — the API contract: Zod schemas and routes → openapi.json → the typed client
+apps/web/            — the React PWA: state (zustand, localStorage), UI, i18n
+apps/server/         — the API: Hono + SQLite (Drizzle), REST and MCP over the same use cases
+deploy/              — the systemd unit and the Caddy site of the production server
 ```
 
-Every operation in `src/core` returns an `OpResult`: a value + diagnostics (explanation, suggested
-fix) + recorded algorithm steps. Their text is a translation key + parameters (`I18nText`), not a
-finished string — the UI resolves it in the current language with the `tr()` helper
-(`src/i18n/translate.ts`), so every explanation is available in all three languages.
+Every operation in `packages/core` returns an `OpResult`: a value + diagnostics (explanation,
+suggested fix) + recorded algorithm steps. Their text is a translation key + parameters
+(`I18nText`), not a finished string — the UI resolves it in the current language with the `tr()`
+helper (`packages/core/src/i18n/translate.ts`), so every explanation is available in all three
+languages.
+
+**The API is written once.** The routes and schemas in `packages/contract` are the source: the
+server implements them (type-checked), `npm run gen` generates `openapi.json` from them and the
+client's types from that, and a test fails when a generated file is out of date. Database
+migrations are generated the same way from the Drizzle schema.
+
+**The server is hexagonal:** `domain/` (the rules) ← `application/` (use cases and the ports they
+need) ← `adapters/` (HTTP, MCP, SQLite, system) ← `main.ts`, the only place that wires adapters
+to use cases. REST and MCP are two adapters over the same use cases.
+
+**The architecture is checked**, by [dependency-cruiser](https://github.com/sverweij/dependency-cruiser)
+on every `npm test` (`.dependency-cruiser.cjs`): `core` depends on nothing of ours, the contract
+only on `core`, the apps never on each other, the web app talks to the API only through the
+generated client, the domain and the use cases import no framework, adapters do not import each
+other, and there are no import cycles.
 
 ## Contributing
 
@@ -161,9 +197,10 @@ GitHub icon in the app's header leads there too). For code, fork the repository 
 request.
 
 - Code, comments and commit messages are in English.
-- User-facing text goes through i18n: add new keys to all three locales in `src/i18n/locales/`
-  (`en`, `de`, `hu`). It stands on its own — no references to course material or its section
-  numbers (`src/i18n/terminology.test.ts` checks this).
+- User-facing text goes through i18n: add new keys to all three locales — the UI's in
+  `apps/web/src/i18n/locales/`, the algorithms' in `packages/core/src/i18n/` (`en`, `de`, `hu`). It
+  stands on its own — no references to course material or its section numbers
+  (`apps/web/src/i18n/terminology.test.ts` checks this).
 - Run `npm test` and `npm run build` before opening a pull request.
 
 ## Acknowledgements
