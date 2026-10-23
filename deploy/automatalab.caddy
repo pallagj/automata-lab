@@ -1,0 +1,20 @@
+# The automatalab.app site in /etc/caddy/Caddyfile (security_headers is a snippet defined there).
+automatalab.app {
+    import security_headers
+    encode gzip zstd
+
+    # the API (REST + its OpenAPI document and reference) and the MCP endpoint
+    handle /api/* {
+        reverse_proxy 127.0.0.1:8787
+    }
+    handle /mcp {
+        reverse_proxy 127.0.0.1:8787
+    }
+
+    # the PWA; every other path (a share link /w/<id> too) is the app
+    handle {
+        root * /var/www/automatalab
+        try_files {path} /index.html
+        file_server
+    }
+}

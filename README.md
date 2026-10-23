@@ -165,7 +165,7 @@ packages/core/       — the algorithms (FSM/PDA/TM/grammar), parsers, the cell 
 packages/contract/   — the API contract: Zod schemas and routes → openapi.json → the typed client
 apps/web/            — the React PWA: state (zustand, localStorage), UI, i18n
 apps/server/         — the API: Hono + SQLite (Drizzle), REST and MCP over the same use cases
-deploy/              — the systemd unit and the Caddy site of the production server
+deploy/              — the production server: the API's systemd unit and the Caddy site
 ```
 
 Every operation in `packages/core` returns an `OpResult`: a value + diagnostics (explanation,
