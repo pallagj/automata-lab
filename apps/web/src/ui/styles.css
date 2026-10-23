@@ -2840,10 +2840,15 @@ table.t.cyk tr.cyk-word th {
   font-size: 13.5px;
 }
 
-.share-link .gd-btn {
+.share-dialog .gd-btn {
   display: inline-flex;
   align-items: center;
   gap: 6px;
+}
+
+.share-dialog .gd-btn:disabled {
+  opacity: 0.65;
+  cursor: progress;
 }
 
 .shared-banner {

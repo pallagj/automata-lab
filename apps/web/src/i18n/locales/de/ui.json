@@ -726,7 +726,12 @@
       "too_large": "Das Arbeitsblatt ist zu groß zum Teilen: höchstens {{cells}} Zellen mit je höchstens {{chars}} Zeichen.",
       "newer": "Auf dem Server läuft eine ältere Version von AutomataLab als auf dieser Seite. Versuche es etwas später erneut.",
       "failed": "Das Teilen ist fehlgeschlagen. Versuche es erneut."
-    }
+    },
+    "intro": "Das Arbeitsblatt kommt so, wie es jetzt ist, auf den Server, und du bekommst einen kurzen Link dazu.",
+    "create": "Link erstellen",
+    "createNew": "Neuen Link erstellen",
+    "changed": "Du hast das Arbeitsblatt seit seinem letzten Link geändert: Jener zeigt es, wie es damals war.",
+    "current": "Das Arbeitsblatt ist schon mit diesem Link geteilt und hat sich seitdem nicht geändert."
   },
   "shared": {
     "opening": "Das geteilte Arbeitsblatt wird geöffnet …",

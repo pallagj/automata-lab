@@ -11,7 +11,7 @@ vi.stubGlobal("window", {
     removeItem: (key: string) => void saved.delete(key)
   }
 });
-const { exportWorkspaceJSON, readWorksheetFile, useAppStore } = await import("./store");
+const { activeWorkspace, exportWorkspaceJSON, readWorksheetFile, useAppStore } = await import("./store");
 
 describe("worksheet files", () => {
   const ws = { id: "w", name: "Házi 1", cells: [{ id: "c", source: "M = det(N)" }], createdAt: 0, updatedAt: 0 };
@@ -136,5 +136,25 @@ describe("a worksheet opened from a share link", () => {
   it("an untitled one gets a name", () => {
     useAppStore.getState().openShared("aaaaaaaaaa", { ...doc, name: "  " });
     expect(useAppStore.getState().workspaces.at(-1)!.name).toBe("workspace.sharedName");
+  });
+});
+
+describe("the link a worksheet was shared by", () => {
+  it("is remembered on that worksheet only, and saved", () => {
+    useAppStore.getState().addWorkspace("to share");
+    const id = useAppStore.getState().activeWorkspaceId;
+    useAppStore.getState().rememberShare(id, { id: "k3x9pq2mzt", fingerprint: "abc" });
+    const s = useAppStore.getState();
+    expect(s.workspaces.find((w) => w.id === id)!.lastShare).toEqual({ id: "k3x9pq2mzt", fingerprint: "abc" });
+    expect(s.workspaces.filter((w) => w.lastShare)).toHaveLength(1);
+    expect(JSON.parse(saved.get("automata-lab")!).state.workspaces.find((w: { id: string }) => w.id === id).lastShare.id).toBe(
+      "k3x9pq2mzt"
+    );
+  });
+
+  it("does not go with a copy: the copy has not been shared", () => {
+    const id = useAppStore.getState().workspaces.find((w) => w.lastShare)!.id;
+    useAppStore.getState().duplicateWorkspace(id, true);
+    expect(activeWorkspace(useAppStore.getState()).lastShare).toBeUndefined();
   });
 });

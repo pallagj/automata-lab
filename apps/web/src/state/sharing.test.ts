@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { createApiClient } from "@automatalab/contract/client";
 import { SAVE_VERSION } from "@automatalab/core/worksheet/migrations";
-import { fetchShared, shareDocument, sharedDocument, sharedIdInPath } from "./sharing";
+import { fetchShared, fingerprint, shareDocument, sharedDocument, sharedIdInPath, shareState } from "./sharing";
 
 const WS = {
   name: "Házi 1",
@@ -50,6 +50,7 @@ describe("sharing", () => {
     const { client, requests } = api(201, { id: "k3x9pq2mzt", url: "https://automatalab.app/w/k3x9pq2mzt" });
     expect(await shareDocument(doc, "http://localhost:4173", client)).toEqual({
       ok: true,
+      id: "k3x9pq2mzt",
       url: "http://localhost:4173/w/k3x9pq2mzt"
     });
     expect(requests[0].method).toBe("POST");
@@ -112,5 +113,48 @@ describe("a page opened from a share link", () => {
   it("is not any other page", () => {
     for (const path of ["/", "/index.html", "/w/", "/w/short", "/x/w/k3x9pq2mzt", "/api/snapshots/k3x9pq2mzt"])
       expect(sharedIdInPath(path), path).toBeNull();
+  });
+});
+
+describe("the fingerprint of a shared document", () => {
+  const base = sharedDocument(WS, { c1: { q_0: { x: 1, y: 2 } } });
+
+  it("is the same for the same worksheet", () => {
+    expect(fingerprint(sharedDocument(WS, { c1: { q_0: { x: 1, y: 2 } } }))).toBe(fingerprint(base));
+    expect(fingerprint(base)).toMatch(/^[0-9a-z]+$/);
+  });
+
+  it("changes with anything that would reach the link", () => {
+    const variants = [
+      { ...base, name: "Házi 2" },
+      { ...base, cells: [...base.cells.slice(0, 2), { source: " " }] },
+      { ...base, cells: base.cells.slice(0, 2) },
+      { ...base, cells: [{ ...base.cells[0], layout: { q_0: { x: 1, y: 3 } } }, ...base.cells.slice(1)] },
+      { ...base, cells: [{ source: base.cells[0].source }, ...base.cells.slice(1)] }
+    ];
+    const prints = new Set([fingerprint(base), ...variants.map(fingerprint)]);
+    expect(prints.size).toBe(variants.length + 1);
+  });
+});
+
+describe("where a worksheet stands with its links", () => {
+  const doc = sharedDocument(WS, {});
+
+  it("never shared: nothing to show yet", () => {
+    expect(shareState({}, doc)).toEqual({ t: "unshared" });
+  });
+
+  it("unchanged since its link: that link still shows it", () => {
+    expect(shareState({ lastShare: { id: "k3x9pq2mzt", fingerprint: fingerprint(doc) } }, doc)).toEqual({
+      t: "current",
+      id: "k3x9pq2mzt"
+    });
+  });
+
+  it("changed since: its link shows an older state", () => {
+    const edited = sharedDocument({ ...WS, cells: [...WS.cells, { id: "c4", source: "min(D)" }] }, {});
+    expect(shareState({ lastShare: { id: "k3x9pq2mzt", fingerprint: fingerprint(doc) } }, edited)).toEqual({
+      t: "changed"
+    });
   });
 });

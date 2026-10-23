@@ -36,6 +36,8 @@ export interface Workspace {
   updatedAt: number;
   /** the share link's id this worksheet was opened from: the link opens it again, not a second copy */
   sharedFrom?: string;
+  /** the last link this worksheet was shared by, and a fingerprint of what it held then */
+  lastShare?: { id: string; fingerprint: string };
 }
 
 /** manually pinned graph positions: cellId → state name → coordinate */
@@ -104,6 +106,8 @@ export interface AppState {
   importWorkspace: (ws: Pick<Workspace, "name" | "cells">, folder?: string) => void;
   /** opens a worksheet from share link `id`: a copy with its pinned graph positions, made the first time only */
   openShared: (id: string, doc: WorksheetDocument) => void;
+  /** remembers the link a worksheet was just shared by, so an unchanged worksheet is not shared twice */
+  rememberShare: (workspaceId: string, share: { id: string; fingerprint: string }) => void;
   /** moves worksheets into a folder (created if new); undefined = out of any folder */
   moveWorkspaces: (ids: string[], folder: string | undefined) => void;
   createFolder: (name: string) => void;
@@ -330,6 +334,8 @@ export const useAppStore = create<AppState>()(
         });
         set({ workspaces: [...s.workspaces, ws], layouts, activeWorkspaceId: ws.id, activeCellId: ws.cells[0].id });
       },
+      rememberShare: (workspaceId, share) =>
+        set((s) => ({ workspaces: s.workspaces.map((w) => (w.id === workspaceId ? { ...w, lastShare: share } : w)) })),
 
       setCellSource: (cellId, source) =>
         set((s) => {

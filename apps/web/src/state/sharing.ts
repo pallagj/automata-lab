@@ -23,8 +23,37 @@ export function sharedDocument(ws: Pick<Workspace, "name" | "cells">, layouts: L
   };
 }
 
+/**
+ * A short fingerprint of a shared document (53-bit cyrb53 over its JSON): two versions of
+ * a worksheet that differ in anything — a cell, a pinned position, the name — differ in it.
+ */
+export function fingerprint(doc: WorksheetDocument): string {
+  const text = JSON.stringify(doc);
+  let h1 = 0xdeadbeef;
+  let h2 = 0x41c6ce57;
+  for (let i = 0; i < text.length; i++) {
+    const ch = text.charCodeAt(i);
+    h1 = Math.imul(h1 ^ ch, 2654435761);
+    h2 = Math.imul(h2 ^ ch, 1597334677);
+  }
+  h1 = Math.imul(h1 ^ (h1 >>> 16), 2246822507) ^ Math.imul(h2 ^ (h2 >>> 13), 3266489909);
+  h2 = Math.imul(h2 ^ (h2 >>> 16), 2246822507) ^ Math.imul(h1 ^ (h1 >>> 13), 3266489909);
+  return (4294967296 * (2097151 & h2) + (h1 >>> 0)).toString(36);
+}
+
+/**
+ * Where a worksheet stands with its links: never shared, shared as it is now (that link
+ * still shows it), or changed since its last link.
+ */
+export type ShareState = { t: "unshared" } | { t: "current"; id: string } | { t: "changed" };
+
+export function shareState(ws: Pick<Workspace, "lastShare">, doc: WorksheetDocument): ShareState {
+  if (!ws.lastShare) return { t: "unshared" };
+  return ws.lastShare.fingerprint === fingerprint(doc) ? { t: "current", id: ws.lastShare.id } : { t: "changed" };
+}
+
 export type ShareOutcome =
-  | { ok: true; url: string }
+  | { ok: true; id: string; url: string }
   | { ok: false; reason: "offline" | "rate_limited" | "too_large" | "newer" | "failed" };
 
 /** Stores the worksheet on the server; the link points to this app, wherever it runs. */
@@ -39,7 +68,7 @@ export async function shareDocument(
   } catch {
     return { ok: false, reason: "offline" };
   }
-  if (res.data) return { ok: true, url: origin + sharePath(res.data.id) };
+  if (res.data) return { ok: true, id: res.data.id, url: origin + sharePath(res.data.id) };
   switch (res.response.status) {
     case 429:
       return { ok: false, reason: "rate_limited" };
