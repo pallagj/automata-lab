@@ -114,6 +114,7 @@ export const FSMView: React.FC<{ fsm: FSM; stepGroups?: StepGroup[]; diagnostics
     [played?.graph, playsResult, plainSpec]
   );
   const graphFrame = useMemo(() => (played ? toGraphFrame(played, playedSpec) : null), [played, playedSpec]);
+  const placeBy = useMemo(() => (played?.layout ? fsmGraphSpec(played.layout) : undefined), [played?.layout]);
 
   const words = useMemo(() => languageSummary(fsm, 24), [fsm]);
 
@@ -333,6 +334,7 @@ export const FSMView: React.FC<{ fsm: FSM; stepGroups?: StepGroup[]; diagnostics
           <GraphView
             spec={playedSpec}
             frame={graphFrame}
+            placeBy={placeBy}
             cellId={playsResult ? cellId : null}
             exportName={fsm.name}
           />

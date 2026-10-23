@@ -64,6 +64,19 @@
       "added": "új átmenetek",
       "start": "kezdő",
       "accepting": "elfogadó"
+    },
+    "anim": {
+      "start": "A(z) {{expr}} automatáját belülről kifelé építjük: előbb a betűk automatáit, aztán az egyre nagyobb részkifejezésekéit. Minden szín egy külön automata, a kezdőállapota alatt a részkifejezésével.",
+      "empty": "∅: egyetlen {{start}} állapot, nem elfogadó — ez az automata egy szót sem fogad el.",
+      "eps": "ε: egyetlen {{start}} állapot, elfogadó, átmenet nélkül — ez az automata csak az üres szót fogadja el.",
+      "lit": "{{expr}}: egy {{start}} kezdőállapot és egy {{accept}} elfogadó állapot, köztük egyetlen átmenet: {{start}} →{{letter}} {{accept}}.",
+      "alt": "{{expr}}: a(z) {{a}} és a(z) {{b}} automatája egymás mellett, és egy új {{start}} kezdőállapot ε-átmenetekkel a kezdőállapotaikba ({{aStart}}, {{bStart}}). Ott fogad el, ahol bármelyik: {{accept}}.",
+      "opt": "{{expr}} jelentése {{a}} + ε: új {{start}} kezdőállapot ε-átmenettel a(z) {{a}} kezdőállapotába ({{aStart}}) és az ε állapotába ({{bStart}}). Elfogadó: {{accept}}.",
+      "cat": "{{expr}}: a(z) {{a}} automatája, utána a(z) {{b}} automatája — a(z) {{a}} elfogadó állapotaiból ({{from}}) ε-átmenetek vezetnek a(z) {{b}} kezdőállapotába ({{bStart}}). A kezdőállapot {{start}}; csak a(z) {{b}} elfogadó állapotai fogadnak el: {{accept}}.",
+      "catNone": "{{expr}}: a(z) {{a}} automatájának nincs elfogadó állapota, így nem vezet ε-átmenet tovább a(z) {{b}} automatájába (kezdőállapota {{bStart}}): ez az automata egy szót sem fogad el. Kezdőállapot: {{start}}.",
+      "star": "{{expr}}: új {{start}} kezdőállapot, amely elfogadó is (az üres szó miatt), ε-átmenettel a(z) {{a}} kezdőállapotába ({{aStart}}), és ε-átmenetekkel vissza a(z) {{a}} elfogadó állapotaiból ({{from}}). Csak {{start}} fogad el.",
+      "starNone": "{{expr}}: új {{start}} kezdőállapot, elfogadó (az üres szó miatt), ε-átmenettel a(z) {{a}} kezdőállapotába ({{aStart}}); a(z) {{a}} automatájának nincs elfogadó állapota, így semmi sem vezet vissza. Csak {{start}} fogad el: a nyelv {ε}.",
+      "done": "Kész: a(z) {{expr}} automatájának {{count}} állapota van. A det(·) DFA-vá alakítja."
     }
   },
   "workspace": {
@@ -290,6 +303,13 @@
         "title": "3. Elfogadó állapotok bővítése",
         "detailChanged": "Ha E(q) tartalmaz elfogadó állapotot, q is elfogadó lesz. Új elfogadó állapotok: {{list}}.",
         "detailUnchanged": "Egyetlen állapot ε-lezárása sem tartalmaz új elfogadó állapotot, így az elfogadó halmaz változatlan."
+      },
+      "anim": {
+        "start": "A kiemelt ε-átmenetek eltűnnek. Állapotonként minden ε-lépések közti betűolvasás egyetlen átmenet lesz azon a betűn.",
+        "closure": "E({{state}}) = {{closure}}: a(z) {{state}} állapotból csak ε-átmenetekkel elérhető állapotok (kiemelve).",
+        "closureNoNew": "E({{state}}) = {{closure}}: a(z) {{state}} állapotból csak ε-átmenetekkel elérhető állapotok. Belőlük egyetlen betű sem visz olyan helyre, ahová a(z) {{state}} ne lépne már: nem kap új átmenetet.",
+        "direct": "δ'({{state}}, a) = E(δ(E({{state}}), a)) — egy betű E({{state}}) valamelyik állapotából, utána ε-lépések: {{values}}. Az új átmenetek kiemelve.",
+        "done": "Az ε-átmeneteket elhagyjuk: az automata ε-mentes, és ugyanazokat a szavakat fogadja el."
       }
     },
     "det": {
@@ -438,6 +458,14 @@
       "extend": {
         "title": "A(z) {{part}} automata a közös ábécé fölött",
         "detail": "{{name}} nem lép a(z) {{missing}} betűre: a Σ = {{sigma}} ábécé fölött hiányos automata, ezért előbb teljessé tesszük — minden hiányzó átmenet egy új {{trap}} csapdaállapotba vezet, ahonnan nincs kiút. A nyelve nem változik."
+      },
+      "anim": {
+        "start": "A kezdőállapot a két kezdőállapot párja, {{start}}. Minden pár szaggatott, amíg a sorára nem kerül a feldolgozás.",
+        "startAccept": "A kezdőállapot a két kezdőállapot párja, {{start}} — elfogadó: {{why}}. Minden pár szaggatott, amíg a sorára nem kerül a feldolgozás.",
+        "new": "δ({{pair}}, {{symbol}}) = (δ₁({{p}}, {{symbol}}), δ₂({{q}}, {{symbol}})) = {{to}} — új pár: új állapot lesz, később feldolgozzuk.",
+        "newAccept": "δ({{pair}}, {{symbol}}) = (δ₁({{p}}, {{symbol}}), δ₂({{q}}, {{symbol}})) = {{to}} — új pár: új állapot lesz, és elfogadó: {{why}}.",
+        "known": "δ({{pair}}, {{symbol}}) = (δ₁({{p}}, {{symbol}}), δ₂({{q}}, {{symbol}})) = {{to}} — ez a pár már állapot: csak az átmenet új.",
+        "done": "Kész: {{count}} pár a lehetséges {{n1}} · {{n2}} = {{possible}} közül — csak a kezdőpárból elérhetők készültek el."
       }
     },
     "unionEpsilon": {

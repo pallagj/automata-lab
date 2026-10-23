@@ -39,6 +39,10 @@ export interface GraphFrame {
   shown?: Set<string>;
   /** states drawn faded (found, not processed yet) */
   pending?: Set<string>;
+  /** the states drawn as start states; absent: the spec's */
+  start?: Set<string>;
+  /** the states drawn accepting; absent: the spec's */
+  accept?: Set<string>;
   focus?: Set<string>;
   /** state → colour index */
   classes?: Map<string, number>;
@@ -56,6 +60,8 @@ interface Props {
   spec: GraphSpec;
   /** an animation's current picture over the graph */
   frame?: GraphFrame | null;
+  /** the same states with other edges, laid out instead of `spec` (see placeStates) */
+  placeBy?: GraphSpec;
   className?: string;
   /** key for pinned positions (cell) — when set, states are draggable */
   cellId?: string | null;
@@ -186,32 +192,36 @@ export interface StatePlacement {
   positions: Map<string, Pt>;
 }
 
-export function placeStates(spec: GraphSpec): StatePlacement {
+/**
+ * `by` places the states instead of `spec`: the same states with other edges (an animation keeps
+ * the shape of the automaton it started from while transitions are added).
+ */
+export function placeStates(spec: GraphSpec, by: GraphSpec = spec): StatePlacement {
   const g = new dagre.graphlib.Graph({ multigraph: true });
   g.setGraph({ rankdir: "LR", nodesep: 30, ranksep: 76, marginx: 24, marginy: 24 });
   g.setDefaultEdgeLabel(() => ({}));
 
   const boxes = new Map(spec.edges.map((e) => [e.id, labelBox(e.label)]));
+  const byBoxes = by === spec ? boxes : new Map(by.edges.map((e) => [e.id, labelBox(e.label)]));
 
-  const radii = new Map<string, number>();
-  for (const n of spec.nodes) {
+  const radii = new Map(spec.nodes.map((n) => [n.id, nodeRadius(n.label)]));
+  for (const n of by.nodes) {
     const r = nodeRadius(n.label);
-    radii.set(n.id, r);
     // a self-loop and its label stand above the node: reserve the room (symmetrically, as dagre centres nodes)
     let width = r * 2;
     let height = r * 2;
-    for (const e of spec.edges) {
+    for (const e of by.edges) {
       if (e.from !== n.id || e.to !== n.id) continue;
-      const b = boxes.get(e.id)!;
+      const b = byBoxes.get(e.id)!;
       width = Math.max(width, b.w);
       height = Math.max(height, 2 * (r * LOOP_PEAK + LOOP_GAP + b.h));
     }
     g.setNode(n.id, { width, height });
   }
   // the label sizes make dagre leave room for the labels between the ranks
-  for (const e of spec.edges) {
+  for (const e of by.edges) {
     if (e.from !== e.to) {
-      const b = boxes.get(e.id)!;
+      const b = byBoxes.get(e.id)!;
       g.setEdge(e.from, e.to, { width: b.w, height: b.h, labelpos: "c" }, e.id);
     }
   }
@@ -408,7 +418,7 @@ function useGlidingLabelTs(edges: LaidOutEdge[]): Map<string, number> {
   return shown.current;
 }
 
-export const GraphView: React.FC<Props> = ({ spec, frame, className, cellId, editing, exportName }) => {
+export const GraphView: React.FC<Props> = ({ spec, frame, placeBy, className, cellId, editing, exportName }) => {
   const { t } = useTranslation();
   const savedPos = useAppStore((s) => (cellId ? s.layouts[cellId] : undefined));
   const setNodePos = useAppStore((s) => s.setNodePos);
@@ -423,7 +433,7 @@ export const GraphView: React.FC<Props> = ({ spec, frame, className, cellId, edi
   }, [savedPos, livePos]);
 
   // dagre runs only when the graph changes; dragging a state just redraws the edges
-  const placement = useMemo(() => placeStates(spec), [spec]);
+  const placement = useMemo(() => placeStates(spec, placeBy), [spec, placeBy]);
   const { nodes, edges, bounds } = useMemo(
     () => layoutGraph(spec, overrides, placement),
     [spec, overrides, placement]
@@ -771,6 +781,8 @@ export const GraphView: React.FC<Props> = ({ spec, frame, className, cellId, edi
           if (frame?.shown && !frame.shown.has(n.id)) return null;
           const active = n.active || !!frame?.focus?.has(n.id);
           const cls = frame?.classes?.get(n.id);
+          const start = frame?.start ? frame.start.has(n.id) : n.start;
+          const accept = frame?.accept ? frame.accept.has(n.id) : n.accept;
           return (
           <g
             key={n.id}
@@ -781,7 +793,7 @@ export const GraphView: React.FC<Props> = ({ spec, frame, className, cellId, edi
             transform={`translate(${n.x} ${n.y})`}
             onPointerDown={(e) => onNodePointerDown(e, n)}
           >
-            {n.start && (
+            {start && (
               <>
                 <line x1={-n.r - 26} y1={0} x2={-n.r - 7} y2={0} className="graph-start-line" markerEnd="url(#arrow)" />
               </>
@@ -789,7 +801,7 @@ export const GraphView: React.FC<Props> = ({ spec, frame, className, cellId, edi
             {active && <circle r={n.r + 7} className="graph-node-halo" />}
             {editing && <circle r={n.r + 5} className="graph-ring-vis" />}
             <circle r={n.r} className="graph-node-circle" />
-            {n.accept && <circle r={n.r - 4.5} className="graph-node-accept" />}
+            {accept && <circle r={n.r - 4.5} className="graph-node-accept" />}
             <text className="graph-node-label" textAnchor="middle" dominantBaseline="central">
               {svgRich(n.label)}
             </text>

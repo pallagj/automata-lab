@@ -47,6 +47,8 @@ export function toGraphFrame(f: AnimFrame, spec: GraphSpec): GraphFrame {
   return {
     shown: f.shown && new Set(f.shown),
     pending: f.pending && new Set(f.pending),
+    start: f.start && new Set(f.start),
+    accept: f.accept && new Set(f.accept),
     focus: f.focus && new Set(f.focus),
     classes: f.classes && new Map(Object.entries(f.classes)),
     tags: f.tags && new Map(Object.entries(f.tags)),

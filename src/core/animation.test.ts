@@ -1,12 +1,14 @@
 import { describe, expect, it } from "vitest";
 import { ANIMATION_STATE_LIMIT, AnimFrame, transKey } from "./fsm/animation";
-import { FSM, makeFSM } from "./fsm/fsm";
-import { determinize, minimize } from "./fsm/ops";
+import { acceptsFSM, FSM, makeFSM } from "./fsm/fsm";
+import { complete, determinize, minimize, product, ProductMode, removeEpsilon } from "./fsm/ops";
+import { regexToNFA } from "./fsm/regex";
 import { fsmToRegex } from "./fsm/toRegex";
 import { evaluateExpression } from "./expr/expression";
 import { cyk, cykAnimation, cykMembership, cykOrder } from "./grammar/cyk";
 import { parseGrammar } from "./parse/definitionParser";
-import { randomCFG, randomNFA, rng } from "./testing";
+import { allWords, randomCFG, randomNFA, rng } from "./testing";
+import { EPS } from "./types";
 
 const fsm = (states: string[], start: string, accept: string[], t: [string, string, string][], alphabet = ["0", "1"]) =>
   makeFSM({ name: "M", alphabet, states, start, accept, transitions: t.map(([from, symbol, to]) => ({ from, symbol, to })) });
@@ -474,5 +476,469 @@ describe("the r(p, q, t) rounds played on the automaton", () => {
     const env = new Map([["M", lastTwo()]]);
     const out = evaluateExpression("toRegex(min(M))", env).value!;
     expect(out.stepGroups.filter((g) => g.animation).map((g) => g.operation)).toEqual(["min(M)", "toRegex(min(M))"]);
+  });
+});
+
+describe("the product built pair by pair", () => {
+  // 3.7: La (first and last letter a) and Lb (first and last letter b), D and T are traps
+  const la = fsm(["A", "B", "C", "D"], "A", ["B"], [
+    ["A", "a", "B"],
+    ["A", "b", "D"],
+    ["B", "a", "B"],
+    ["B", "b", "C"],
+    ["C", "a", "B"],
+    ["C", "b", "C"],
+    ["D", "a", "D"],
+    ["D", "b", "D"]
+  ], ["a", "b"]);
+  const lb = fsm(["X", "Y", "Z", "T"], "X", ["Y"], [
+    ["X", "b", "Y"],
+    ["X", "a", "T"],
+    ["Y", "b", "Y"],
+    ["Y", "a", "Z"],
+    ["Z", "b", "Y"],
+    ["Z", "a", "Z"],
+    ["T", "a", "T"],
+    ["T", "b", "T"]
+  ], ["a", "b"]);
+  const kinds = (frames: AnimFrame[]) => frames.map((f) => f.caption.key.replace("ops.product.anim.", ""));
+
+  it("3.7 frame by frame: the start pair, then δ((p, q), a) row by row — the five pairs of the notes", () => {
+    const r = product(la, lb, "union");
+    const u = r.value!;
+    const frames = r.animation!.frames;
+    expect(frames.every((f) => f.graph === u)).toBe(true);
+    expect(kinds(frames)).toEqual([
+      "start",
+      "newAccept", // δ((A,X), a) = (B,T): B ∈ F₁
+      "newAccept", // δ((A,X), b) = (D,Y): Y ∈ F₂
+      "known",
+      "new", // (C,T)
+      "new", // (D,Z)
+      "known",
+      "known",
+      "known",
+      "known",
+      "known",
+      "done"
+    ]);
+    expect(frames.map((f) => f.shown)).toEqual([
+      ["(A,X)"],
+      ["(A,X)", "(B,T)"],
+      ["(A,X)", "(B,T)", "(D,Y)"],
+      ["(A,X)", "(B,T)", "(D,Y)"],
+      ["(A,X)", "(B,T)", "(D,Y)", "(C,T)"],
+      ["(A,X)", "(B,T)", "(D,Y)", "(C,T)", "(D,Z)"],
+      ...Array(5).fill(["(A,X)", "(B,T)", "(D,Y)", "(C,T)", "(D,Z)"]),
+      undefined
+    ]);
+    // a pair waits (dashed) from when it is found until its row is processed
+    expect(frames.map((f) => f.pending)).toEqual([
+      ["(A,X)"],
+      ["(B,T)"],
+      ["(B,T)", "(D,Y)"],
+      ["(D,Y)"],
+      ["(D,Y)", "(C,T)"],
+      ["(C,T)", "(D,Z)"],
+      ["(C,T)", "(D,Z)"],
+      ["(D,Z)"],
+      ["(D,Z)"],
+      [],
+      [],
+      undefined
+    ]);
+    expect(frames[0].caption).toEqual({ key: "ops.product.anim.start", params: { start: "(A,X)" } });
+    expect(frames[1].caption.params).toEqual({ pair: "(A,X)", symbol: "a", p: "A", q: "X", to: "(B,T)", why: "B ∈ F₁" });
+    expect(frames[2].caption.params).toEqual({ pair: "(A,X)", symbol: "b", p: "A", q: "X", to: "(D,Y)", why: "Y ∈ F₂" });
+    expect(frames[4].caption.params).toEqual({ pair: "(B,T)", symbol: "b", p: "B", q: "T", to: "(C,T)" });
+    expect(frames[4].focus).toEqual(["(B,T)"]);
+    expect(frames[4].focusEdges).toEqual([transKey("(B,T)", "b", "(C,T)")]);
+    expect(frames.at(-1)!.caption.params).toEqual({ count: 5, n1: 4, n2: 4, possible: 16 });
+    expect(new Set(frames.at(-2)!.edges)).toEqual(new Set(keysOf(u)));
+  });
+
+  // even number of a's × ends with b
+  const even = fsm(["E", "O"], "E", ["E"], [
+    ["E", "a", "O"],
+    ["O", "a", "E"],
+    ["E", "b", "E"],
+    ["O", "b", "O"]
+  ], ["a", "b"]);
+  const endsB = fsm(["N", "B"], "N", ["B"], [
+    ["N", "a", "N"],
+    ["N", "b", "B"],
+    ["B", "a", "N"],
+    ["B", "b", "B"]
+  ], ["a", "b"]);
+
+  it("the reason a pair accepts follows the operation: both coordinates, or the first but not the second", () => {
+    const meet = product(even, endsB, "intersect").animation!.frames;
+    expect(meet[0].caption.key).toBe("ops.product.anim.start");
+    const eb = meet.find((f) => f.caption.params?.to === "(E,B)" && f.caption.key.endsWith("newAccept"))!;
+    expect(eb.caption.params!.why).toBe("E ∈ F₁, B ∈ F₂");
+    const minus = product(even, endsB, "difference").animation!.frames;
+    // (E,N) accepts at once: an even number of a's, not ending in b
+    expect(minus[0].caption).toEqual({ key: "ops.product.anim.startAccept", params: { start: "(E,N)", why: "E ∈ F₁, N ∉ F₂" } });
+    expect(kinds(minus).filter((k) => k === "newAccept")).toEqual([]);
+    // the union names only the coordinate that accepts
+    const union = product(even, endsB, "union").animation!.frames;
+    expect(union[0].caption.params!.why).toBe("E ∈ F₁");
+    const ob = union.find((f) => f.caption.params?.to === "(O,B)")!;
+    expect(ob.caption.params!.why).toBe("B ∈ F₂");
+  });
+
+  it("over a common alphabet, the possible pairs count the trap states the completion adds", () => {
+    const onlyA = fsm(["p"], "p", ["p"], [["p", "a", "p"]], ["a"]);
+    const onlyB = fsm(["q"], "q", ["q"], [["q", "b", "q"]], ["b"]);
+    const r = product(onlyA, onlyB, "union");
+    expect(r.animation!.frames.at(-1)!.caption.params).toEqual({ count: r.value!.states.length, n1: 2, n2: 2, possible: 4 });
+  });
+
+  it("random DFAs: the pairs and transitions appear exactly as built, and a new pair accepts exactly when the caption says so", () => {
+    const rand = rng(23);
+    const modes: ProductMode[] = ["union", "intersect", "difference"];
+    for (let i = 0; i < 60; i++) {
+      const dfa = () => complete(determinize(randomNFA(rand, { states: 3, alphabet: ["a", "b"], density: 0.4 })).value!).value!;
+      const [m1, m2] = [dfa(), dfa()];
+      const mode = modes[i % 3];
+      const r = product(m1, m2, mode);
+      const out = r.value!;
+      const frames = r.animation!.frames;
+      const lastPartial = frames.at(-2)!;
+      expect(new Set(lastPartial.shown)).toEqual(new Set(out.states));
+      expect(new Set(lastPartial.edges)).toEqual(new Set(keysOf(out)));
+      expect(lastPartial.edges!.length).toBe(out.transitions.length);
+      expect(lastPartial.pending).toEqual([]);
+      const accept = new Set(out.accept);
+      for (const f of frames.slice(1, -1)) {
+        const shown = new Set(f.shown);
+        for (const k of f.edges!) {
+          const [from, , to] = k.split("\u0001");
+          expect(shown.has(from) && shown.has(to)).toBe(true);
+        }
+        const { to, why } = f.caption.params as { to: string; why?: string };
+        const kind = f.caption.key.replace("ops.product.anim.", "");
+        if (kind === "newAccept") {
+          expect(accept.has(to)).toBe(true);
+          if (mode === "intersect") expect(why).toMatch(/∈ F₁, .* ∈ F₂$/);
+          if (mode === "difference") expect(why).toMatch(/∈ F₁, .* ∉ F₂$/);
+          if (mode === "union") expect(why).not.toContain("∉");
+        }
+        if (kind === "new") expect(accept.has(to)).toBe(false);
+      }
+    }
+  });
+
+  it("union(M, N) plays the product in a chain", () => {
+    const env = new Map([
+      ["M", la],
+      ["N", lb]
+    ]);
+    const out = evaluateExpression("min(union(M, N))", env).value!;
+    expect(out.stepGroups.filter((g) => g.animation).map((g) => g.operation)).toEqual(["union(M, N)", "min(union(M, N))"]);
+  });
+});
+
+/** Our regular expressions as JavaScript ones, for an independent check; x?* and x** are x*, x?? is x?. */
+const jsRegex = (r: string) =>
+  new RegExp(
+    `^(?:${r
+      .replace(/[*?]{2,}/g, (ops) => (ops.includes("*") ? "*" : "?"))
+      .replaceAll("+", "|")
+      .replaceAll("ε", "(?:)")
+      .replaceAll("∅", "(?:(?!))")})$`
+  );
+
+describe("a regular expression's automaton built inside out", () => {
+  const kinds = (frames: AnimFrame[]) => frames.map((f) => f.caption.key.replace("regex.anim.", ""));
+
+  it("a+b: the two letters' automata side by side, each in its colour, then joined by a new start state", () => {
+    const r = regexToNFA("a+b");
+    const nfa = r.value!;
+    const frames = r.animation!.frames;
+    expect(frames.every((f) => f.graph === nfa)).toBe(true);
+    expect(kinds(frames)).toEqual(["start", "lit", "lit", "alt", "done"]);
+    expect(frames[0]).toMatchObject({ shown: [], edges: [], caption: { params: { expr: "a+b" } } });
+
+    const [, a, b, alt] = frames;
+    expect(a).toMatchObject({
+      shown: ["q_1", "q_2"],
+      edges: [transKey("q_1", "a", "q_2")],
+      start: ["q_1"],
+      accept: ["q_2"],
+      classes: { q_1: 0, q_2: 0 },
+      tags: { q_1: "a" },
+      focus: ["q_1", "q_2"],
+      focusEdges: [transKey("q_1", "a", "q_2")]
+    });
+    expect(a.caption.params).toEqual({ expr: "a", letter: "a", start: "q_1", accept: "q_2" });
+    // two separate automata: two start states, two colours, each tagged with its expression
+    expect(b).toMatchObject({
+      shown: ["q_1", "q_2", "q_3", "q_4"],
+      start: ["q_1", "q_3"],
+      accept: ["q_2", "q_4"],
+      classes: { q_1: 0, q_2: 0, q_3: 1, q_4: 1 },
+      tags: { q_1: "a", q_3: "b" },
+      focus: ["q_3", "q_4"]
+    });
+    expect(alt).toMatchObject({
+      shown: ["q_0", "q_1", "q_2", "q_3", "q_4"],
+      start: ["q_0"],
+      accept: ["q_2", "q_4"],
+      classes: { q_0: 0, q_1: 0, q_2: 0, q_3: 0, q_4: 0 },
+      tags: { q_0: "a+b" },
+      focus: ["q_0"],
+      focusEdges: [transKey("q_0", EPS, "q_1"), transKey("q_0", EPS, "q_3")]
+    });
+    expect(alt.caption.params).toEqual({
+      expr: "a+b",
+      a: "a",
+      b: "b",
+      start: "q_0",
+      aStart: "q_1",
+      bStart: "q_3",
+      accept: "q_2, q_4"
+    });
+    expect(new Set(alt.edges)).toEqual(new Set(keysOf(nfa)));
+    expect(frames.at(-1)!.caption.params).toEqual({ expr: "a+b", count: 5 });
+  });
+
+  it("ab: the first automaton's accepting state stops accepting once ε leads on into the second", () => {
+    const frames = regexToNFA("ab").animation!.frames;
+    expect(kinds(frames)).toEqual(["start", "lit", "lit", "cat", "done"]);
+    expect(frames[2].accept).toEqual(["q_1", "q_3"]);
+    expect(frames[3]).toMatchObject({ start: ["q_0"], accept: ["q_3"], focus: [], focusEdges: [transKey("q_1", EPS, "q_2")] });
+    expect(frames[3].caption.params).toEqual({
+      expr: "ab",
+      a: "a",
+      b: "b",
+      from: "q_1",
+      bStart: "q_2",
+      start: "q_0",
+      accept: "q_3"
+    });
+  });
+
+  it("star, optional, ε and ∅ — and the joins that have nothing to join from", () => {
+    const star = regexToNFA("a*").animation!.frames;
+    expect(kinds(star)).toEqual(["start", "lit", "star", "done"]);
+    expect(star[2]).toMatchObject({
+      start: ["q_0"],
+      accept: ["q_0"],
+      focus: ["q_0"],
+      focusEdges: [transKey("q_0", EPS, "q_1"), transKey("q_2", EPS, "q_0")]
+    });
+    expect(star[2].caption.params).toEqual({ expr: "a*", a: "a", start: "q_0", aStart: "q_1", from: "q_2" });
+    // a? is a + ε: the ε part is built (and shown) too
+    expect(kinds(regexToNFA("a?").animation!.frames)).toEqual(["start", "lit", "eps", "opt", "done"]);
+    expect(kinds(regexToNFA("∅*").animation!.frames)).toEqual(["start", "empty", "starNone", "done"]);
+    const none = regexToNFA("∅a").animation!.frames;
+    expect(kinds(none)).toEqual(["start", "empty", "lit", "catNone", "done"]);
+    expect(none[3]).toMatchObject({ accept: ["q_2"], focusEdges: [] });
+    const eps = regexToNFA("ε").animation!.frames;
+    expect(eps[1]).toMatchObject({ shown: ["q_0"], start: ["q_0"], accept: ["q_0"], edges: [] });
+  });
+
+  it("every frame of 300 random expressions: each automaton drawn accepts exactly its subexpression's words", () => {
+    const next = rng(77);
+    const pick = <T,>(xs: T[]) => xs[Math.floor(next() * xs.length)];
+    const gen = (depth: number): string => {
+      if (depth === 0 || next() < 0.3) return pick(["a", "b", "a", "b", "ε", "∅"]);
+      const x = gen(depth - 1);
+      switch (pick(["alt", "cat", "star", "opt"])) {
+        case "alt":
+          return `(${x}+${gen(depth - 1)})`;
+        case "cat":
+          return `(${x})(${gen(depth - 1)})`;
+        case "star":
+          return `(${x})*`;
+        default:
+          return `(${x})?`;
+      }
+    };
+    const words = allWords(["a", "b"], 4);
+    let checked = 0;
+    for (let i = 0; i < 300; i++) {
+      const r = regexToNFA(gen(3));
+      const nfa = r.value!;
+      if (!r.animation) {
+        expect(nfa.states.length).toBeGreaterThan(ANIMATION_STATE_LIMIT);
+        continue;
+      }
+      const frames = r.animation.frames;
+      const builds = frames.slice(1, -1);
+      // one frame per row of the steps' table, the newest automaton tagged with the row's subexpression
+      const rows = r.steps[0].table!.rows;
+      expect(builds.length).toBe(rows.length);
+      builds.forEach((f, k) => expect(f.tags![f.start!.at(-1)!]).toBe(rows[k][0]));
+      // the last one is the whole automaton
+      const whole = builds.at(-1)!;
+      expect(new Set(whole.shown)).toEqual(new Set(nfa.states));
+      expect(new Set(whole.edges)).toEqual(new Set(keysOf(nfa)));
+      expect(whole.start).toEqual([nfa.start]);
+      expect(whole.accept).toEqual(nfa.accept);
+
+      for (const f of builds) {
+        expect(new Set(Object.keys(f.classes!))).toEqual(new Set(f.shown));
+        f.start!.forEach((start, part) => {
+          expect(f.classes![start]).toBe(part);
+          const states = f.shown!.filter((st) => f.classes![st] === part);
+          const own = new Set(states);
+          const transitions = f.edges!.map((k) => k.split("\u0001")).filter(([from]) => own.has(from));
+          // no transition leads out of an automaton that is not joined yet
+          for (const [, , to] of transitions) expect(own.has(to)).toBe(true);
+          const drawn = makeFSM({
+            name: "F",
+            alphabet: ["a", "b"],
+            states,
+            start,
+            accept: f.accept!.filter((st) => own.has(st)),
+            transitions: transitions.map(([from, symbol, to]) => ({ from, symbol, to }))
+          });
+          const expected = jsRegex(f.tags![start]);
+          for (const w of words) expect(acceptsFSM(drawn, w)).toBe(expected.test(w));
+          checked++;
+        });
+      }
+    }
+    expect(checked).toBeGreaterThan(1500);
+  });
+
+  it("an expression with too many states records no animation", () => {
+    const r = regexToNFA("a".repeat(ANIMATION_STATE_LIMIT));
+    expect(r.value!.states.length).toBeGreaterThan(ANIMATION_STATE_LIMIT);
+    expect(r.animation).toBeUndefined();
+  });
+
+  it("toFsm(R) plays the construction, and det(toFsm(R)) the subset construction after it", () => {
+    const env = new Map([["R", { kind: "regex" as const, name: "R", pattern: "(a+b)*b" }]]);
+    const out = evaluateExpression("det(toFsm(R))", env).value!;
+    expect(out.stepGroups.filter((g) => g.animation).map((g) => g.operation)).toEqual(["toFsm(R)", "det(toFsm(R))"]);
+  });
+});
+
+describe("ε-removal played on the automaton", () => {
+  // a*b*c*: 0 →ε 1 →ε 2, with a loop on each
+  const abc = fsm(["0", "1", "2"], "0", ["2"], [
+    ["0", "a", "0"],
+    ["0", EPS, "1"],
+    ["1", "b", "1"],
+    ["1", EPS, "2"],
+    ["2", "c", "2"]
+  ], ["a", "b", "c"]);
+  const kinds = (frames: AnimFrame[]) => frames.map((f) => f.caption.key.replace("ops.epsfree.anim.", "").replace("ops.epsfree.", ""));
+
+  it("a*b*c* frame by frame: E(q), then the transitions that become direct, then the new accepting states, then ε goes", () => {
+    const r = removeEpsilon(abc);
+    const out = r.value!;
+    const frames = r.animation!.frames;
+    // state 2: E(2) = {2} and nothing new — no frame of its own
+    expect(kinds(frames)).toEqual(["start", "closure", "direct", "closure", "direct", "step3.detailChanged", "done"]);
+    const graph = frames[0].graph;
+    expect(frames.every((f) => f.graph === graph)).toBe(true);
+    // laid out as the ε-NFA: the new transitions do not move its states
+    expect(frames.every((f) => f.layout === abc)).toBe(true);
+    expect(new Set(graph.states)).toEqual(new Set(abc.states));
+
+    const eps = [transKey("0", EPS, "1"), transKey("1", EPS, "2")];
+    expect(frames[0]).toMatchObject({ edges: keysOf(abc), accept: ["2"], focusEdges: eps });
+    expect(frames[1]).toMatchObject({ accept: ["2"], focus: ["0", "1", "2"], focusEdges: eps });
+    expect(frames[1].caption.params).toEqual({ state: "0", closure: "{0,1,2}" });
+
+    const from0 = [
+      transKey("0", "a", "1"),
+      transKey("0", "a", "2"),
+      transKey("0", "b", "1"),
+      transKey("0", "b", "2"),
+      transKey("0", "c", "2")
+    ];
+    expect(frames[2]).toMatchObject({ focus: ["0"], focusEdges: from0, edges: [...keysOf(abc), ...from0] });
+    expect(frames[2].caption.params).toEqual({ state: "0", values: "δ'(0, a) = {0,1,2}; δ'(0, b) = {1,2}; δ'(0, c) = {2}" });
+    // where each one comes from is the steps' table: the five of 0, then the two of 1
+    const reasons = r.steps[1].table!.rows;
+    expect(reasons[0]).toEqual(["δ'(0, a) ∋ 1", "0 ∈ E(0), δ(0,a) ∋ 0, 1 ∈ E(0)"]);
+    expect(reasons.length).toBe(7);
+
+    expect(frames[3]).toMatchObject({ focus: ["1", "2"], focusEdges: [transKey("1", EPS, "2")] });
+    expect(frames[4].focusEdges).toEqual([transKey("1", "b", "2"), transKey("1", "c", "2")]);
+    // 0 and 1 accept now: their closures contain 2
+    expect(frames[5]).toMatchObject({ accept: ["0", "1", "2"], focus: ["0", "1"] });
+    expect(frames[5].caption.params).toEqual({ list: "0, 1" });
+    // the result: no ε-transition left
+    expect(frames[6]).toMatchObject({ edges: keysOf(out), accept: out.accept });
+    expect(frames[6].edges!.some((k) => k.includes(EPS))).toBe(false);
+  });
+
+  it("a closure that brings nothing new says so, and the accepting states may stay", () => {
+    // p →ε q, but q reads nothing: δ'(p, a) = E({r}) = {r}, as before
+    const m = fsm(["p", "q", "r"], "p", ["r"], [["p", EPS, "q"], ["p", "a", "r"]], ["a"]);
+    const frames = removeEpsilon(m).animation!.frames;
+    expect(kinds(frames)).toEqual(["start", "closureNoNew", "step3.detailUnchanged", "done"]);
+    expect(frames[1].caption.params).toEqual({ state: "p", closure: "{p,q}" });
+  });
+
+  it("the steps' table lists only the transitions the automaton did not have", () => {
+    // p →a q, q →ε r and the original p →a r: δ'(p, a) = {q, r}, nothing new
+    const m = fsm(["p", "q", "r"], "p", ["r"], [["p", "a", "q"], ["q", EPS, "r"], ["p", "a", "r"]], ["a"]);
+    const r = removeEpsilon(m);
+    expect(r.steps.map((s) => s.title.key)).toEqual(["ops.epsfree.step1.title", "ops.epsfree.step3.title"]);
+    expect(kinds(r.animation!.frames)).toEqual(["start", "closureNoNew", "step3.detailChanged", "done"]);
+  });
+
+  it("random ε-NFAs: every new transition appears once, from its own state, and the last frame is the result", () => {
+    const rand = rng(41);
+    for (let i = 0; i < 80; i++) {
+      const f = randomNFA(rand, { states: 4, alphabet: ["a", "b"], density: 0.25, epsDensity: 0.3 });
+      const r = removeEpsilon(f);
+      if (!r.animation) {
+        expect(f.transitions.some((t) => t.symbol === EPS)).toBe(false);
+        continue;
+      }
+      const out = r.value!;
+      const frames = r.animation.frames;
+      const original = keysOf(f);
+      const added = keysOf(out).filter((k) => !original.includes(k));
+      const directs = frames.filter((fr) => fr.caption.key === "ops.epsfree.anim.direct");
+      expect(directs.flatMap((fr) => fr.focusEdges)).toEqual(added);
+      for (const fr of directs) {
+        const from = fr.focus![0];
+        for (const k of fr.focusEdges!) expect(k.split("\u0001")[0]).toBe(from);
+        expect(fr.layout).toBe(f);
+      }
+      // the closures shown are the states reachable along ε alone
+      for (const fr of frames.filter((x) => x.caption.key.startsWith("ops.epsfree.anim.closure"))) {
+        const q = String(fr.caption.params!.state);
+        const reach = new Set([q]);
+        for (let grew = true; grew; ) {
+          grew = false;
+          for (const t of f.transitions)
+            if (t.symbol === EPS && reach.has(t.from) && !reach.has(t.to)) {
+              reach.add(t.to);
+              grew = true;
+            }
+        }
+        expect(new Set(fr.focus)).toEqual(reach);
+      }
+      // the accepting states change in one frame only, the one that says so
+      const acceptAt = frames.findIndex((fr) => fr.caption.key.startsWith("ops.epsfree.step3"));
+      expect(frames.slice(0, acceptAt).every((fr) => fr.accept === f.accept)).toBe(true);
+      expect(frames.slice(acceptAt).every((fr) => fr.accept === out.accept)).toBe(true);
+      const last = frames.at(-1)!;
+      expect(new Set(last.edges)).toEqual(new Set(keysOf(out)));
+      expect(frames.at(-2)!.edges!.length).toBe(original.length + added.length);
+      // the last frame accepts what the automaton did
+      const transitions = last.edges!.map((k) => {
+        const [from, symbol, to] = k.split("\u0001");
+        return { from, symbol, to };
+      });
+      const drawn = makeFSM({ ...f, accept: last.accept!, transitions });
+      for (const w of allWords(["a", "b"], 4)) expect(acceptsFSM(drawn, w)).toBe(acceptsFSM(f, w));
+    }
+  });
+
+  it("epsfree(M) plays in a chain", () => {
+    const env = new Map([["M", abc]]);
+    const out = evaluateExpression("det(epsfree(M))", env).value!;
+    expect(out.stepGroups.filter((g) => g.animation).map((g) => g.operation)).toEqual(["epsfree(M)", "det(epsfree(M))"]);
   });
 });

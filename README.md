@@ -30,10 +30,13 @@ an app; everything runs locally, no account needed.
   refinement rounds, ε-closures, product construction table, the r(p, q, t) tables of the
   automaton → regular expression conversion, the rounds of the grammar transformations. The
   panels over the graph can be enlarged to the whole canvas for a long table.
-- **Algorithms played frame by frame:** the subset construction filling in, the minimization's
-  classes splitting round by round, the r(p, q, t) rounds (each changed entry computed beside the
-  automaton) and the CYK table filling in cell by cell — with a caption per frame, step and
-  scrub controls and speed.
+- **Algorithms played frame by frame:** the subset construction filling in, the product built pair
+  by pair, the minimization's classes splitting round by round, a regular expression's automaton
+  built inside out (the subexpressions' automata side by side, each in its colour with its own
+  start and accepting states, until they are joined), ε-removal state by state (each closure, then
+  the transitions it makes direct, drawn over the ε-NFA), the r(p, q, t) rounds (each changed
+  entry computed beside the automaton) and the CYK table filling in cell by cell — with a caption
+  per frame, step and scrub controls and speed.
 - **Equivalence check with a counterexample:** `equal(A, B)` returns the shortest distinguishing word.
 - **Decision questions, decided exactly and explained:** `empty(L)` gives a shortest word or shows
   that no accepting state is reachable; `finite(L)` works on the minimal automaton (infinite exactly

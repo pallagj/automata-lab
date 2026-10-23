@@ -64,6 +64,19 @@
       "added": "new transitions",
       "start": "start",
       "accepting": "accepting"
+    },
+    "anim": {
+      "start": "The automaton of {{expr}} is built inside out: first the automata of the letters, then those of larger and larger subexpressions. Each colour is a separate automaton, its subexpression written under its start state.",
+      "empty": "∅: a single state {{start}}, not accepting — this automaton accepts no word.",
+      "eps": "ε: a single state {{start}}, accepting, with no transition — this automaton accepts only the empty word.",
+      "lit": "{{expr}}: a start state {{start}} and an accepting state {{accept}}, joined by one transition {{start}} →{{letter}} {{accept}}.",
+      "alt": "{{expr}}: the automata of {{a}} and {{b}} side by side, and a new start state {{start}} with ε-transitions into their start states {{aStart}} and {{bStart}}. It accepts where either one does: {{accept}}.",
+      "opt": "{{expr}} means {{a}} + ε: a new start state {{start}} with ε-transitions into {{aStart}}, the start of {{a}}, and into {{bStart}}, the state of ε. Accepting: {{accept}}.",
+      "cat": "{{expr}}: the automaton of {{a}}, then that of {{b}} — ε-transitions lead from the accepting states of {{a}} ({{from}}) into the start of {{b}}, {{bStart}}. The start state is {{start}}; only the accepting states of {{b}} accept: {{accept}}.",
+      "catNone": "{{expr}}: the automaton of {{a}} has no accepting state, so no ε-transition leads on into that of {{b}} (start {{bStart}}): this automaton accepts no word. Start state: {{start}}.",
+      "star": "{{expr}}: a new start state {{start}}, accepting too (for the empty word), with an ε-transition into {{aStart}}, the start of {{a}}, and ε-transitions back from the accepting states of {{a}} ({{from}}). Only {{start}} accepts.",
+      "starNone": "{{expr}}: a new start state {{start}}, accepting (for the empty word), with an ε-transition into {{aStart}}, the start of {{a}}; {{a}} has no accepting state, so nothing leads back. Only {{start}} accepts: the language is {ε}.",
+      "done": "Done: the automaton of {{expr}} has {{count}} states. det(·) turns it into a DFA."
     }
   },
   "workspace": {
@@ -290,6 +303,13 @@
         "title": "3. Extending the accepting states",
         "detailChanged": "If E(q) contains an accepting state, q becomes accepting too. New accepting states: {{list}}.",
         "detailUnchanged": "No state's ε-closure contains a new accepting state, so the accepting set is unchanged."
+      },
+      "anim": {
+        "start": "The highlighted ε-transitions will be removed. State by state, reading a letter between ε-moves becomes a single transition on that letter.",
+        "closure": "E({{state}}) = {{closure}}: the states {{state}} reaches along ε-transitions alone (highlighted).",
+        "closureNoNew": "E({{state}}) = {{closure}}: the states {{state}} reaches along ε-transitions alone. No letter leads from them anywhere {{state}} does not go already: {{state}} gets no new transition.",
+        "direct": "δ'({{state}}, a) = E(δ(E({{state}}), a)) — a letter from a state of E({{state}}), then ε-moves: {{values}}. The new transitions are highlighted.",
+        "done": "The ε-transitions are left out: the automaton is ε-free and accepts the same words."
       }
     },
     "det": {
@@ -438,6 +458,14 @@
       "extend": {
         "title": "The {{part}} automaton over the common alphabet",
         "detail": "{{name}} has no transition on {{missing}}: over Σ = {{sigma}} it is an incomplete automaton, so it is completed first — every missing transition leads into a new trap state {{trap}}, which never leaves. Its language does not change."
+      },
+      "anim": {
+        "start": "The start state is the pair of the two start states, {{start}}. Each pair stays dashed until its row is processed.",
+        "startAccept": "The start state is the pair of the two start states, {{start}} — accepting: {{why}}. Each pair stays dashed until its row is processed.",
+        "new": "δ({{pair}}, {{symbol}}) = (δ₁({{p}}, {{symbol}}), δ₂({{q}}, {{symbol}})) = {{to}} — a new pair: it becomes a state, processed later.",
+        "newAccept": "δ({{pair}}, {{symbol}}) = (δ₁({{p}}, {{symbol}}), δ₂({{q}}, {{symbol}})) = {{to}} — a new pair: it becomes a state, accepting: {{why}}.",
+        "known": "δ({{pair}}, {{symbol}}) = (δ₁({{p}}, {{symbol}}), δ₂({{q}}, {{symbol}})) = {{to}} — this pair is already a state: only the transition is new.",
+        "done": "Done: {{count}} pairs out of the possible {{n1}} · {{n2}} = {{possible}} — only those reachable from the start pair were built."
       }
     },
     "unionEpsilon": {

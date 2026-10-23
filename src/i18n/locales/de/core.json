@@ -64,6 +64,19 @@
       "added": "neue Übergänge",
       "start": "Start",
       "accepting": "akzeptierend"
+    },
+    "anim": {
+      "start": "Der Automat von {{expr}} wird von innen nach außen gebaut: zuerst die Automaten der Buchstaben, dann die immer größerer Teilausdrücke. Jede Farbe ist ein eigener Automat, sein Teilausdruck steht unter seinem Startzustand.",
+      "empty": "∅: ein einziger Zustand {{start}}, nicht akzeptierend — dieser Automat akzeptiert kein Wort.",
+      "eps": "ε: ein einziger Zustand {{start}}, akzeptierend, ohne Übergang — dieser Automat akzeptiert nur das leere Wort.",
+      "lit": "{{expr}}: ein Startzustand {{start}} und ein akzeptierender Zustand {{accept}}, verbunden durch einen Übergang {{start}} →{{letter}} {{accept}}.",
+      "alt": "{{expr}}: die Automaten von {{a}} und {{b}} nebeneinander und ein neuer Startzustand {{start}} mit ε-Übergängen in ihre Startzustände {{aStart}} und {{bStart}}. Er akzeptiert, wo einer von beiden es tut: {{accept}}.",
+      "opt": "{{expr}} bedeutet {{a}} + ε: ein neuer Startzustand {{start}} mit ε-Übergängen in {{aStart}}, den Start von {{a}}, und in {{bStart}}, den Zustand von ε. Akzeptierend: {{accept}}.",
+      "cat": "{{expr}}: der Automat von {{a}}, danach der von {{b}} — ε-Übergänge führen von den akzeptierenden Zuständen von {{a}} ({{from}}) in den Start von {{b}}, {{bStart}}. Der Startzustand ist {{start}}; nur die akzeptierenden Zustände von {{b}} akzeptieren: {{accept}}.",
+      "catNone": "{{expr}}: der Automat von {{a}} hat keinen akzeptierenden Zustand, also führt kein ε-Übergang weiter in den von {{b}} (Start {{bStart}}): dieser Automat akzeptiert kein Wort. Startzustand: {{start}}.",
+      "star": "{{expr}}: ein neuer Startzustand {{start}}, ebenfalls akzeptierend (für das leere Wort), mit einem ε-Übergang in {{aStart}}, den Start von {{a}}, und ε-Übergängen zurück von den akzeptierenden Zuständen von {{a}} ({{from}}). Nur {{start}} akzeptiert.",
+      "starNone": "{{expr}}: ein neuer Startzustand {{start}}, akzeptierend (für das leere Wort), mit einem ε-Übergang in {{aStart}}, den Start von {{a}}; {{a}} hat keinen akzeptierenden Zustand, also führt nichts zurück. Nur {{start}} akzeptiert: die Sprache ist {ε}.",
+      "done": "Fertig: der Automat von {{expr}} hat {{count}} Zustände. det(·) macht daraus einen DFA."
     }
   },
   "workspace": {
@@ -290,6 +303,13 @@
         "title": "3. Erweiterung der akzeptierenden Zustände",
         "detailChanged": "Enthält E(q) einen akzeptierenden Zustand, wird auch q akzeptierend. Neue akzeptierende Zustände: {{list}}.",
         "detailUnchanged": "Der ε-Abschluss keines Zustands enthält einen neuen akzeptierenden Zustand, die Menge der akzeptierenden Zustände bleibt also unverändert."
+      },
+      "anim": {
+        "start": "Die hervorgehobenen ε-Übergänge fallen weg. Zustand für Zustand wird das Lesen eines Buchstabens zwischen ε-Schritten zu einem einzigen Übergang mit diesem Buchstaben.",
+        "closure": "E({{state}}) = {{closure}}: die von {{state}} aus nur über ε-Übergänge erreichbaren Zustände (hervorgehoben).",
+        "closureNoNew": "E({{state}}) = {{closure}}: die von {{state}} aus nur über ε-Übergänge erreichbaren Zustände. Von ihnen führt kein Buchstabe irgendwohin, wohin {{state}} nicht schon geht: {{state}} bekommt keinen neuen Übergang.",
+        "direct": "δ'({{state}}, a) = E(δ(E({{state}}), a)) — ein Buchstabe aus einem Zustand von E({{state}}), danach ε-Schritte: {{values}}. Die neuen Übergänge sind hervorgehoben.",
+        "done": "Die ε-Übergänge fallen weg: der Automat ist ε-frei und akzeptiert dieselben Wörter."
       }
     },
     "det": {
@@ -438,6 +458,14 @@
       "extend": {
         "title": "Der {{part}} Automat über dem gemeinsamen Alphabet",
         "detail": "{{name}} hat keinen Übergang mit {{missing}}: über Σ = {{sigma}} ist er ein unvollständiger Automat, also wird er zuerst vervollständigt — jeder fehlende Übergang führt in einen neuen Fangzustand {{trap}}, der nie verlassen wird. Seine Sprache ändert sich nicht."
+      },
+      "anim": {
+        "start": "Der Startzustand ist das Paar der beiden Startzustände, {{start}}. Jedes Paar bleibt gestrichelt, bis seine Zeile verarbeitet wird.",
+        "startAccept": "Der Startzustand ist das Paar der beiden Startzustände, {{start}} — akzeptierend: {{why}}. Jedes Paar bleibt gestrichelt, bis seine Zeile verarbeitet wird.",
+        "new": "δ({{pair}}, {{symbol}}) = (δ₁({{p}}, {{symbol}}), δ₂({{q}}, {{symbol}})) = {{to}} — ein neues Paar: es wird ein Zustand und später verarbeitet.",
+        "newAccept": "δ({{pair}}, {{symbol}}) = (δ₁({{p}}, {{symbol}}), δ₂({{q}}, {{symbol}})) = {{to}} — ein neues Paar: es wird ein Zustand, akzeptierend: {{why}}.",
+        "known": "δ({{pair}}, {{symbol}}) = (δ₁({{p}}, {{symbol}}), δ₂({{q}}, {{symbol}})) = {{to}} — dieses Paar ist schon ein Zustand: nur der Übergang ist neu.",
+        "done": "Fertig: {{count}} Paare von {{n1}} · {{n2}} = {{possible}} möglichen — nur die vom Startpaar erreichbaren wurden gebaut."
       }
     },
     "unionEpsilon": {

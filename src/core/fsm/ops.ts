@@ -4,6 +4,7 @@ import {
   EPS,
   err,
   failResult,
+  I18nText,
   info,
   okResult,
   OpResult,
@@ -19,6 +20,7 @@ import {
   epsilonClosure,
   freshStateName,
   FSM,
+  FSMTransition,
   makeFSM,
   reachableStates,
   transMap
@@ -102,7 +104,9 @@ export function removeEpsilon(f: FSM): OpResult<FSM> {
     transitions: []
   });
 
-  const newTransRows: string[][] = [];
+  const original = new Set(f.transitions.map((t) => transKey(t.from, t.symbol, t.to)));
+  /** each transition the automaton did not have, with where it comes from */
+  const added: (FSMTransition & { row: string[] })[] = [];
   for (const q of f.states) {
     for (const p of closures.get(q)!) {
       const inner = tm.get(p);
@@ -114,17 +118,20 @@ export function removeEpsilon(f: FSM): OpResult<FSM> {
           for (const t2 of closures.get(t)!) {
             if (!out.transitions.some((x) => x.from === q && x.symbol === sym && x.to === t2)) {
               addTransition(out, q, sym, t2);
-              if (p !== q || t2 !== t)
-                newTransRows.push([
-                  `δ'(${q}, ${sym}) ∋ ${t2}`,
-                  `${p} ∈ E(${q}), δ(${p},${sym}) ∋ ${t}, ${t2} ∈ E(${t})`
-                ]);
+              if (!original.has(transKey(q, sym, t2)))
+                added.push({
+                  from: q,
+                  symbol: sym,
+                  to: t2,
+                  row: [`δ'(${q}, ${sym}) ∋ ${t2}`, `${p} ∈ E(${q}), δ(${p},${sym}) ∋ ${t}, ${t2} ∈ E(${t})`]
+                });
             }
           }
         }
       }
     }
   }
+  const newTransRows = added.map((x) => x.row);
   if (newTransRows.length)
     steps.push({
       title: tx("ops.epsfree.step2.title"),
@@ -138,15 +145,73 @@ export function removeEpsilon(f: FSM): OpResult<FSM> {
   }
   const becameAccepting = newAccept.filter((s) => !f.accept.includes(s));
   out.accept = newAccept;
-  steps.push({
-    title: tx("ops.epsfree.step3.title"),
-    detail:
-      becameAccepting.length > 0
-        ? tx("ops.epsfree.step3.detailChanged", { list: becameAccepting.join(", ") })
-        : tx("ops.epsfree.step3.detailUnchanged")
-  });
+  const acceptDetail =
+    becameAccepting.length > 0
+      ? tx("ops.epsfree.step3.detailChanged", { list: becameAccepting.join(", ") })
+      : tx("ops.epsfree.step3.detailUnchanged");
+  steps.push({ title: tx("ops.epsfree.step3.title"), detail: acceptDetail });
 
-  return okResult(out, diags, steps);
+  const animation =
+    f.states.length <= ANIMATION_STATE_LIMIT ? epsfreeAnimation(f, out, closures, added, acceptDetail) : undefined;
+  return { ...okResult(out, diags, steps), animation };
+}
+
+/**
+ * ε-removal played on the automaton, which carries its ε-transitions and the new ones too —
+ * laid out as the ε-NFA, so its shape stays: state by state its closure E(q), then the
+ * transitions that become direct from q; then the states that become accepting; at last the
+ * ε-transitions go.
+ */
+function epsfreeAnimation(
+  f: FSM,
+  out: FSM,
+  closures: Map<string, Set<string>>,
+  added: FSMTransition[],
+  acceptCaption: I18nText
+): FSMAnimation {
+  const graph = makeFSM({
+    ...f,
+    accept: [...out.accept],
+    transitions: [...f.transitions, ...added.map(({ from, symbol, to }) => ({ from, symbol, to }))]
+  });
+  const keyOf = (t: FSMTransition) => transKey(t.from, t.symbol, t.to);
+  const epsilon = f.transitions.filter((t) => t.symbol === EPS);
+  const edges = f.transitions.map(keyOf);
+  // until the accepting states change, they are the ε-NFA's
+  const frame = (caption: I18nText, rest: Partial<AnimFrame>): AnimFrame => ({
+    graph,
+    layout: f,
+    caption,
+    edges: [...edges],
+    accept: f.accept,
+    ...rest
+  });
+  const frames = [frame(tx("ops.epsfree.anim.start"), { focusEdges: epsilon.map(keyOf) })];
+  for (const q of f.states) {
+    const closure = closures.get(q)!;
+    const fromQ = added.filter((t) => t.from === q);
+    if (closure.size > 1) {
+      const params = { state: q, closure: setName(closure) };
+      frames.push(
+        frame(tx(fromQ.length ? "ops.epsfree.anim.closure" : "ops.epsfree.anim.closureNoNew", params), {
+          focus: [...closure],
+          focusEdges: epsilon.filter((t) => closure.has(t.from)).map(keyOf)
+        })
+      );
+    }
+    if (fromQ.length === 0) continue;
+    edges.push(...fromQ.map(keyOf));
+    // δ'(q, a) for each letter it leads somewhere on: the old targets and the new ones together
+    const values = out.alphabet
+      .map((c) => [c, out.transitions.filter((t) => t.from === q && t.symbol === c).map((t) => t.to)] as const)
+      .filter(([, to]) => to.length > 0)
+      .map(([c, to]) => `δ'(${q}, ${c}) = ${setName(to)}`)
+      .join("; ");
+    frames.push(frame(tx("ops.epsfree.anim.direct", { state: q, values }), { focus: [q], focusEdges: fromQ.map(keyOf) }));
+  }
+  frames.push(frame(acceptCaption, { accept: out.accept, focus: out.accept.filter((s) => !f.accept.includes(s)) }));
+  frames.push(frame(tx("ops.epsfree.anim.done"), { edges: out.transitions.map(keyOf), accept: out.accept }));
+  return { frames };
 }
 
 /* ------------------------------------------------------------------ */
@@ -255,11 +320,48 @@ export function determinize(f: FSM): OpResult<FSM> {
   return { ...okResult(out, diags, steps), animation };
 }
 
+/** A transition of a construction that builds states from the start: `found` when its target is new. */
+interface BuildMove {
+  from: string;
+  symbol: string;
+  to: string;
+  found: boolean;
+  caption: I18nText;
+}
+
 /**
- * The subset construction played on the automaton it builds: the start set first, then
- * every δ'(R, a) in the order it was computed — a set seen for the first time appears,
- * faded until its own row is processed.
+ * A construction that builds only the states reachable from the start, played on the automaton
+ * it builds (the subset construction, the product): the start state first, then every
+ * transition in the order it was computed — a state seen for the first time appears, faded
+ * until its own row is processed.
  */
+function buildFrames(out: FSM, startCaption: I18nText, moves: BuildMove[]): AnimFrame[] {
+  const frames: AnimFrame[] = [];
+  const shown = [out.start];
+  const edges: string[] = [];
+  const done = new Set<string>();
+  const pending = () => shown.filter((s) => !done.has(s));
+  frames.push({ graph: out, caption: startCaption, shown: [...shown], edges: [], pending: pending(), focus: [out.start] });
+  for (const m of moves) {
+    // a row is being processed: its state is no longer waiting
+    done.add(m.from);
+    if (m.found) shown.push(m.to);
+    const key = transKey(m.from, m.symbol, m.to);
+    edges.push(key);
+    frames.push({
+      graph: out,
+      caption: m.caption,
+      shown: [...shown],
+      edges: [...edges],
+      pending: pending(),
+      focus: [m.from],
+      focusEdges: [key]
+    });
+  }
+  return frames;
+}
+
+/** The subset construction played on its result; ∅, where it appears, gets its loops at the end. */
 function subsetAnimation(
   out: FSM,
   moves: { from: string; symbol: string; to: string; expr: string; found: boolean }[],
@@ -267,30 +369,13 @@ function subsetAnimation(
   possible: number
 ): FSMAnimation {
   const accept = new Set(out.accept);
-  const frames: AnimFrame[] = [];
-  const shown = [out.start];
-  const edges: string[] = [];
-  const done = new Set<string>();
-  const pending = () => shown.filter((s) => !done.has(s));
-  frames.push({
-    graph: out,
-    caption: startExpr
+  const frames = buildFrames(
+    out,
+    startExpr
       ? tx("ops.det.anim.startEpsilon", { start: out.start, startExpr })
       : tx("ops.det.anim.start", { start: out.start }),
-    shown: [...shown],
-    edges: [],
-    pending: pending(),
-    focus: [out.start]
-  });
-  for (const m of moves) {
-    // a row is being processed: its set is no longer waiting
-    done.add(m.from);
-    if (m.found) shown.push(m.to);
-    const key = transKey(m.from, m.symbol, m.to);
-    edges.push(key);
-    const params = { set: m.from, symbol: m.symbol, expr: m.expr };
-    frames.push({
-      graph: out,
+    moves.map((m) => ({
+      ...m,
       caption: tx(
         m.to === "∅" && m.found
           ? "ops.det.anim.empty"
@@ -299,24 +384,18 @@ function subsetAnimation(
               ? "ops.det.anim.newAccept"
               : "ops.det.anim.new"
             : "ops.det.anim.known",
-        params
-      ),
-      shown: [...shown],
-      edges: [...edges],
-      pending: pending(),
-      focus: [m.from],
-      focusEdges: [key]
-    });
-  }
-  if (shown.includes("∅")) {
+        { set: m.from, symbol: m.symbol, expr: m.expr }
+      )
+    }))
+  );
+  const last = frames.at(-1)!;
+  if (last.shown!.includes("∅")) {
     const loops = out.alphabet.map((c) => transKey("∅", c, "∅"));
-    edges.push(...loops);
-    done.add("∅");
     frames.push({
       graph: out,
       caption: tx("ops.det.anim.trap"),
-      shown: [...shown],
-      edges: [...edges],
+      shown: last.shown,
+      edges: [...last.edges!, ...loops],
       pending: [],
       focus: ["∅"],
       focusEdges: loops
@@ -732,6 +811,16 @@ export function product(first: FSM, second: FSM, mode: ProductMode): OpResult<FS
   const queue: [string, string][] = [[m1.start, m2.start]];
   const seen = new Set<string>([pairName(m1.start, m2.start)]);
   const rows: string[][] = [];
+  /** each δ((p, q), a) as it was computed, for the animation */
+  const moves: BuildMove[] = [];
+  // why a pair accepts, coordinate by coordinate: B ∈ F₁, Y ∉ F₂
+  const why = (p: string, q: string) => {
+    const in1 = m1.accept.includes(p);
+    const in2 = m2.accept.includes(q);
+    const parts = [`${p} ${in1 ? "∈" : "∉"} F₁`, `${q} ${in2 ? "∈" : "∉"} F₂`];
+    // for the union, the coordinate that accepts is the reason
+    return (mode === "union" ? parts.filter((_, i) => (i === 0 ? in1 : in2)) : parts).join(", ");
+  };
 
   while (queue.length) {
     const [p, q] = queue.shift()!;
@@ -745,7 +834,20 @@ export function product(first: FSM, second: FSM, mode: ProductMode): OpResult<FS
       const tn = pairName(np, nq);
       addTransition(out, nm, c, tn);
       row.push(tn);
-      if (!seen.has(tn)) {
+      const found = !seen.has(tn);
+      const params = { pair: nm, symbol: c, p, q, to: tn };
+      moves.push({
+        from: nm,
+        symbol: c,
+        to: tn,
+        found,
+        caption: !found
+          ? tx("ops.product.anim.known", params)
+          : acceptRule(np, nq)
+            ? tx("ops.product.anim.newAccept", { ...params, why: why(np, nq) })
+            : tx("ops.product.anim.new", params)
+      });
+      if (found) {
         seen.add(tn);
         queue.push([np, nq]);
       }
@@ -769,7 +871,21 @@ export function product(first: FSM, second: FSM, mode: ProductMode): OpResult<FS
     }
   ];
 
-  return okResult(out, diags, steps);
+  let animation: FSMAnimation | undefined;
+  if (out.states.length <= ANIMATION_STATE_LIMIT) {
+    const startCaption = acceptRule(m1.start, m2.start)
+      ? tx("ops.product.anim.startAccept", { start: out.start, why: why(m1.start, m2.start) })
+      : tx("ops.product.anim.start", { start: out.start });
+    const n1 = m1.states.length;
+    const n2 = m2.states.length;
+    animation = {
+      frames: [
+        ...buildFrames(out, startCaption, moves),
+        { graph: out, caption: tx("ops.product.anim.done", { count: out.states.length, n1, n2, possible: n1 * n2 }) }
+      ]
+    };
+  }
+  return { ...okResult(out, diags, steps), animation };
 }
 
 /** Union of arbitrary (even nondeterministic) automata: a new start state with ε-transitions. */
