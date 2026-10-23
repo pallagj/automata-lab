@@ -6,6 +6,8 @@ export interface SnapshotRepository {
   /** stores a new snapshot; false when its id is taken already */
   insert(snapshot: Snapshot): Promise<boolean>;
   find(id: string): Promise<Snapshot | null>;
+  /** the room the stored snapshots take up, in bytes */
+  storedBytes(): Promise<number>;
 }
 
 export type RateDecision = { ok: true } | { ok: false; retryAfterSeconds: number };
@@ -20,3 +22,8 @@ export interface Clock {
 }
 
 export type RandomBytes = (n: number) => Uint8Array;
+
+/** Where the operator hears of what needs a look, e.g. a limit that starts refusing. */
+export interface Log {
+  warn(message: string): void;
+}

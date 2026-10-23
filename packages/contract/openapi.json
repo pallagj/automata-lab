@@ -46,6 +46,7 @@
                   "newer_version",
                   "not_found",
                   "rate_limited",
+                  "storage_full",
                   "internal"
                 ]
               },
@@ -242,6 +243,16 @@
           },
           "429": {
             "description": "Too many worksheets shared from this address; try again later",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "No room for new worksheets now; the links made still work",
             "content": {
               "application/json": {
                 "schema": {

@@ -20,7 +20,8 @@ export const shareWorksheet = createRoute({
     400: json(ApiError, "Not a worksheet, or one over the limits"),
     413: json(ApiError, "The request is too large"),
     422: json(ApiError, "The worksheet was written by a newer version of the app"),
-    429: json(ApiError, "Too many worksheets shared from this address; try again later")
+    429: json(ApiError, "Too many worksheets shared from this address; try again later"),
+    503: json(ApiError, "No room for new worksheets now; the links made still work")
   }
 });
 

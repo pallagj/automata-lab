@@ -50,7 +50,15 @@ export const Snapshot = z
   })
   .openapi("Snapshot");
 
-export const ERROR_CODES = ["invalid", "too_large", "newer_version", "not_found", "rate_limited", "internal"] as const;
+export const ERROR_CODES = [
+  "invalid",
+  "too_large",
+  "newer_version",
+  "not_found",
+  "rate_limited",
+  "storage_full",
+  "internal"
+] as const;
 
 export const ApiError = z
   .object({

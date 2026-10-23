@@ -74,7 +74,7 @@ export interface components {
         Error: {
             error: {
                 /** @enum {string} */
-                code: "invalid" | "too_large" | "newer_version" | "not_found" | "rate_limited" | "internal";
+                code: "invalid" | "too_large" | "newer_version" | "not_found" | "rate_limited" | "storage_full" | "internal";
                 message: string;
             };
         };
@@ -176,6 +176,15 @@ export interface operations {
             };
             /** @description Too many worksheets shared from this address; try again later */
             429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description No room for new worksheets now; the links made still work */
+            503: {
                 headers: {
                     [name: string]: unknown;
                 };

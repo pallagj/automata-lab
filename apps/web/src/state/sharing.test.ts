@@ -63,6 +63,7 @@ describe("sharing", () => {
     [400, "too_large"],
     [413, "too_large"],
     [422, "newer"],
+    [503, "unavailable"],
     [500, "failed"],
     [502, "failed"]
   ] as const)("reads answer %i as %s", async (status, reason) => {

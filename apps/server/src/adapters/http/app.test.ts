@@ -7,6 +7,7 @@ import { sharingUseCases } from "../../application/sharing";
 import type { RateLimiter } from "../../application/ports";
 import { memorySnapshotRepository } from "../persistence/memory/snapshotRepository";
 import { unlimited } from "../system/rateLimiter";
+import { silentLog } from "../system/system";
 import { createHttpApp, MAX_BODY_BYTES } from "./app";
 
 const WORKSHEET = {
@@ -15,12 +16,14 @@ const WORKSHEET = {
   cells: [{ source: "Machine:\n  name: M", layout: { q_0: { x: 1, y: 2 } } }, { source: "D = det(M)" }]
 };
 
-function setup(rateLimiter: RateLimiter = unlimited) {
+function setup(rateLimiter: RateLimiter = unlimited, storageLimitBytes = Infinity) {
   const snapshots = memorySnapshotRepository();
   let n = 0;
   const sharing = sharingUseCases({
     snapshots,
     rateLimiter,
+    storageLimitBytes,
+    log: silentLog,
     clock: { now: () => new Date("2026-10-23T12:00:00Z") },
     randomBytes: (k) => Uint8Array.from({ length: k }, () => n++ % 36),
     publicUrl: "https://automatalab.app"
@@ -120,6 +123,27 @@ describe("POST /api/snapshots", () => {
     expect(res.status).toBe(429);
     expect(res.headers.get("retry-after")).toBe("42");
     expect((await res.json()).error.code).toBe("rate_limited");
+  });
+
+  it("answers 503 when no new worksheet can be stored, and the links made still open", async () => {
+    const { app, post } = setup(unlimited, 1);
+    expect((await post(WORKSHEET)).status).toBe(201);
+    const res = await post(WORKSHEET);
+    expect(res.status).toBe(503);
+    expect((await res.json()).error.code).toBe("storage_full");
+    expect((await app.request("/api/snapshots/abcdefghij")).status).toBe(200);
+  });
+
+  it("takes a body of 128 KiB, but not a byte more", async () => {
+    const { post } = setup();
+    expect(MAX_BODY_BYTES).toBe(128 * 1024);
+    const body = (bytes: number) => {
+      const json = JSON.stringify({ ...WORKSHEET, name: "" });
+      return json.replace('"name":""', `"name":"","pad":"${"x".repeat(bytes - json.length - 9)}"`);
+    };
+    expect(body(MAX_BODY_BYTES).length).toBe(MAX_BODY_BYTES);
+    expect((await post(body(MAX_BODY_BYTES))).status).toBe(201);
+    expect((await post(body(MAX_BODY_BYTES + 1))).status).toBe(413);
   });
 });
 

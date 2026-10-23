@@ -725,6 +725,7 @@
       "rate_limited": "Too many worksheets were shared from here in a short time. Try again in a few minutes.",
       "too_large": "The worksheet is too large to share: at most {{cells}} cells, each at most {{chars}} characters long.",
       "newer": "The server runs an older version of AutomataLab than this page. Try again a little later.",
+      "unavailable": "No new links can be made right now. The links made earlier still work. Try again later.",
       "failed": "Sharing failed. Try again."
     },
     "intro": "The worksheet goes to the server as it is now, and you get a short link to it.",

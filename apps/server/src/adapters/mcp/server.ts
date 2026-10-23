@@ -53,7 +53,9 @@ export function createMcpServer(deps: { sharing: SharingUseCases; requester: str
               text:
                 r.error === "rate_limited"
                   ? `Too many worksheets shared; try again in ${r.retryAfterSeconds} s.`
-                  : "The worksheet could not be shared."
+                  : r.error === "storage_full"
+                    ? "No new worksheets can be stored now; try again later."
+                    : "The worksheet could not be shared."
             }
           ]
         };

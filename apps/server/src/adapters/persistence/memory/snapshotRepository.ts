@@ -14,6 +14,11 @@ export function memorySnapshotRepository(): SnapshotRepository & { all(): Snapsh
       const s = byId.get(id);
       return s ? structuredClone(s) : null;
     },
+    async storedBytes() {
+      let bytes = 0;
+      for (const s of byId.values()) bytes += Buffer.byteLength(JSON.stringify(s.worksheet));
+      return bytes;
+    },
     all: () => [...byId.values()]
   };
 }

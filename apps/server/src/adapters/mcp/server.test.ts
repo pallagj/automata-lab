@@ -9,14 +9,17 @@ import { sharingUseCases } from "../../application/sharing";
 import { createHttpApp } from "../http/app";
 import { memorySnapshotRepository } from "../persistence/memory/snapshotRepository";
 import { unlimited } from "../system/rateLimiter";
+import { silentLog } from "../system/system";
 import { createMcpServer, exampleMarkdown, mcpHandler } from "./server";
 
-function sharing(rateLimiter: RateLimiter = unlimited) {
+function sharing(rateLimiter: RateLimiter = unlimited, storageLimitBytes = Infinity) {
   const snapshots = memorySnapshotRepository();
   let n = 0;
   const useCases = sharingUseCases({
     snapshots,
     rateLimiter,
+    storageLimitBytes,
+    log: silentLog,
     clock: { now: () => new Date("2026-10-23T12:00:00Z") },
     randomBytes: (k) => Uint8Array.from({ length: k }, () => n++ % 36),
     publicUrl: "https://automatalab.app"
@@ -24,8 +27,8 @@ function sharing(rateLimiter: RateLimiter = unlimited) {
   return { useCases, snapshots };
 }
 
-async function connect(rateLimiter?: RateLimiter, requester = "1.2.3.4") {
-  const { useCases, snapshots } = sharing(rateLimiter);
+async function connect(rateLimiter?: RateLimiter, requester = "1.2.3.4", storageLimitBytes?: number) {
+  const { useCases, snapshots } = sharing(rateLimiter, storageLimitBytes);
   const [clientSide, serverSide] = InMemoryTransport.createLinkedPair();
   await createMcpServer({ sharing: useCases, requester }).connect(serverSide);
   const client = new Client({ name: "test", version: "0" });
@@ -79,6 +82,14 @@ describe("the MCP server", () => {
     expect(r.isError).toBe(true);
     expect(text(r)).toMatch(/try again in 7 s/);
     expect(asked).toEqual(["5.6.7.8"]);
+  });
+
+  it("says so when no new worksheet can be stored", async () => {
+    const { client, snapshots } = await connect(undefined, undefined, 0);
+    const r = await client.callTool({ name: "share_worksheet", arguments: { name: "x", cells: ["a"] } });
+    expect(r.isError).toBe(true);
+    expect(text(r)).toMatch(/No new worksheets can be stored now/);
+    expect(snapshots.all()).toEqual([]);
   });
 
   it("opens a shared worksheet from its link or its id", async () => {

@@ -1,4 +1,4 @@
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import type { SnapshotRepository } from "../../../application/ports";
 import type { Db } from "./database";
 import { snapshots } from "./schema";
@@ -10,6 +10,13 @@ export function sqliteSnapshotRepository(db: Db): SnapshotRepository {
     },
     async find(id) {
       return db.select().from(snapshots).where(eq(snapshots.id, id)).get() ?? null;
+    },
+    async storedBytes() {
+      // the pages in use, known without a scan; the pages a delete frees are filled again before the file grows
+      const row = db.get<{ bytes: number }>(
+        sql`select (page_count - freelist_count) * page_size as bytes from pragma_page_count(), pragma_freelist_count(), pragma_page_size()`
+      );
+      return row.bytes;
     }
   };
 }

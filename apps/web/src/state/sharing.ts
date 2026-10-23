@@ -48,7 +48,7 @@ export function currentShare(ws: Pick<Workspace, "lastShare">, doc: WorksheetDoc
 
 export type ShareOutcome =
   | { ok: true; id: string; url: string }
-  | { ok: false; reason: "offline" | "rate_limited" | "too_large" | "newer" | "failed" };
+  | { ok: false; reason: "offline" | "rate_limited" | "too_large" | "newer" | "unavailable" | "failed" };
 
 /** Stores the worksheet on the server; the link points to this app, wherever it runs. */
 export async function shareDocument(
@@ -72,6 +72,9 @@ export async function shareDocument(
       return { ok: false, reason: "too_large" };
     case 422:
       return { ok: false, reason: "newer" };
+    // the server stores no more for now
+    case 503:
+      return { ok: false, reason: "unavailable" };
     default:
       return { ok: false, reason: "failed" };
   }

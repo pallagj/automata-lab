@@ -9,8 +9,11 @@ import { health, openSnapshot, shareWorksheet } from "@automatalab/contract/rout
 import type { ErrorCode } from "@automatalab/contract/schemas";
 import type { SharingUseCases } from "../../application/sharing";
 
-/** A request's body may be this large: a worksheet at its limits fits, anything much larger is refused unread. */
-export const MAX_BODY_BYTES = 512 * 1024;
+/**
+ * A request's body may be this large: a cell at its every limit fits, and a real worksheet many
+ * times over (the largest example takes 3 KB). Anything larger is refused unread.
+ */
+export const MAX_BODY_BYTES = 128 * 1024;
 
 export interface HttpDeps {
   sharing: SharingUseCases;
@@ -43,6 +46,8 @@ export function createHttpApp(deps: HttpDeps) {
     if (r.ok) return c.json({ id: r.id, url: r.url }, 201);
     if (r.error === "newer_version")
       return c.json(error("newer_version", "A newer version of the app wrote this worksheet."), 422);
+    if (r.error === "storage_full")
+      return c.json(error("storage_full", "No new worksheets can be stored now; the links made still work."), 503);
     c.header("Retry-After", String(r.retryAfterSeconds));
     return c.json(error("rate_limited", `Too many worksheets shared; try again in ${r.retryAfterSeconds} s.`), 429);
   });

@@ -3,7 +3,8 @@ import type { WorksheetDocument } from "@automatalab/core/worksheet/document";
 import { SAVE_VERSION } from "@automatalab/core/worksheet/migrations";
 import { memorySnapshotRepository } from "../adapters/persistence/memory/snapshotRepository";
 import { unlimited, windowRateLimiter } from "../adapters/system/rateLimiter";
-import type { RateLimiter, SnapshotRepository } from "./ports";
+import { silentLog } from "../adapters/system/system";
+import type { Log, RateLimiter, SnapshotRepository } from "./ports";
 import { sharingUseCases } from "./sharing";
 
 const WORKSHEET: WorksheetDocument = {
@@ -18,11 +19,18 @@ function counting() {
   return (n: number) => Uint8Array.from({ length: n }, () => i++ % 36);
 }
 
-function setup(over: { snapshots?: SnapshotRepository; rateLimiter?: RateLimiter } = {}) {
+/** the bytes the memory repository counts for WORKSHEET */
+const SIZE = Buffer.byteLength(JSON.stringify(WORKSHEET));
+
+function setup(
+  over: { snapshots?: SnapshotRepository; rateLimiter?: RateLimiter; storageLimitBytes?: number; log?: Log } = {}
+) {
   const snapshots = memorySnapshotRepository();
   const sharing = sharingUseCases({
     snapshots: over.snapshots ?? snapshots,
     rateLimiter: over.rateLimiter ?? unlimited,
+    storageLimitBytes: over.storageLimitBytes ?? Infinity,
+    log: over.log ?? silentLog,
     clock: { now: () => new Date("2026-10-23T12:00:00Z") },
     randomBytes: counting(),
     publicUrl: "https://automatalab.app"
@@ -57,8 +65,8 @@ describe("sharing a worksheet", () => {
   });
 
   it("gives up rather than loop when no id is free", async () => {
-    const full: SnapshotRepository = { insert: async () => false, find: async () => null };
-    await expect(setup({ snapshots: full }).sharing.share(WORKSHEET, "x")).rejects.toThrow(/no free snapshot id/);
+    const taken: SnapshotRepository = { insert: async () => false, find: async () => null, storedBytes: async () => 0 };
+    await expect(setup({ snapshots: taken }).sharing.share(WORKSHEET, "x")).rejects.toThrow(/no free snapshot id/);
   });
 
   it("refuses a worksheet of a newer app, before counting it", async () => {
@@ -81,13 +89,59 @@ describe("sharing a worksheet", () => {
   });
 
   it("stops a requester over the rate limit, and stores nothing for it", async () => {
-    const rateLimiter = windowRateLimiter({ perKey: { limit: 2, ms: 60_000 }, total: { limit: 100, ms: 60_000 }, now: () => 0 });
+    const rateLimiter = windowRateLimiter({
+      perKey: { limit: 2, ms: 60_000 },
+      total: { limit: 100, ms: 60_000 },
+      log: silentLog,
+      now: () => 0
+    });
     const { sharing, snapshots } = setup({ rateLimiter });
     await sharing.share(WORKSHEET, "1.1.1.1");
     await sharing.share(WORKSHEET, "1.1.1.1");
     expect(await sharing.share(WORKSHEET, "1.1.1.1")).toEqual({ ok: false, error: "rate_limited", retryAfterSeconds: 60 });
     expect(await sharing.share(WORKSHEET, "2.2.2.2")).toMatchObject({ ok: true });
     expect(snapshots.all()).toHaveLength(3);
+  });
+
+  it("takes no new snapshot once the storage limit is reached, and the links made still open", async () => {
+    const { sharing, snapshots } = setup({ storageLimitBytes: 2 * SIZE });
+    expect(await sharing.share(WORKSHEET, "x")).toMatchObject({ ok: true });
+    expect(await sharing.share(WORKSHEET, "y")).toMatchObject({ ok: true });
+    expect(await snapshots.storedBytes()).toBe(2 * SIZE);
+    expect(await sharing.share(WORKSHEET, "z")).toEqual({ ok: false, error: "storage_full" });
+    expect(snapshots.all()).toHaveLength(2);
+    expect(await sharing.open("abcdefghij")).toMatchObject({ ok: true });
+  });
+
+  it("takes one more snapshot just below the limit: the limit is never passed by more than one", async () => {
+    const { sharing } = setup({ storageLimitBytes: SIZE + 1 });
+    expect(await sharing.share(WORKSHEET, "x")).toMatchObject({ ok: true });
+    expect(await sharing.share(WORKSHEET, "x")).toMatchObject({ ok: true });
+    expect(await sharing.share(WORKSHEET, "x")).toEqual({ ok: false, error: "storage_full" });
+  });
+
+  it("does not measure the storage for a share the rate limit refuses", async () => {
+    let measured = 0;
+    const snapshots = { ...memorySnapshotRepository(), storedBytes: async () => (measured++, 0) };
+    const { sharing } = setup({ snapshots, rateLimiter: { take: () => ({ ok: false, retryAfterSeconds: 1 }) } });
+    await sharing.share(WORKSHEET, "x");
+    expect(measured).toBe(0);
+  });
+
+  it("logs when the storage fills, once however many shares it refuses, and when there is room again", async () => {
+    let stored = 0;
+    const warnings: string[] = [];
+    const snapshots = { ...memorySnapshotRepository(), storedBytes: async () => stored };
+    const { sharing } = setup({ snapshots, storageLimitBytes: 1024 ** 3, log: { warn: (m) => warnings.push(m) } });
+    await sharing.share(WORKSHEET, "x");
+    expect(warnings).toEqual([]);
+    stored = 1024 ** 3;
+    for (let i = 0; i < 5; i++) await sharing.share(WORKSHEET, "x");
+    expect(warnings).toEqual(["storage limit: 1024 MB of 1024 MB stored; no new links are made until room is freed"]);
+    stored = 900 * 1024 ** 2;
+    expect(await sharing.share(WORKSHEET, "x")).toMatchObject({ ok: true });
+    await sharing.share(WORKSHEET, "x");
+    expect(warnings.slice(1)).toEqual(["storage limit: 900 MB of 1024 MB stored; new links are made again"]);
   });
 });
 
@@ -115,7 +169,7 @@ describe("opening a shared worksheet", () => {
 
   it("finds nothing under an unknown id, or under something that is not an id", async () => {
     let asked = 0;
-    const spy: SnapshotRepository = { insert: async () => true, find: async () => (asked++, null) };
+    const spy: SnapshotRepository = { insert: async () => true, find: async () => (asked++, null), storedBytes: async () => 0 };
     const { sharing } = setup({ snapshots: spy });
     expect(await sharing.open("zzzzzzzzzz")).toEqual({ ok: false, error: "not_found" });
     for (const bad of ["", "abc", "ABCDEFGHIJ", "abcdefghij'--"])

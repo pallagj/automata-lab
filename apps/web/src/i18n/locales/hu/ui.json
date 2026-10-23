@@ -725,6 +725,7 @@
       "rate_limited": "Innen túl sok munkalapot osztottak meg rövid idő alatt. Próbáld újra pár perc múlva.",
       "too_large": "A munkalap túl nagy a megosztáshoz: legfeljebb {{cells}} cella lehet benne, mindegyik legfeljebb {{chars}} karakter.",
       "newer": "A szerveren az AutomataLab egy régebbi verziója fut, mint ez az oldal. Próbáld újra kicsit később.",
+      "unavailable": "Most nem lehet új linket készíteni. A korábbi linkek továbbra is működnek. Próbáld újra később.",
       "failed": "Nem sikerült a megosztás. Próbáld újra."
     },
     "intro": "A munkalap mostani állapota a szerverre kerül, és kapsz hozzá egy rövid linket.",
