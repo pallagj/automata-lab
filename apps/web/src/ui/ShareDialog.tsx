@@ -5,10 +5,10 @@ import { Check, Copy, Link2, X } from "lucide-react";
 import { WORKSHEET_LIMITS } from "@automatalab/core/worksheet/document";
 import { sharePath } from "@automatalab/core/worksheet/shareLink";
 import { activeWorkspace, useAppStore } from "../state/store";
-import { fingerprint, shareDocument, sharedDocument, shareState, ShareOutcome } from "../state/sharing";
+import { currentShare, fingerprint, shareDocument, sharedDocument, ShareOutcome } from "../state/sharing";
 
 type Phase =
-  | { t: "ask"; changed: boolean }
+  | { t: "ask" }
   | { t: "making" }
   | { t: "ready"; url: string; reused: boolean }
   | { t: "failed"; reason: Exclude<ShareOutcome, { ok: true }>["reason"] };
@@ -31,10 +31,8 @@ export const ShareDialog: React.FC<{ onClose: () => void }> = ({ onClose }) => {
   }, []);
 
   const [phase, setPhase] = useState<Phase>(() => {
-    const state = shareState(ws, doc);
-    return state.t === "current"
-      ? { t: "ready", url: origin + sharePath(state.id), reused: true }
-      : { t: "ask", changed: state.t === "changed" };
+    const id = currentShare(ws, doc);
+    return id ? { t: "ready", url: origin + sharePath(id), reused: true } : { t: "ask" };
   });
 
   const share = async () => {
@@ -98,7 +96,6 @@ export const ShareDialog: React.FC<{ onClose: () => void }> = ({ onClose }) => {
           ) : (
             <p className="share-status">{t("share.intro")}</p>
           )}
-          {phase.t === "ask" && phase.changed && <p className="share-status">{t("share.changed")}</p>}
           {phase.t === "failed" && (
             <div className="gd-error" role="alert">
               {t(`share.error.${phase.reason}`, { cells: WORKSHEET_LIMITS.cells, chars: WORKSHEET_LIMITS.source })}
@@ -111,13 +108,7 @@ export const ShareDialog: React.FC<{ onClose: () => void }> = ({ onClose }) => {
             <span className="spacer" />
             <button className="gd-btn primary share-create" onClick={share} disabled={phase.t === "making"}>
               <Link2 size={14} />{" "}
-              {phase.t === "making"
-                ? t("share.creating")
-                : phase.t === "failed"
-                  ? t("share.retry")
-                  : phase.changed
-                    ? t("share.createNew")
-                    : t("share.create")}
+              {phase.t === "making" ? t("share.creating") : phase.t === "failed" ? t("share.retry") : t("share.create")}
             </button>
           </div>
         )}

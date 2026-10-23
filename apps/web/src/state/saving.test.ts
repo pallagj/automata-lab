@@ -99,42 +99,40 @@ describe("a worksheet opened from a share link", () => {
 
   it("becomes a worksheet of one's own, open, with the positions pinned on its graphs", () => {
     const before = useAppStore.getState().workspaces.length;
-    useAppStore.getState().openShared("k3x9pq2mzt", doc);
+    useAppStore.getState().openShared(doc);
     const s = useAppStore.getState();
     expect(s.workspaces).toHaveLength(before + 1);
     const ws = s.workspaces.at(-1)!;
-    expect(ws).toMatchObject({ name: "Megosztott", sharedFrom: "k3x9pq2mzt" });
+    expect(ws.name).toBe("Megosztott");
     expect(ws.cells.map((c) => c.source)).toEqual(["Machine:\n  name: M", "det(M)"]);
     expect(s.activeWorkspaceId).toBe(ws.id);
     expect(s.activeCellId).toBe(ws.cells[0].id);
     expect(s.layouts[ws.cells[0].id]).toEqual({ q_0: { x: 5, y: 6 } });
     expect(s.layouts[ws.cells[1].id]).toBeUndefined();
     // it is saved like any other worksheet
-    expect(JSON.parse(saved.get("automata-lab")!).state.workspaces.at(-1).sharedFrom).toBe("k3x9pq2mzt");
+    expect(JSON.parse(saved.get("automata-lab")!).state.workspaces.at(-1).id).toBe(ws.id);
   });
 
-  it("is opened again, not copied again, from the same link — with the edits made since", () => {
-    const ws = useAppStore.getState().workspaces.find((w) => w.sharedFrom === "k3x9pq2mzt")!;
-    useAppStore.getState().setActiveWorkspace(ws.id);
-    useAppStore.getState().setCellSource(ws.cells[1].id, "min(det(M))");
-    useAppStore.getState().addWorkspace("elsewhere");
+  it("is a new copy every time, as the link holds it — the edits of an earlier copy stay in that one", () => {
+    const first = useAppStore.getState().workspaces.at(-1)!;
+    useAppStore.getState().setCellSource(first.cells[1].id, "min(det(M))");
     const count = useAppStore.getState().workspaces.length;
 
-    useAppStore.getState().openShared("k3x9pq2mzt", doc);
+    useAppStore.getState().openShared(doc);
     const s = useAppStore.getState();
-    expect(s.workspaces).toHaveLength(count);
-    expect(s.activeWorkspaceId).toBe(ws.id);
-    expect(s.workspaces.find((w) => w.id === ws.id)!.cells[1].source).toBe("min(det(M))");
-  });
-
-  it("a copy of it is a worksheet of its own: the link still opens the first", () => {
-    const ws = useAppStore.getState().workspaces.find((w) => w.sharedFrom === "k3x9pq2mzt")!;
-    useAppStore.getState().duplicateWorkspace(ws.id);
-    expect(useAppStore.getState().workspaces.filter((w) => w.sharedFrom === "k3x9pq2mzt")).toHaveLength(1);
+    const second = s.workspaces.at(-1)!;
+    expect(s.workspaces).toHaveLength(count + 1);
+    expect(second.id).not.toBe(first.id);
+    expect(s.activeWorkspaceId).toBe(second.id);
+    expect(second.cells.map((c) => c.source)).toEqual(["Machine:\n  name: M", "det(M)"]);
+    expect(s.workspaces.find((w) => w.id === first.id)!.cells[1].source).toBe("min(det(M))");
+    // each copy has its own cells, so its own pinned positions
+    expect(s.layouts[second.cells[0].id]).toEqual({ q_0: { x: 5, y: 6 } });
+    expect(second.cells[0].id).not.toBe(first.cells[0].id);
   });
 
   it("an untitled one gets a name", () => {
-    useAppStore.getState().openShared("aaaaaaaaaa", { ...doc, name: "  " });
+    useAppStore.getState().openShared({ ...doc, name: "  " });
     expect(useAppStore.getState().workspaces.at(-1)!.name).toBe("workspace.sharedName");
   });
 });

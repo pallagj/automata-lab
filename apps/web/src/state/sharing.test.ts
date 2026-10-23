@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { createApiClient } from "@automatalab/contract/client";
 import { SAVE_VERSION } from "@automatalab/core/worksheet/migrations";
-import { fetchShared, fingerprint, shareDocument, sharedDocument, sharedIdInPath, shareState } from "./sharing";
+import { currentShare, fetchShared, fingerprint, shareDocument, sharedDocument, sharedIdInPath } from "./sharing";
 
 const WS = {
   name: "Házi 1",
@@ -137,24 +137,20 @@ describe("the fingerprint of a shared document", () => {
   });
 });
 
-describe("where a worksheet stands with its links", () => {
+describe("the link that shows a worksheet as it is now", () => {
   const doc = sharedDocument(WS, {});
+  const shared = { lastShare: { id: "k3x9pq2mzt", fingerprint: fingerprint(doc) } };
 
-  it("never shared: nothing to show yet", () => {
-    expect(shareState({}, doc)).toEqual({ t: "unshared" });
+  it("is none for a worksheet never shared", () => {
+    expect(currentShare({}, doc)).toBeNull();
   });
 
-  it("unchanged since its link: that link still shows it", () => {
-    expect(shareState({ lastShare: { id: "k3x9pq2mzt", fingerprint: fingerprint(doc) } }, doc)).toEqual({
-      t: "current",
-      id: "k3x9pq2mzt"
-    });
+  it("is its last link while the worksheet is unchanged since", () => {
+    expect(currentShare(shared, doc)).toBe("k3x9pq2mzt");
   });
 
-  it("changed since: its link shows an older state", () => {
+  it("is forgotten once the worksheet changed", () => {
     const edited = sharedDocument({ ...WS, cells: [...WS.cells, { id: "c4", source: "min(D)" }] }, {});
-    expect(shareState({ lastShare: { id: "k3x9pq2mzt", fingerprint: fingerprint(doc) } }, edited)).toEqual({
-      t: "changed"
-    });
+    expect(currentShare(shared, edited)).toBeNull();
   });
 });

@@ -6,9 +6,12 @@ import { fetchShared, OpenOutcome, sharedIdInPath } from "../state/sharing";
 
 type Status = { t: "opening" } | { t: "failed"; reason: Exclude<OpenOutcome, { ok: true }>["reason"] } | null;
 
+/** the page's share link is opened once per page load: each opening makes a new copy */
+let handled = false;
+
 /**
- * A page opened from a share link (/w/<id>) fetches the worksheet and opens it among the
- * visitor's own; the address goes back to the app's, so a reload does not fetch it again.
+ * A page opened from a share link (/w/<id>) fetches the worksheet and opens a new copy of it
+ * among the visitor's own; the address goes back to the app's, so a reload does not copy it again.
  */
 export const SharedLinkOpener: React.FC = () => {
   const { t } = useTranslation();
@@ -16,11 +19,12 @@ export const SharedLinkOpener: React.FC = () => {
 
   useEffect(() => {
     const id = sharedIdInPath(window.location.pathname);
-    if (!id) return;
+    if (!id || handled) return;
+    handled = true;
     setStatus({ t: "opening" });
     void fetchShared(id).then((r) => {
       if (r.ok) {
-        useAppStore.getState().openShared(id, r.worksheet);
+        useAppStore.getState().openShared(r.worksheet);
         window.history.replaceState(null, "", "/");
         setStatus(null);
       } else setStatus({ t: "failed", reason: r.reason });

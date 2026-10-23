@@ -729,8 +729,6 @@
     },
     "intro": "The worksheet goes to the server as it is now, and you get a short link to it.",
     "create": "Make a link",
-    "createNew": "Make a new link",
-    "changed": "You have changed the worksheet since its last link: that link shows it as it was then.",
     "current": "The worksheet is shared by this link already, and has not changed since."
   },
   "shared": {

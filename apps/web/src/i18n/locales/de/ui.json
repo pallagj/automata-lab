@@ -729,8 +729,6 @@
     },
     "intro": "Das Arbeitsblatt kommt so, wie es jetzt ist, auf den Server, und du bekommst einen kurzen Link dazu.",
     "create": "Link erstellen",
-    "createNew": "Neuen Link erstellen",
-    "changed": "Du hast das Arbeitsblatt seit seinem letzten Link geändert: Jener zeigt es, wie es damals war.",
     "current": "Das Arbeitsblatt ist schon mit diesem Link geteilt und hat sich seitdem nicht geändert."
   },
   "shared": {

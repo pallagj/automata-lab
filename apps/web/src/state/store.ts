@@ -34,8 +34,6 @@ export interface Workspace {
   cells: Cell[];
   createdAt: number;
   updatedAt: number;
-  /** the share link's id this worksheet was opened from: the link opens it again, not a second copy */
-  sharedFrom?: string;
   /** the last link this worksheet was shared by, and a fingerprint of what it held then */
   lastShare?: { id: string; fingerprint: string };
 }
@@ -104,8 +102,8 @@ export interface AppState {
   duplicateWorkspace: (id: string, open?: boolean) => void;
   deleteWorkspaces: (ids: string[]) => void;
   importWorkspace: (ws: Pick<Workspace, "name" | "cells">, folder?: string) => void;
-  /** opens a worksheet from share link `id`: a copy with its pinned graph positions, made the first time only */
-  openShared: (id: string, doc: WorksheetDocument) => void;
+  /** opens a shared worksheet as a new worksheet of one's own, with its pinned graph positions */
+  openShared: (doc: WorksheetDocument) => void;
   /** remembers the link a worksheet was just shared by, so an unchanged worksheet is not shared twice */
   rememberShare: (workspaceId: string, share: { id: string; fingerprint: string }) => void;
   /** moves worksheets into a folder (created if new); undefined = out of any folder */
@@ -314,20 +312,12 @@ export const useAppStore = create<AppState>()(
           activeCellId: safe.cells[0].id
         }));
       },
-      openShared: (id, doc) => {
+      openShared: (doc) => {
         const s = get();
-        const known = s.workspaces.find((w) => w.sharedFrom === id);
-        if (known) {
-          set({ activeWorkspaceId: known.id, activeCellId: known.cells[0]?.id ?? null });
-          return;
-        }
-        const ws: Workspace = {
-          ...newWorkspace(
-            doc.name.trim() || i18n.t("workspace.sharedName", { ns: "ui" }),
-            doc.cells.length > 0 ? doc.cells.map((c) => c.source) : [""]
-          ),
-          sharedFrom: id
-        };
+        const ws = newWorkspace(
+          doc.name.trim() || i18n.t("workspace.sharedName", { ns: "ui" }),
+          doc.cells.length > 0 ? doc.cells.map((c) => c.source) : [""]
+        );
         const layouts = { ...s.layouts };
         doc.cells.forEach((c, i) => {
           if (c.layout) layouts[ws.cells[i].id] = c.layout;

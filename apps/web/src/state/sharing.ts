@@ -41,15 +41,9 @@ export function fingerprint(doc: WorksheetDocument): string {
   return (4294967296 * (2097151 & h2) + (h1 >>> 0)).toString(36);
 }
 
-/**
- * Where a worksheet stands with its links: never shared, shared as it is now (that link
- * still shows it), or changed since its last link.
- */
-export type ShareState = { t: "unshared" } | { t: "current"; id: string } | { t: "changed" };
-
-export function shareState(ws: Pick<Workspace, "lastShare">, doc: WorksheetDocument): ShareState {
-  if (!ws.lastShare) return { t: "unshared" };
-  return ws.lastShare.fingerprint === fingerprint(doc) ? { t: "current", id: ws.lastShare.id } : { t: "changed" };
+/** The id of the link that shows the worksheet as it is now; null once it has changed since (that link is forgotten). */
+export function currentShare(ws: Pick<Workspace, "lastShare">, doc: WorksheetDocument): string | null {
+  return ws.lastShare && ws.lastShare.fingerprint === fingerprint(doc) ? ws.lastShare.id : null;
 }
 
 export type ShareOutcome =
