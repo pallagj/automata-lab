@@ -28,6 +28,7 @@
     "trim": "Entfernen nutzloser Symbole",
     "cnf": "Umwandlung in Chomsky-Normalform",
     "cyk": "Wortproblem (CYK)",
+    "derivationTrees": "Ableitungsbäume",
     "toEmptyStack": "Umwandlung in Akzeptanz durch leeren Keller",
     "toFinalState": "Umwandlung in Akzeptanz durch Endzustand",
     "empty": "Leerheitsprüfung",
@@ -730,6 +731,13 @@
         "cellEmpty": "T[{{length}}, {{start}}] — das Teilwort {{word}}: zu keiner seiner Zerlegungen ({{splits}}) passt eine Regel A → BC, also T[{{length}}, {{start}}] = ∅.",
         "accepted": "Die Startvariable {{start}} steht in der Zelle oben links, T[{{n}}, 1]: das Wort ist ableitbar.",
         "rejected": "Die Startvariable {{start}} steht nicht in der Zelle oben links, T[{{n}}, 1]: das Wort ist nicht ableitbar."
+      }
+    },
+    "trees": {
+      "anim": {
+        "start": "Die Wurzel ist die Startvariable {{start}}. Der Baum wächst entlang der Linksableitung: in jedem Schritt bekommt die am weitesten links stehende Variable ohne Kinder die rechte Seite ihrer Regel als Kinder.",
+        "step": "{{rule}}: die am weitesten links stehende Variable {{variable}} bekommt ihre Kinder — {{before}} ⇒ {{after}}.",
+        "done": "Jedes Blatt ist ein Buchstabe oder ε: von links nach rechts gelesen ergeben sie das Wort {{word}}."
       }
     }
   },

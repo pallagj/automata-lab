@@ -402,6 +402,30 @@ export const EXAMPLE_WORKSHEETS: ExampleWorksheet[] = [
     - B -> CC | b
     - C -> AB | a`
     ]
+  },
+  {
+    key: "ambiguity",
+    name: "Derivation trees and ambiguity",
+    cells: [
+      "# An ambiguous grammar of arithmetic expressions: type a+a*a into its derivability test — the word has two derivation trees, each with its own leftmost derivation.",
+      `Grammar:
+  name: G
+  charset: a, +, *, (, )
+  variables: E
+  init: E
+  rules:
+    - E -> E+E | E*E | (E) | a`,
+      "# The same language with an unambiguous grammar: here a+a*a has a single tree, the one that multiplies first.",
+      `Grammar:
+  name: H
+  charset: a, +, *, (, )
+  variables: E, T, F
+  init: E
+  rules:
+    - E -> E+T | T
+    - T -> T*F | F
+    - F -> (E) | a`
+    ]
   }
 ];
 

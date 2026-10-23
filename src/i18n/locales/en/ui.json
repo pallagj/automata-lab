@@ -143,6 +143,9 @@
     },
     "cfgNormalForms": {
       "name": "Context-free grammars — normal forms and CYK"
+    },
+    "ambiguity": {
+      "name": "Derivation trees and ambiguity"
     }
   },
   "help": {
@@ -376,8 +379,6 @@
       "cykTitle": "CYK table",
       "cykIntro": "Row j, column i holds the variables that derive the j letters long subword starting at the i-th letter; the word is derivable when the start variable is in the top cell.",
       "cykConverted": "The grammar is not in Chomsky normal form, so the table is computed on {{expr}}:",
-      "cykUnambiguous": "The word has exactly one derivation tree.",
-      "cykAmbiguous": "The word has {{count}} derivation trees — the grammar is ambiguous.",
       "exact": "exact decision with the CYK algorithm",
       "toEpsilonFree": "ε-removal",
       "notes": {
@@ -389,7 +390,19 @@
       "cykCellHint": "Click: why these variables?",
       "cykCellIntro": "the subword \"{{word}}\" derives from these variables:",
       "cykCellEmpty": "No variable derives it (–).",
-      "cykPlayHint": "The table filling in cell by cell, bottom up"
+      "cykPlayHint": "The table filling in cell by cell, bottom up",
+      "trees": {
+        "title": "Derivation tree",
+        "one": "The word has exactly one derivation tree.",
+        "many": "The word has {{count}} derivation trees — the grammar is ambiguous.",
+        "infinite": "The word has infinitely many derivation trees — the grammar is ambiguous: {{variable}} derives itself over the subword {{subword}}, and that loop can be taken again and again. Here are the trees without such a repeat; every other tree is one of them with loops put in.",
+        "infinitePartial": "The word has infinitely many derivation trees — the grammar is ambiguous: {{variable}} derives itself over the subword {{subword}}, and that loop can be taken again and again. Even the trees without such a repeat are too many to number; here is one of them.",
+        "previous": "Previous tree",
+        "next": "Next tree",
+        "playHint": "The tree grows along its leftmost derivation",
+        "leftmost": "Its leftmost derivation — each step rewrites the leftmost variable:",
+        "tooLong": "derivation trees are drawn for words of at most {{max}} letters"
+      }
     },
     "machine": {
       "kind": {

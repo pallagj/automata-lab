@@ -143,6 +143,9 @@
     },
     "cfgNormalForms": {
       "name": "Környezetfüggetlen nyelvtanok — normálformák és CYK"
+    },
+    "ambiguity": {
+      "name": "Levezetési fák és egyértelműség"
     }
   },
   "help": {
@@ -376,8 +379,6 @@
       "cykTitle": "CYK-táblázat",
       "cykIntro": "A j. sor i. cellájában azok a változók állnak, amelyekből az i. betűtől induló, j hosszú részszó levezethető; a szó akkor vezethető le, ha a kezdőváltozó a legfelső cellában van.",
       "cykConverted": "A nyelvtan nem Chomsky-normálformájú, ezért a táblázat a(z) {{expr}} nyelvtanon készült:",
-      "cykUnambiguous": "A szónak pontosan egy levezetési fája van.",
-      "cykAmbiguous": "A szónak {{count}} különböző levezetési fája van — a nyelvtan nem egyértelmű.",
       "exact": "pontos döntés a CYK-algoritmussal",
       "toEpsilonFree": "ε-mentesítés",
       "notes": {
@@ -389,7 +390,19 @@
       "cykCellHint": "Kattints: miért ezek a változók?",
       "cykCellIntro": "a(z) „{{word}}” részszó ezekből a változókból vezethető le:",
       "cykCellEmpty": "Egyik változóból sem vezethető le (–).",
-      "cykPlayHint": "A táblázat kitöltése cellánként, lentről felfelé"
+      "cykPlayHint": "A táblázat kitöltése cellánként, lentről felfelé",
+      "trees": {
+        "title": "Levezetési fa",
+        "one": "A szónak pontosan egy levezetési fája van.",
+        "many": "A szónak {{count}} különböző levezetési fája van — a nyelvtan nem egyértelmű.",
+        "infinite": "A szónak végtelen sok levezetési fája van — a nyelvtan nem egyértelmű: a(z) {{variable}} változó a(z) {{subword}} részszó fölött önmagát vezeti le, és ez a kör akárhányszor megismételhető. Lent az ilyen ismétlés nélküli fák láthatók; minden más fa ezek valamelyikéből kapható körök beszúrásával.",
+        "infinitePartial": "A szónak végtelen sok levezetési fája van — a nyelvtan nem egyértelmű: a(z) {{variable}} változó a(z) {{subword}} részszó fölött önmagát vezeti le, és ez a kör akárhányszor megismételhető. Még az ismétlés nélküli fák is túl sokan vannak ahhoz, hogy megszámozzuk őket; lent az egyikük látható.",
+        "previous": "Előző fa",
+        "next": "Következő fa",
+        "playHint": "A fa a bal-levezetése mentén nő",
+        "leftmost": "A bal-levezetése — minden lépés a legbaloldalibb változót helyettesíti:",
+        "tooLong": "levezetési fát legfeljebb {{max}} betűs szóhoz rajzolunk"
+      }
     },
     "machine": {
       "kind": {

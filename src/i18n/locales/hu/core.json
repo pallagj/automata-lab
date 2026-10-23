@@ -28,6 +28,7 @@
     "trim": "felesleges szimbólumok elhagyása",
     "cnf": "Chomsky-normálformára hozás",
     "cyk": "beletartozás-vizsgálat (CYK)",
+    "derivationTrees": "levezetési fák",
     "toEmptyStack": "üres veremmel elfogadóvá alakítás",
     "toFinalState": "állapottal elfogadóvá alakítás",
     "empty": "üresség-vizsgálat",
@@ -730,6 +731,13 @@
         "cellEmpty": "T[{{length}}, {{start}}] — a(z) {{word}} részszó: egyik felbontásához ({{splits}}) sincs illeszkedő A → BC szabály, így T[{{length}}, {{start}}] = ∅.",
         "accepted": "A kezdőváltozó, {{start}}, benne van a bal felső T[{{n}}, 1] cellában: a szó levezethető.",
         "rejected": "A kezdőváltozó, {{start}}, nincs benne a bal felső T[{{n}}, 1] cellában: a szó nem vezethető le."
+      }
+    },
+    "trees": {
+      "anim": {
+        "start": "A gyökér a kezdőváltozó, {{start}}. A fa a bal-levezetés mentén nő: minden lépésben a legbaloldalibb, még gyerek nélküli változó gyerekei a szabálya jobb oldalának jelei lesznek.",
+        "step": "{{rule}}: a legbaloldalibb változó, {{variable}}, megkapja a gyerekeit — {{before}} ⇒ {{after}}.",
+        "done": "Minden levél betű vagy ε: balról jobbra olvasva a(z) {{word}} szót adják."
       }
     }
   },

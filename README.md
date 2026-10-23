@@ -35,7 +35,8 @@ an app; everything runs locally, no account needed.
   built inside out (the subexpressions' automata side by side, each in its colour with its own
   start and accepting states, until they are joined), ε-removal state by state (each closure, then
   the transitions it makes direct, drawn over the ε-NFA), the r(p, q, t) rounds (each changed
-  entry computed beside the automaton) and the CYK table filling in cell by cell — with a caption
+  entry computed beside the automaton), the CYK table filling in cell by cell and a derivation
+  tree growing along its leftmost derivation — with a caption
   per frame, step and scrub controls and speed.
 - **Equivalence check with a counterexample:** `equal(A, B)` returns the shortest distinguishing word.
 - **Decision questions, decided exactly and explained:** `empty(L)` gives a shortest word or shows
@@ -66,7 +67,10 @@ an app; everything runs locally, no account needed.
   Context-free grammars are simplified step by step: ε-rule elimination (`epsfree(G)`),
   unit rules (`unitfree(G)`), useless symbols (`trim(G)`) and the Chomsky normal form (`cnf(G)`).
   Their derivability test is an exact decision with the **CYK algorithm**, showing the triangular
-  table and the number of derivation trees (more than one proves the grammar ambiguous).
+  table. A derivable word gets its **derivation trees**, on the grammar as written (ε-rules and
+  unit rules too): how many there are (more than one proves the grammar ambiguous; a variable
+  deriving itself over the same subword makes infinitely many), each one drawn and paged through
+  without listing the others, its leftmost derivation, and the tree growing along it, played.
 - **Worksheets of cells:** a column of cells holding expressions, regexes, machines, grammars
   and `#` notes; drag & drop reordering, an operation menu that checks applicability up front,
   and a form editor or YAML code view for definitions. Names are optional: `det(M_1)` or

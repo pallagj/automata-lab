@@ -143,6 +143,9 @@
     },
     "cfgNormalForms": {
       "name": "Kontextfreie Grammatiken — Normalformen und CYK"
+    },
+    "ambiguity": {
+      "name": "Ableitungsbäume und Mehrdeutigkeit"
     }
   },
   "help": {
@@ -376,8 +379,6 @@
       "cykTitle": "CYK-Tabelle",
       "cykIntro": "Zeile j, Spalte i enthält die Variablen, aus denen das beim i-ten Buchstaben beginnende Teilwort der Länge j ableitbar ist; das Wort ist ableitbar, wenn die Startvariable in der obersten Zelle steht.",
       "cykConverted": "Die Grammatik ist nicht in Chomsky-Normalform, daher wird die Tabelle mit {{expr}} berechnet:",
-      "cykUnambiguous": "Das Wort hat genau einen Ableitungsbaum.",
-      "cykAmbiguous": "Das Wort hat {{count}} verschiedene Ableitungsbäume — die Grammatik ist mehrdeutig.",
       "exact": "exakte Entscheidung mit dem CYK-Algorithmus",
       "toEpsilonFree": "ε-Elimination",
       "notes": {
@@ -389,7 +390,19 @@
       "cykCellHint": "Klicken: warum diese Variablen?",
       "cykCellIntro": "das Teilwort „{{word}}“ ist aus diesen Variablen ableitbar:",
       "cykCellEmpty": "Keine Variable leitet es ab (–).",
-      "cykPlayHint": "Die Tabelle füllt sich Zelle für Zelle, von unten nach oben"
+      "cykPlayHint": "Die Tabelle füllt sich Zelle für Zelle, von unten nach oben",
+      "trees": {
+        "title": "Ableitungsbaum",
+        "one": "Das Wort hat genau einen Ableitungsbaum.",
+        "many": "Das Wort hat {{count}} verschiedene Ableitungsbäume — die Grammatik ist mehrdeutig.",
+        "infinite": "Das Wort hat unendlich viele Ableitungsbäume — die Grammatik ist mehrdeutig: die Variable {{variable}} leitet sich über dem Teilwort {{subword}} selbst ab, und diese Schleife lässt sich beliebig oft wiederholen. Hier stehen die Bäume ohne eine solche Wiederholung; jeder andere Baum entsteht aus einem von ihnen durch eingefügte Schleifen.",
+        "infinitePartial": "Das Wort hat unendlich viele Ableitungsbäume — die Grammatik ist mehrdeutig: die Variable {{variable}} leitet sich über dem Teilwort {{subword}} selbst ab, und diese Schleife lässt sich beliebig oft wiederholen. Selbst die Bäume ohne Wiederholung sind zu viele zum Durchnummerieren; hier ist einer davon.",
+        "previous": "Vorheriger Baum",
+        "next": "Nächster Baum",
+        "playHint": "Der Baum wächst entlang seiner Linksableitung",
+        "leftmost": "Seine Linksableitung — jeder Schritt ersetzt die am weitesten links stehende Variable:",
+        "tooLong": "Ableitungsbäume werden für Wörter mit höchstens {{max}} Buchstaben gezeichnet"
+      }
     },
     "machine": {
       "kind": {

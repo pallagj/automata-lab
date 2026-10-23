@@ -8,6 +8,7 @@ import {
   ruleToString
 } from "../../core/grammar/grammar";
 import { cykAnimation, cykMembership, cykOrder, Membership } from "../../core/grammar/cyk";
+import { derivationTrees } from "../../core/grammar/derivationTree";
 import { decideEmptyGrammar, decideFiniteGrammar } from "../../core/grammar/decide";
 import { LanguageSummary } from "../../core/fsm/decide";
 import { LanguageNote } from "./LanguageNote";
@@ -18,6 +19,7 @@ import { activeWorkspace, useAppStore } from "../../state/store";
 import { uniqueName, usedNames } from "../../state/names";
 import { tr } from "../../i18n/translate";
 import { PlayerBar, usePlayer } from "./AnimationPlayer";
+import { DerivationTreeCard, MAX_TREE_WORD } from "./DerivationTreeCard";
 import { epsilonChange, typedWord } from "../editor/epsilon";
 import { Check, ChevronRight, Clapperboard, Grid3x3, HelpCircle, ListOrdered, Wand2, X } from "lucide-react";
 
@@ -62,13 +64,14 @@ export const GrammarView: React.FC<{ grammar: Grammar }> = ({ grammar }) => {
   const testResult = useMemo(() => {
     if (word === null) return null;
     if (!membership) return grammarAccepts(grammar, word);
-    // a derivation to show, when the bounded search finds one
-    const search = membership.accepted ? grammarAccepts(grammar, word) : null;
-    return {
-      verdict: membership.accepted ? ("yes" as const) : ("no" as const),
-      derivation: search?.verdict === "yes" ? search.derivation : undefined
-    };
+    // the derivation comes with the derivation tree
+    return { verdict: membership.accepted ? ("yes" as const) : ("no" as const), derivation: undefined };
   }, [grammar, word, membership]);
+  const tooLong = word !== null && [...word].length > MAX_TREE_WORD;
+  const trees = useMemo(
+    () => (word !== null && membership?.accepted && !tooLong ? derivationTrees(grammar, word).value! : null),
+    [grammar, word, membership, tooLong]
+  );
   const cnfForm = useMemo(() => isCNF(grammar), [grammar]);
   const [openDerivation, setOpenDerivation] = useState<string | null>(null);
 
@@ -221,7 +224,10 @@ export const GrammarView: React.FC<{ grammar: Grammar }> = ({ grammar }) => {
             )}
           </div>
           {membership && (
-            <div style={{ marginTop: 6, fontSize: 12.5, color: "var(--muted)" }}>{t("detail.grammar.exact")}</div>
+            <div style={{ marginTop: 6, fontSize: 12.5, color: "var(--muted)" }}>
+              {t("detail.grammar.exact")}
+              {membership.accepted && tooLong && <> · {t("detail.grammar.trees.tooLong", { max: MAX_TREE_WORD })}</>}
+            </div>
           )}
           {testResult?.derivation && (
             <div className="derivation">
@@ -235,6 +241,8 @@ export const GrammarView: React.FC<{ grammar: Grammar }> = ({ grammar }) => {
           )}
         </div>
       </div>
+
+      {trees && <DerivationTreeCard grammar={grammar} trees={trees} />}
 
       {membership?.table && <CykCard membership={membership} grammarName={grammar.name || "G"} epsilonFree={cls.epsilonFree} />}
 
@@ -409,13 +417,6 @@ const CykCard: React.FC<{ membership: Membership; grammarName: string; epsilonFr
                 )}
               </ul>
             )}
-          </div>
-        )}
-        {!converted && table.accepted && (
-          <div className="cyk-note" style={{ marginTop: 8 }}>
-            {table.trees === 1n
-              ? t("detail.grammar.cykUnambiguous")
-              : t("detail.grammar.cykAmbiguous", { count: table.trees.toString() })}
           </div>
         )}
       </div>

@@ -28,6 +28,7 @@
     "trim": "removal of useless symbols",
     "cnf": "conversion to Chomsky normal form",
     "cyk": "membership test (CYK)",
+    "derivationTrees": "derivation trees",
     "toEmptyStack": "conversion to acceptance by empty stack",
     "toFinalState": "conversion to acceptance by final state",
     "empty": "emptiness check",
@@ -730,6 +731,13 @@
         "cellEmpty": "T[{{length}}, {{start}}] — the subword {{word}}: none of its splits ({{splits}}) has a matching rule A → BC, so T[{{length}}, {{start}}] = ∅.",
         "accepted": "The start variable {{start}} is in the top-left cell T[{{n}}, 1]: the word is derivable.",
         "rejected": "The start variable {{start}} is not in the top-left cell T[{{n}}, 1]: the word is not derivable."
+      }
+    },
+    "trees": {
+      "anim": {
+        "start": "The root is the start variable {{start}}. The tree grows along the leftmost derivation: each step gives the leftmost variable without children the right-hand side of its rule as children.",
+        "step": "{{rule}}: the leftmost variable {{variable}} gets its children — {{before}} ⇒ {{after}}.",
+        "done": "Every leaf is a letter or ε: read from left to right, they give the word {{word}}."
       }
     }
   },
