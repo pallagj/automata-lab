@@ -1,6 +1,7 @@
 import React, { useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Pencil } from "lucide-react";
+import { withoutEpsilon } from "../editor/epsilon";
 
 /**
  * Directly editable tape: the input word is shown as cells; clicking a cell moves
@@ -45,8 +46,13 @@ export const TapeInput: React.FC<Props> = ({ value, onChange, pos, placeholder }
         className="tape-hidden-input"
         value={value}
         onChange={(e) => {
-          onChange(e.target.value);
-          requestAnimationFrame(syncCaret);
+          const el = e.target;
+          const edit = withoutEpsilon(el.value, el.selectionStart ?? el.value.length);
+          onChange(edit.text);
+          requestAnimationFrame(() => {
+            el.setSelectionRange(edit.caret, edit.caret);
+            syncCaret();
+          });
         }}
         onSelect={syncCaret}
         onFocus={() => {

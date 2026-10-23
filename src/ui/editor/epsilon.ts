@@ -1,6 +1,7 @@
 import type React from "react";
 import { EditorView } from "@uiw/react-codemirror";
 import { EPS } from "../../core/types";
+import { symbolString } from "../../core/epsilon";
 
 /**
  * Typing shortcut for the ε rule (see core/epsilon.ts), as math editors turn "pi" into π:
@@ -38,6 +39,20 @@ export function epsilonChange(e: React.ChangeEvent<HTMLInputElement>, apply: (va
   apply(edit.text);
   // the controlled value is re-rendered after this handler, which would park the caret at the end
   requestAnimationFrame(() => input.setSelectionRange(edit.caret, edit.caret));
+}
+
+/**
+ * The word a word-test field means, by the ε rule: ε (typed as eps) is the empty word
+ * and \eps the letters e, p, s. null while the field is empty — nothing to test yet.
+ */
+export function typedWord(text: string): string | null {
+  return text === "" ? null : symbolString(text);
+}
+
+/** A tape holds letters only: a typed ε is dropped, the empty tape already is ε. */
+export function withoutEpsilon(text: string, caret: number): EpsilonEdit {
+  const before = text.slice(0, caret).replaceAll(EPS, "");
+  return { text: before + text.slice(caret).replaceAll(EPS, ""), caret: before.length };
 }
 
 /** Whether the end of `text` is inside an unclosed regex(…) — where the shortcut applies in expressions. */

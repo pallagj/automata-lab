@@ -18,6 +18,7 @@ import { activeWorkspace, useAppStore } from "../../state/store";
 import { uniqueName, usedNames } from "../../state/names";
 import { tr } from "../../i18n/translate";
 import { PlayerBar, usePlayer } from "./AnimationPlayer";
+import { epsilonChange, typedWord } from "../editor/epsilon";
 import { Check, ChevronRight, Clapperboard, Grid3x3, HelpCircle, ListOrdered, Wand2, X } from "lucide-react";
 
 const TYPE_KEYS: Record<number, string> = {
@@ -52,21 +53,22 @@ export const GrammarView: React.FC<{ grammar: Grammar }> = ({ grammar }) => {
   };
 
   const [test, setTest] = useState("");
+  const word = typedWord(test);
   // context-free: an exact decision with CYK; otherwise a bounded search for a derivation
   const membership = useMemo(
-    () => (test === "" || !cls.contextFreeForm ? null : cykMembership(grammar, test).value!),
-    [grammar, test, cls]
+    () => (word === null || !cls.contextFreeForm ? null : cykMembership(grammar, word).value!),
+    [grammar, word, cls]
   );
   const testResult = useMemo(() => {
-    if (test === "") return null;
-    if (!membership) return grammarAccepts(grammar, test);
+    if (word === null) return null;
+    if (!membership) return grammarAccepts(grammar, word);
     // a derivation to show, when the bounded search finds one
-    const search = membership.accepted ? grammarAccepts(grammar, test) : null;
+    const search = membership.accepted ? grammarAccepts(grammar, word) : null;
     return {
       verdict: membership.accepted ? ("yes" as const) : ("no" as const),
       derivation: search?.verdict === "yes" ? search.derivation : undefined
     };
-  }, [grammar, test, membership]);
+  }, [grammar, word, membership]);
   const cnfForm = useMemo(() => isCNF(grammar), [grammar]);
   const [openDerivation, setOpenDerivation] = useState<string | null>(null);
 
@@ -195,7 +197,7 @@ export const GrammarView: React.FC<{ grammar: Grammar }> = ({ grammar }) => {
               className="sim-input"
               value={test}
               placeholder={t("detail.grammar.testPlaceholder")}
-              onChange={(e) => setTest(e.target.value)}
+              onChange={(e) => epsilonChange(e, setTest)}
               spellCheck={false}
             />
             {testResult && (

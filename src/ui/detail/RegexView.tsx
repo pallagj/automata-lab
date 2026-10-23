@@ -13,6 +13,7 @@ import { StepGroup } from "../../core/expr/expression";
 import { GraphView } from "../graph/GraphView";
 import { fsmGraphSpec } from "./FSMView";
 import { FrameCaption, PlayerBar, playedFrames, toGraphFrame, usePlayer } from "./AnimationPlayer";
+import { epsilonChange, typedWord } from "../editor/epsilon";
 import { ArrowRight, Check, Clapperboard, X } from "lucide-react";
 
 /**
@@ -48,9 +49,10 @@ export const RegexView: React.FC<{ regex: RegexDef; stepGroups?: StepGroup[] }> 
   const words = useMemo(() => (nfa ? languageSummary(nfa, 24) : null), [nfa]);
 
   const [test, setTest] = useState("");
+  const word = typedWord(test);
   const testOk = useMemo(
-    () => (test === "" || !nfa ? null : acceptsFSM(nfa, test)),
-    [nfa, test]
+    () => (word === null || !nfa ? null : acceptsFSM(nfa, word)),
+    [nfa, word]
   );
 
   // the algorithm that built the expression (the r(p, q, t) rounds), played on its automaton
@@ -132,7 +134,7 @@ export const RegexView: React.FC<{ regex: RegexDef; stepGroups?: StepGroup[] }> 
           <div className="word-test">
             <input
               value={test}
-              onChange={(e) => setTest(e.target.value)}
+              onChange={(e) => epsilonChange(e, setTest)}
               placeholder={t("detail.regex.wordTestPlaceholder")}
               spellCheck={false}
             />
